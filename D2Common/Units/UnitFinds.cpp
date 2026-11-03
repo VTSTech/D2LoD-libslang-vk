@@ -18,9 +18,10 @@
 #include "D2Common/Drlg/D2DrlgRoomCoordsStrc.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
-#include "D2Game/D2UnitFindDataStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/SKILLS/SkillsServer.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
@@ -29,7 +30,6 @@
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Common/D2DynamicPathStrc.h"
-#include "D2Common/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -90,18 +90,11 @@ BOOL __stdcall AreUnitsInNeighboredRooms(D2UnitStrc * pUnit, D2UnitStrc * pSrcUn
       }
 
       /* Both arguments are reused here */ DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pSrcRoom, (D2RoomStrc***)&pSrcUnit, (int*)&pUnit);
-      nRoomIdx = 0;
-      if ((int)pUnit <= 0) {
-        return 0;
-      }
-
-      do {
+      for (nRoomIdx = 0; nRoomIdx < (int)pUnit; nRoomIdx++) {
         if (*(D2RoomStrc**)(pSrcUnit->unk0x19 + nRoomIdx * 4 - 0x19) == pUnitRoom) {
           return 1;
         }
-
-        nRoomIdx++;
-      } while (nRoomIdx < (int)pUnit);
+      }
 
       return 0;
     }
@@ -231,12 +224,7 @@ D2UnitStrc * __stdcall GetNearestTestedUnit(D2UnitStrc * pUnit, int32_t nX, int3
         exit(-1);
       }
 
-      nRoomIdx = 0;
-      if (0 >= nRoomCount) {
-        return pBestUnit;
-      }
-
-      do {
+      for (nRoomIdx = 0; nRoomIdx < nRoomCount; nRoomIdx++) {
         bBadPtr = CheckRoomIfInRange(ppRoomList[nRoomIdx], nX, nY, nLine);
         if (bBadPtr) {
           for (pCandUnit = ppRoomList[nRoomIdx]->pUnitList; pCandUnit; pCandUnit = pCandUnit->pRoomNext) {
@@ -250,9 +238,7 @@ D2UnitStrc * __stdcall GetNearestTestedUnit(D2UnitStrc * pUnit, int32_t nX, int3
             }
           }
         }
-
-        nRoomIdx++;
-      } while (nRoomIdx < nRoomCount);
+      }
 
       return pBestUnit;
     }
@@ -443,7 +429,7 @@ int32_t __stdcall TestUnit(D2UnitStrc * pUnit, D2UnitFindArgStrc * pUnitFindArg)
     }
 
     nSearchFlags = pArgs->nFlags;
-    if (!(-1 < (char)nSearchFlags || (bAttackable = D2Client::UNIT::CheckFlags(pTestUnit, UNITFLAG_CANBEATTACKED) , bAttackable != 0))) {
+    if (!((char)nSearchFlags >= 0 || (bAttackable = D2Client::UNIT::CheckFlags(pTestUnit, UNITFLAG_CANBEATTACKED) , bAttackable != 0))) {
       return 0;
     }
     if (!(!(nSearchFlags & 0x400) || (bValidTarget = D2Client::UNIT::CheckFlags(pTestUnit, UNITFLAG_ISVALIDTARGET) , bValidTarget != 0))) {
@@ -482,7 +468,7 @@ int32_t __stdcall TestUnit(D2UnitStrc * pUnit, D2UnitFindArgStrc * pUnitFindArg)
 // Searches the room containing pUnitFindData->pRoom and all adjacent rooms for units passing a caller-supplied filter. If the source room is out of the search range only the source room is checked; otherwise DRLGROOM_GetAdjacentRoomsList is used. For each in-range room iterates the room's unit linked-list, calling fpUnitTest (or TestUnit if NULL), accumulating matching units in pUnitFindData->pUnitsArray (auto-expanded via ExpandUnitFinds). Returns and stores the total found count. Aborts with an unrecoverable error if pUnitFindData is NULL or fpUnitTest fails IsBadCodePtr.
 // @blizzard UnitFindCullRange
 int32_t __stdcall UNITFINDS_FindCullRange(D2UnitFindDataStrc * pUnitFindData) {
-    int iVar1;
+    int bMatches;
     uint32_t nRoomIdx;
     DWORD nRoomCount;
     D2UnitStrc* pNextUnit;
@@ -534,13 +520,13 @@ int32_t __stdcall UNITFINDS_FindCullRange(D2UnitFindDataStrc * pUnitFindData) {
                   exit(-1);
                 }
 
-                iVar1 = pFindData->fpUnitTest(pUnit, pFindData->pUnitFindArg);
+                bMatches = pFindData->fpUnitTest(pUnit, pFindData->pUnitFindArg);
               } else {
-                iVar1 = TestUnit(pUnit, pFindData->pUnitFindArg);
+                bMatches = TestUnit(pUnit, pFindData->pUnitFindArg);
               }
 
               nRoomIdx = nRoomIdxInner;
-              if (iVar1) {
+              if (bMatches) {
                 pFindData->pUnitsArray->aFoundUnitsList[nIndex] = pUnit;
                 nIndex++;
                 if (nIndex == pFindData->nUnitFindsSize) {

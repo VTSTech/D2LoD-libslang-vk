@@ -4,6 +4,7 @@
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Core/Archive.h"
+#include "D2Client/Cursor.h"
 #include "D2Client/D2GameViewStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Engine/Gfx.h"
@@ -30,6 +31,7 @@
 #include "Storm/Source/SReg.h"
 #include "Storm/Storm.h"
 #include "globals/globals.h"
+#include "support/d2_boot.h" // [d2boot] issue #19 esc-menu degrade marks [R61]
 #include "D2Client/UI/Panel.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -43,6 +45,16 @@ typedef BOOL (__stdcall *pfnEscMenuItemVisible)();
 #define RECON_FPTD_pfnEscMenuItemAction
 typedef void (__fastcall *pfnEscMenuItemAction)(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg);
 #endif
+
+static int gnEscMenuSelectedIndex = 0; D2_STATIC_GUARD(gnEscMenuSelectedIndex, "gnEscMenuSelectedIndex");
+static D2EscMenuHeaderStrc * gpEscMenuItemCount = 0; D2_STATIC_GUARD(gpEscMenuItemCount, "gpEscMenuItemCount");
+static D2EscMenuItemStrc * gpEscMenuCurrentTable = 0; D2_STATIC_GUARD(gpEscMenuCurrentTable, "gpEscMenuCurrentTable");
+static uint32_t gbEscMenuSliderDragging = 0; D2_STATIC_GUARD(gbEscMenuSliderDragging, "gbEscMenuSliderDragging");
+static uint32_t gnEscMenuSliderValue = 0; D2_STATIC_GUARD(gnEscMenuSliderValue, "gnEscMenuSliderValue");
+static DC6 * gpEscMenuOptBarDC6 = 0; D2_STATIC_GUARD(gpEscMenuOptBarDC6, "gpEscMenuOptBarDC6");
+static DC6 * gpEscMenuOptBarCDC6 = 0; D2_STATIC_GUARD(gpEscMenuOptBarCDC6, "gpEscMenuOptBarCDC6");
+static DC6 * gpEscMenuOptSkullDC6 = 0; D2_STATIC_GUARD(gpEscMenuOptSkullDC6, "gpEscMenuOptSkullDC6");
+static int SizeCurrentSelectedEscMenuItem = 0; D2_STATIC_GUARD(SizeCurrentSelectedEscMenuItem, "SizeCurrentSelectedEscMenuItem");
 
 namespace D2Client::UI::EscMenu {
 
@@ -130,7 +142,7 @@ void __fastcall UI_SLIDER_ApplyMusicVolume(D2EscMenuItemStrc * pItem, D2UIMouseM
 }
 
 void __fastcall ESCMENU_Init3DSoundItem(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
-    bool _bIs3DActive;
+    BOOL _bIs3DActive;
     bool bIs3DActive;
     _bIs3DActive = GAME::Sound::SOUND_Is3DMixerActive();
     pItem->nImageIndex = _bIs3DActive;
@@ -182,10 +194,10 @@ void __fastcall UI_SLIDER_ApplyNpcSpeech(D2EscMenuItemStrc * pItem, D2UIMouseMsg
 }
 
 void __fastcall UI_SLIDER_LoadAndApplyNpcSpeech(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = D2Sound::Src::D2SoundFast::SOUND_GetNpcSpeech();
-    pItem->nImageIndex = iVar1;
-    BOOL BVar2 = GAME::Sound::SOUND_IsInitializedDup();
-    if (!BVar2) {
+    int nNpcSpeech = D2Sound::Src::D2SoundFast::SOUND_GetNpcSpeech();
+    pItem->nImageIndex = nNpcSpeech;
+    BOOL BVar1 = GAME::Sound::SOUND_IsInitializedDup();
+    if (!BVar1) {
       return;
     }
 
@@ -223,8 +235,8 @@ void __fastcall UI_SLIDER_ApplyLightQuality(D2EscMenuItemStrc * pItem, D2UIMouse
 
 void __fastcall UI_SLIDER_InitLightQuality(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     Storm::Source::SReg::SRegLoadValue("Diablo II", "Light Quality", 0, &pItem->nImageIndex);
-    int iVar1 = pItem->nImageIndex;
-    switch (iVar1) {
+    int nLightQuality = pItem->nImageIndex;
+    switch (nLightQuality) {
       default:
         {
           return;
@@ -285,7 +297,8 @@ void __fastcall UI_SLIDER_ApplyResolution(D2EscMenuItemStrc * pItem, D2UIMouseMs
 // draw; the blank drawn after is fully transparent, so the text survives.
 // The row band is recomputed with DRAW_EscMenu's per-item formula
 // (nYPosition is still zero at callback time) - same approach as
-// VANILLAPLUS_DrawRowLabel.
+// VANILLAPLUS_DrawRowLabel. The label right-aligns to the value-column
+// anchor and rides the neighbor images' ink line (issue #23).
 void __fastcall UI_SLIDER_DrawResolutionValue(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     (void)pMsg;
     if (!pItem || pItem->nImageIndex != 2) {
@@ -320,23 +333,37 @@ void __fastcall UI_SLIDER_DrawResolutionValue(D2EscMenuItemStrc * pItem, D2UIMou
         + (nMenuCenterY / 2 - gaEscMenuHeaderDeleteChar.nVerticalSpacing * gaEscMenuHeaderDeleteChar.nItemCount / 2);
     const int nRowBottom = nRowTop + gaEscMenuHeaderDeleteChar.nRowHeight;
 
-    // Baseline inset above the band bottom: the retail value images
-    // bottom-anchor exactly at the row bottom and carry 1-2 px of bake
-    // padding under the glyphs (tunable).
-    static const int RESLABEL_BASELINE_INSET = 2;
-
     // Font: match the retail "800x600" value image of this same row (slot 1).
     static const wchar_t gwszLabel[] = L"1280x720";
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(
         VPRES_PickFontMatchingDC6(pItem->pDC6SubImages[1]));
-    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gwszLabel, ScreenSizeX / 2 + 0xe6, nRowBottom - RESLABEL_BASELINE_INSET, 0, 0);
+
+    // X: DRAW_EscMenu draws this row's value images with alignment 2 - their
+    // cell RIGHT edge anchors at ScreenSizeX/2 + 0xe6 (IMAGE_DrawDC6ImageOnScreen
+    // subtracts the frame width). Left-anchoring the text at that x pushed it
+    // a full label width past the value column (issue #23): right-align by
+    // subtracting the rendered advance width instead (DRAW_text0 measures with
+    // the font selected above, the same metric the renderer advances by).
+    const int nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0((uint16_t*)gwszLabel);
+
+    // Y: DRAW_text anchors the glyph CELL bottom (DC6 frames draw upward from
+    // y - the convention VANILLAPLUS_DrawRowLabel documents). The picked
+    // font's digit ink sits ~6 px above that anchor, while the retail value
+    // DC6s bottom-anchor at the row bottom with ~4 px of baked padding under
+    // their ink - so drawing at (or above) the row bottom floated the text
+    // ~4 px above the neighbors' ink line (issue #23, screenshot-measured at
+    // 720p). Row bottom + 2 puts the ink at row bottom - 4, on the
+    // "HIGH"/"ON" baseline; resolution-independent, same relative geometry
+    // at 800x600.
+    static const int RESLABEL_DESCENDER_COMP = 2;
+    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gwszLabel, ScreenSizeX / 2 + 0xe6 - nLabelWidth, nRowBottom + RESLABEL_DESCENDER_COMP, 0, 0);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
 void __fastcall UI_SLIDER_LoadAndApplyResolution(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     int* pnOut = &pItem->nImageIndex;
-    int iVar1 = Storm::Source::SReg::SRegLoadValue("Diablo II", "Resolution", 0, pnOut);
-    if (!iVar1) {
+    int bLoaded = Storm::Source::SReg::SRegLoadValue("Diablo II", "Resolution", 0, pnOut);
+    if (!bLoaded) {
       *pnOut = 1;
     }
 
@@ -364,6 +391,15 @@ void __fastcall UI_SLIDER_LoadAndApplyResolution(D2EscMenuItemStrc * pItem, D2UI
 }
 
 void __fastcall UI_SLIDER_ApplyPerspective(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
+    // [d2boot] issue #26 D3D perspective-toggle death triage: mark the slider
+    // apply itself (renderer, currently-effective state, new value) so a death
+    // between this mark and the first-perspective-frame world marks localizes
+    // to the render side; a death with NO apply mark never reached the slider
+    // handler. [R96]
+    D2BOOT_MarkFmt("videoopt: perspective apply renderer=%d active=%d -> %d [R96]",
+        (int)D2gfx::D2GFX::D2GFX_GetRendererMode(),
+        (int)D2gfx::D2GFX::D2GFX_IsPerspectiveActive(),
+        (int)pItem->nImageIndex);
     Storm::Source::SReg::SRegSaveValue("Diablo II", "Perspective", 0, pItem->nImageIndex);
     D2gfx::D2GFX::D2GFX_SetPerspective(pItem->nImageIndex);
     GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
@@ -374,6 +410,11 @@ void __fastcall UI_SLIDER_LoadAndApplyPerspective(D2EscMenuItemStrc * pItem, D2U
     int* pnOut = &pItem->nImageIndex;
     Storm::Source::SReg::SRegLoadValue("Diablo II", "Perspective", 0, pnOut);
     BOOL BVar1 = D2gfx::D2GFX::D2GFX_GetPerspectiveCapable();
+    // [d2boot] triage companion to the apply mark: logs the raw registry value
+    // and the capability flag at every video-options open. A garbage/non-0-1
+    // value here names the owner-side registry corruption class (SMOKE §L)
+    // instead of a build bug. [R96]
+    D2BOOT_MarkFmt("videoopt: perspective load reg=%d capable=%d [R96]", *pnOut, (int)BVar1);
     if (BVar1) {
       Storm::Source::SReg::SRegSaveValue("Diablo II", "Perspective", 0, *pnOut);
       D2gfx::D2GFX::D2GFX_SetPerspective(*pnOut);
@@ -492,9 +533,9 @@ void __fastcall ESCMENU_InitAutomapPartyItem(D2EscMenuItemStrc * pItem, D2UIMous
 void __fastcall UI_SLIDER_InitAutomapParty(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     BOOL bHasParty = Automap::AUTOMAP_GetParty();
     if (bHasParty) {
-      int32_t iVar1;
-      iVar1 = Automap::AUTOMAP_GetPartyNames();
-      if (iVar1) {
+      int32_t bPartyNames;
+      bPartyNames = Automap::AUTOMAP_GetPartyNames();
+      if (bPartyNames) {
         pItem->nImageIndex = 1;
         return;
       }
@@ -506,28 +547,28 @@ void __fastcall UI_SLIDER_InitAutomapParty(D2EscMenuItemStrc * pItem, D2UIMouseM
 // Converts mouse Y coordinate to menu item index. Iterates visible items to find which contains the Y position, checking enable callbacks. Returns -1 if no valid item hit or if item is disabled.
 static int32_t ESCMENU_GetItemIndexFromMouseY(int32_t nParam) {
     BOOL nItemCount;
-    int iVar1 = gpEscMenuItemCount->nItemCount;
+    int nMenuItemCount = gpEscMenuItemCount->nItemCount;
     int nMenuCenterY = (ScreenSizeY - 0x50) / 2;
-    int nMenuHeight = gpEscMenuItemCount->nVerticalSpacing * iVar1 / 2;
+    int nMenuHeight = gpEscMenuItemCount->nVerticalSpacing * nMenuItemCount / 2;
     int32_t nFoundIndex = -1;
     if (!(nParam > nMenuCenterY - nMenuHeight && nParam < nMenuCenterY + nMenuHeight)) {
       return nFoundIndex;
     }
 
     nMenuCenterY = 0;
-    if (iVar1 <= 0) {
+    if (nMenuItemCount <= 0) {
       return nFoundIndex;
     }
 
     int* pItemYPosition = &gpEscMenuCurrentTable->nYPosition;
     do {
-      if (*pItemYPosition && nParam >= *pItemYPosition + iVar1) {
+      if (*pItemYPosition && nParam >= *pItemYPosition + nMenuItemCount) {
         nFoundIndex = nMenuCenterY;
       }
 
       nMenuCenterY++;
       pItemYPosition += 0x154;
-    } while (nMenuCenterY < iVar1);
+    } while (nMenuCenterY < nMenuItemCount);
 
     if (nFoundIndex < 0) {
       return nFoundIndex;
@@ -582,15 +623,17 @@ static void __stdcall ESCMENU_ClickMenuItem(D2UIMouseMsgStrc * pMsg) {
     }
 }
 
-static void ESCMENU_HandleSliderDrag(int32_t nParam1, int32_t nParam2) {
+static void ESCMENU_HandleSliderDrag(int32_t nMouseY, int32_t nMouseX) {
     int32_t nHoveredIndex;
     BOOL nSliderLeftX;
     int nScreenCenterX;
-    int iVar3;
     int nSliderTrackX;
     int nSelectedIndex;
-    float fVar3;
-    if (!(gnEscMenuSliderValue || (nHoveredIndex = ESCMENU_GetItemIndexFromMouseY(nParam1) , nHoveredIndex == gnEscMenuSelectedIndex))) {
+    int nTrackHitX;
+    int nLastIndex;
+    int nImageIndex;
+    float fLastIndex;
+    if (!(gnEscMenuSliderValue || (nHoveredIndex = ESCMENU_GetItemIndexFromMouseY(nMouseY) , nHoveredIndex == gnEscMenuSelectedIndex))) {
       return;
     }
 
@@ -601,29 +644,29 @@ static void ESCMENU_HandleSliderDrag(int32_t nParam1, int32_t nParam2) {
       pDVar1 = gpEscMenuCurrentTable + gnEscMenuSelectedIndex;
       if (pDVar1->nMenuItemType == 2) {
         nScreenCenterX = ScreenSizeX / 2;
-        iVar3 = nScreenCenterX - 0x3b;
+        nTrackHitX = nScreenCenterX - 0x3b;
         nSliderTrackX = nScreenCenterX - 0x3c;
         if (!pDVar1->pDC6Main) {
-          iVar3 = nScreenCenterX - 0x90;
+          nTrackHitX = nScreenCenterX - 0x90;
           nSliderTrackX = nScreenCenterX - 0x91;
         }
-        if (gnEscMenuSliderValue || nParam2 > iVar3 && nParam2 < iVar3 + 0x121) {
-          if (nParam2 < nSliderTrackX + 0xc) {
+        if (gnEscMenuSliderValue || nMouseX > nTrackHitX && nMouseX < nTrackHitX + 0x121) {
+          if (nMouseX < nSliderTrackX + 0xc) {
             pDVar1->nImageIndex = 0;
           } else {
-            if (nParam2 > nSliderTrackX + 0x115) {
-              iVar3 = pDVar1->nSubImageCount - 1;
+            if (nMouseX > nSliderTrackX + 0x115) {
+              nImageIndex = pDVar1->nSubImageCount - 1;
             } else {
-              iVar3 = pDVar1->nSubImageCount - 1;
-              fVar3 = (float)iVar3;
-              if (iVar3 < 0) {
-                fVar3 += 4.2949673e+09;
+              nLastIndex = pDVar1->nSubImageCount - 1;
+              fLastIndex = (float)nLastIndex;
+              if (nLastIndex < 0) {
+                fLastIndex += 4.2949673e+09;
               }
 
-              iVar3 = (int)((float)(nParam2 - (nSliderTrackX + 0xc)) / (265.0 / fVar3 * 0.5) + 1.0) / 2;
+              nImageIndex = (int)((float)(nMouseX - (nSliderTrackX + 0xc)) / (265.0 / fLastIndex * 0.5) + 1.0) / 2;
             }
 
-            pDVar1->nImageIndex = iVar3;
+            pDVar1->nImageIndex = nImageIndex;
           }
 
           gnEscMenuSliderValue = 1;
@@ -634,9 +677,9 @@ static void ESCMENU_HandleSliderDrag(int32_t nParam1, int32_t nParam2) {
       return;
     }
 
-    pfnEscMenuItemAction ppVar2 = gpEscMenuCurrentTable[nSelectedIndex].fpClickCallback;
-    if (ppVar2) {
-      (*ppVar2)(gpEscMenuCurrentTable + nSelectedIndex, nullptr);
+    pfnEscMenuItemAction pfnClickCallback = gpEscMenuCurrentTable[nSelectedIndex].fpClickCallback;
+    if (pfnClickCallback) {
+      (*pfnClickCallback)(gpEscMenuCurrentTable + nSelectedIndex, nullptr);
     }
 
     Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
@@ -644,13 +687,13 @@ static void ESCMENU_HandleSliderDrag(int32_t nParam1, int32_t nParam2) {
 
 void __stdcall INPUT_EscMenuMouseDown(D2UIMouseMsgStrc * pMsg) {
     uint32_t nMouseY = (uint32_t)pMsg->uLParam.sMousePos.nMouseY;
-    uint16_t nMouseX = pMsg->uLParam.sMousePos.nMouseX;
+    uint32_t nMouseX = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
     int32_t nHitIndex = ESCMENU_GetItemIndexFromMouseY(nMouseY);
     if (nHitIndex != -1) {
       gnEscMenuSelectedIndex = nHitIndex;
     }
 
-    ESCMENU_HandleSliderDrag(nMouseY, (uint32_t)nMouseX);
+    ESCMENU_HandleSliderDrag(nMouseY, nMouseX);
     gbEscMenuSliderDragging = 1;
     pMsg->bHandled = 1;
     pMsg->dwResult = 0;
@@ -709,20 +752,20 @@ void __stdcall INPUT_EscMenuNavigatePrev(D2UIMouseMsgStrc * pMsg) {
 }
 
 void __stdcall INPUT_EscMenuOptionDecrease(D2UIMouseMsgStrc * pMsg) {
-    int iVar1;
-    uint32_t uVar2;
+    int nItemIndex;
+    uint32_t nLastImageIndex;
     int nPrevItemValue;
     nPrevItemValue = gpEscMenuCurrentTable[gnEscMenuSelectedIndex].nImageIndex;
     if (gpEscMenuCurrentTable[gnEscMenuSelectedIndex].fpVisibilityCheck) {
       BOOL bIsEnabled;
       bIsEnabled = gpEscMenuCurrentTable[gnEscMenuSelectedIndex].fpVisibilityCheck();
-      iVar1 = gnEscMenuSelectedIndex;
+      nItemIndex = gnEscMenuSelectedIndex;
       if (!bIsEnabled) {
         goto notify_if_changed;
       }
     }
 
-    iVar1 = gnEscMenuSelectedIndex;
+    nItemIndex = gnEscMenuSelectedIndex;
     D2EscMenuItemStrc* pItemData;
     pItemData = gpEscMenuCurrentTable + gnEscMenuSelectedIndex;
     if (pItemData->nMenuItemType != 1) {
@@ -731,14 +774,14 @@ void __stdcall INPUT_EscMenuOptionDecrease(D2UIMouseMsgStrc * pMsg) {
       }
     } else {
       pItemData->nImageIndex--;
-      uVar2 = pItemData->nSubImageCount - 1;
-      if ((uint32_t)pItemData->nImageIndex > uVar2) {
-        pItemData->nImageIndex = uVar2;
+      nLastImageIndex = pItemData->nSubImageCount - 1;
+      if ((uint32_t)pItemData->nImageIndex > nLastImageIndex) {
+        pItemData->nImageIndex = nLastImageIndex;
       }
     }
 
     notify_if_changed:
-    pItemData = gpEscMenuCurrentTable + iVar1;
+    pItemData = gpEscMenuCurrentTable + nItemIndex;
     if (nPrevItemValue != pItemData->nImageIndex) {
       if (pItemData->fpClickCallback) {
         pItemData->fpClickCallback(pItemData, nullptr);
@@ -754,7 +797,7 @@ void __stdcall INPUT_EscMenuOptionDecrease(D2UIMouseMsgStrc * pMsg) {
 
 void __stdcall INPUT_EscMenuOptionIncrease(D2UIMouseMsgStrc * pMsg) {
     int nItemIndex;
-    uint32_t uVar1;
+    uint32_t nLastImageIndex;
     int nPrevItemValue;
     nPrevItemValue = gpEscMenuCurrentTable[gnEscMenuSelectedIndex].nImageIndex;
     if (gpEscMenuCurrentTable[gnEscMenuSelectedIndex].fpVisibilityCheck) {
@@ -782,9 +825,9 @@ void __stdcall INPUT_EscMenuOptionIncrease(D2UIMouseMsgStrc * pMsg) {
       case 2:
         {
           pItemData->nImageIndex++;
-          uVar1 = pItemData->nSubImageCount - 1;
-          if ((uint32_t)pItemData->nImageIndex > uVar1) {
-            pItemData->nImageIndex = uVar1;
+          nLastImageIndex = pItemData->nSubImageCount - 1;
+          if ((uint32_t)pItemData->nImageIndex > nLastImageIndex) {
+            pItemData->nImageIndex = nLastImageIndex;
           }
 
           break;
@@ -813,89 +856,112 @@ void __stdcall INPUT_EscMenuExecuteSelection(D2UIMouseMsgStrc * pMsg) {
     Storm::SMsgBreakHandlerChain(pMsg);
 }
 
+// [R61 issue #19] display names for the degrade marks (pointer identity; the
+// loader only sees the table pointer). Order matches ESCMENU_Initialize.
+static const char* ESCMENU_TableName(const D2EscMenuItemStrc* pTable) {
+    if (pTable == gaEscMenuMainTable) return "main";
+    if (pTable == gaEscMenuOptionsTable) return "options";
+    if (pTable == gaEscMenuSaveExitTable) return "saveexit";
+    if (pTable == gaEscMenuDeleteCharTable) return "video";
+    if (pTable == gaEscMenuClassicSaveExitTable) return "classic-saveexit";
+    if (pTable == gaEscMenuExpansionSaveExitTable) return "exp-saveexit";
+    return "?";
+}
+
 // Loads all localized DC6 images for an escape menu table. Iterates menu items, fetches language abbreviation from INI config (e.g., "ENG", "DEU"), constructs paths like "DATA\LOCAL\{lang}\UI\{item}.dc6" and loads main image plus up to 4 sub-images per item. Skips expansion-only items in classic mode. Calls item initialization callbacks after loading.
 void __fastcall ESCMENU_LoadLocalizedImages(int * pMenuHeader, D2EscMenuItemStrc * pMenuTable) {
-    // Frame slots -284..-8 are ONE object: &szImagePath is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      char szImagePath;
-      uint8_t szImagePathBuffer[259];
-      D2EscMenuItemStrc* nUnused18;
-      int* nUnused14;
-      int nItemIndex;
-      int nSubImageOffset;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 276, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     BOOL bIsExpansion;
     DC6* pLoadedDC6;
     int nTableOffset;
     uint32_t nSubImageIndex;
     char* pSubImagePath;
+    char szImagePath[260];
+    int nItemIndex;
+    int nSubImageOffset;
     char szLangAbbrev[4];
     uint32_t nSubImageCount;
-    __frame0.nUnused18 = pMenuTable;
-    __frame0.nUnused14 = pMenuHeader;
     if (!pMenuHeader) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4e8);
       exit(-1);
     }
-    if (pMenuTable) {
-      __frame0.szImagePath = '\0';
-      memset(__frame0.szImagePathBuffer, 0, 0x103);
-      memset(szLangAbbrev, 0, 4 * sizeof(szLangAbbrev[0]));
-      D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(szLangAbbrev, 0);
-      __frame0.nItemIndex = 0;
-      if (*pMenuHeader <= 0) {
-        return;
-      }
-
-      __frame0.nSubImageOffset = 0x150;
-      do {
-        if (!pMenuTable[__frame0.nItemIndex].nExpansionOnly || (bIsExpansion = Fog::D2CheckExpansionGame() , bIsExpansion != 0)) {
-          if (pMenuTable[__frame0.nItemIndex].szLocalizedImagePath[0] != '\0') {
-            sprintf(&__frame0.szImagePath, "%s\\UI\\%s\\%s", "DATA\\LOCAL", szLangAbbrev, pMenuTable[__frame0.nItemIndex].szLocalizedImagePath);
-            pLoadedDC6 = Core::Archive::IMAGE_LoadDC6Ex(&__frame0.szImagePath, 0);
-            nSubImageCount = pMenuTable[__frame0.nItemIndex].nMenuItemType;
-            pMenuTable[__frame0.nItemIndex].pDC6Main = pLoadedDC6;
-            if (nSubImageCount == 1) {
-              nSubImageCount = pMenuTable[__frame0.nItemIndex].nSubImageCount;
-              if (nSubImageCount <= 0 || nSubImageCount > 4) {
-                ESCMENU_LoadLocalizedImages_HaltTail(0x4fe);
-              }
-
-              nSubImageIndex = 0;
-              if (nSubImageCount > 0) {
-                pSubImagePath = pMenuTable[__frame0.nItemIndex].szSubImage1Path;
-                do {
-                  if (*pSubImagePath == '\0') {
-                    ESCMENU_LoadLocalizedImages_HaltTail(0x501);
-                  }
-
-                  sprintf(&__frame0.szImagePath, "%s\\UI\\%s\\%s", "DATA\\LOCAL", szLangAbbrev, pSubImagePath);
-                  pLoadedDC6 = Core::Archive::IMAGE_LoadDC6Ex(&__frame0.szImagePath, 0);
-                  nTableOffset = __frame0.nSubImageOffset + nSubImageIndex;
-                  nSubImageIndex++;
-                  *(DC6**)(__frame0.nUnused18->szLocalizedImagePath + nTableOffset * 4 - 0xc) = (DC6*)pLoadedDC6;
-                  pSubImagePath += 0x104;
-                  pMenuHeader = __frame0.nUnused14;
-                } while (nSubImageIndex < (uint32_t)pMenuTable[__frame0.nItemIndex].nSubImageCount);
-              }
-            }
-          }
-          if (pMenuTable[__frame0.nItemIndex].fpInitCallback) {
-            (*pMenuTable[__frame0.nItemIndex].fpInitCallback)(&pMenuTable[__frame0.nItemIndex], nullptr);
-          }
-        }
-
-        __frame0.nSubImageOffset += 0x154;
-        __frame0.nItemIndex++;
-      } while (__frame0.nItemIndex < *pMenuHeader);
-
+    if (!pMenuTable) {
+      ESCMENU_LoadLocalizedImages_HaltTail(0x4e9);
       return;
     }
 
-    ESCMENU_LoadLocalizedImages_HaltTail(0x4e9);
+    szImagePath[0] = '\0';
+    memset(szImagePath + 1, 0, 0x103);
+    memset(szLangAbbrev, 0, 4 * sizeof(szLangAbbrev[0]));
+    D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(szLangAbbrev, 0);
+    nItemIndex = 0;
+    if (*pMenuHeader <= 0) {
+      return;
+    }
+
+    nSubImageOffset = 0x150;
+    do {
+      if (!pMenuTable[nItemIndex].nExpansionOnly || (bIsExpansion = Fog::D2CheckExpansionGame() , bIsExpansion != 0)) {
+        if (pMenuTable[nItemIndex].szLocalizedImagePath[0] != '\0') {
+          sprintf(szImagePath, "%s\\UI\\%s\\%s", "DATA\\LOCAL", szLangAbbrev, pMenuTable[nItemIndex].szLocalizedImagePath);
+          pLoadedDC6 = Core::Archive::IMAGE_LoadDC6Ex(szImagePath, 0);
+          nSubImageCount = pMenuTable[nItemIndex].nMenuItemType;
+          pMenuTable[nItemIndex].pDC6Main = pLoadedDC6;
+          if (nSubImageCount == 1) {
+            nSubImageCount = pMenuTable[nItemIndex].nSubImageCount;
+            if (nSubImageCount <= 0 || nSubImageCount > 4) {
+              // [R61 issue #19] was: fatal HaltTail(0x4fe). Retail data can never
+              // land here (static tables parsed well-formed), but the Vanilla+
+              // Resolution row legitimately mutates nSubImageCount 2->3 at runtime
+              // (UI_SLIDER_LoadAndApplyResolution), so this field is now LIVE data
+              // and a scribbled/miswired value must not kill the process at game
+              // entry (issue #19: second game entry died in this loader). Clamp:
+              // the slot writes below stay in-bounds either way.
+              D2BOOT_MarkFmt("escmenu: %s item %d sub-image count %d out of range - clamped [R61]", ESCMENU_TableName(pMenuTable), nItemIndex, nSubImageCount);
+              nSubImageCount = nSubImageCount > 4 ? 4 : 0;
+            }
+
+            nSubImageIndex = 0;
+            if (nSubImageCount > 0) {
+              pSubImagePath = pMenuTable[nItemIndex].szSubImage1Path;
+              do {
+                if (*pSubImagePath == '\0') {
+                  // [R61 issue #19] was: fatal HaltTail(0x501). ROOT CAUSE of
+                  // issue #19: the VP Resolution row attaches its runtime blank
+                  // DC6 into pDC6SubImages[2] and bumps nSubImageCount to 3, but
+                  // szSubImage3Path stays empty (no MPQ asset exists - the stop
+                  // is synthesized). Init #1 loads with count 2 (clean), the
+                  // callback then mutates the STATIC table, and init #2 (every
+                  // game entry re-runs ESCMENU_Initialize via 0x01 ->
+                  // InitializeUI) walks three sub-paths and died HERE. Degrade:
+                  // keep the previously loaded DC6 in the slot (the runtime
+                  // blank survives re-inits; first init just leaves the slot
+                  // NULL and the draw site skips NULLs) and go on.
+                  D2BOOT_MarkFmt("escmenu: %s item %d stop %u path empty - prior dc6 kept [R61]", ESCMENU_TableName(pMenuTable), nItemIndex, nSubImageIndex);
+                  pSubImagePath += 0x104;
+                  nSubImageIndex++;
+                  continue;
+                }
+
+                sprintf(szImagePath, "%s\\UI\\%s\\%s", "DATA\\LOCAL", szLangAbbrev, pSubImagePath);
+                pLoadedDC6 = Core::Archive::IMAGE_LoadDC6Ex(szImagePath, 0);
+                nTableOffset = nSubImageOffset + nSubImageIndex;
+                nSubImageIndex++;
+                *(DC6**)(pMenuTable->szLocalizedImagePath + nTableOffset * 4 - 0xc) = (DC6*)pLoadedDC6;
+                pSubImagePath += 0x104;
+              } while (nSubImageIndex < nSubImageCount); // [R61] clamped local, not the raw table read
+            }
+          }
+        }
+        if (pMenuTable[nItemIndex].fpInitCallback) {
+          (*pMenuTable[nItemIndex].fpInitCallback)(&pMenuTable[nItemIndex], nullptr);
+        }
+      }
+
+      nSubImageOffset += 0x154;
+      nItemIndex++;
+    } while (nItemIndex < *pMenuHeader);
+
+    return;
 }
 
 // Shared fatal tail of ESCMENU_LoadLocalizedImages: every failing check pushes its source line and enters here; reports ERROR_UnrecoverableInternalError_Halt("", ip, nLine) and exits.
@@ -907,17 +973,10 @@ void __stdcall ESCMENU_LoadLocalizedImages_HaltTail(int nLine) {
 
 // Initializes escape menu system. Loads all DC6 images for 5 menu tables (main, options, help, and two save/exit variants for classic vs expansion). Loads widget decorations (OptBar progress bar, OptBarC colored bar, OptSkull slider marker). Measures rotating star cursor icon to determine maximum frame width for centering calculations. Sets gpEscMenuItemCount and gpEscMenuCurrentTable to main menu.
 void __stdcall ESCMENU_Initialize() {
-    // Frame slots -336..-76 are ONE object: &szWidgetPath is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      char szWidgetPath;
-      uint8_t szWidgetPathBuffer[259];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 260, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int32_t nFrameWidth;
     D2EscMenuHeaderStrc* pSaveExitHeader;
     D2EscMenuItemStrc* pSaveExitTable;
+    char szWidgetPath[260];
     D2GfxDataStrc sStarGfxData;
     ESCMENU_LoadLocalizedImages(&gEscMenuHeaderInitData.nItemCount, gaEscMenuMainTable);
     ESCMENU_LoadLocalizedImages(&gaEscMenuHeaderOptions.nItemCount, gaEscMenuOptionsTable);
@@ -936,14 +995,14 @@ void __stdcall ESCMENU_Initialize() {
     ESCMENU_LoadLocalizedImages(&pSaveExitHeader->nItemCount, pSaveExitTable);
     gpEscMenuItemCount = &gEscMenuHeaderInitData;
     gpEscMenuCurrentTable = gaEscMenuMainTable;
-    __frame0.szWidgetPath = '\0';
-    memset(__frame0.szWidgetPathBuffer, 0, 0x103);
-    sprintf(&__frame0.szWidgetPath, "%s\\UI\\Widgets\\OptBar", "DATA\\GLOBAL");
-    gpEscMenuOptBarDC6 = Core::Archive::IMAGE_LoadDC6Ex(&__frame0.szWidgetPath, 0);
-    sprintf(&__frame0.szWidgetPath, "%s\\UI\\Widgets\\OptBarC", "DATA\\GLOBAL");
-    gpEscMenuOptBarCDC6 = Core::Archive::IMAGE_LoadDC6Ex(&__frame0.szWidgetPath, 0);
-    sprintf(&__frame0.szWidgetPath, "%s\\UI\\Widgets\\OptSkull", "DATA\\GLOBAL");
-    gpEscMenuOptSkullDC6 = Core::Archive::IMAGE_LoadDC6Ex(&__frame0.szWidgetPath, 0);
+    szWidgetPath[0] = '\0';
+    memset(szWidgetPath + 1, 0, 0x103);
+    sprintf(szWidgetPath, "%s\\UI\\Widgets\\OptBar", "DATA\\GLOBAL");
+    gpEscMenuOptBarDC6 = Core::Archive::IMAGE_LoadDC6Ex(szWidgetPath, 0);
+    sprintf(szWidgetPath, "%s\\UI\\Widgets\\OptBarC", "DATA\\GLOBAL");
+    gpEscMenuOptBarCDC6 = Core::Archive::IMAGE_LoadDC6Ex(szWidgetPath, 0);
+    sprintf(szWidgetPath, "%s\\UI\\Widgets\\OptSkull", "DATA\\GLOBAL");
+    gpEscMenuOptSkullDC6 = Core::Archive::IMAGE_LoadDC6Ex(szWidgetPath, 0);
     memset(&sStarGfxData, 0, 0x48);
     sStarGfxData.pDC6 = ui::UI_GetCursorIconIndex();
     uint32_t nStarFrameCount = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(sStarGfxData.pDC6);
@@ -967,56 +1026,54 @@ void __stdcall ESCMENU_Initialize() {
 }
 
 // Frees all DC6 images loaded for an escape menu table. Iterates through menu items and calls DC6_FreeAndDelete on main image and all sub-images, zeroing the pointers after freeing.
-void __fastcall ESCMENU_FreeLoadedImages(int * pnItemCount, void * pMenuTable) {
+void __fastcall ESCMENU_FreeLoadedImages(int * pnItemCount, D2EscMenuItemStrc * pMenuTable) {
     uint32_t nSubImageIndex;
-    uint32_t* ppSubImage;
-    uint32_t* pItemData;
+    DC6** ppSubImage;
     int nItemIndex;
     uint32_t nSubImageCount;
     if (!pnItemCount) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x558);
       exit(-1);
     }
-    if (pMenuTable) {
-      nItemIndex = 0;
-      if (*pnItemCount <= 0) {
-        return;
-      }
-
-      pItemData = (uint32_t*)((int)pMenuTable + 0x120);
-      do {
-        nSubImageIndex = 0;
-        if ((DC6*)pItemData[0x107]) {
-          Core::Archive::DC6_FreeAndDelete((DC6*)pItemData[0x107]);
-          pItemData[0x107] = 0;
-        }
-        if (pItemData[-0x48] == 1) {
-          nSubImageCount = *pItemData;
-          if (!nSubImageCount || nSubImageCount > 4) {
-            ESCMENU_FreeLoadedImages_HaltTail(0x565);
-          }
-          if (nSubImageCount) {
-            ppSubImage = pItemData + 0x108;
-            do {
-              if ((DC6*)*ppSubImage) {
-                Core::Archive::DC6_FreeAndDelete((DC6*)*ppSubImage);
-                *ppSubImage = 0;
-              }
-
-              nSubImageIndex++;
-              ppSubImage++;
-            } while (nSubImageIndex < *pItemData);
-          }
-        }
-
-        nItemIndex++;
-        pItemData += 0x154;
-      } while (nItemIndex < *pnItemCount);
-
+    if (!pMenuTable) {
+      ESCMENU_FreeLoadedImages_HaltTail(0x559);
       return;
     }
 
-    ESCMENU_FreeLoadedImages_HaltTail(0x559);
+    nItemIndex = 0;
+    if (*pnItemCount <= 0) {
+      return;
+    }
+
+    do {
+      nSubImageIndex = 0;
+      if (pMenuTable[nItemIndex].pDC6Main) {
+        Core::Archive::DC6_FreeAndDelete(pMenuTable[nItemIndex].pDC6Main);
+        *(int*)&pMenuTable[nItemIndex].pDC6Main = 0;
+      }
+      if (pMenuTable[nItemIndex].nMenuItemType == 1) {
+        nSubImageCount = pMenuTable[nItemIndex].nSubImageCount;
+        if (nSubImageCount <= 0 || nSubImageCount > 4) {
+          ESCMENU_FreeLoadedImages_HaltTail(0x565);
+        }
+        if (nSubImageCount > 0) {
+          ppSubImage = pMenuTable[nItemIndex].pDC6SubImages;
+          do {
+            if (*ppSubImage) {
+              Core::Archive::DC6_FreeAndDelete(*ppSubImage);
+              *ppSubImage = 0;
+            }
+
+            nSubImageIndex++;
+            ppSubImage++;
+          } while (nSubImageIndex < (uint32_t)pMenuTable[nItemIndex].nSubImageCount);
+        }
+      }
+
+      nItemIndex++;
+    } while (nItemIndex < *pnItemCount);
+
+    return;
 }
 
 // Shared fatal tail of ESCMENU_FreeLoadedImages: every failing check pushes its source line and enters here; reports ERROR_UnrecoverableInternalError_Halt("", ip, nLine) and exits.
@@ -1215,7 +1272,6 @@ void __stdcall DRAW_EscMenu() {
     static uint32_t gnEscMenuLastMouseX; D2_STATIC_GUARD_BSS(gnEscMenuLastMouseX, "D2Client::UI::EscMenu::DRAW_EscMenu::gnEscMenuLastMouseX");
     static uint32_t gnEscMenuLastMouseY; D2_STATIC_GUARD_BSS(gnEscMenuLastMouseY, "D2Client::UI::EscMenu::DRAW_EscMenu::gnEscMenuLastMouseY");
 
-    char* pcVar1;
     int nMouseX;
     int nMouseY;
     int nMenuCenterY;
@@ -1230,6 +1286,7 @@ void __stdcall DRAW_EscMenu() {
     uint8_t bItemVisible;
     int32_t nErrorLine;
     int nTotalItemCount;
+    char* pYPosition;
     if (!gpEscMenuItemCount) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x64b);
       exit(-1);
@@ -1240,8 +1297,8 @@ void __stdcall DRAW_EscMenu() {
         exit(-1);
       }
 
-      nMouseX = ui::GetMouseX();
-      nMouseY = ui::GetMouseY();
+      nMouseX = Cursor::GetMouseX();
+      nMouseY = Cursor::GetMouseY();
       nVerticalSpacing = gpEscMenuItemCount->nVerticalSpacing;
       nTotalItemCount = gpEscMenuItemCount->nItemCount;
       nMenuCenterY = ScreenSizeY - 0x50;
@@ -1265,8 +1322,8 @@ void __stdcall DRAW_EscMenu() {
         do {
           bItemVisible = 0;
           nMouseY = pCurrentTable[nItemIndex].nExpansionOnly;
-          pcVar1 = (char*)&pCurrentTable[nItemIndex].nYPosition;
-          memset(pcVar1, 0, 4 * sizeof(pcVar1[0]));
+          pYPosition = (char*)&pCurrentTable[nItemIndex].nYPosition;
+          memset(pYPosition, 0, 4 * sizeof(pYPosition[0]));
           if (!nMouseY || (bIsExpansion = Fog::D2CheckExpansionGame() , pCurrentTable = gpEscMenuCurrentTable , bIsExpansion != 0)) {
             pfnEnableCallback = pCurrentTable[nItemIndex].fpVisibilityCheck;
             if (!pfnEnableCallback || (bIsExpansion = (*pfnEnableCallback)() , pCurrentTable = gpEscMenuCurrentTable , bIsExpansion != 0)) {
@@ -1291,7 +1348,20 @@ void __stdcall DRAW_EscMenu() {
               break;
               case 1:
                 D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(pCurrentTable[nItemIndex].pDC6Main, ScreenSizeX / 2 - 0xe6, nItemBottomY, 0, eDrawMode, -1);
-              D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(gpEscMenuCurrentTable[nItemIndex].pDC6SubImages[gpEscMenuCurrentTable[nItemIndex].nImageIndex], ScreenSizeX / 2 + 0xe6, nItemBottomY, 2, eDrawMode, -1);
+              // [R61 issue #19] sub-image slots can legitimately be NULL on the
+              // first init after a degraded load (empty runtime-attached stop -
+              // the VP Resolution row's stop 2). The old pointer read is also an
+              // unguarded index; clamp it to the slot array either way.
+              {
+                D2EscMenuItemStrc* pDrawItem = &gpEscMenuCurrentTable[nItemIndex];
+                int nDrawIdx = pDrawItem->nImageIndex;
+                if (nDrawIdx < 0 || nDrawIdx > 3) {
+                  nDrawIdx = 0;
+                }
+                if (pDrawItem->pDC6SubImages[nDrawIdx]) {
+                  D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(pDrawItem->pDC6SubImages[nDrawIdx], ScreenSizeX / 2 + 0xe6, nItemBottomY, 2, eDrawMode, -1);
+                }
+              }
               pCurrentTable = gpEscMenuCurrentTable;
               break;
               case 2:
@@ -1328,12 +1398,7 @@ void __stdcall DRAW_EscMenu() {
         return;
       }
 
-      DRAW_RotatingStarPosition = DRAW_RotatingStarPosition + 1 & 0x80000007;
-      if ((int)DRAW_RotatingStarPosition >= 0) {
-        return;
-      }
-
-      DRAW_RotatingStarPosition = (DRAW_RotatingStarPosition - 1 | -8) + 1;
+      DRAW_RotatingStarPosition = (int)(DRAW_RotatingStarPosition + 1) % 8;
       return;
     }
 }

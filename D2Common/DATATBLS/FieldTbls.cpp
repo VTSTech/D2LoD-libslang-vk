@@ -9,7 +9,7 @@
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
-#include "Fog/Archive.h"
+#include "D2Hell/D2Hell.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
@@ -35,6 +35,35 @@
 
 static_assert(sizeof(void*) != 4 || sizeof(::POINT) == 0x8, "D2_NEW_AT(POINT): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
 
+
+static int gaFieldStepDeltaX[9] = {
+    0x0,
+    0x1,
+    0x1,
+    0x1,
+    0x0,
+    -0x1,
+    -0x1,
+    -0x1,
+    0x0
+}; D2_STATIC_GUARD(gaFieldStepDeltaX, "gaFieldStepDeltaX");
+static int gaFieldStepDeltaY[9] = {
+    -0x1,
+    -0x1,
+    0x0,
+    0x1,
+    0x1,
+    0x1,
+    0x0,
+    -0x1,
+    0x0
+}; D2_STATIC_GUARD(gaFieldStepDeltaY, "gaFieldStepDeltaY");
+static void * gpFieldDataTable = 0; D2_STATIC_GUARD(gpFieldDataTable, "gpFieldDataTable");
+static unsigned int gnFieldDataTableWidth = {}; D2_STATIC_GUARD(gnFieldDataTableWidth, "gnFieldDataTableWidth");
+static unsigned int gnFieldDataTableHeight = {}; D2_STATIC_GUARD(gnFieldDataTableHeight, "gnFieldDataTableHeight");
+static int gnFieldDataTableSize = 0; D2_STATIC_GUARD(gnFieldDataTableSize, "gnFieldDataTableSize");
+static unsigned int gnFieldTableHalfWidth = {}; D2_STATIC_GUARD(gnFieldTableHalfWidth, "gnFieldTableHalfWidth");
+static unsigned int gnFieldTableHalfHeight = {}; D2_STATIC_GUARD(gnFieldTableHalfHeight, "gnFieldTableHalfHeight");
 
 namespace D2Common::DATATBLS::FieldTbls {
 
@@ -156,7 +185,6 @@ uint32_t __stdcall FIELDTBLS_GetFieldValueAtCoords(int * pnFieldOrigin, int32_t 
     }
 
     return (uint32_t)*(uint8_t*)((int)gpFieldDataTable + nX + ((nY - pnFieldOrigin[1]) * 0x100 - *pnFieldOrigin));
-    return (uint32_t)*(uint8_t*)((int)gpFieldDataTable + nX + ((nY - pnFieldOrigin[1]) * 0x100 - *pnFieldOrigin));
 }
 
 // Steps one cell through the field towards a target point, adjusting pX/pY
@@ -214,7 +242,7 @@ void __fastcall FIELDTBLS_LoadExpFieldFile(D2PoolManagerStrc * pMemory) {
     uint32_t nFileSize;
     char szFilePath[260];
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szFilePath, "%s\\expfield.d2", "DATA\\GLOBAL");
-    D2ExpFieldFileStrc* pArchive = (D2ExpFieldFileStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMemory, szFilePath, &nFileSize, ".\\DATATBLS\\FieldTbls.cpp", 0x28);
+    D2ExpFieldFileStrc* pArchive = (D2ExpFieldFileStrc*)D2Hell::D2FILE_AllocAndLoadD2File(pMemory, szFilePath, &nFileSize, ".\\DATATBLS\\FieldTbls.cpp", 0x28);
     FIELDTBLS_InitFieldData(pArchive, nFileSize);
 }
 

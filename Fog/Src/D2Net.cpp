@@ -7,6 +7,14 @@
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
+static uint64_t gaServerSentPacketByteCounts[256] = {}; D2_STATIC_GUARD(gaServerSentPacketByteCounts, "gaServerSentPacketByteCounts");
+// also labelled: gnPacketLogWriteOffset0, gnPacketLogWriteOffset1
+static unsigned long long gnSentPacketRawBytes = 0; D2_STATIC_GUARD(gnSentPacketRawBytes, "gnSentPacketRawBytes");
+// also labelled: gnPacketLogWriteOffset2, gnPacketLogWriteOffset3
+static unsigned long long gnSentPacketWireBytes = 0; D2_STATIC_GUARD(gnSentPacketWireBytes, "gnSentPacketWireBytes");
+// also labelled: gdwPacketLogSequenceNum, gnPacketLogSequenceNumHigh
+static unsigned long long gnSentPacketHeaderBytes = 0; D2_STATIC_GUARD(gnSentPacketHeaderBytes, "gnSentPacketHeaderBytes");
+
 namespace Fog::Src::D2Net {
 
 void __stdcall NET_SERVER_SentPacketLog_Clear() {
@@ -99,7 +107,7 @@ size_t __fastcall NET_D2GS_SERVER_CompressPacket(char * pBuffer, size_t nBufferS
 
           nBitsFree = 8;
           pOut = pOutCur + 1;
-          *pOutCur = bVar1 >> ((uint8_t)nNumBits & 0x1f) | byPending;
+          *pOutCur = bVar1 >> D2_SHIFT_COUNT(nNumBits) | byPending;
           byPending = 0;
           pOutCur = pOut;
           nBufferLeft = nRemaining;
@@ -107,7 +115,7 @@ size_t __fastcall NET_D2GS_SERVER_CompressPacket(char * pBuffer, size_t nBufferS
       }
       if (nNumBits) {
         nBitsFree -= nNumBits;
-        byPending |= bVar1 << ((uint8_t)nBitsFree & 0x1f);
+        byPending |= bVar1 << D2_SHIFT_COUNT(nBitsFree);
       }
     } while (nBytesSize);
 
@@ -123,7 +131,7 @@ size_t __fastcall NET_D2GS_SERVER_CompressPacket(char * pBuffer, size_t nBufferS
     return (int)pOut - (int)pBuffer;
 }
 
-uint8_t * __fastcall NET_D2GS_CLIENT_DecompressPacket(char * pBuffer, size_t nBufferSize, char * pBytes, size_t nBytesSize) {
+int32_t __fastcall NET_D2GS_CLIENT_DecompressPacket(char * pBuffer, size_t nBufferSize, char * pBytes, size_t nBytesSize) {
     // Static local variables (originally global data)
     static uint32_t gadwHuffmanBitMasks[16] = {
     0x0,
@@ -155,27 +163,27 @@ uint8_t * __fastcall NET_D2GS_CLIENT_DecompressPacket(char * pBuffer, size_t nBu
         byEntryLen = *pBytes;
         nBitsAvail += -8;
         pBytes++;
-        uBitBuffer |= (uint32_t)byEntryLen << ((uint8_t)nBitsAvail & 0x1f);
+        uBitBuffer |= (uint32_t)byEntryLen << D2_SHIFT_COUNT(nBitsAvail);
       }
 
       byEntryLen = *(uint8_t*)gaHuffmanFastDecodeTable[uBitBuffer >> 0x18];
-      byEntryLen = ((uint8_t*)gaHuffmanFastDecodeTable[uBitBuffer >> 0x18])[(uBitBuffer >> (0x18 - byEntryLen & 0x1f) & gadwHuffmanBitMasks[byEntryLen]) + 1];
+      byEntryLen = ((uint8_t*)gaHuffmanFastDecodeTable[uBitBuffer >> 0x18])[(uBitBuffer >> D2_SHIFT_COUNT(0x18 - byEntryLen) & gadwHuffmanBitMasks[byEntryLen]) + 1];
       byCodeLen = gabHuffmanCodeLengths[byEntryLen];
       nBitsAvail += (uint32_t)byCodeLen;
       if (nBitsAvail > 0x20) {
         break;
       }
       if (!nBufferLeft) {
-        return nullptr;
+        return 0;
       }
 
       *pOut = byEntryLen;
       pOut++;
-      uBitBuffer <<= byCodeLen & 0x1f;
+      uBitBuffer <<= D2_SHIFT_COUNT(byCodeLen);
       nBufferLeft--;
     }
 
-    return pOut - (int)pBuffer;
+    return (int)pOut - (int)pBuffer;
 }
 
 } // namespace Fog::Src::D2Net

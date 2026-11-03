@@ -35,16 +35,16 @@ namespace D2Common::Skills {
 
 // Function declarations
 // Calculates a skill parameter value using Param[6] and Param[7] from SkillsTxt. Formula: (level - 1) * Param[7] + Param[6]. Returns 0 if skill ID or level is invalid.
-int32_t __fastcall SKILLS_CalcSkillParam(eD2Skills eSkill, int32_t nParam);
+int32_t __fastcall SKILLS_CalcSkillParam(eD2Skills eSkill, int32_t nSkillLevel);
 // Returns the passivestate field from D2SkillsTxt for the given skill ID. Returns 0 if invalid or no passive state.
 int __stdcall TXT_Skills_GetPassiveState(int nSkillId);
-int __fastcall SKILLS_Min(int nParam1, int nParam2, uint32_t dwParam3, uint32_t dwParam4);
-int __fastcall SKILLS_Max(int nParam1, int nParam2, uint32_t dwParam3, uint32_t dwParam4);
+int __fastcall SKILLS_Min(int nLeft, int nRight, uint32_t dwParam3, uint32_t dwParam4);
+int __fastcall SKILLS_Max(int nLeft, int nRight, uint32_t nOperand3, uint32_t pContext);
 int * __fastcall SKILLS_RandomRange(int * pnMinVal, int32_t nRange, uint32_t nUnused, int * pnSeed);
 int __fastcall SKILLS_GetMissileSpecialParam(int32_t nParamIndex, uint8_t bParamType, uint32_t nUnused, struct D2UnitStrc * * ppContext);
 int32_t __fastcall SKILLS_GetUnitStatValue(eD2UnitStat eUnitStat, int32_t nShiftCount, uint32_t nUnused, struct D2UnitStrc * * ppContext);
 int __stdcall GetSkillMode(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill);
-int32_t __stdcall SKILLS_GetSkillsTxtField0x14(int * pnParam);
+int32_t __stdcall SKILLS_GetSkillsTxtField0x14(int * pSkill);
 // @sourcefile .\SKILLS\Skills.cpp
 struct D2SkillListStrc * __stdcall STRUCT_CreateSkillsList(struct D2PoolManagerStrc * pMemory);
 struct D2SkillStrc * __stdcall GetNext(struct D2SkillStrc * pSkill);
@@ -57,7 +57,7 @@ struct D2SkillStrc * __fastcall GetSkillByIdAndOwner(struct D2UnitStrc * pUnit, 
 // Thin wrapper around UNIT_GetSkill. Takes (eSkill, pUnit) in fastcall register order and calls UNIT_GetSkill(pUnit, eSkill). Called from 82+ sites including skill spawn, hit calculation, etc.
 struct D2SkillStrc * __fastcall SKILLS_GetSkillByEnum(struct D2UnitStrc * pUnit, eD2Skills eSkill);
 struct D2LightMapStrc * __stdcall SwapLightMap(struct D2UnitStrc * pUnit, struct D2LightMapStrc * pLight);
-uint32_t __stdcall SKILLS_GetUnitField0xa8_0x14(struct D2UnitStrc * pUnit);
+struct D2LightMapStrc * __stdcall SKILLS_GetUnitField0xa8_0x14(struct D2UnitStrc * pUnit);
 // Frees the entire skill list on a unit. Iterates through pFirstSkill linked list, freeing each D2SkillStrc, then frees the D2SkillListStrc itself. Sets pUnit->pSkillsList to NULL. Called by FreeUnit.
 // @sourcefile .\SKILLS\Skills.cpp
 void __stdcall SKILLS_FreeSkillList(struct D2UnitStrc * pUnit);
@@ -77,18 +77,18 @@ int32_t __stdcall GetSkillBonus(struct D2UnitStrc * pUnit, eD2Skills eSkill);
 void __stdcall SetSkillMode(struct D2SkillStrc * pSkill, uint32_t nMode);
 int32_t __stdcall SKILL_GetMode(struct D2SkillStrc * pSkill);
 int __stdcall SKILLS_GetField0x10(struct D2SkillStrc * pSkill);
-void __stdcall SKILLS_SetField0x10(struct D2SkillStrc * pSkill, int32_t dwParam);
+void __stdcall SKILLS_SetField0x10(struct D2SkillStrc * pSkill, int32_t nTargetInfo);
 int __stdcall SKILLS_GetField0x14(struct D2SkillStrc * pSkill);
-void __stdcall SKILLS_SetField0x14(struct D2SkillStrc * pSkill, int32_t dwParam);
+void __stdcall SKILLS_SetField0x14(struct D2SkillStrc * pSkill, int32_t nTargetType);
 void __stdcall SKILLS_ClearFields0x10_0x14(struct D2SkillStrc * pSkill);
 int32_t __stdcall SKILL_GetParam1(struct D2SkillStrc * pSkill);
 int32_t __stdcall SKILL_GetParam2(struct D2SkillStrc * pSkill);
 int32_t __stdcall SKILL_GetParam3(struct D2SkillStrc * pSkill);
 int32_t __stdcall SKILL_GetParam4(struct D2SkillStrc * pSkill);
-void __stdcall SKILL_SetParam1(struct D2SkillStrc * pSkill, int32_t nParam1);
-void __stdcall SKILL_SetParam2(struct D2SkillStrc * pSkill, int32_t nParam2);
-void __stdcall SKILL_SetParam3(struct D2SkillStrc * pSkill, int32_t nParam3);
-void __stdcall SKILL_SetParam4(struct D2SkillStrc * pSkill, int32_t nParam4);
+void __stdcall SKILL_SetParam1(struct D2SkillStrc * pSkill, int32_t nPar1);
+void __stdcall SKILL_SetParam2(struct D2SkillStrc * pSkill, int32_t nPar2);
+void __stdcall SKILL_SetParam3(struct D2SkillStrc * pSkill, int32_t nPar3);
+void __stdcall SKILL_SetParam4(struct D2SkillStrc * pSkill, int32_t nPar4);
 void __stdcall SKILL_SetFlags(struct D2SkillStrc * pSkill, int32_t nFlags);
 int32_t __stdcall SKILL_GetFlags(struct D2SkillStrc * pSkill);
 int32_t __stdcall TXT_Skills_GetReqLevel(eD2Skills eSkill);
@@ -113,18 +113,18 @@ int32_t __fastcall SKILLS_GetValueByLevelBreakpoints(int32_t nLevel, int * pLeve
 int32_t __stdcall SERVER_MinDamage(struct D2UnitStrc * pUnit, int32_t eSkillId, int32_t nSkillLevel, BOOL bApplyMastery);
 int32_t __stdcall SERVER_MaxDamage(struct D2UnitStrc * pUnit, int32_t eSkillId, int32_t nSkillLevel, int32_t bApplyElemBonus);
 // Computes the synergy duration/length bonus for a skill at a given level. Uses the ELevLen breakpoint array (three tiers: levels 1-8, 9-16, 17+) to compute a scaled length offset added to ELen, then optionally evaluates ELenSymPerCalc formula for a percent modifier. Used to calculate e.g. cold duration granted by a synergy skill. Returns 0 if skill or level is invalid.
-int32_t __stdcall SERVER_Synergy1(struct D2UnitStrc * pUnit, int32_t eSkillId, int32_t nSkillLevel, int32_t nUnused);
+int32_t __stdcall SKILLS_GetElementalLength(struct D2UnitStrc * pUnit, int32_t eSkillId, int32_t nSkillLevel, int32_t nUnused);
 int32_t __stdcall SKILLS_GetCharClassFromSkillId(int32_t eSkillId);
 uint32_t __stdcall SKILLS_GetCharClassFromSkillId_Validated(int32_t eSkillId, int * pOutCharClass);
 int32_t __stdcall SKILL_GetQuantity(struct D2SkillStrc * pSkill);
 void __stdcall SKILL_SetQuantity(struct D2SkillStrc * pSkill, int32_t nQuantity);
-uint32_t __stdcall SKILLS_GetAnimModeIndex(int32_t nParam1, int32_t nParam2);
+uint32_t __stdcall SKILLS_GetAnimModeIndex(int32_t nPlayerClass, int32_t nMonMode);
 // Validates that a monster supports a given animation mode, falling back to a supported substitute if not. Checks the monster's MonStats2 byModeFlags bitfield; if the requested mode is unsupported, maps it to a nearby fallback (e.g. modes 5/7→4, 6→3, 9-11→8, 15→2, default→1). Used before playing a skill animation on a monster to avoid unsupported mode crashes.
 int __stdcall SKILLS_ValidateAnimModeForMonster(int32_t eAnimMode, int32_t nMonId);
 // Resolves the visual transform imposed on a unit by its active transformation state (flag 0x08 on eUnitFlagsEx). Iterates the global transform-state list; for each active state with gfxtype==1 (monster form) or gfxtype==2 (player form), writes the target unit type and gfx class to the out-params, and remaps *pAnimMode for cross-type animation compatibility. Returns without writing if no transform state is active or the unit lacks the transform flag.
 void __stdcall SKILLS_GetStateTransformGfx(struct D2UnitStrc * pUnit, eD2UnitType * pUnitType, int * pGfxClass, int * pAnimMode, char * szFile, int32_t nLine);
 // Initialises or advances a skill sequence entry for a unit. Searches the unit's sequence list for the entry matching nSeqId that has not yet been committed (pSeqEntry[0xd] == -1). Derives a position seed from the unit's dynamic path sub-positions (or player-specific fields). If the seed matches the stored seed, advances the sequence frame by 7; otherwise resets both seed and frame to the new value. Writes the resulting frame and constant 0x29A into the unit param array. Halts fatally if no matching sequence entry is found.
-void __stdcall SKILLS_InitSkillSequence(int * pnParam, int32_t bIsPlayerUnit, int32_t nSeqId);
+void __stdcall SKILLS_InitSkillSequence(struct D2UnitStrc * pUnit, int32_t bIsPlayerUnit, int32_t nSeqId);
 int32_t __stdcall SKILLS_GetSkillWeaponClass(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill);
 uint32_t __stdcall SKILLS_CheckMonsterCorpseSelectable(int32_t bCheckDead, struct D2UnitStrc * pUnit);
 uint32_t __stdcall D2CheckIfCorpseIsConsumable(struct D2UnitStrc * pUnit, int32_t bCheckDead);
@@ -134,13 +134,13 @@ uint32_t __stdcall SKILL_CanReviveMonster(struct D2UnitStrc * pUnit);
 int __stdcall SKILLS_IsSelectableCorpse2(struct D2UnitStrc * pUnit);
 int __stdcall SKILLS_IsSelectableCorpse3(struct D2UnitStrc * pUnit);
 // Returns the best matching thrown-weapon bonus value for a unit's equipped throwable item and the given skill. Queries stats 0x159/0x15A/0x15B (min/max/bonus depending on nParam 0/1/2) via STATLIST_GetItemStatBonusValues, then iterates entries to find the highest value whose item type matches pUnit1. Returns 0 if the item is not throwable, the skill has no applicable range-2 throwable type, or nParam is out of range.
-int32_t __stdcall SKILL_GetThrownWeaponBonus(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit1, struct D2SkillStrc * pSkill, int32_t nParam, struct D2UnitStrc * pUnit2);
+int32_t __stdcall SKILL_GetThrownWeaponBonus(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit1, struct D2SkillStrc * pSkill, int32_t nThrowBonusType, struct D2UnitStrc * pUnit2);
 // Returns the highest item-type-specific bonus damage for the caster's active skill against a target item. Checks for a thrown weapon bonus first via SKILL_GetThrownWeaponBonus; if none, queries stat 0x156/0x157/0x158 (min/max/elemental bonus per item type) from the caster's stat list and finds the best matching entry where the item passes IsOfType. nDamageType selects min(0)/max(1)/elemental(2).
 int32_t __stdcall SKILLS_GetItemBonusDamage(struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem, struct D2SkillStrc * pSkill, int32_t nDamageType);
 // SKILLS_HasLineOfSight - Tests line-of-sight between two coordinate pairs by calling Collision::TestCollision. Returns 1 if the path is clear (no collision), 0 if blocked. Used by skill targeting and missile pathing.
-uint32_t __stdcall SKILLS_HasLineOfSight(LONG lParam1, LONG lParam2, LONG lParam3, LONG lParam4, struct D2RoomStrc * pRoom, int32_t eCollisionFlag);
+uint32_t __stdcall SKILLS_HasLineOfSight(LONG nSrcX, LONG nSrcY, LONG nDestX, LONG nDestY, struct D2RoomStrc * pRoom, int32_t eCollisionFlag);
 // SKILLS_HasLineOfSightToUnit - Tests line-of-sight from a coordinate pair to a unit's current position. Gets the unit's position from its path structure and calls Collision::TestCollision. Returns 1 if clear, 0 if blocked.
-uint32_t __stdcall SKILLS_HasLineOfSightToUnit(LONG lParam1, LONG lParam2, struct D2UnitStrc * pUnit, int32_t eCollisionFlag);
+uint32_t __stdcall SKILLS_HasLineOfSightToUnit(LONG nSrcX, LONG nSrcY, struct D2UnitStrc * pUnit, int32_t eCollisionFlag);
 int32_t __stdcall SKILLS_CalculateManaCostShifted(int32_t eSkillId, int32_t nSkillLevel);
 int32_t __stdcall SKILLS_CalculateDamageReduction(int32_t nParam);
 int32_t __fastcall SKILLS_CalculateSynergyValue_Recursive(int32_t nLevel, int32_t nMinVal, int32_t nMaxVal);
@@ -151,7 +151,7 @@ int32_t __stdcall SKILLS_GetParam45WithDiminishing(int32_t nLevel, int32_t nSkil
 // Computes a valid teleport/leap destination for pUnit. Returns 0 immediately if pUnit2 is given and already in melee range. Otherwise derives a target point (pUnit2's position, or the caster's SP1 target if pUnit2 is null), extends 2 tiles past it along the caster->target vector, and validates it: if the cell blocks players (CheckCollision_BlockPlayer_Type) it searches for free coordinates in the room/neighbors (GetFreeCoordinates_WithNeighboorRooms), failing with 0 if none. Then requires line of sight (SKILLS_HasLineOfSight, COLLISION_LOS_WALL) from caster to the point. On success writes the chosen tile to *pnDestX/*pnDestY and returns whether that coordinate is inside town (SKILLS_IsCoordInTown). Returns 0 on any failure. Halts via ErrorManager if the caster has no room.
 uint32_t __stdcall SKILL_FindTeleportPosition(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, uint32_t * pnDestX, uint32_t * pnDestY);
 // Returns the arrow-modifier skill ID active on pUnit (player or monster with bow/xbow): checks UNITSTAT_item_magicarrow and UNITSTAT_item_explosivearrow stats; writes the stat level to *pnParam if provided. Returns 0x1b (Magic Arrow), 0x29 (Explosive Arrow), 0x1f (default), or 0/–1 if no bow or not applicable.
-int __stdcall SKILL_GetArrowModifierSkill(struct D2UnitStrc * pUnit, int * pnParam);
+int __stdcall SKILL_GetArrowModifierSkill(struct D2UnitStrc * pUnit, int * pnStatLevel);
 uint32_t __stdcall SKILLS_CheckSkillFlagBit1(int32_t nSkillId);
 // Strips all progressive (stackable/timed) states from a unit. Iterates sgptDataTable->pAllStatesDataTblFlag0x10 (states with flag 0x10 set), and for each state currently active on pUnit, removes the associated stat list via STATLIST_RemoveAndRecalc + FreeStatList and clears the state via SetState. Returns 1 if the unit type is eligible (ITEMSTATS_CheckItemStatCostFlag200Bit3), 0 otherwise.
 BOOL __stdcall STATES_RemoveAllProgressiveStates(struct D2UnitStrc * pUnit);
@@ -160,26 +160,26 @@ int32_t __stdcall AmountOfSkillsByClassId(uint32_t nClassId);
 int __stdcall SKILL_CalcAttackFrames(struct D2UnitStrc * pUnit);
 int32_t __stdcall SKILL_GetConcentrationDamageBonus(struct D2UnitStrc * pUnit, int32_t nSkillId);
 // Computes the kick (Assassin Dragon Talon etc.) damage range and bonus and accumulates it into the three out-params (min/max/bonus). Reads item_kickdamage stat, temporarily marks the equipped weapon and off-hand weapon item-stats active, then derives base min/max from the equipped boots' ItemsTxt nMinDam/nMaxDam plus strength/dexterity %-bonuses (D2ApplyPercent) and the damagepercent/maxdamage_percent stats. Clamps damage% to >= -90. Server-side; no return value, results written through pnParam1/2/3.
-void __stdcall SKILL_CalcKickDamage(struct D2UnitStrc * pUnit, int * pnParam1, int * pnParam2, int * pnParam3);
+void __stdcall SKILL_CalcKickDamage(struct D2UnitStrc * pUnit, int * pnMinDamage, int * pnMaxDamage, int * pnDamagePercent);
 // Evaluates one skill-description calc code (bParam selects which, 0..0x48) for skill eSkill at level/param nParam, optionally for unit pUnit; returns the computed value. Dispatches a large switch over the calc selector to skill range, mana cost (and shifted variants), to-hit, min/max/synergy damage (>>8 for display scaling), per-element min/max damage and length from the skill's descmissile entries, missile range, unit level/skill-level, aura/passive radii, and the raw skills.txt calc-column fields (auralencalc, calc[0..3], aurarangecalc, aurastatcalc[0..5], passivecalc[0..4], petmax, skpoints). For the raw-field cases it then runs the value through SKILLS_CompileSkillFormula against the skills calc-code blob. Bounds-checks eSkill; returns 0 on invalid skill/missile or out-of-range selector.
-uint32_t __stdcall SKILLDESC_EvalDescCalcValue(struct D2UnitStrc * pUnit, uint8_t bParam, eD2Skills eSkill, uint32_t nParam);
+uint32_t __stdcall SKILLDESC_EvalDescCalcValue(struct D2UnitStrc * pUnit, uint8_t byCalcType, eD2Skills eSkill, uint32_t nSkillLevel);
 uint32_t __fastcall SKILLS_DescCalcCallback_Eval(uint8_t nCalcCode, struct D2SkillCalcContextStrc * pCalcCtx);
-int __fastcall SKILLS_EvalSkillDescCalc_CurrentLevel(eD2Skills eSkill, uint8_t bParam, uint32_t nUnused, struct D2UnitStrc * * ppUnit);
-uint32_t __fastcall SKILLS_EvalSkillDescCalc_Chained(eD2Skills eSkill, uint8_t bParam, uint8_t bCalcIndex, struct D2UnitStrc * * ppUnit);
+int __fastcall SKILLS_EvalSkillDescCalc_CurrentLevel(eD2Skills eSkill, uint8_t byCalcType, uint32_t nUnused, struct D2UnitStrc * * ppUnit);
+uint32_t __fastcall SKILLS_EvalSkillDescCalc_Chained(eD2Skills eSkill, uint8_t byInnerCalcType, uint8_t bCalcIndex, struct D2UnitStrc * * ppUnit);
 int32_t __stdcall D2GetSkillCalc(struct D2UnitStrc * pUnit, int32_t calc, eD2Skills eSkill, int32_t nSkillLvl);
 uint32_t __stdcall SKILLS_EvalDescCalcBytecode(struct D2UnitStrc * pUnit, uint32_t nCalcOffset, eD2Skills eSkillId, int32_t nSkillLevel);
 // Recalculates and applies passive-skill stat bonuses for the given skill on pUnit. If the passive state is not yet set, allocates or retrieves the state stat list and writes all passivestat/passivecalc entries at the current skill level; if the level hasn't changed, returns early. If a conflicting passive aura state exists, removes and frees it instead.
 void __stdcall SKILLS_UpdatePassiveSkillStats(struct D2UnitStrc * pUnit, eD2Skills eSkill);
 void __stdcall SKILLS_UpdateAllPassiveSkills(struct D2UnitStrc * pUnit);
-void __stdcall SKILL_RemoveSkillCallback(struct D2UnitStrc * pUnit, eD2Skills eSkill, char * szSourceFile, int32_t nParam2);
+void __stdcall SKILL_RemoveSkillCallback(struct D2UnitStrc * pUnit, eD2Skills eSkill, char * szSourceFile, int32_t nLine);
 // Grants a skill to a unit. If the unit already owns the skill (pRecord match, nOwnerGUID==-1), increments its level up to the txt-defined max (uncapped for monsters) and refreshes passive stats. Otherwise allocates a new D2SkillStrc from the unit's skill memory pool, sets anim mode (monster vs. player; special-case Druid Left-Hand Swing = 0x10), level=1, and appends it to the skill list. Activates any passive state from the skill txt record.
 // @sourcefile .\SKILLS\Skills.cpp
 struct D2SkillStrc * __stdcall AllocSkill(struct D2UnitStrc * pUnit, eD2Skills eSkill);
-void __stdcall AddSkill(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, int32_t nParam, char * szFile, int32_t nLine);
+void __stdcall AddSkill(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, int32_t bRemoveAtZero, char * szFile, int32_t nLine);
 // Adds or removes an item-granted skill on a player unit's skill list, keyed by (nOwnerGUID, skill record). bRemove!=0: deselects the skill if it is the current left/right/active skill, then unlinks and frees the matching D2SkillStrc node from the player's skill list. bRemove==0: if a matching item-skill node already exists it just updates its level/charges; otherwise allocates a new 0x40-byte D2SkillStrc, sets its anim-derived mode (defaults 10), level, charges, bItemSkill=1, owner GUID, and appends it to the list. No-op for non-player units, level<1, or out-of-range eSkill.
 // @sourcefile .\SKILLS\Skills.cpp
 void __stdcall SKILLS_AddOrRemoveItemSkill(struct D2UnitStrc * pUnit, int32_t nOwnerGUID, eD2Skills eSkill, int32_t nLevel, int32_t nCharges, int32_t bRemove);
-void __stdcall thunk_SKILLS_AddOrRemoveItemSkill(struct D2UnitStrc * pUnit, int32_t nParam1, int32_t nParam2, int32_t nParam3, int32_t nParam4, int32_t nParam5);
+void __stdcall thunk_SKILLS_AddOrRemoveItemSkill(struct D2UnitStrc * pUnit, int32_t nOwnerGUID, int32_t eSkill, int32_t nLevel, int32_t nCharges, int32_t bRemove);
 // Checks whether the unit satisfies a skill's weapon/ammo requirement before the skill can be used. If the skill record has flag 0x10 set it instead checks the skill's nQuantity (charge/ammo count > 0). Otherwise it branches on the skill record's weapon-requirement code: 2 and 4 require an equipped throwable weapon (or its item_throwable stat) in main/alt hand via INVENTORY_GetEquippedWeaponInfo + SKILLS_GetWeaponByHand; 5 requires a melee weapon of ITEMTYPE_Weapon and dual-wield capability. Any other code returns 1 (no requirement). Returns nonzero if the requirement is met, 0 otherwise.
 uint32_t __fastcall SKILLS_HasRequiredWeaponOrQuantity(struct D2SkillStrc * pSkill, struct D2UnitStrc * pUnit);
 // Validates whether pUnit can currently activate pSkill. Returns an error code: 0=ok/can use (via SKILL_IsDelayExpired returning non-zero producing 8), 1=not enough mana or start-mana check failed, 2=no item charges or missing required weapon/quantity, 3=skill record missing or flag2 bit2 clear (not usable), 4=restriction check failed, 5=skill flag bit4 set, 6=skill flag bit5 set, 7=skill level zero. Halts with an internal error if pSkill is null.

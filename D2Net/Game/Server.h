@@ -24,8 +24,8 @@ namespace D2Net::Game::Server {
 int __stdcall CreateThreadClientSocketOrSingleplayer();
 int32_t __fastcall HandleIncomingPacketBuffer(struct D2QServerStrc * pQServer, char * pBytes, size_t nSize);
 // Validates an incoming client packet before dispatch. Returns 3 if buffer empty or size indeterminate, 4 if opcode is out-of-range or packet too large (> 0x204). On success, fills pnPacketSize, pnPacketClass (0=game-phase, 1=pre-game, 2=QServer-token-gated opcodes >= 0x71), and pnTimeoutMs (100 ms). QServer-gated packets additionally checked against the game token via QServer::MatchesGameTokenFilter.
-int32_t __fastcall NET_D2GS_CLIENT_CheckIfPacketSizeIsCorrect(uint8_t * pbPacket, size_t nSize, uint32_t * pnPacketSize, int * pnUnknown, int * pnPacketClass, int * pnTimeoutMs, uint32_t dwArg1, uint32_t dwArg2, uint32_t nParam);
-void __stdcall WaitForEmptyEvent(DWORD dwParam);
+int32_t __fastcall NET_D2GS_CLIENT_CheckIfPacketSizeIsCorrect(uint8_t * pbPacket, size_t nSize, uint32_t * pnPacketSize, int * pnUnknown, int * pnPacketClass, int * pnTimeoutMs, uint32_t dwArg1, uint32_t dwArg2, uint32_t dwClientIpAddress);
+void __stdcall WaitForEmptyEvent(DWORD dwTimeout);
 void __stdcall NET_Thunk_QServerSwapWorkerSlotValue(int nWorkerIndex, int nNewSlotValueOrZero);
 void __stdcall NET_Thunk_QServerAddGameTokenFilter(uint32_t nExpectedMaskedToken, uint32_t nMaskTableIndex);
 void __stdcall NET_SetPlayersCount(int32_t nCount);
@@ -35,7 +35,7 @@ int __stdcall NET_D2GS_SERVER_DequeueModePacket_Mode1(char * pBytes, size_t nSiz
 int32_t __stdcall NET_D2GS_SERVER_DequeueModePacket_Mode0(char * pBytes, size_t nSize);
 int __stdcall NET_D2GS_SERVER_DequeueModePacket_Mode2(char * pBytes, size_t nSize);
 // Low-level server-to-client packet send. In single-player mode, loops the packet back via NET_D2GS_CLIENT_HandleIncomingBufferAndCreatePacket. In multiplayer: skips logging/compression for opcode 0xAF (handshake) or nMode==2; otherwise compresses the packet (up to 1032 bytes) and sends via QServer::SendPacketByClientId with a 1- or 2-byte length prefix. Halts if raw packet exceeds 0x204 bytes.
-int32_t __stdcall NET_D2GS_SERVER_SendPacketToClient(int32_t nMode, int32_t nClientId, char * pBytes, size_t nSize);
+int32_t __stdcall NET_D2GS_SERVER_SendPacketToClient(uint8_t nMode, int32_t nClientId, char * pBytes, size_t nSize);
 void __stdcall NET_QServer_FindIpAddressByClientIdForQServer(int32_t nClientId, char * szIpAddress, int32_t nBufferSize);
 void __stdcall GetIpFromToken(uint32_t nToken);
 void __stdcall SERVER_GetClientSocketByToken(uint32_t nToken);
@@ -49,8 +49,8 @@ void __stdcall NET_Thunk_QServerSetHacklistAddLineHook(fpD2QServerLineHook pfnHo
 void __stdcall NET_SetQServerCallbackFunction(void * pfnCallback);
 void __stdcall AssignClientToToken(int32_t nClientId, uint32_t nToken);
 uint32_t __stdcall QSERVER_GetClientGameToken(uint32_t nClientId);
-void __fastcall NET_SendPacketWithFlags(char * szText, uint16_t nParam, int32_t nFlags);
-uint32_t __fastcall NET_SendPacketToClient(char * szText, uint16_t nParam);
+void __fastcall NET_SendPacketWithFlags(char * szText, uint16_t nSize, int32_t nFlags);
+uint32_t __fastcall NET_SendPacketToClient(char * szText, uint16_t nSize);
 void __stdcall NET_WaitForEmptyEvent(DWORD dwTimeout);
 void __stdcall _NullSub();
 // @wasnamed _NullSub - one name on two different functions.

@@ -47,14 +47,14 @@ BOOL __stdcall CHATDLG_OnPressUserListPrevLine(struct D2ControlMsg * pControlMsg
 // Provenance: asm 0043da30 (RET 4); fpOnPressCallback of form record 0070d0f0 (FORM_Button), created in CHATDLG_CreateAllForms at 0043fd15.
 BOOL __stdcall CHATDLG_OnPressUserListNextLine(struct D2ControlMsg * pControlMsg);
 // @sourcefile .\Src\ChatDlg.cpp
-void CHATDLG_FreeChatMsgNode(void * * pParam);
+void CHATDLG_FreeChatMsgNode(void * * pChatNode);
 // @sourcefile .\Src\ChatDlg.cpp
 void __stdcall CHATDLG_ProcessPendingMessages();
 void __fastcall CHATDLG_DisplayTimestampedMessage(uint32_t nUnixTime, int32_t pszMessage);
 // @sourcefile .\Src\ChatDlg.cpp
 void __stdcall CHATDLG_EnqueueClearMessage();
-int __fastcall CHATDLG_AppendTextToTextBox(uint16_t * wszText, int32_t nParam);
-uint32_t __fastcall CHATDLG_AppendTextToTextBox_ForComCallback(uint16_t * wszText, int32_t nParam);
+int __fastcall CHATDLG_AppendTextToTextBox(uint16_t * wszText, int32_t nLineStyle);
+uint32_t __fastcall CHATDLG_AppendTextToTextBox_ForComCallback(uint16_t * wszText, int32_t nLineStyle);
 int __fastcall FORMS_DisplayBattleNetNews(uint16_t * wszText);
 // Shows gpCtlChannelOkButton only while gpCtlChannelNameEditBox holds a non-empty name: D2WINMAIN_SetControlVisible(gpCtlChannelOkButton, name non-empty). Run by that edit box's change callback and once at the end of OOGUTIL_OpenChannelDialog.
 // Provenance: asm 0043e660..0043e6b6; change callback installed at 00441097, tail jump at 004411d7.
@@ -74,7 +74,7 @@ int __stdcall CHATDLG_UpdateButtonVisibility();
 // Stores the ladder filter byte (0070cd62) = nFilterMode and the selected rank (0070cd7c) = nRank.
 // Provenance: asm 0043ec50..0043ec5c; unreferenced in 1.14d.
 void __fastcall CHATDLG_SetLadderFilterAndRank(uint8_t nFilterMode, int nRank);
-void __fastcall CHATDLG_RequestLadderRank(char * szText, int32_t nParam, int32_t nLadderRequestMode);
+void __fastcall CHATDLG_RequestLadderRank(char * szText, int32_t bHardcore, int32_t nLadderRequestMode);
 // Scrolls the ladder board up one page: selected rank (0070cd7c) -= gnLadderScrollPageSize, clamped at 0; restores the filter byte 0070cd62 from 0070cd63; returns 1.
 // Provenance: asm 0043ece0 (RET 4); only pointer is the OnPress field of form 0070e610.
 BOOL __stdcall CHATDLG_OnPressLadderPageUp(struct D2ControlMsg * pControlMsg);

@@ -70,6 +70,39 @@ int __stdcall VPRES_GetWideUiOffsetX();
 // or change gnPanelOffsetY (-60) - double-shifting is the failure mode.
 int __stdcall VPRES_GetWideUiOffsetY();
 
+// [vanilla-plus no-panel-shift] (issue #26 / R95) d2vp.ini next to d2.exe,
+// [features] no_panel_shift=0|1 - retail slides the whole game world a
+// quarter screen sideways when exactly one panel (character screen /
+// inventory) is open, so the action re-centers in the uncovered strip
+// (both panels open = no slide). That retail assumption is exact only when
+// the open panel reaches the screen edge (640x480/800x600); at the wide
+// stops (1280x720 / 1344x700) the 800-class UI floats 240 px inboard, the
+// slide drags world out from under the visible outer margins, and every
+// margin artifact of issue #26 lives on that panned path (the perspective
+// projection anchors on the player and expands from the screen center, so
+// the pan rides half a dozen independent channels: MouseYRelatedB, the
+// pView walk rect, the four roof/floor light-grid half-screen adjusts, the
+// weather clip switches, the automap border offset and the renderer
+// quarter offsets). no_panel_shift=1 renders the world exactly like the
+// field-proven both-panels-open case (no slide, full unpanned view rect)
+// on the wide stops and lets the panel float over it; retail 640x480 /
+// 800x600 always keeps the vanilla slide. Default/missing/garbage = 0 =
+// vanilla slide (charter rule 1). Hot-reads at most every 2 s like every
+// gate.
+BOOL __stdcall PANELSHIFT_NoShiftWorld();
+// Split-side neutralizer for the world-draw call sites: returns 0 (= border
+// none: full-width walk rect, zero world pan, zero renderer offset - the
+// renderers receive 0 and take their own border-0 full-screen path) for
+// border 1/2 while PANELSHIFT_NoShiftWorld() is active, else eBorderType
+// unchanged. Border 3 passes through - it already renders unpanned. World
+// culling and clipping only: UI/interaction consumers (panel click rects,
+// label culls, selection guards) keep reading the real border type.
+// R100: the unit-sprite draw path routes its real-border read through this
+// too - the Ghidra-1864+ retail bodies hand-pan sprites/shadows/selection
+// rings/hover text +/-quarter in the perspective branch and must follow the
+// border-0 camera whenever the world does (no_panel_shift=1).
+uint32_t __stdcall PANELSHIFT_BorderForWorld(uint32_t eBorderType);
+
 // [vanilla-plus alt-toggle] Config-gated Alt-key ground-item-label toggle
 // (D2R "Show Items: Toggle" parity). d2vp.ini next to d2.exe:
 //   [features]
@@ -161,3 +194,55 @@ void __stdcall D2VP_ConfigReloaded();                     // bust all 2 s gate c
 // table rows). Halts loudly with a d2boot.log line when a merge dropped an
 // edit - see docs/merge-upstream.md. Cheap; called from ALTTOGGLE_EnsureIni.
 void __stdcall VANILLAPLUS_SelfCheck();
+// [vanilla-plus shared-stash] Client side of the shared stash (track N
+// round 1 = one page; two shared pages + an outlined pager label since R75,
+// TEN shared pages since R82; server half lives in
+// D2Game/PLAYER/VanillaPlusStash.cpp).
+// d2vp.ini next to d2.exe, [features] shared_stash=0|1 - default/missing
+// file/missing key/garbage = 0 = vanilla byte-for-byte (no tab pixels, no
+// clicks, no state). While on, the stash panel gains an OUTLINED "Shared"
+// text tab (top-right, no hotkey by owner decision): clicking the word
+// flips the visible stash page by sending the C->S 0x4F Click-Button packet
+// with the out-of-retail-range button id 0x7D and the ABSOLUTE desired page
+// in the param word (0 personal, 1..10 shared pages 1..10); the <
+// and > arrows beside the word step one page at a time. The server
+// materializes the requested shared page into the retail stash grid
+// (page 4) - every retail stash flow keeps working - and borrows the
+// goldbank stat for the shared gold pool while a shared page is active, so
+// the retail deposit/withdraw gold buttons move shared gold untouched. The
+// save flush (PlayerSave::SaveGameAllGameTypes VP site) parks all ten shared
+// pages into _d2vp_shared.sss (v2 format; pre-R82 two-page and pre-R75
+// one-page files read back - the pages the file doesn't carry start empty)
+// and restores the personal page + personal gold before any .d2s is built
+// (I1: character saves stay retail-pure).
+BOOL __stdcall VPSHAREDUI_FeatureActive();   // config: shared_stash on?
+int __stdcall VPSHAREDUI_IsSharedPage();     // client mirror: 0 personal, 1..10 = shared page on screen
+void __stdcall VPSHAREDUI_ResetForNewGame(); // entering a game starts personal
+// Hit-test + pager for the tab composite (word + < > arrows). TRUE = the
+// click hit an element whose target differs from the current page: the
+// mirror is updated, the 0x4F/0x7D toggle is sent with the desired page,
+// and the caller must swallow the message (VP site in
+// INV_HandleStashLeftClick). FALSE = miss or no-op - retail proceeds.
+BOOL __stdcall VPSHAREDUI_HandleStashClick(int nMouseX, int nMouseY);
+// Per-frame tab draw (VP site in Inv.cpp's stash draw branch, right after
+// the gold-button draw). Draws the outlined word + pager arrows; draws
+// nothing when the gate is off.
+void __stdcall VPSHAREDUI_DrawTab();
+
+// [vanilla-plus nointro] R86: the -nointro command-line switch. Opt-out by
+// launcher argument (not d2vp.ini - it only means something when the user
+// passes it), parsed ONCE per process from GetCommandLineA(): a
+// whitespace-separated token exactly "-nointro" (case-insensitive; tokens
+// of 32+ bytes can never match) sets the flag, anything else leaves the
+// vanilla boot untouched. First query writes one [d2boot] mark so the field
+// log pins the switch. Consumers: the two boot/title cutscene entries in
+// D2Launch/MainMenus.cpp (PlaysBlizzardNorthCutScene and
+// UIMENU_PlayIntroAndReturnToMainScreen) read this and, when it is set,
+// never enter BeginCutSceneAtResolutionMode0 - the retail begin-failed
+// fallthrough each site already has (no cutscene, straight to the next
+// screen) becomes the boot path, which skips the Blizzard + Blizzard North
+// logo .biks, the first-run D2/LoD intro .bik and the title-screen
+// (click/timer) d2intro .bik. In-game quest cutscenes use a different call
+// path and are NOT affected. Returns 0 without the switch: vanilla
+// byte-for-byte.
+BOOL __stdcall VPNOINTRO_IsRequested();

@@ -14,11 +14,10 @@
 #include "Fog/Src/AsyncData.h"
 #include "Fog/Src/LogManager.h"
 #include "Fog/Src/Safesock.h"
-#include "Storm/SMem.h"
 #include "Storm/Source/SErr.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
-#include "Storm/_unnamespaced.h"
 #include "support/d2_trace.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
@@ -30,6 +29,21 @@
 #define RECON_FPTD_pfnEHHandlerRoutine
 typedef _EXCEPTION_DISPOSITION (*pfnEHHandlerRoutine)(EHExceptionRecord * pExceptionRecord, EHRegistrationNode * pRegistrationNode, _CONTEXT * pContext, void * pDispatcherContext);
 #endif
+
+static char * gaErrorTypeNames[12] = {
+    s_No_Error_006ccbc8,
+    s_Unknown_Error_006ccbb8,
+    s_Out_of_Memory_Error_006ccba4,
+    s_File_Read_Error_006ccb94,
+    s_File_Write_Error_006ccb80,
+    s_Assertion_Failure_006ccb6c,
+    s_Halt_006ccb64,
+    s_Warning_006ccb5c,
+    s_Missing_Dll_006ccb50,
+    s_Registry_Error_006ccb40,
+    s_Deadlock_006ccb34,
+    (char*)0x006ccb30
+}; D2_STATIC_GUARD(gaErrorTypeNames, "gaErrorTypeNames");
 
 namespace Fog::Src::ErrorManager {
 
@@ -87,7 +101,7 @@ uint8_t __fastcall GetModuleFileNameForProcess(DWORD nProcessId, LPSTR szText, D
 }
 
 // Writes process metadata to crash report: application name, inspector tags, admin status via AllocateAndInitializeSid (SECURITY_BUILTIN_DOMAIN_RID + DOMAIN_ALIAS_RID_ADMINS), process/parent/grandparent paths, game/system locale from gaLocaleCodeStrings, and attaches log files (21 slots from InitLogFilePathPointers). Locale lookup uses MISC_GetLanguageCode and STRTABLE_GetRegistryLanguage.
-void __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
+bool __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
     // Static local variables (originally global data)
     static char * gaLanguageNames[15] = {
     s_English_006cc81c,
@@ -114,7 +128,7 @@ void __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
     _SID_IDENTIFIER_AUTHORITY sNtAuthority;
     bool bVar1 = _3rdparty::crashy::IsOpen(pReport);
     if (!bVar1) {
-      return;
+      return false;
     }
 
     _3rdparty::crashy::Printf(pReport, "<Application>%s\n", g_szApplicationName);
@@ -202,6 +216,8 @@ void __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
 
       nLogIdx++;
     } while (nLogIdx < 0x15);
+
+    return true;
 }
 
 void __stdcall InitializeSystemInfo() {
@@ -226,7 +242,7 @@ void __stdcall InitializeSystemInfo() {
         fMajorVersionF += 4.2949673e+09;
       }
 
-      fGameVersion = (int)(fMajorVersionF + fMinorVersionFrac / 100.0);
+      fGameVersion = fMajorVersionF + fMinorVersionFrac / 100.0;
       if (osVersionInfo.dwPlatformId != 2) {
         g_eOSType = 0;
       } else {
@@ -264,11 +280,13 @@ void EXIT_AtExit() {
     /* LPCRITICAL_SECTION lpCriticalSection for DeleteCriticalSection */ DeleteCriticalSection(&lpCriticalSection_0074d848);
 }
 
-void __stdcall StubHook1() {
+// Registers: dwThreadId (ECX) and hThread (EDX) are passed by the callers but not read.
+void __fastcall StubHook1(uint32_t dwThreadId, HANDLE hThread) {
 
 }
 
-void __stdcall StubHook2() {
+// Registers: nReserved (ECX) is 0 at every call site and not read.
+void __fastcall StubHook2(int32_t nReserved) {
 
 }
 
@@ -302,13 +320,13 @@ char * __fastcall StripPathPrefixToRelative(char * szText) {
     }
 
     pResult = Storm::Source::SSTR::SStrLen(szText);
-    char* pcVar1 = szText + g_nPathStripOffset;
+    char* pszResult = szText + g_nPathStripOffset;
     if (pResult > g_nPathStripOffset) {
-      return pcVar1;
+      return pszResult;
     }
 
-    pcVar1 = szText;
-    return pcVar1;
+    pszResult = szText;
+    return pszResult;
 }
 
 // Returns the caller's return address, i.e. the instruction pointer of the call site. Body is MOV EAX,[ESP]; RET - it reads the return address off the stack and returns it. Takes NO arguments: the RET (not RET 4) leaves the caller's stack untouched, and the DWORD after the call is the __LINE__ value the caller pushed for the assert/halt call that follows. Fog ordinal #10265 @ RVA 0x8090.
@@ -335,9 +353,8 @@ static void __stdcall FormatDebugOutput(uint8_t bFlags, va_list vaArgs, char * s
       snprintf(szOutputBuffer, 0x1000, "%02d:%02d:%02d.%03d    ", (uint32_t)sLocalTime.wHour, (uint32_t)sLocalTime.wMinute, (uint32_t)sLocalTime.wSecond, (uint32_t)sLocalTime.wMilliseconds);
     }
 
-    char* pScan = szOutputBuffer;
-    pScan = pScan + strlen(pScan) + 1;
-    vsnprintf(szOutputBuffer + ((int)pScan - (int)(szOutputBuffer + 1)), 0x1000 - ((int)pScan - (int)(szOutputBuffer + 1)), szText, vaArgs);
+    int nLen = (int)strlen(szOutputBuffer);
+    vsnprintf(szOutputBuffer + nLen, 0x1000 - nLen, szText, vaArgs);
     szOutputBuffer[0xfff] = '\0';
     if (!(bFlags & 2)) {
       /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA(szOutputBuffer);
@@ -353,13 +370,13 @@ static void __stdcall FormatDebugOutput(uint8_t bFlags, va_list vaArgs, char * s
 void OutputDebugStringSimple(char * szText, ...) {
     va_list __va;
     va_start(__va, szText);
-    char szBuffer[4095];
+    char szBuffer[4096];
     char cCurrent;
     char* pScan = szBuffer;
     szBuffer[0] = '\0';
     pScan = pScan + strlen(pScan) + 1;
     vsnprintf(szBuffer + ((int)pScan - (int)(szBuffer + 1)), 0x1000 - ((int)pScan - (int)(szBuffer + 1)), szText, __va);
-    uint8_t cNull = 0;
+    /* LPCSTR lpOutputString for OutputDebugStringA */ szBuffer[0xfff] = '\0';
     OutputDebugStringA(szBuffer);
 }
 
@@ -367,8 +384,7 @@ void OutputDebugStringIfCapsLock(char * szText, ...) {
     va_list __va;
     va_start(__va, szText);
     char* pScan;
-    char szBuffer[4095];
-    uint8_t cNull;
+    char szBuffer[4096];
     char cCurrent;
     uint16_t wKeyState = GetAsyncKeyState(0x14);
     if (wKeyState & 1) {
@@ -376,7 +392,7 @@ void OutputDebugStringIfCapsLock(char * szText, ...) {
       szBuffer[0] = '\0';
       pScan = pScan + strlen(pScan) + 1;
       vsnprintf(szBuffer + ((int)pScan - (int)(szBuffer + 1)), 0x1000 - ((int)pScan - (int)(szBuffer + 1)), szText, __va);
-      /* LPCSTR lpOutputString for OutputDebugStringA */ cNull = 0;
+      /* LPCSTR lpOutputString for OutputDebugStringA */ szBuffer[0xfff] = '\0';
       OutputDebugStringA(szBuffer);
     }
 }
@@ -552,7 +568,7 @@ void __fastcall CRASH_FillupCrashTxt(char * szSummary, char * szReason, char * *
       if (iVar1 != '\0') {
         WriteCrashReportProcessInfo(&crashFile);
         _3rdparty::crashy::Printf(&crashFile, "<Inspector.Summary:>\n%s\n<:Inspector.Summary>\n", szSummary, nAttachIndex);
-        if (nLineNumber) {
+        if (nLineNumber > 0) {
           _3rdparty::crashy::Printf(&crashFile, "<Inspector.LineNumber>%u\n", nLineNumber);
         }
 
@@ -629,7 +645,7 @@ void FOG_ErrorHandler(eFOG_ErrorType eErrorType, char * szFile, int32_t nLine, c
     char szFormattedReasonBuffer[4096];
     uint32_t local_8;
     bool bIsFatalErrorType;
-    uint32_t uVar1;
+    uint32_t bDebuggerPresent;
     int32_t nLineSaved;
     if (eErrorType == ERROR_Deadlock) {
       szFile = ".\\Src\\ErrorManager.cpp";
@@ -648,8 +664,8 @@ void FOG_ErrorHandler(eFOG_ErrorType eErrorType, char * szFile, int32_t nLine, c
         bIsFatalErrorType = true;
       }
 
-      uVar1 = _3rdparty::crashy::isDebuggerPresent();
-      if ((char)uVar1 == '\0') {
+      bDebuggerPresent = _3rdparty::crashy::isDebuggerPresent();
+      if ((char)bDebuggerPresent == '\0') {
         Storm::Source::SSTR::SStrPrintf(szFormattedReasonBuffer, 0x1000, szReasonFormat, __va);
         nLineSaved = nLine;
         szRelativeFile = StripPathPrefixToRelative(szFile);
@@ -706,7 +722,8 @@ void ERROR_UnrecoverableInternalError_Any(eFOG_ErrorType eErrorType, uint32_t dw
 }
 
 // Displays an unrecoverable error message box and logs to file. Formats the error message via vsnprintf with varargs, optionally prepends file/line info if provided, constructs a "Diablo II Error" title, and shows MessageBoxA with MB_ICONEXCLAMATION. Logs the full error message to the error log before displaying. Uses three buffers: 4096 bytes for vsnprintf formatting, 4096 bytes for final message (with file/line), and 256 bytes for the title string.
-void __stdcall ShowUnrecoverableErrorDialog(int32_t nParam, char * szText, int nLine, char * szSourceFile, va_list vaArgs, DWORD dwParam) {
+// EDI is not an argument: saved at 00408b40 PUSH EDI, then loaded from [EBP+0xc].
+void __fastcall ShowUnrecoverableErrorDialog(int32_t eErrorType, char * szText, int nLine, char * szSourceFile, va_list vaArgs) {
     char* szRelativePath2;
     char* pScan;
     char szMessageBoxBuffer[4096];
@@ -716,15 +733,14 @@ void __stdcall ShowUnrecoverableErrorDialog(int32_t nParam, char * szText, int n
     int nCopyIdx;
     if (szText) {
       nCopyIdx = nLine;
-      pScan = StripPathPrefixToRelative(szText);
-      Storm::Source::SSTR::SStrPrintf(szFormattedMessageBuffer, 0x1000, "--------  FILE: %s    LINE: %d  --------\n\n", pScan, nCopyIdx);
+      Storm::Source::SSTR::SStrPrintf(szFormattedMessageBuffer, 0x1000, "--------  FILE: %s    LINE: %d  --------\n\n", StripPathPrefixToRelative(szText), nCopyIdx);
       LogManager::LogWithCategory("", "%s", szFormattedMessageBuffer);
     }
     if (!szSourceFile) {
       void* pszRelative3;
       pszRelative3 = GetInstructionPointer();
       Safesock::WSACleanup();
-      FOG_ErrorHandler(ERROR_Halt, "", 0x8de, "Unrecoverable internal error %08x", pszRelative3, dwParam);
+      FOG_ErrorHandler(ERROR_Halt, "", 0x8de, "Unrecoverable internal error %08x", pszRelative3);
       LogManager::ExitOrCrashCleanUpJmp();
       exit(-1);
     }
@@ -734,7 +750,7 @@ void __stdcall ShowUnrecoverableErrorDialog(int32_t nParam, char * szText, int n
     if (szText) {
       pScan = szFormattedMessageBuffer;
       szRelativePath2 = StripPathPrefixToRelative(szText);
-      Storm::Source::SSTR::SStrPrintf(szFinalErrorMessage, 0x1000, "%s\nLocation : %s, line #%d\nExpression : %s", gaErrorTypeNames[nParam], szRelativePath2, nLine, pScan);
+      Storm::Source::SSTR::SStrPrintf(szFinalErrorMessage, 0x1000, "%s\nLocation : %s, line #%d\nExpression : %s", gaErrorTypeNames[eErrorType], szRelativePath2, nLine, pScan);
     } else {
       nCopyIdx = 0;
       do {
@@ -4863,10 +4879,10 @@ void __fastcall ERRORMANAGER_InitErrorManager(char * dwUnused1, char * szText, B
     static int gbFogErrorManagerPadding; D2_STATIC_GUARD_BSS(gbFogErrorManagerPadding, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gbFogErrorManagerPadding");
     static uint64_t gFogMemoryPoolPadding = 0; D2_STATIC_GUARD(gFogMemoryPoolPadding, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gFogMemoryPoolPadding");
 
-    // Frame slots -4108..-8 are ONE object: &local_100c is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -4108..-8 are ONE object: &bTraceUnfreedMemory is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
-      int32_t local_100c;
+      int32_t bTraceUnfreedMemory;
       char szPathBuffer[4096];
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 4100, "frame group __frame0_t must reproduce the Ghidra frame layout");
@@ -4906,14 +4922,14 @@ void __fastcall ERRORMANAGER_InitErrorManager(char * dwUnused1, char * szText, B
       /* LPCRITICAL_SECTION lpCriticalSection for InitializeCriticalSection */ InitializeCriticalSection(&lpCriticalSection_0074d848);
       gbFogErrorManagerInitialized = 1;
       LogManager::InitHighResTimer();
-      __frame0.local_100c = 0;
-      Storm::Source::SReg::SRegLoadValue("Diablo II", "TraceUnfreedMemory", 0, &__frame0.local_100c);
-      *(uint32_t*)(char*)&gFogMemoryPoolPadding = __frame0.local_100c;
-      Memory::InitializePoolSystem(nullptr, "Global Pool System", 0x40000);
+      __frame0.bTraceUnfreedMemory = 0;
+      Storm::Source::SReg::SRegLoadValue("Diablo II", "TraceUnfreedMemory", 0, &__frame0.bTraceUnfreedMemory);
+      *(uint32_t*)(char*)&gFogMemoryPoolPadding = __frame0.bTraceUnfreedMemory;
+      Memory::InitializePoolSystem(nullptr, "Global Pool System", 0x40000, 0x8000);
       SMem::SMemInitPerfCounters();
       iBitIdx = 0;
       do {
-        uCookie = 1 << ((uint8_t)iBitIdx & 0x1f);
+        uCookie = 1 << D2_SHIFT_COUNT(iBitIdx);
         if (gadwBitMasks[iBitIdx] != uCookie) {
           nBadAddr = GetInstructionPointer();
           Safesock::WSACleanup();

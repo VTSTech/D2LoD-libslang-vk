@@ -19,10 +19,7 @@ typedef uint32_t eD2LevelId;
 
 // Data types
 struct D2CharItemStrc {
-    D2CharItemStrc() = default;
-    D2CharItemStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2CharItemStrc(int a0, char a1, char a2) : dwItemCode(a0), nBodyLoc(a1), nItemCount(a2) {}
 
     /* 0x00 */ int dwItemCode;
     /* 0x04 */ char nBodyLoc;
@@ -50,19 +47,18 @@ namespace D2Game::PLAYER::Player {
 void __fastcall PLAYER_AllocPlayerInteractedArray(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __fastcall PLAYERDATA_FreeInteractions(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __fastcall STRUCT_FillPlayerUnit(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t dwUnitGUID);
-void PLAYER_FreeAllCorpseUnits(int32_t nParam, ::SGAMEDATA * pGame);
 // Tears down all server-side state for a departing player unit: frees pets, removes from party, frees combat/player-list data, destroys all corpse units in the player's inventory, frees inventory items and inventory struct, releases arena slot, frees interaction state, player data, hover-text, and all event timers.
 void __fastcall PLAYER_FreeAllResources(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __fastcall FreePlayers(::SGAMEDATA * pGame);
 void __fastcall PLAYER_ClearTargetIfMatch(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTargetUnit);
 void __fastcall PLAYER_MoveToLocationWithTimeout(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nTargetX, int32_t nTargetY);
-uint32_t __stdcall PLAYER_PlaceItemInBelt(::SGAMEDATA * pGame, int32_t nParam, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
+uint32_t __stdcall PLAYER_PlaceItemInBelt(::SGAMEDATA * pGame, int32_t bAutoPlace, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 // Server-side: grants a class's starting equipment loop from a starter-item template entry (pnParam: item code, body-loc, count byte at +5). For each of count copies it creates the item (PLAYER_CreateRewardItemFromTemplate), flags it ITEMFLAG_BEGINNER and sets its body-loc. Beltable items go to the belt (ITEM_TryPlaceInBelt, fallback to inventory). Non-beltable: if a body-loc is set it equips (PLAYER_EquipItemToBodyLoc, fallback inventory) else places in inventory; then seeds durability (or quantity 250 / charges 100 for bow-quiver ammo). Used during new-character creation. No return value.
-void __fastcall PLAYER_CreateStarterItems(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t eClassId, int32_t nDifficulty, uint32_t * pnParam);
+void __fastcall PLAYER_CreateStarterItems(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t eClassId, int32_t nDifficulty, uint32_t * pCharItem);
 void __fastcall PLAYER_CreateAllStarterItems(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame, uint8_t byAct);
 void __fastcall PLAYER_SendAllItemsToClient(struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient);
 int32_t __fastcall GetPlayerTradeTickOrBusy(struct D2UnitStrc * pPlayer);
-void __fastcall PLAYER_ClearTradeTick(struct D2UnitStrc * pUnit);
+void __fastcall PLAYER_ClearCutsceneFlag(struct D2UnitStrc * pUnit);
 void __fastcall PLAYER_EndInteraction(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // Ends the player's active interaction with any unit type (player trade, NPC, object, or Horadric Cube item). Dispatches to the appropriate close handler per unit type, then sends packet 0x62 (MakeUnitTargetable) to notify the client the interaction has ended.
 // @sourcefile .\PLAYER\Player.cpp
@@ -98,8 +94,8 @@ DWORD __fastcall PLAYER_CountPlayersWithFilter2(::SGAMEDATA * pGame, struct D2Un
 // Returns the weapon unit the player should use when casting the current skill, respecting dual-wield and weapon-switch rules. For non-dual-wield classes returns the equipped primary weapon. For dual-wield capable classes dispatches on SkillsTxt.weapsel: 2=off-hand preference with main-hand fallback if no valid off-hand, 3=switch-state dependent (reads nSeqFrame weapon-switch bit), 4=no weapon (returns null), default/1=primary then off-hand fallback. Returns the equipped default if the resolved weapon is broken or disabled.
 struct D2UnitStrc * __fastcall PLAYER_GetActiveWeaponForSkill(struct D2UnitStrc * pUnit);
 // Recalculates active stat-list flags for dual-wield weapon slots on pUnit. If nParam is non-zero, deactivates stat lists for currently equipped and primary weapons (cleanup pass). Then, if the unit can dual-wield, activates the correct weapon's stat list based on the active-weapon-for-skill selection: primary-only, swap-only, or the dual-wield split. Uses STATLIST_SetItemStatActive(1=active, 0=inactive).
-void __fastcall EQUIPMENT_RecalcDualWieldWeaponStats(struct D2UnitStrc * pUnit, int32_t nParam);
-void __fastcall WEAPON_ApplyEquippedWeaponStats(struct D2UnitStrc * pUnit, int32_t nParam);
-// 6 internal functions (defined in .cpp)
+void __fastcall EQUIPMENT_RecalcDualWieldWeaponStats(struct D2UnitStrc * pUnit, int32_t bResetWeaponStats);
+void __fastcall WEAPON_ApplyEquippedWeaponStats(struct D2UnitStrc * pUnit, int32_t bResetWeaponStats);
+// 7 internal functions (defined in .cpp)
 
 } // namespace D2Game::PLAYER::Player

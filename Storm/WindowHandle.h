@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "Storm/Source/SSystem.h"
+#include "Storm/Source/SFile.h"
 
 // Forward declarations
 struct D2StormListHead;
@@ -31,8 +31,8 @@ HWND __stdcall WND_GetActiveWindow();
 // @blizzard SMsgPopRegisterState (SMSG.CPP)
 int __stdcall SMsgPopRegisterState(char * szText);
 // @blizzard SMsgPushRegisterState (SMSG.CPP)
-uint32_t __stdcall SMsgPushRegisterState(uint32_t nParam);
-uint32_t __stdcall WND_SetActiveWindow(uint32_t dwParam);
+uint32_t __stdcall SMsgPushRegisterState(uint32_t nSubId);
+uint32_t __stdcall WND_SetActiveWindow(uint32_t pWindow);
 uint32_t __thiscall WND_ResolveListOffset(int * pNode, int * pBase);
 int32_t __thiscall WND_GetNodeOrDefault(int32_t pThis, int32_t pNode);
 void __thiscall WND_InsertListNode(int * * ppList, int * * pNode, int32_t nMode, int * * ppAnchor);
@@ -66,12 +66,15 @@ void __stdcall SMsgUnregisterKeyDown(uint32_t hWnd, char * szText1, char * szTex
 void __stdcall SMsgUnregisterKeyUp(uint32_t hWnd, char * szText1, char * szText2);
 // @blizzard SMsgUnregisterMessage (SMSG.CPP)
 void __stdcall SMsgUnregisterMessage(uint32_t hWnd, char * szText1, char * szText2);
-LRESULT __stdcall WndProcC(HWND hWnd, uint32_t nParam1, uint32_t nParam2, LPARAM lParam);
+// Storm's registered window procedure; dispatches through SMsgDispatchMessage.
+// Name from the PowerPC 1.13c Storm traceback table (GenericWndProc @10026f30).
+LRESULT __stdcall GenericWndProc(HWND hWnd, uint32_t nMsg, uint32_t nWParam, LPARAM lParam);
 uint8_t * __stdcall WND_GetWndProc(int32_t nResourceId);
 uint32_t __thiscall WND_ByteBuffer_HasRoom(int32_t pThis, int32_t nAddBytes);
 int32_t __thiscall WND_EntryArray_AllocNext(int32_t pThis, int * pnCount);
 void __thiscall WND_EntryArray_FreeEntries(int32_t pThis, int32_t nFreeCount);
 int32_t __thiscall WND_EntryArray_AllocOrReuse(int32_t pThis, int32_t pReuseEntry, int32_t bAllocNew);
+void StaticInit_gWndTrackingList();
 // Runs at exit: removes every element from the tracked window list, then unlinks the list head itself.
 void StaticFini_gWndTrackingList();
 // 3 internal functions (defined in .cpp)

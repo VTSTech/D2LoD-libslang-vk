@@ -3,7 +3,6 @@
 #include "D2Game/Quests/QUESTS/Quest40.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Common/D2BitBufferStrc.h"
@@ -18,6 +17,7 @@
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgFileStrc.h"
 #include "D2Common/Drlg/Preset.h"
+#include "D2Common/Merc.h"
 #include "D2Game/Ai/AiGeneral.h"
 #include "D2Game/D2ObjectInitFnArg.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
@@ -104,19 +104,18 @@ void __fastcall Q40_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nMonStatsId, 0);
 }
 
-bool __fastcall Q40_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown) {
-    *nUnknown = '\0';
+bool __fastcall Q40_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode) {
+    *pbyStatusCode = '\0';
     return false;
 }
 
 bool __fastcall Q40_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
-    if (nTargetClassId != 0x201) {
-      return false;
-    }
-
-    BOOL bSpokenWithNpc = PLAYER::PlayerIntro::PLAYER_CheckIfSpokenWithNPC(pUnit, pQuestData->pGame, 0x201);
-    if (!bSpokenWithNpc) {
-      return true;
+    if (nTargetClassId == 0x201) {
+      BOOL bSpokenWithNpc;
+      bSpokenWithNpc = PLAYER::PlayerIntro::PLAYER_CheckIfSpokenWithNPC(pUnit, pQuestData->pGame, 0x201);
+      if (!bSpokenWithNpc) {
+        return true;
+      }
     }
 
     return false;
@@ -184,7 +183,7 @@ void __fastcall Q40_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q40_Callback00_NpcActivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q40_Callback11_ScrollMessage;
-    pQuestData->pNpcMessages = &Quest40::aNpcGossipData;
+    pQuestData->pNpcMessages = Quest40::aNpcGossipData;
     pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;
@@ -195,7 +194,7 @@ void __fastcall Q40_InitData(D2QuestDataStrc * pQuestData) {
 }
 
 // Object init callback for Quest 40 (Prison of Ice, A5Q3). Records the initialized object's GUID and coords into the A5Q3 quest-specific data. If the trigger count reaches 2, fires Q33_SequenceFilter; if the Tristram portal has not yet been initialized, spawns a monster near the object's coords and transfers its DRLG map AI file. Also fires a timed event if the BetrayalOfHaggorath quest completion flag is set.
-void __fastcall Objects_InitFn66(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn66_DrehyaStartInTown(D2ObjectInitFnArg * pInitArg) {
     D2UnitStrc* pSpawnedUnit;
     int32_t nObjectGUID;
     D2DrlgFileStrc* pDrlgFile;

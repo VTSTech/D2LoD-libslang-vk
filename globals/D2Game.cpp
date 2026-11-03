@@ -27,22 +27,6 @@
 #include "D2Game/PLAYER/PlayerMsg.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
-#include "D2Game/Quests/QUESTS/A1Q3.h"
-#include "D2Game/Quests/QUESTS/A1Q4.h"
-#include "D2Game/Quests/QUESTS/A1Q5.h"
-#include "D2Game/Quests/QUESTS/A2Q2.h"
-#include "D2Game/Quests/QUESTS/A2Q3.h"
-#include "D2Game/Quests/QUESTS/A2Q4.h"
-#include "D2Game/Quests/QUESTS/A2Q7.h"
-#include "D2Game/Quests/QUESTS/A3Q1.h"
-#include "D2Game/Quests/QUESTS/A3Q2.h"
-#include "D2Game/Quests/QUESTS/A3Q3.h"
-#include "D2Game/Quests/QUESTS/A3Q5.h"
-#include "D2Game/Quests/QUESTS/A4Q2.h"
-#include "D2Game/Quests/QUESTS/A4Q3.h"
-#include "D2Game/Quests/QUESTS/A5Q3.h"
-#include "D2Game/Quests/QUESTS/A5Q5.h"
-#include "D2Game/Quests/QUESTS/A5Q6.h"
 #include "D2Game/SKILLS/SkillAma.h"
 #include "D2Game/SKILLS/SkillAss.h"
 #include "D2Game/SKILLS/SkillBar.h"
@@ -55,7 +39,6 @@
 #include "D2Game/SKILLS/SkillSor.h"
 #include "D2Game/SKILLS/SkillsServer.h"
 #include "D2Game/UNIT/sunitproxy.h"
-#include "Storm/_unnamespaced.h"
 
 
 // =============================================================================
@@ -352,7 +335,7 @@ D2NET_SERVER_D2GS_ClientToServer NET_D2GS_SERVER_INCOMING[103] = {
         /* .field1_0x4 = */ 0x0
     },
     {
-        /* .fpHandler = */ (D2NET_SERVER_CLTtoD2GS)&D2Game::PLAYER::PlayerMsg::SCMD_0x48_ConfirmTradeTick,
+        /* .fpHandler = */ (D2NET_SERVER_CLTtoD2GS)&D2Game::PLAYER::PlayerMsg::SCMD_0x48_CutsceneOver,
         /* .field1_0x4 = */ 0x1
     },
     {
@@ -476,10 +459,6 @@ D2NET_SERVER_D2GS_ClientToServer NET_D2GS_SERVER_INCOMING[103] = {
         /* .field1_0x4 = */ 0x0
     }
 }; D2_GLOBAL_GUARD(NET_D2GS_SERVER_INCOMING, "NET_D2GS_SERVER_INCOMING");
-
-int ganUnitHashTableBaseOffsets[6] = { 0x1120, 0x1320, 0x1520, 0x1920, 0x1720, 0x0 }; D2_GLOBAL_GUARD(ganUnitHashTableBaseOffsets, "ganUnitHashTableBaseOffsets");
-
-uint32_t gaStartingLevelByAct[5] = { 0x1, 0xf, 0x14, 0x1a, 0x20 }; D2_GLOBAL_GUARD(gaStartingLevelByAct, "gaStartingLevelByAct");
 
 uint32_t PlayerMultiplyer[9] = {
     0x0,
@@ -713,92 +692,7 @@ D2ShrinesTableEntryStrc OBJECTSHRINEFUNCTION[24] = {
 
 int gaMissileOffsets_LightningUniqueY[4] = { -0x1, 0x0, 0x1, 0x0 }; D2_GLOBAL_GUARD(gaMissileOffsets_LightningUniqueY, "gaMissileOffsets_LightningUniqueY");
 
-uint32_t gnAuraDamageScale_ManaAbsorb[3] = { 0xffffffff, 0x0, 0xffffffff }; D2_GLOBAL_GUARD(gnAuraDamageScale_ManaAbsorb, "gnAuraDamageScale_ManaAbsorb");
-
-uint8_t BYTE_ARRAY_006e3138[80] = {
-    0xa,
-    0x8,
-    0x16,
-    0x14,
-    0x12,
-    0x10,
-    0xe,
-    0xc,
-    0x1b,
-    0xe,
-    0xf,
-    0x3,
-    0x63,
-    0x7,
-    0x15,
-    0x16,
-    0x1f,
-    0x1a,
-    0xc,
-    0xd,
-    0x2,
-    0x63,
-    0x6,
-    0x13,
-    0x14,
-    0x1e,
-    0x19,
-    0xa,
-    0xb,
-    0x1,
-    0x63,
-    0x5,
-    0x11,
-    0x12,
-    0x1d,
-    0x18,
-    0x8,
-    0x9,
-    0x0,
-    0x63,
-    0x4,
-    0xf,
-    0x10,
-    0x1c,
-    0x1f,
-    0x16,
-    0x17,
-    0x7,
-    0x63,
-    0x3,
-    0xd,
-    0xe,
-    0x1b,
-    0x1e,
-    0x14,
-    0x7,
-    0x6,
-    0x63,
-    0x2,
-    0x1,
-    0xc,
-    0x1a,
-    0x1d,
-    0x12,
-    0x13,
-    0x5,
-    0x63,
-    0x1,
-    0x9,
-    0xa,
-    0x19,
-    0x1c,
-    0x10,
-    0x11,
-    0x4,
-    0x63,
-    0x0,
-    0x17,
-    0x8,
-    0x18
-}; D2_GLOBAL_GUARD(BYTE_ARRAY_006e3138, "BYTE_ARRAY_006e3138");
-
-D2UnitIdToNameFunc PFN_UnitTypeCallbackTable[5] = { &D2Game::GAME::Server::_TableNullSub25, &D2Game::GAME::Server::MonsterIdToName, &D2Game::GAME::Server::ObjectIdToName, &D2Game::GAME::Server::ItemIdToName, &D2Game::GAME::Server::MissileIdToname }; D2_GLOBAL_GUARD(PFN_UnitTypeCallbackTable, "PFN_UnitTypeCallbackTable");
+D2UnitIdToNameFunc PFN_UnitTypeCallbackTable[5] = { &D2Game::GAME::Server::SERVER_GetPlayerClassName, &D2Game::GAME::Server::MonsterIdToName, &D2Game::GAME::Server::ObjectIdToName, &D2Game::GAME::Server::ItemIdToName, &D2Game::GAME::Server::MissileIdToname }; D2_GLOBAL_GUARD(PFN_UnitTypeCallbackTable, "PFN_UnitTypeCallbackTable");
 
 int NPCINTRO_ListAct1[6] = { 0x94, 0x9a, 0x96, 0x93, 0x9b, 0x109 }; D2_GLOBAL_GUARD(NPCINTRO_ListAct1, "NPCINTRO_ListAct1");
 
@@ -820,109 +714,6 @@ int NPCINTRO_ListAct3[7] = { 0xf5, 0xfc, 0xfd, 0xfe, 0xff, 0x108, 0x129 }; D2_GL
 
 int NPCINTRO_ListAct5[7] = { 0x208, 0x209, 0x1ff, 0x200, 0x201, 0x202, 0x203 }; D2_GLOBAL_GUARD(NPCINTRO_ListAct5, "NPCINTRO_ListAct5");
 
-D2PlayerModeNetMsgStrc gaPlayerModeNetMsgTable[20] = {
-    {
-        /* .pfnSend = */ &D2Game::PLAYER::PlayerMsg::SendPlayerStopAndAtributeUpdate,
-        /* .nMoveModeByte = */ 0x8,
-        /* .nObjModeByte = */ 0x8
-    },
-    {
-        /* .pfnSend = */ &D2Game::PLAYER::PlayerMsg::PLRMSG_SendPlayerStopToOtherClient,
-        /* .nMoveModeByte = */ 0x7,
-        /* .nObjModeByte = */ 0x7
-    },
-    {
-        /* .pfnSend = */ &D2Game::PLAYER::PlayerMsg::SendPlayerMoveOrObject,
-        /* .nMoveModeByte = */ 0x1,
-        /* .nObjModeByte = */ 0x0
-    },
-    {
-        /* .pfnSend = */ &D2Game::PLAYER::PlayerMsg::SendPlayerMoveOrObject,
-        /* .nMoveModeByte = */ 0x17,
-        /* .nObjModeByte = */ 0x18
-    },
-    {
-        /* .pfnSend = */ (pfnPlayerModeNetMsg)&D2Game::PLAYER::PlayerMsg::SendPlayerStop,
-        /* .nMoveModeByte = */ 0x6,
-        /* .nObjModeByte = */ 0x6
-    },
-    {
-        /* .pfnSend = */ &D2Game::PLAYER::PlayerMsg::PLRMSG_SendPlayerStopToOtherClient,
-        /* .nMoveModeByte = */ 0x7,
-        /* .nObjModeByte = */ 0x7
-    },
-    {
-        /* .pfnSend = */ &D2Game::PLAYER::PlayerMsg::SendPlayerMoveOrObject,
-        /* .nMoveModeByte = */ 0x1,
-        /* .nObjModeByte = */ 0x0
-    },
-    {
-        /* .pfnSend = */ (pfnPlayerModeNetMsg)&D2Game::PLAYER::PlayerMsg::SendUnitCast0x4d,
-        /* .nMoveModeByte = */ 0x15,
-        /* .nObjModeByte = */ 0x16
-    },
-    {
-        /* .pfnSend = */ (pfnPlayerModeNetMsg)&D2Game::PLAYER::PlayerMsg::SendUnitCast0x4d,
-        /* .nMoveModeByte = */ 0x15,
-        /* .nObjModeByte = */ 0x16
-    },
-    {
-        /* .pfnSend = */ (pfnPlayerModeNetMsg)&D2Game::PLAYER::PlayerMsg::SendPlayerStop,
-        /* .nMoveModeByte = */ 0x12,
-        /* .nObjModeByte = */ 0x12
-    },
-    {
-        /* .pfnSend = */ (pfnPlayerModeNetMsg)&D2Game::PLAYER::PlayerMsg::SendUnitCast0x4d,
-        /* .nMoveModeByte = */ 0x15,
-        /* .nObjModeByte = */ 0x16
-    },
-    {
-        /* .pfnSend = */ (pfnPlayerModeNetMsg)&D2Game::PLAYER::PlayerMsg::SendUnitCast0x4d,
-        /* .nMoveModeByte = */ 0x15,
-        /* .nObjModeByte = */ 0x16
-    },
-    {
-        /* .pfnSend = */ (pfnPlayerModeNetMsg)&D2Game::PLAYER::PlayerMsg::SendUnitCast0x4d,
-        /* .nMoveModeByte = */ 0x15,
-        /* .nObjModeByte = */ 0x16
-    },
-    {
-        /* .pfnSend = */ (pfnPlayerModeNetMsg)&D2Game::PLAYER::PlayerMsg::SendUnitCast0x4d,
-        /* .nMoveModeByte = */ 0x15,
-        /* .nObjModeByte = */ 0x16
-    },
-    {
-        /* .pfnSend = */ (pfnPlayerModeNetMsg)&D2Game::PLAYER::PlayerMsg::SendUnitCast0x4d,
-        /* .nMoveModeByte = */ 0x15,
-        /* .nObjModeByte = */ 0x16
-    },
-    {
-        /* .pfnSend = */ (pfnPlayerModeNetMsg)&D2Game::PLAYER::PlayerMsg::SendUnitCast0x4d,
-        /* .nMoveModeByte = */ 0x15,
-        /* .nObjModeByte = */ 0x16
-    },
-    {
-        /* .pfnSend = */ (pfnPlayerModeNetMsg)&D2Game::PLAYER::PlayerMsg::SendUnitCast0x4d,
-        /* .nMoveModeByte = */ 0x15,
-        /* .nObjModeByte = */ 0x16
-    },
-    {
-        /* .pfnSend = */ (pfnPlayerModeNetMsg)&D2Game::PLAYER::PlayerMsg::SendPlayerStop,
-        /* .nMoveModeByte = */ 0x9,
-        /* .nObjModeByte = */ 0x9
-    },
-    {
-        /* .pfnSend = */ (pfnPlayerModeNetMsg)&D2Game::PLAYER::PlayerMsg::SendUnitCast0x4d,
-        /* .nMoveModeByte = */ 0x15,
-        /* .nObjModeByte = */ 0x16
-    },
-    {
-        /* .pfnSend = */ &D2Game::PLAYER::PlayerMsg::SendPlayerMove,
-        /* .nMoveModeByte = */ 0x14,
-        /* .nObjModeByte = */ 0x14
-    }
-}; D2_GLOBAL_GUARD(gaPlayerModeNetMsgTable, "gaPlayerModeNetMsgTable");
-
 int gnDirectionXOffsets[8] = { -0x1, 0x0, 0x1, -0x1, 0x1, -0x1, 0x0, 0x1 }; D2_GLOBAL_GUARD(gnDirectionXOffsets, "gnDirectionXOffsets");
 
 int gnDirectionYOffsets[8] = { -0x1, -0x1, -0x1, 0x0, 0x0, 0x1, 0x1, 0x1 }; D2_GLOBAL_GUARD(gnDirectionYOffsets, "gnDirectionYOffsets");
@@ -930,14 +721,14 @@ int gnDirectionYOffsets[8] = { -0x1, -0x1, -0x1, 0x0, 0x0, 0x1, 0x1, 0x1 }; D2_G
 D2ObjectPopulateFnFunc OBJECTSPOPULATEFN[10] = {
     nullptr,
     (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn1,
-    (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn2,
+    (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn2_WaypointShrine,
     (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn3,
     (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn4,
-    (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn5,
-    (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn6,
-    (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn7,
+    (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn5_Crate,
+    (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn6_Corpse,
+    (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn7_CorpseOnStick,
     (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn8,
-    (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn9
+    (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn9_TrappedSoul
 }; D2_GLOBAL_GUARD(OBJECTSPOPULATEFN, "OBJECTSPOPULATEFN");
 
 int gaObjectSpawnChanceTbl[5] = { 0x4, 0x9, 0x34, 0x5e, 0x5f }; D2_GLOBAL_GUARD(gaObjectSpawnChanceTbl, "gaObjectSpawnChanceTbl");
@@ -1210,7 +1001,7 @@ D2SkillSrvDoFunc SKILLSRVDOFUNCS[191] = {
     (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillDruid::Skills_SrvDoFunc_120_FeralRage,
     (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillDruid::Skills_SrvDoFunc_121_Rabies,
     (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillDruid::Skills_SrvDoFunc_122_Hunger,
-    (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillDruid::Skills_SrvDoFunc_123_Tornado,
+    (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillDruid::Skills_SrvDoFunc_123_Volcano,
     (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillDruid::Skills_SrvDoFunc_124_Armageddon,
     (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillEMonst::Skills_SrvDoFunc_125_CatapultFireBomb,
     (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillEMonst::Skills_SrvDoFunc_126_ImpInferno,
@@ -1233,7 +1024,7 @@ D2SkillSrvDoFunc SKILLSRVDOFUNCS[191] = {
     (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillAss::Skills_SrvDoFunc_143_ChargeRelease_GroundStrike,
     (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillSor::Skills_SrvDoFunc_144_Hydra,
     (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillDruid::Skills_SrvDoFunc_145_Hurricane,
-    (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillDruid::Skills_SrvDoFunc_146_CycloneArmor,
+    (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillDruid::Skills_SrvDoFunc_146_ArmageddonTick,
     (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillEMonst::Skills_SrvDoFunc_147_ReturnToOwner,
     (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillMonst::Skills_SrvDoFunc_148_FireMissileBodyPart10,
     (D2SkillSrvDoFunc)&D2Game::SKILLS::SkillMonst::Skills_SrvDoFunc_149_FireMissileBodyPart11,
@@ -1279,161 +1070,6 @@ D2SkillSrvDoFunc SKILLSRVDOFUNCS[191] = {
     nullptr,
     nullptr
 }; D2_GLOBAL_GUARD(SKILLSRVDOFUNCS, "SKILLSRVDOFUNCS");
-
-int gaNPCSpokenBitIndexMap[35][2] = {
-    { -0x1, 0x0 },
-    { 0x93, 0x1 },
-    { 0x94, 0x2 },
-    { 0x96, 0x3 },
-    { 0x9b, 0x4 },
-    { 0x9a, 0x5 },
-    { 0x109, 0x6 },
-    { 0xaf, 0x7 },
-    { 0xb0, 0x8 },
-    { 0xb1, 0x9 },
-    { 0xb2, 0xa },
-    { 0xca, 0xb },
-    { 0xc8, 0xc },
-    { 0xd2, 0xd },
-    { 0xc9, 0xe },
-    { 0xc6, 0xf },
-    { 0xc7, 0x10 },
-    { 0xf4, 0x11 },
-    { 0xf5, 0x12 },
-    { 0xf6, 0x13 },
-    { 0xfb, 0x14 },
-    { 0xfc, 0x15 },
-    { 0xfd, 0x16 },
-    { 0xfe, 0x17 },
-    { 0xff, 0x18 },
-    { 0x100, 0x19 },
-    { 0x101, 0x1a },
-    { 0x108, 0x1b },
-    { 0x129, 0x1c },
-    { 0x1ff, 0x1d },
-    { 0x200, 0x1e },
-    { 0x201, 0x1f },
-    { 0x202, 0x20 },
-    { 0x203, 0x21 },
-    { 0x208, 0x22 }
-}; D2_GLOBAL_GUARD(gaNPCSpokenBitIndexMap, "gaNPCSpokenBitIndexMap");
-
-PFN_ObjectOperateCallback gapObjectOperateCallbacks[10] = {
-    nullptr,
-    &D2Game::Objects::ObjectsMode::OBJMODE_SpawnSiegeMonsterA,
-    &D2Game::Objects::ObjectsMode::OBJMODE_SpawnSiegeMonsterB,
-    &D2Game::Objects::ObjectsMode::OBJMODE_SpawnSiegeMonsterC,
-    &D2Game::Objects::ObjectsMode::OBJMODE_SpawnSiegeMonsterD,
-    &D2Game::Objects::ObjectsMode::OBJMODE_SpawnCompanionChests,
-    &D2Game::Objects::ObjectsMode::OBJMODE_SpawnSiegeMonsterB,
-    &D2Game::Objects::ObjectsMode::OBJMODE_SpawnCompanionChests,
-    &D2Game::Objects::ObjectsMode::OBJMODE_SpawnRandomMonsters,
-    &D2Game::Objects::ObjectsMode::OBJMODE_SpawnRandomMonsters
-}; D2_GLOBAL_GUARD(gapObjectOperateCallbacks, "gapObjectOperateCallbacks");
-
-D2ObjectOperateFnFunc OBJECTSOPERATEFN[101] = {
-    nullptr,
-    &D2Game::Objects::ObjectsMode::OBJOP_OpenChestSpawnMonster,
-    &D2Game::Objects::ObjectsMode::OBJOP_ActivateShrine,
-    &D2Game::Objects::ObjectsMode::OBJOP_OpenChestNoMonster,
-    &D2Game::Objects::ObjectsMode::OBJOP_OpenSparklyChest,
-    &D2Game::Objects::ObjectsMode::OBJOP_OpenTrapChestSkillTrigger,
-    &D2Game::Quests::QUESTS::A1Q5::OBJOP_A1Q5_ActivateCairnStone,
-    &D2Game::Objects::ObjectsMode::OBJOP_DetonateExplosiveBarrel,
-    &D2Game::Objects::ObjectsMode::OBJOP_ToggleDoor,
-    &D2Game::Quests::QUESTS::A1Q4::OBJOP_A1Q4_ActivateHoradricMalusSmith,
-    &D2Game::Quests::QUESTS::A1Q4::OBJOP_A1Q4_ActivateInifussTree,
-    &D2Game::Objects::ObjectsMode::OBJOP_ActivateNoOp,
-    &D2Game::Quests::QUESTS::A1Q4::OBJOP_A1Q4_UseScrollOfInifuss,
-    &D2Game::Objects::ObjectsMode::OBJOP_ActivateSimple,
-    &D2Game::Objects::ObjectsMode::OBJOP_OpenLockedChest,
-    &D2Game::Objects::ObjectsMode::Objects_OperateFn15_Portal,
-    &D2Game::Objects::ObjectsMode::OBJOP_UseStairway,
-    &D2Game::Objects::ObjectsMode::OBJOP_OpenHoradricCube,
-    &D2Game::Objects::ObjectsMode::OBJOP_DestroyDestructible,
-    &D2Game::Objects::ObjectsMode::OBJOP_SpawnExceptionalItemDrop,
-    &D2Game::Objects::ObjectsMode::OBJOP_SpawnNormalItemDrop,
-    &D2Game::Quests::QUESTS::A1Q3::OBJOP_A1Q3_DenOfEvil_CheckCompletion,
-    &D2Game::Objects::ObjectsMode::OBJOP_ActivateHealingWell,
-    &D2Game::Objects::ObjectsMode::OBJOP_ActivateWaypoint,
-    &D2Game::Quests::QUESTS::A2Q3::OBJOP_A2Q3_ActivateHoradricStaffAltar,
-    &D2Game::Quests::QUESTS::A2Q7::OBJOP_A2Q7_OpenArcaneNpcTrade,
-    &D2Game::Objects::ObjectsMode::OBJOP_SpawnQuestItemReward,
-    &D2Game::Objects::ObjectsMode::OBJOP_RevealAutomapArea,
-    &D2Game::Quests::QUESTS::A3Q1::OBJOP_A3Q1_KhalimsRelicAltar,
-    &D2Game::Objects::ObjectsMode::OBJOP_OpenBreakableContainer,
-    &D2Game::Objects::ObjectsMode::OBJOP_ExplodingTrap,
-    &D2Game::Quests::QUESTS::A3Q3::OBJOP_A3Q5_NihlathakPortalTrigger,
-    &D2Game::PLAYER::PlayerTrade::Objects_OperateFn32_OpenStash,
-    &D2Game::Objects::ObjectsMode::OBJOP_SpawnRewardItem,
-    &D2Game::Objects::ObjectsMode::OBJOP_A2Q2_ArcaneGateLevelTransition,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    &D2Game::Quests::QUESTS::A2Q2::OBJOP_A2Q2_ArcaneSanctuaryPortalAndDrop1,
-    &D2Game::Quests::QUESTS::A2Q2::OBJOP_A2Q2_ArcaneSanctuaryPortalAndDrop2,
-    &D2Game::Quests::QUESTS::A2Q2::OBJOP_A2Q2_ArcaneSanctuaryPortalAndDrop3,
-    &D2Game::Quests::QUESTS::A2Q4::OBJOP_A2Q4_StaffOfKingsAltar,
-    &D2Game::Objects::ObjectsMode::OBJOP_ActivatePortalObject,
-    &D2Game::Quests::QUESTS::A3Q2::OBJOP_UseStairDirect,
-    &D2Game::Quests::QUESTS::A3Q2::OBJOP_A3Q2_KhalimRelicPedestal,
-    &D2Game::Objects::ObjectsMode::Objects_OperateFn46_PortalToAct4,
-    &D2Game::Objects::ObjectsMode::OBJOP_UseWaygate,
-    &D2Game::Objects::ObjectsMode::OBJOP_OpenUnlockedChest,
-    &D2Game::Quests::QUESTS::A4Q3::OBJOP_A4Q3_HellforgeSmash,
-    &D2Game::Objects::ObjectsMode::OBJOP_UseStairAlias,
-    &D2Game::Objects::ObjectsMode::OBJOP_TimedDestructible,
-    &D2Game::Quests::QUESTS::A4Q2::OBJOP_A4Q2_DiabloSealActivateKillChaos,
-    &D2Game::Quests::QUESTS::A3Q5::OBJOP_A3Q5_NihlathakAltarLaunchOrb,
-    &D2Game::Quests::QUESTS::OBJOP_A4Q2_DiabloSealCreateGlow1,
-    &D2Game::Quests::QUESTS::OBJOP_A4Q2_DiabloSealCreateGlow2,
-    &D2Game::Quests::QUESTS::OBJOP_A4Q2_DiabloSealCreateGlow3,
-    &D2Game::Quests::QUESTS::A3Q2::OBJOP_A3Q2_KhalimsRelicPortalDrop1,
-    &D2Game::Quests::QUESTS::A3Q2::OBJOP_A3Q2_KhalimsRelicPortalDrop2,
-    &D2Game::Quests::QUESTS::A3Q2::OBJOP_A3Q2_KhalimsRelicPortalDrop3,
-    nullptr,
-    &D2Game::Objects::ObjectsMode::OBJOP_OpenTimedDoor,
-    &D2Game::Quests::QUESTS::A5Q5::OBJOP_A5Q5_AncientsTriggerSound1,
-    &D2Game::Quests::QUESTS::A5Q5::OBJOP_A5Q5_AncientsTriggerSound2,
-    &D2Game::Quests::QUESTS::A5Q5::OBJOP_A5Q5_AncientsTriggerSound3,
-    &D2Game::Quests::QUESTS::A5Q5::OBJOP_A5Q5_AncientsAltarActivate,
-    &D2Game::Quests::QUESTS::A5Q5::OBJOP_A5Q5_WorldstonePortalActivate,
-    &D2Game::Quests::QUESTS::A5Q3::OBJOP_A5Q3_RescueAnyaFromPortal,
-    &D2Game::Objects::ObjectsMode::OBJOP_OpenBossChestSpawnUniques,
-    &D2Game::Quests::QUESTS::A5Q5::OBJOP_A5Q5_AncientsQuestStateQuery,
-    &D2Game::Quests::QUESTS::A5Q6::OBJOP_A5Q6_WorldstoneLevelTransition,
-    &D2Game::Quests::QUESTS::A5Q5::OBJOP_A5Q5_WorldstoneStairPortal,
-    &D2Game::Quests::QUESTS::A5Q6::OBJOP_A5Q6_TyraelPortalToEnd,
-    &D2Game::Quests::QUESTS::A4Q3::OBJOP_A4Q2_PandemoniumFortressGate,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr
-}; D2_GLOBAL_GUARD(OBJECTSOPERATEFN, "OBJECTSOPERATEFN");
 
 D2MonsterUModHandlerRowStrc g_MonsterUModHandlerTable[43] = {
     {
@@ -1653,12 +1289,12 @@ D2MonsterUModHandlerRowStrc g_MonsterUModHandlerTable[43] = {
         /* .pfnHandlerInit = */ nullptr
     },
     {
-        /* .pfnHandler0 = */ (fpMonsterUModHandler)&D2Game::Monsters::UMOD_SetRandomElementalDamage,
+        /* .pfnHandler0 = */ &D2Game::Monsters::UMOD_SetRandomElementalDamage,
         /* .pfnHandler1 = */ nullptr,
         /* .pfnHandler2 = */ nullptr,
         /* .pfnHandler3 = */ nullptr,
         /* .pfnHandler4 = */ nullptr,
-        /* .pfnHandlerInit = */ (fpMonsterUModHandler)&D2Game::Monsters::UMOD_SetRandomElementalForMissile
+        /* .pfnHandlerInit = */ &D2Game::Monsters::UMOD_SetRandomElementalForMissile
     },
     {
         /* .pfnHandler0 = */ nullptr,
@@ -1718,7 +1354,7 @@ D2MonsterUModHandlerRowStrc g_MonsterUModHandlerTable[43] = {
     },
     {
         /* .pfnHandler0 = */ nullptr,
-        /* .pfnHandler1 = */ &D2Game::Monsters::FUN_005a3a80,
+        /* .pfnHandler1 = */ &D2Game::Monsters::MONSTER_ShatterOnDeath,
         /* .pfnHandler2 = */ nullptr,
         /* .pfnHandler3 = */ nullptr,
         /* .pfnHandler4 = */ nullptr,
@@ -1758,7 +1394,7 @@ D2MonsterUModHandlerRowStrc g_MonsterUModHandlerTable[43] = {
     },
     {
         /* .pfnHandler0 = */ nullptr,
-        /* .pfnHandler1 = */ &D2Game::Monsters::FUN_005a4200,
+        /* .pfnHandler1 = */ &D2Game::Monsters::MONSTER_SpawnWormOnDeath,
         /* .pfnHandler2 = */ nullptr,
         /* .pfnHandler3 = */ nullptr,
         /* .pfnHandler4 = */ nullptr,
@@ -1767,7 +1403,7 @@ D2MonsterUModHandlerRowStrc g_MonsterUModHandlerTable[43] = {
     {
         /* .pfnHandler0 = */ nullptr,
         /* .pfnHandler1 = */ nullptr,
-        /* .pfnHandler2 = */ &D2Game::Monsters::FUN_005a4230,
+        /* .pfnHandler2 = */ &D2Game::Monsters::MONSTER_PeriodicMageThink,
         /* .pfnHandler3 = */ nullptr,
         /* .pfnHandler4 = */ nullptr,
         /* .pfnHandlerInit = */ nullptr
@@ -2124,10 +1760,6 @@ _RTL_CRITICAL_SECTION gQServerGameListCs = {}; D2_GLOBAL_GUARD(gQServerGameListC
 
 SGAMEDATA * gaQServerGameByToken[1025] = {}; D2_GLOBAL_GUARD(gaQServerGameByToken, "gaQServerGameByToken");
 
-D2NpcItemTablesStrc gaNpcItemTables[17] = {}; D2_GLOBAL_GUARD(gaNpcItemTables, "gaNpcItemTables");
-
-uint8_t gbaNpcItemTableBuilt[17] = {}; D2_GLOBAL_GUARD(gbaNpcItemTableBuilt, "gbaNpcItemTableBuilt");
-
 D2ClientStrc * QServerClientBucketByName[256] = {}; D2_GLOBAL_GUARD(QServerClientBucketByName, "QServerClientBucketByName");
 
 D2ClientStrc * QServerClientBucketById[256] = {}; D2_GLOBAL_GUARD(QServerClientBucketById, "QServerClientBucketById");
@@ -2138,8 +1770,6 @@ CRITICAL_SECTION gQServerClientByIdCs = {}; D2_GLOBAL_GUARD(gQServerClientByIdCs
 // also labelled: lpCriticalSection_008846c0
 CRITICAL_SECTION gQServerClientByNameCs = {}; D2_GLOBAL_GUARD(gQServerClientByNameCs, "gQServerClientByNameCs");
 
-D2UniqueCandidatePoolStrc gUniqueCandidatePool = {}; D2_GLOBAL_GUARD(gUniqueCandidatePool, "gUniqueCandidatePool");
-
 D2TaskQueueSlotStrc * gaTaskQueueHeadArray[32] = {}; D2_GLOBAL_GUARD(gaTaskQueueHeadArray, "gaTaskQueueHeadArray");
 
 // also labelled: gpTaskQueueListHead, gppTaskQueueHead
@@ -2148,24 +1778,21 @@ D2LinkNodeStrc gsTaskQueueListHead = {}; D2_GLOBAL_GUARD(gsTaskQueueListHead, "g
 // also labelled: lpFrequency_0088c790
 LARGE_INTEGER gnPerformanceFrequency = {}; D2_GLOBAL_GUARD(gnPerformanceFrequency, "gnPerformanceFrequency");
 
+CRITICAL_SECTION aTaskQueueCriticalSections[32] = {}; D2_GLOBAL_GUARD(aTaskQueueCriticalSections, "aTaskQueueCriticalSections");
+
+_RTL_CRITICAL_SECTION lpCriticalSection_0088caa8 = {}; D2_GLOBAL_GUARD(lpCriticalSection_0088caa8, "lpCriticalSection_0088caa8");
+
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
 unsigned short QServerNextToken = 0x1; D2_GLOBAL_GUARD(QServerNextToken, "QServerNextToken");
 uint32_t GameSeed = -0x1; D2_GLOBAL_GUARD(GameSeed, "GameSeed");
-uint32_t dwCycleLastSecond = 0x19; D2_GLOBAL_GUARD(dwCycleLastSecond, "dwCycleLastSecond");
+int32_t Frames_PerSecond = 0x19; D2_GLOBAL_GUARD(Frames_PerSecond, "Frames_PerSecond");
 BOOL DontNoSafeGameBool = 0x1; D2_GLOBAL_GUARD(DontNoSafeGameBool, "DontNoSafeGameBool");
-uint32_t gpInactiveMonsterStateFlagSentinel = 0xdeaddead; D2_GLOBAL_GUARD(gpInactiveMonsterStateFlagSentinel, "gpInactiveMonsterStateFlagSentinel");
-uint32_t gnMonsterStateFlagMask1 = 0x1; D2_GLOBAL_GUARD(gnMonsterStateFlagMask1, "gnMonsterStateFlagMask1");
-uint32_t gnMonsterStateFlagMask2 = 0x2; D2_GLOBAL_GUARD(gnMonsterStateFlagMask2, "gnMonsterStateFlagMask2");
 uint8_t gbQuestReconnectMode = 0x1; D2_GLOBAL_GUARD(gbQuestReconnectMode, "gbQuestReconnectMode");
 int nQuestDataExtendedSize = 0x25; D2_GLOBAL_GUARD(nQuestDataExtendedSize, "nQuestDataExtendedSize");
 uint32_t gnObjectClassIdLight = 0x5; D2_GLOBAL_GUARD(gnObjectClassIdLight, "gnObjectClassIdLight");
-int gnActCount = 0x5; D2_GLOBAL_GUARD(gnActCount, "gnActCount");
-int gnNPCSpokenBitIndexMapCount = 0x23; D2_GLOBAL_GUARD(gnNPCSpokenBitIndexMapCount, "gnNPCSpokenBitIndexMapCount");
-int gnObjectOperateCallbackCount = 0xa; D2_GLOBAL_GUARD(gnObjectOperateCallbackCount, "gnObjectOperateCallbackCount");
-int SHRINESCOUNT = 0x18; D2_GLOBAL_GUARD(SHRINESCOUNT, "SHRINESCOUNT");
 int MISSILESSRVHITFUNCS_SIZE = 0x47; D2_GLOBAL_GUARD(MISSILESSRVHITFUNCS_SIZE, "MISSILESSRVHITFUNCS_SIZE");
 TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0> * gpQServerGameState = 0; D2_GLOBAL_GUARD(gpQServerGameState, "gpQServerGameState");
 int StartingAct = 0; D2_GLOBAL_GUARD(StartingAct, "StartingAct");
@@ -2173,18 +1800,14 @@ uint32_t maxMemoryUsage = 0; D2_GLOBAL_GUARD(maxMemoryUsage, "maxMemoryUsage");
 int gbQServerSendPlayerPos = 0; D2_GLOBAL_GUARD(gbQServerSendPlayerPos, "gbQServerSendPlayerPos");
 D2BattleNetEventCallbackTable * BattleNetServerService = 0; D2_GLOBAL_GUARD(BattleNetServerService, "BattleNetServerService");
 BOOL IsBattleNetServer = 0; D2_GLOBAL_GUARD(IsBattleNetServer, "IsBattleNetServer");
-// also labelled: nCOMMAND_playersX
-uint32_t PlayerCountOverride = 0; D2_GLOBAL_GUARD(PlayerCountOverride, "PlayerCountOverride");
+uint32_t Frames_TimeBetweenFrames = 0; D2_GLOBAL_GUARD(Frames_TimeBetweenFrames, "Frames_TimeBetweenFrames");
 uint32_t gptItemCodeArmor = 0; D2_GLOBAL_GUARD(gptItemCodeArmor, "gptItemCodeArmor");
 uint32_t gptItemCodeSwordType = 0; D2_GLOBAL_GUARD(gptItemCodeSwordType, "gptItemCodeSwordType");
 int gQServerClientTablesInitialized = 0; D2_GLOBAL_GUARD(gQServerClientTablesInitialized, "gQServerClientTablesInitialized");
-BOOL DEBUGPRINT = 0; D2_GLOBAL_GUARD(DEBUGPRINT, "DEBUGPRINT");
-uint32_t g_bWhisperSquelched = 0; D2_GLOBAL_GUARD(g_bWhisperSquelched, "g_bWhisperSquelched");
-uint32_t g_bWhisperDelivered = 0; D2_GLOBAL_GUARD(g_bWhisperDelivered, "g_bWhisperDelivered");
+uint32_t gnSeedCounter = 0; D2_GLOBAL_GUARD(gnSeedCounter, "gnSeedCounter");
 uint32_t gnTaskQueueSlotCounter = 0; D2_GLOBAL_GUARD(gnTaskQueueSlotCounter, "gnTaskQueueSlotCounter");
 uint32_t gnTaskQueueTailIndex = 0; D2_GLOBAL_GUARD(gnTaskQueueTailIndex, "gnTaskQueueTailIndex");
 uint32_t gbPerformanceCounterAvailable = 0; D2_GLOBAL_GUARD(gbPerformanceCounterAvailable, "gbPerformanceCounterAvailable");
-uint32_t gnMonsterSpawnTotalCount = 0; D2_GLOBAL_GUARD(gnMonsterSpawnTotalCount, "gnMonsterSpawnTotalCount");
 
 namespace D2Common::Drlg::Maze {
 
@@ -2268,7 +1891,7 @@ D2TimerTypeMethodsStrc pTimerMethods = {
         nullptr,
         nullptr,
         nullptr,
-        &D2Game::ITEMS::ItemMode::ITEMMODE_ReturnZero2,
+        &D2Game::ITEMS::ItemMode::ITEMMODE_RemoveExpiredStatLists,
         nullptr,
         nullptr
     }
@@ -2380,9 +2003,9 @@ namespace Fog::_3rdparty::crashy {
 
 } // namespace Fog::_3rdparty::crashy
 
-namespace Storm::SFile {
+namespace Storm::Source::SFile {
 
-} // namespace Storm::SFile
+} // namespace Storm::Source::SFile
 
 namespace Class::FILEREC {
 
@@ -2442,51 +2065,171 @@ namespace D2Game::Quests::QUESTS::Quest40 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x200,
-            /* .nStringIndex = */ 0x4e2e,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
+D2NPCMessageTableStrc aNpcGossipData[4] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4e2e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4e45,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x202,
+                /* .nStringIndex = */ 0x4e55,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4e61,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4e23,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {
-            /* .nMonStatsId = */ 0x201,
-            /* .nStringIndex = */ 0x4e45,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x202,
-            /* .nStringIndex = */ 0x4e55,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x203,
-            /* .nStringIndex = */ 0x4e61,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x208,
-            /* .nStringIndex = */ 0x4e23,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x5
     },
-    /* .nMessagesCount = */ 0x5
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4e2e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4e47,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x202,
+                /* .nStringIndex = */ 0x4e56,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4e63,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4e23,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4e2e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4e46,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x202,
+                /* .nStringIndex = */ 0x4e57,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4e62,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4e23,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::Quest40::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::Quest40
@@ -2497,31 +2240,315 @@ namespace D2Game::Quests::QUESTS::A5Q1 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x1ff,
-            /* .nStringIndex = */ 0x4e6d,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
+D2NPCMessageTableStrc aNpcGossipData[8] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4e6d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4e6e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4e6f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4e70,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4e71,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x202,
+                /* .nStringIndex = */ 0x4e72,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4e73,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4e74,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4e75,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4e76,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4e77,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x202,
+                /* .nStringIndex = */ 0x4e78,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4e79,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4e7a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4e7b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4e7c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4e7d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x202,
+                /* .nStringIndex = */ 0x4e7e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4e7f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4e7a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4e7b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4e7c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4e7d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x202,
+                /* .nStringIndex = */ 0x4e7e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4e7f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A5Q1::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A5Q1
@@ -3336,31 +3363,290 @@ namespace D2Game::Quests::QUESTS::A5Q4 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x200,
-            /* .nStringIndex = */ 0x4ea9,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
+D2NPCMessageTableStrc aNpcGossipData[8] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4ea9,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4ead,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4eab,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4eac,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4eae,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x4
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4eb1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4eb0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4eaf,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4eb2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4eb3,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4eb6,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4eb5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4eb4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4eb7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4eb8,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4eb6,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4eb5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4eb4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4eb7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4eb8,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A5Q4::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A5Q4
@@ -3706,51 +3992,326 @@ namespace D2Game::Quests::QUESTS::A5Q6 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x1ff,
-            /* .nStringIndex = */ 0x4ecb,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
+D2NPCMessageTableStrc aNpcGossipData[9] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4ecb,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4eca,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4ecc,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4ece,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4ecd,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {
-            /* .nMonStatsId = */ 0x208,
-            /* .nStringIndex = */ 0x4eca,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0x201,
-            /* .nStringIndex = */ 0x4ecc,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0x203,
-            /* .nStringIndex = */ 0x4ece,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0x200,
-            /* .nStringIndex = */ 0x4ecd,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x5
     },
-    /* .nMessagesCount = */ 0x5
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4ed2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4ed1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4ed3,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x209,
+                /* .nStringIndex = */ 0x4ecf,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4ed4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4ed0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4ed2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4ed3,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x209,
+                /* .nStringIndex = */ 0x4ecf,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4ed4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4ed0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4ed2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4ed3,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x209,
+                /* .nStringIndex = */ 0x4ecf,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4ed4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4ed0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4ed1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4ed1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A5Q6::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A5Q6
@@ -3761,46 +4322,115 @@ namespace D2Game::Quests::QUESTS::Quest37 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x94,
-            /* .nStringIndex = */ 0xb,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
+D2NPCMessageTableStrc aNpcGossipData[3] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0xb,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x2d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x24,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x18,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {
-            /* .nMonStatsId = */ 0x93,
-            /* .nStringIndex = */ 0x2d,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x9a,
-            /* .nStringIndex = */ 0x24,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x96,
-            /* .nStringIndex = */ 0x18,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x4
     },
-    /* .nMessagesCount = */ 0x4
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0xc,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x2e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x25,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x19,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x4
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::Quest37::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::Quest37
@@ -3811,31 +4441,85 @@ namespace D2Game::Quests::QUESTS::A1Q0 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x9b,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
+D2NPCMessageTableStrc aNpcGossipData[3] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q0::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q0
@@ -3846,22 +4530,17 @@ namespace D2Game::Quests::QUESTS::A1Q1 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-// VP-BEGIN [gossip-table-fix]: issue #13 ROOT CAUSE. The regen emitted this
-// table SINGULAR (1 slot) while Q01_Callback00_NpcActivate indexes
-// pNpcMessages[slot] 0..4 (AddGossipMessageOnMonster reads pNpcMsgTable[slot]) —
-// slots 1..4 read past the object, so the Den reward line never existed and
-// Akara's turn-in never echoed c2s 0x31 (field log: activate rewardAwaits=1 +
-// gossip line 3, then silence). 5 slots now: slot 0 = accept line 0x40 (was the
-// only slot present), slot 3 = turn-in line 0x4c — pinned by
-// Q01_Callback11_ScrollMessage's own gate (0x40 accept / 0x4c reward; bMenu 0
-// mirrors the accept entry, and bMenu 1 would be converted to 0 at add time).
-// Slots 1/2/4 are vanilla flavor lines (state 2/3 progress + participant) whose
-// string ids are NOT in the tree — left empty (count=0 ->
-// AddGossipMessageOnMonster early-outs, R54 marks make it visible) rather than
-// invented. [R54] A1Q1 gossip table 5 slots.
-// VP-END [gossip-table-fix]
-D2NPCMessageTableStrc aNpcGossipData[5] = {
-    { /* slot 0: accept (msg 0x40) */
+// VP-BEGIN [gossip-table-fix history]: issue #13/#22 root cause (found fork-side R54/R85)
+// was the regen emitting these tables SINGULAR (1 slot) while the quest code indexes
+// pNpcMessages[slot] 0..4 — slots read past the object, so Akara's Den turn-in line never
+// existed and the reward never echoed c2s 0x31. The fork shipped 5 hand-built slots (string
+// ids for the flavor lines were not in the tree and were left empty rather than invented).
+// Upstream bc47c6bc has now recovered the retail tables verbatim from the binary — sizes and
+// flavor string ids below are retail-exact, supersedes the hand-built tables. [R87 merge]
+// [R87 merge] A1Q1 table: retail-exact 8 slots (upstream bc47c6bc).
+// VP-END [gossip-table-fix history]
+D2NPCMessageTableStrc aNpcGossipData[8] = {
+    {
         /* .pMessages = */ {
             {
                 /* .nMonStatsId = */ 0x94,
@@ -3869,25 +4548,276 @@ D2NPCMessageTableStrc aNpcGossipData[5] = {
                 /* .nPad = */ 0x0,
                 /* .bMenu = */ 0x0
             },
-            {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
         /* .nMessagesCount = */ 0x1
     },
-    {}, // slot 1: vanilla flavor (state 2 "found the Den") — string id not in tree [R54]
-    {}, // slot 2: vanilla flavor (state 3 "entered the Den") — string id not in tree [R54]
-    { /* slot 3: turn-in (msg 0x4c) — the Den reward line */
+    {
         /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x41,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x46,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x45,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x42,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x43,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x48,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x4b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x49,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x47,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x4a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x4d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x50,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x4e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
             {
                 /* .nMonStatsId = */ 0x94,
                 /* .nStringIndex = */ 0x4c,
                 /* .nPad = */ 0x0,
                 /* .bMenu = */ 0x0
             },
-            {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x4f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        /* .nMessagesCount = */ 0x1
+        /* .nMessagesCount = */ 0x5
     },
-    {}  // slot 4: vanilla flavor (participant) — string id not in tree [R54]
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x50,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x4e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x4f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x3
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q1::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q1
@@ -3898,31 +4828,247 @@ namespace D2Game::Quests::QUESTS::A1Q2 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x96,
-            /* .nStringIndex = */ 0x51,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+// VP-BEGIN [gossip-table-fix history]: issue #13/#22 root cause (found fork-side R54/R85)
+// was the regen emitting these tables SINGULAR (1 slot) while the quest code indexes
+// pNpcMessages[slot] 0..4 — slots read past the object, so Akara's Den turn-in line never
+// existed and the reward never echoed c2s 0x31. The fork shipped 5 hand-built slots (string
+// ids for the flavor lines were not in the tree and were left empty rather than invented).
+// Upstream bc47c6bc has now recovered the retail tables verbatim from the binary — sizes and
+// flavor string ids below are retail-exact, supersedes the hand-built tables. [R87 merge]
+// [R87 merge] A1Q2 table: retail-exact 6 slots (upstream bc47c6bc).
+// VP-END [gossip-table-fix history]
+D2NPCMessageTableStrc aNpcGossipData[6] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x51,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x52,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x56,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x53,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x55,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x54,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x57,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x5b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x59,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x58,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x5a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x5c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x60,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x5e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x5d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x5f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x60,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x5c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x5d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x5f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x4
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q2::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q2
@@ -3933,31 +5079,258 @@ namespace D2Game::Quests::QUESTS::A1Q3 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x9a,
-            /* .nStringIndex = */ 0x92,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[6] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x92,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x94,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x95,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0x93,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x96,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x97,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x99,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x9c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x9f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x9d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0x9a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x9b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x9e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0xa2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0xa5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0xa3,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0xa0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0xa1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0xa4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0xa2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0xa5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0xa0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0xa1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0xa4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q3::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q3
@@ -4380,56 +5753,237 @@ namespace D2Game::Quests::QUESTS::A1Q5 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x109,
-            /* .nStringIndex = */ 0x83,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
+D2NPCMessageTableStrc aNpcGossipData[5] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0x83,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x81,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x82,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x84,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x85,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x80,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {
-            /* .nMonStatsId = */ 0x9a,
-            /* .nStringIndex = */ 0x81,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0x94,
-            /* .nStringIndex = */ 0x82,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0x9b,
-            /* .nStringIndex = */ 0x84,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0x96,
-            /* .nStringIndex = */ 0x85,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0x93,
-            /* .nStringIndex = */ 0x80,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x6
     },
-    /* .nMessagesCount = */ 0x6
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x86,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x88,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x89,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x8a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0x87,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x8b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x8c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x8d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0x91,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x90,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x8f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x8e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x8c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x8d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0x91,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x90,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x8f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x8e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q5::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q5
@@ -4440,31 +5994,263 @@ namespace D2Game::Quests::QUESTS::A1Q6 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x109,
-            /* .nStringIndex = */ 0xa6,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[6] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0xa6,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0xa8,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0xac,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0xa9,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0xa7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0xaa,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0xab,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0xb2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0xb1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0xaf,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0xad,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0xb0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0xae,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0xb5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0xb8,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0xb4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0xb6,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0xb7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0xb3,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0xb5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0xb8,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0xb4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0xb6,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0xb7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0xb3,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q6::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q6
@@ -4475,31 +6261,163 @@ namespace D2Game::Quests::QUESTS::A1Q7 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x10a,
-            /* .nStringIndex = */ 0x3b,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[6] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x10a,
+                /* .nStringIndex = */ 0x3b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x10a,
+                /* .nStringIndex = */ 0x3c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x10a,
+                /* .nStringIndex = */ 0x3d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x10a,
+                /* .nStringIndex = */ 0x3e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x10a,
+                /* .nStringIndex = */ 0x3f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q7::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q7
@@ -4510,71 +6428,165 @@ namespace D2Game::Quests::QUESTS::Quest38 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xc7,
-            /* .nStringIndex = */ 0xcb,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
+D2NPCMessageTableStrc aNpcGossipData[3] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0xcb,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0xbe,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0xdd,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0xe6,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0xf1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x107,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0xd7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x112,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x11d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {
-            /* .nMonStatsId = */ 0xc6,
-            /* .nStringIndex = */ 0xbe,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0xb0,
-            /* .nStringIndex = */ 0xdd,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0xc8,
-            /* .nStringIndex = */ 0xe6,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0xd2,
-            /* .nStringIndex = */ 0xf1,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0xb2,
-            /* .nStringIndex = */ 0x107,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0xaf,
-            /* .nStringIndex = */ 0xd7,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0xca,
-            /* .nStringIndex = */ 0x112,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0xb1,
-            /* .nStringIndex = */ 0x11d,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x9
     },
-    /* .nMessagesCount = */ 0x9
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0xcc,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0xbe,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0xdd,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0xe7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0xf2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x108,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0xd7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x112,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x11e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x9
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::Quest38::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::Quest38
@@ -4585,31 +6597,85 @@ namespace D2Game::Quests::QUESTS::A2Q0 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xc9,
-            /* .nStringIndex = */ 0xfd,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
+D2NPCMessageTableStrc aNpcGossipData[3] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0xfd,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x7d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q0::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q0
@@ -4620,16 +6686,17 @@ namespace D2Game::Quests::QUESTS::A2Q1 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-// VP-BEGIN [gossip-table-fix]: issue #13 family — same truncation shape as
-// A1Q1 (this round's proven root cause): singular 1-slot table while
-// A2Q1's gossip handler indexes slots 0..4 (reward line = slot 3). Slot 0 =
-// accept line 0x130 (was the only slot present), slot 3 = turn-in line 0x14e —
-// pinned by A2Q1's own gossip gate (0x130 accept / 0x14e reward, Atma 0xb0;
-// bMenu 0 mirrors the accept entry). Slots 1/2/4 left empty — vanilla flavor
-// string ids not in the tree, not invented. [R54] A2Q1 gossip table 5 slots.
-// VP-END [gossip-table-fix]
-D2NPCMessageTableStrc aNpcGossipData[5] = {
-    { /* slot 0: accept (msg 0x130) */
+// VP-BEGIN [gossip-table-fix history]: issue #13/#22 root cause (found fork-side R54/R85)
+// was the regen emitting these tables SINGULAR (1 slot) while the quest code indexes
+// pNpcMessages[slot] 0..4 — slots read past the object, so Akara's Den turn-in line never
+// existed and the reward never echoed c2s 0x31. The fork shipped 5 hand-built slots (string
+// ids for the flavor lines were not in the tree and were left empty rather than invented).
+// Upstream bc47c6bc has now recovered the retail tables verbatim from the binary — sizes and
+// flavor string ids below are retail-exact, supersedes the hand-built tables. [R87 merge]
+// [R87 merge] A2Q1 table: retail-exact 9 slots (upstream bc47c6bc).
+// VP-END [gossip-table-fix history]
+D2NPCMessageTableStrc aNpcGossipData[9] = {
+    {
         /* .pMessages = */ {
             {
                 /* .nMonStatsId = */ 0xb0,
@@ -4637,25 +6704,402 @@ D2NPCMessageTableStrc aNpcGossipData[5] = {
                 /* .nPad = */ 0x0,
                 /* .bMenu = */ 0x0
             },
-            {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
         /* .nMessagesCount = */ 0x1
     },
-    {}, // slot 1: vanilla flavor — string id not in tree [R54]
-    {}, // slot 2: vanilla flavor — string id not in tree [R54]
-    { /* slot 3: turn-in (msg 0x14e) — the Radament reward line */
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x136,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x133,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x131,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x132,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x138,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x139,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x13a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x137,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x134,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x135,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0xa
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x13d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x13b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x13e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x140,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x142,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x141,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x144,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x13c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x13f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x143,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0xa
+    },
+    {
         /* .pMessages = */ {
             {
                 /* .nMonStatsId = */ 0xb0,
                 /* .nStringIndex = */ 0x14e,
                 /* .nPad = */ 0x0,
-                /* .bMenu = */ 0x0
+                /* .bMenu = */ 0x1
             },
-            {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x145,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x14a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x146,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x147,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x14d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x148,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x149,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x14c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        /* .nMessagesCount = */ 0x1
+        /* .nMessagesCount = */ 0x9
     },
-    {}  // slot 4: vanilla flavor (participant) — string id not in tree [R54]
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x14b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x14e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x145,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x14a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x146,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x14d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x148,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x149,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x14c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x9
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q1::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q1
@@ -4963,81 +7407,403 @@ namespace D2Game::Quests::QUESTS::A2Q3 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xb0,
-            /* .nStringIndex = */ 0x158,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
+D2NPCMessageTableStrc aNpcGossipData[6] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x158,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x157,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x155,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x156,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x15c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x15b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x15e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x15d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x159,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x154,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x15a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {
-            /* .nMonStatsId = */ 0xaf,
-            /* .nStringIndex = */ 0x157,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xc6,
-            /* .nStringIndex = */ 0x155,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xc7,
-            /* .nStringIndex = */ 0x156,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xb1,
-            /* .nStringIndex = */ 0x15c,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
-        },
-        {
-            /* .nMonStatsId = */ 0xca,
-            /* .nStringIndex = */ 0x15b,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xf4,
-            /* .nStringIndex = */ 0x15e,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xd2,
-            /* .nStringIndex = */ 0x15d,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xc8,
-            /* .nStringIndex = */ 0x159,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xc9,
-            /* .nStringIndex = */ 0x154,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xb2,
-            /* .nStringIndex = */ 0x15a,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0xb
     },
-    /* .nMessagesCount = */ 0xb
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x158,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x157,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x155,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x156,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x15c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x15b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x15e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x15d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x159,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x154,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x15a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0xb
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x169,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x161,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x160,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x167,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x166,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x165,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x168,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x163,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x15f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x162,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x164,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0xb
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x170,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x16e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x16b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x16c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x173,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x172,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x174,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x16f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x16d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x16a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0xa
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x170,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x16e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x16b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x16a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x16c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x173,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x172,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x16f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x16d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x171,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0xa
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q3::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q3
@@ -5571,81 +8337,261 @@ namespace D2Game::Quests::QUESTS::A2Q5 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xb0,
-            /* .nStringIndex = */ 0x19e,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
+D2NPCMessageTableStrc aNpcGossipData[4] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x19e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x19d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x198,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x1a1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x19a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x19b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x1a2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x19c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x199,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x19f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x1a0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {
-            /* .nMonStatsId = */ 0xaf,
-            /* .nStringIndex = */ 0x19d,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xc6,
-            /* .nStringIndex = */ 0x198,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xc7,
-            /* .nStringIndex = */ 0x1a1,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xb1,
-            /* .nStringIndex = */ 0x19a,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xca,
-            /* .nStringIndex = */ 0x19b,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xf4,
-            /* .nStringIndex = */ 0x1a2,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xd2,
-            /* .nStringIndex = */ 0x19c,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xc9,
-            /* .nStringIndex = */ 0x199,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xc8,
-            /* .nStringIndex = */ 0x19f,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0xb2,
-            /* .nStringIndex = */ 0x1a0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0xb
     },
-    /* .nMessagesCount = */ 0xb
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x1ab,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x1a8,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x1a3,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x1a7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x1a6,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x1aa,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x1ad,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x1a9,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x1a5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x1a4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x1ac,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0xb
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x1ab,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x1a8,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x1a3,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x1a7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x1a6,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x1aa,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x1ad,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x1a9,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x1a5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x1a4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x1ac,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0xb
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q5::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q5
@@ -5656,31 +8602,395 @@ namespace D2Game::Quests::QUESTS::A2Q6 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xc9,
-            /* .nStringIndex = */ 0x1ae,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[8] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x1ae,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x1b2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x1b1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x1b9,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x1b0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x1af,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x1b7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x1b6,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x1b8,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x1b4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x1b3,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x1b5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0xb
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfb,
+                /* .nStringIndex = */ 0x12e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x1bd,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x1be,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x1c3,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x1bb,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x1c1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x1ba,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xfb,
+                /* .nStringIndex = */ 0x12e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x1bc,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x1c4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x1c2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x1c0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x1bf,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0xc
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x1bd,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x1be,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x1c3,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x1bb,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x1c1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x1ba,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfb,
+                /* .nStringIndex = */ 0x12e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x1bc,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x1c4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x1c0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x1bf,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0xb
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x1c2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x1bd,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x1be,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x1c1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x1bc,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x1c4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x1bf,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q6::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q6
@@ -5691,31 +9001,163 @@ namespace D2Game::Quests::QUESTS::A2Q7 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x179,
-            /* .nStringIndex = */ 0x3b,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[6] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x179,
+                /* .nStringIndex = */ 0x3b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x179,
+                /* .nStringIndex = */ 0x3c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x179,
+                /* .nStringIndex = */ 0x3d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x179,
+                /* .nStringIndex = */ 0x3e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x179,
+                /* .nStringIndex = */ 0x3f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q7::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q7
@@ -5726,31 +9168,59 @@ namespace D2Game::Quests::QUESTS::A2Q8 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x17a,
-            /* .nStringIndex = */ 0x12f,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[2] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x17a,
+                /* .nStringIndex = */ 0x12f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q8::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q8
@@ -5815,31 +9285,59 @@ namespace D2Game::Quests::QUESTS::A4Q0 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x16f,
-            /* .nStringIndex = */ 0x298,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[2] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x16f,
+                /* .nStringIndex = */ 0x298,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A4Q0::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A4Q0
@@ -5850,31 +9348,188 @@ namespace D2Game::Quests::QUESTS::A4Q1 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x16f,
-            /* .nStringIndex = */ 0x29e,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[6] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x16f,
+                /* .nStringIndex = */ 0x29e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x16f,
+                /* .nStringIndex = */ 0x29f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf6,
+                /* .nStringIndex = */ 0x2a0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x2
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x16f,
+                /* .nStringIndex = */ 0x2a1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf6,
+                /* .nStringIndex = */ 0x2a2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x2
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x16f,
+                /* .nStringIndex = */ 0x2a4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xf6,
+                /* .nStringIndex = */ 0x2a5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x196,
+                /* .nStringIndex = */ 0x2a3,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x3
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x16f,
+                /* .nStringIndex = */ 0x2a4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf6,
+                /* .nStringIndex = */ 0x2a5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x2
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A4Q1::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A4Q1
@@ -5885,31 +9540,214 @@ namespace D2Game::Quests::QUESTS::A4Q2 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x16f,
-            /* .nStringIndex = */ 0x2a9,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[7] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x16f,
+                /* .nStringIndex = */ 0x2a9,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x16f,
+                /* .nStringIndex = */ 0x2ab,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf6,
+                /* .nStringIndex = */ 0x2aa,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x2
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x16f,
+                /* .nStringIndex = */ 0x2ac,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xf6,
+                /* .nStringIndex = */ 0x2ad,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x2
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x16f,
+                /* .nStringIndex = */ 0x2ac,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf6,
+                /* .nStringIndex = */ 0x2ad,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x2
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x16f,
+                /* .nStringIndex = */ 0x4e20,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xf6,
+                /* .nStringIndex = */ 0x4e21,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x2
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x16f,
+                /* .nStringIndex = */ 0x4e20,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf6,
+                /* .nStringIndex = */ 0x4e21,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x2
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A4Q2::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A4Q2
@@ -5920,31 +9758,137 @@ namespace D2Game::Quests::QUESTS::A4Q3 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xf6,
-            /* .nStringIndex = */ 0x2a6,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[5] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf6,
+                /* .nStringIndex = */ 0x2a6,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf6,
+                /* .nStringIndex = */ 0x2a7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf6,
+                /* .nStringIndex = */ 0x2a8,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf6,
+                /* .nStringIndex = */ 0x2a8,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A4Q3::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A4Q3
@@ -5955,31 +9899,85 @@ namespace D2Game::Quests::QUESTS::A4Q4 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x198,
-            /* .nStringIndex = */ 0x29c,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[3] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x198,
+                /* .nStringIndex = */ 0x29c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x198,
+                /* .nStringIndex = */ 0x29d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A4Q4::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A4Q4
@@ -5990,56 +9988,130 @@ namespace D2Game::Quests::QUESTS::Quest39 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x129,
-            /* .nStringIndex = */ 0x1c5,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
+D2NPCMessageTableStrc aNpcGossipData[3] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x1c5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x1ca,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x1de,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x1ea,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x1f5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x202,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {
-            /* .nMonStatsId = */ 0xf5,
-            /* .nStringIndex = */ 0x1ca,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x108,
-            /* .nStringIndex = */ 0x1de,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0xfc,
-            /* .nStringIndex = */ 0x1ea,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0xfe,
-            /* .nStringIndex = */ 0x1f5,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0xff,
-            /* .nStringIndex = */ 0x202,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x6
     },
-    /* .nMessagesCount = */ 0x6
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x1c5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x1df,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x1eb,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x1f6,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x203,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::Quest39::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::Quest39
@@ -6050,31 +10122,85 @@ namespace D2Game::Quests::QUESTS::A3Q0 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xfd,
-            /* .nStringIndex = */ 0x1d1,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[3] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x1d1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x1d2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A3Q0::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A3Q0
@@ -6085,31 +10211,258 @@ namespace D2Game::Quests::QUESTS::A3Q1 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xfe,
-            /* .nStringIndex = */ 0x225,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[6] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x225,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x226,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x227,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x228,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x229,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x22a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x22b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x22c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x7
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x22d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x22e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x22f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x230,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x231,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x232,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x233,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x7
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x234,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x235,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x236,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x237,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x238,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x239,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x23a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x7
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x239,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x23a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x2
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A3Q1::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A3Q1
@@ -6469,31 +10822,335 @@ namespace D2Game::Quests::QUESTS::A3Q3 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xfd,
-            /* .nStringIndex = */ 0x23b,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[8] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x23b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x23c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x23d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x23e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x23f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x240,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x241,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x242,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x7
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x243,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x244,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x245,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x246,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x247,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x248,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x249,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x7
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x24a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x24b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x24c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x24e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x24f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x250,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x24c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x24a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x24f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x250,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x4
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x24c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x24d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x24a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x24f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x250,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x251,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A3Q3::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A3Q3
@@ -6839,31 +11496,385 @@ namespace D2Game::Quests::QUESTS::A3Q5 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xff,
-            /* .nStringIndex = */ 0x252,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[8] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x252,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x253,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x255,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x257,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x259,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x25b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x25d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x25f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x7
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x254,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x256,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x258,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x25a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x25c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x25e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x260,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x7
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x261,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x263,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x264,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x266,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x268,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x26a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x26b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x7
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x262,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x265,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x267,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x269,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x26c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x26d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x26e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x26f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x270,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x271,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x272,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x273,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x7
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x26d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x26e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x26f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x270,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x271,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x272,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x273,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x7
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A3Q5::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A3Q5
@@ -6874,31 +11885,390 @@ namespace D2Game::Quests::QUESTS::A3Q6 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xff,
-            /* .nStringIndex = */ 0x274,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[8] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x274,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x275,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x277,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x279,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x27b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x27d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x27f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x281,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x7
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x276,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x278,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x27a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x27e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x280,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x282,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x283,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x285,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x287,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x289,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x28b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x28d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x28f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x7
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x284,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x286,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x288,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x28a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x28c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x28e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x290,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x7
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x291,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x292,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x293,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x294,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x295,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x296,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x297,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x7
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x291,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x292,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x293,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x294,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x295,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x296,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x297,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x7
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+        },
+        /* .nMessagesCount = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A3Q6::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A3Q6

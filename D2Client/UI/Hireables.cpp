@@ -9,7 +9,6 @@
 #include "D2Client/GAME/Roster.h"
 #include "D2Client/GAME/RosterPets.h"
 #include "D2Client/GAME/Select.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/CmdTbl.h"
 #include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/Path.h"
@@ -29,6 +28,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -155,6 +155,7 @@ void __stdcall LoadClassIcons() {
 }
 
 void __stdcall FreeHireablesList() {
+    int nIconIdx;
     DC6** ppClassIcon = ClassIcons;
     do {
       if (*ppClassIcon) {
@@ -171,16 +172,11 @@ void __stdcall FreeHireablesList() {
 
     int nIconCount = sgptDataTable->nTxtPetTypeSize * 5;
     D2HireablesListStrc* pMemoryToFree = gpHireablesList;
-    if (nIconCount > 0) {
-      int nIconIdx = 0;
-      do {
-        if ((&pMemoryToFree->pIcon)[nIconIdx]) {
-          Core::Archive::DC6_FreeAndDelete((&pMemoryToFree->pIcon)[nIconIdx]);
-          pMemoryToFree = gpHireablesList;
-        }
-
-        nIconIdx++;
-      } while (nIconIdx < nIconCount);
+    for (nIconIdx = 0; nIconIdx < nIconCount; nIconIdx++) {
+      if ((&pMemoryToFree->pIcon)[nIconIdx]) {
+        Core::Archive::DC6_FreeAndDelete((&pMemoryToFree->pIcon)[nIconIdx]);
+        pMemoryToFree = gpHireablesList;
+      }
     }
 
     D2_FREE_POOL_AT(nullptr, pMemoryToFree, ".\\UI\\Hireables.cpp", 0xb7);
@@ -215,8 +211,8 @@ static void __stdcall DrawHirelingName(int32_t nX, int32_t nY, int32_t nColor, u
       nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(lwMessage);
     }
 
-    int32_t iVar1 = D2Win::Src::D2WinFont::DRAW_text0(lwMessage);
-    nX += 0x16 - iVar1 / 2;
+    int32_t nFinalWidth = D2Win::Src::D2WinFont::DRAW_text0(lwMessage);
+    nX += 0x16 - nFinalWidth / 2;
     if (nX < 0) {
       nX = 0;
     }
@@ -227,11 +223,7 @@ static void __stdcall DrawHirelingName(int32_t nX, int32_t nY, int32_t nColor, u
 
 static void __stdcall GetAndDrawHirelingName(int32_t nX, int32_t nY, int32_t nPetType) {
     uint16_t wszName[32];
-    if (!(nPetType >= 0 && nPetType < sgptDataTable->nTxtPetTypeSize)) {
-      return;
-    }
-
-    D2PetTypeTxt* pPetTypeTxt = sgptDataTable->pTxtPetType + nPetType;
+    D2PetTypeTxt* pPetTypeTxt = nPetType >= 0 && nPetType < sgptDataTable->nTxtPetTypeSize ? sgptDataTable->pTxtPetType + nPetType : nullptr;
     if (!(pPetTypeTxt && pPetTypeTxt->name > 0 && pPetTypeTxt->name != 0x1506)) {
       return;
     }
@@ -288,15 +280,8 @@ void __stdcall UI_DrawHirelingGoldCost(int nGoldCost, int32_t nDrawPositionX) {
 
 DC6 * __fastcall GetRosterIcon(D2UnitStrc * pUnit, int32_t nSkillId, int32_t * pRosterGUID, uint32_t * pFlagOut) {
     int nIconIndex;
-    char szIconPath[256];
-    if (nSkillId < 0) {
-      return nullptr;
-    }
-    if (nSkillId >= sgptDataTable->nTxtPetTypeSize) {
-      return nullptr;
-    }
-
-    D2PetTypeTxt* pPetType = sgptDataTable->pTxtPetType + nSkillId;
+    DC6* pIcon;
+    D2PetTypeTxt* pPetType = nSkillId >= 0 && nSkillId < sgptDataTable->nTxtPetTypeSize ? sgptDataTable->pTxtPetType + nSkillId : nullptr;
     if (!pPetType) {
       return nullptr;
     }
@@ -331,14 +316,14 @@ DC6 * __fastcall GetRosterIcon(D2UnitStrc * pUnit, int32_t nSkillId, int32_t * p
     } while (i < 5);
 
     DC6** ppIcon = &gpHireablesList[nSkillIdSaved].pIcon + nIconIndex;
-    if ((&gpHireablesList[nSkillIdSaved].pIcon)[nIconIndex]) {
-      return *ppIcon;
+    if (!(&gpHireablesList[nSkillIdSaved].pIcon)[nIconIndex]) {
+      char szIconPath[256];
+      sprintf(szIconPath, "hireables\\%s", pPetType->baseicon + nIconIndex * 0x20);
+      ppIcon = &gpHireablesList[nRosterGUID].pIcon + nIconIndex;
+      pIcon = ui::ARCHIVE_LoadOverlayImageUsedInGame(szIconPath);
+      *ppIcon = pIcon;
     }
 
-    sprintf(szIconPath, "hireables\\%s", pPetType->baseicon + nIconIndex * 0x20);
-    ppIcon = &gpHireablesList[nRosterGUID].pIcon + nIconIndex;
-    DC6* pIcon = ui::ARCHIVE_LoadOverlayImageUsedInGame(szIconPath);
-    *ppIcon = pIcon;
     return *ppIcon;
 }
 
@@ -449,11 +434,10 @@ int32_t __stdcall UI_CheckItemCanEquipToHireling(int32_t bPlaySound) {
     uint32_t bIsType;
     bIsType = D2Common::ITEMS::Items::ITEMS_IsA(pCursorItem_lcl, ITEMTYPE_HealingPotion);
     if (bIsType || (bIsType = D2Common::ITEMS::Items::ITEMS_IsA(pCursorItem_lcl, ITEMTYPE_AntidotePotion) , bIsType != 0) || (bIsType = D2Common::ITEMS::Items::ITEMS_IsA(pCursorItem_lcl, ITEMTYPE_ThawingPotion) , bIsType != 0)) {
-      if (!bPlaySound) {
-        return 1;
+      if (bPlaySound) {
+        UNIT::UnitSnd::UNITSND_PlaySoundForMercenary(nMercGUID, '\x01', 0x54);
       }
 
-      UNIT::UnitSnd::UNITSND_PlaySoundForMercenary(nMercGUID, '\x01', 0x54);
       return 1;
     }
 
@@ -533,11 +517,10 @@ int32_t __stdcall UI_CheckItemCanEquipToHireling(int32_t bPlaySound) {
     }
 
     bMeetsReqs = D2Common::ITEMS::Items::ITEM_CheckEquipRequirements(pCursorItem_lcl, pPlayer, 0, nullptr, nullptr, nullptr);
-    if (bMeetsReqs) {
-      return bCanEquip;
+    if (!bMeetsReqs) {
+      bCanEquip = 0;
     }
 
-    bCanEquip = 0;
     return bCanEquip;
 }
 
@@ -548,10 +531,10 @@ void __stdcall INPUT_HireableHireClick(D2UIMouseMsgStrc * pMsg) {
     }
 
     bool bIsCombatMode = gnHireDisplayMode == 2;
-    uint32_t uVar1 = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
+    uint32_t nMouseX = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
     uint16_t nMouseY = pMsg->uLParam.sMousePos.nMouseY;
     pMsg->bHandled = 0;
-    if (bIsCombatMode || (int)uVar1 < gpHireHoverUnit || (int)uVar1 > gpHireHoverUnit + 0x2e || (uint32_t)(nMouseY - 0x18) > 0x24) {
+    if (bIsCombatMode || (int)nMouseX < gpHireHoverUnit || (int)nMouseX > gpHireHoverUnit + 0x2e || (uint32_t)(nMouseY - 0x18) > 0x24) {
       gnHireIconHoverIndex = 0;
       return;
     }
@@ -574,12 +557,12 @@ void __stdcall UI_HandleHirelingTooltipHoverTimer(D2UIMouseMsgStrc * pMsg) {
       return;
     }
 
-    uint32_t uVar1 = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
+    uint32_t nMouseX = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
     uint16_t nMouseY = pMsg->uLParam.sMousePos.nMouseY;
     bool bIsCombatMode = gnHireDisplayMode == 2;
     pMsg->bHandled = 0;
     gnHireIconHoverY = 0;
-    if (bIsCombatMode || (int)uVar1 < gpHireHoverUnit || (int)uVar1 > gpHireHoverUnit + 0x2e || (uint32_t)(nMouseY - 0x18) > 0x24) {
+    if (bIsCombatMode || (int)nMouseX < gpHireHoverUnit || (int)nMouseX > gpHireHoverUnit + 0x2e || (uint32_t)(nMouseY - 0x18) > 0x24) {
       gnHireIconHoverX = 0;
       gnHireIconHoverIndex = 0;
       return;
@@ -612,42 +595,44 @@ void __stdcall UI_HandleHirelingTooltipHoverTimer(D2UIMouseMsgStrc * pMsg) {
 
 void __stdcall UI_ToggleHirelingIconsVisibility() {
     eD2GSGameType eGameType;
-    if (!gnHireDisplayMode) {
-      eGameType = GAME::Game::CLIENT_GetD2GSGameType();
-      if (eGameType == GAMETYPE_SINGLEPLAYER) {
-        gnHireDisplayMode = 2;
-        gnHireIconHoverIndex = 0;
-        ui::SetUIFlag(UI_HIREICONS, UI_RESET, 0);
-        return;
-      }
+    if (gnHireDisplayMode) {
+      switch (gnHireDisplayMode) {
+        case 1:
+          {
+            eGameType = GAME::Game::CLIENT_GetD2GSGameType();
+            if (eGameType == GAMETYPE_SINGLEPLAYER) {
+              gnHireDisplayMode = 0;
+              ui::SetUIFlag(UI_HIREICONS, UI_SET, 0);
+              return;
+            }
 
-      gnHireDisplayMode = 1;
-      ui::SetUIFlag(UI_HIREICONS, UI_SET, 0);
-      return;
-    }
-
-    switch (gnHireDisplayMode) {
-      case 1:
-        {
-          eGameType = GAME::Game::CLIENT_GetD2GSGameType();
-          if (eGameType == GAMETYPE_SINGLEPLAYER) {
+            gnHireDisplayMode = 2;
+            gnHireIconHoverIndex = 0;
+            ui::SetUIFlag(UI_HIREICONS, UI_RESET, 0);
+            return;
+          }
+        default:
+          {
             gnHireDisplayMode = 0;
             ui::SetUIFlag(UI_HIREICONS, UI_SET, 0);
             return;
           }
+      }
 
-          gnHireDisplayMode = 2;
-          gnHireIconHoverIndex = 0;
-          ui::SetUIFlag(UI_HIREICONS, UI_RESET, 0);
-          return;
-        }
-      default:
-        {
-          gnHireDisplayMode = 0;
-          ui::SetUIFlag(UI_HIREICONS, UI_SET, 0);
-          return;
-        }
+      return;
     }
+
+    eGameType = GAME::Game::CLIENT_GetD2GSGameType();
+    if (eGameType == GAMETYPE_SINGLEPLAYER) {
+      gnHireDisplayMode = 2;
+      gnHireIconHoverIndex = 0;
+      ui::SetUIFlag(UI_HIREICONS, UI_RESET, 0);
+      return;
+    }
+
+    gnHireDisplayMode = 1;
+    ui::SetUIFlag(UI_HIREICONS, UI_SET, 0);
+    return;
 }
 
 void __stdcall INPUT_HireableLongPress(D2UIMouseMsgStrc * pMsg) {
@@ -657,11 +642,11 @@ void __stdcall INPUT_HireableLongPress(D2UIMouseMsgStrc * pMsg) {
       return;
     }
 
-    uint32_t uVar1 = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
+    uint32_t nMouseX = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
     uint16_t nMouseY = pMsg->uLParam.sMousePos.nMouseY;
     bool bNotCombatMode = gnHireDisplayMode != 2;
     pMsg->bHandled = 0;
-    if (bNotCombatMode && (int)uVar1 >= gpHireHoverUnit && (int)uVar1 <= gpHireHoverUnit + 0x2e && (uint32_t)(nMouseY - 0x18) <= 0x24) {
+    if (bNotCombatMode && (int)nMouseX >= gpHireHoverUnit && (int)nMouseX <= gpHireHoverUnit + 0x2e && nMouseY >= 0x18 && nMouseY <= 0x3c) {
       DWORD dwNow;
       if (!gnHireIconHoverIndex) {
         gnHireIconHoverIndex = GetTickCount();
@@ -753,6 +738,7 @@ static void __stdcall UI_DrawHirelingNameFromUnit(int32_t nX, int32_t nY, D2Unit
 }
 
 static BOOL __stdcall UI_DrawPartyMembersHirelingIcons(int * pnY, int * pnYOffset, int * pnX, D2UnitStrc * pUnit) {
+    D2RosterStrc* pRoster;
     uint32_t nRosterGUID;
     int32_t nRosterCharClass;
     DC6* pClassIcon;
@@ -761,82 +747,78 @@ static BOOL __stdcall UI_DrawPartyMembersHirelingIcons(int * pnY, int * pnYOffse
     uint32_t nPlayerGUID;
     int nIconDrawX;
     bool bDrewAny = false;
-    int16_t nPartyId = UNIT::CUnit::GetPlayerUnitPartyId(pUnit);
+    uint16_t nPartyId = UNIT::CUnit::GetPlayerUnitPartyId(pUnit);
     if (!pUnit) {
       nPlayerGUID = -1;
     } else {
       nPlayerGUID = pUnit->nUnitGUID;
     }
-    if (!(nPartyId != -1 && !gnHireDisplayMode)) {
-      return 0;
-    }
+    if (nPartyId != 0xffff && !gnHireDisplayMode) {
+      uint16_t nRosterPartyId;
+      pRoster = GAME::Roster::GetNextRosterPlayer(nullptr);
+      if (pRoster) {
+        for (; pRoster; pRoster = GAME::Roster::GetNextRosterPlayer(pRoster)) {
+          nRosterPartyId = GAME::Roster::GetRosterPartyId(pRoster);
+          if (nPartyId == nRosterPartyId) {
+            nRosterGUID = GAME::Roster::GetRosterGUID(pRoster);
+            if (nRosterGUID != nPlayerGUID) {
+              nRosterCharClass = GAME::Roster::GetRosterCharType(pRoster);
+              switch (nRosterCharClass) {
+                case 0:
+                  pClassIcon = ClassIcons[0];
+                break;
+                case 1:
+                  pClassIcon = ClassIcons[1];
+                break;
+                case 4:
+                  pClassIcon = ClassIcons[2];
+                break;
+                case 3:
+                  pClassIcon = ClassIcons[3];
+                break;
+                case 2:
+                  pClassIcon = ClassIcons[4];
+                break;
+                case 6:
+                  pClassIcon = ClassIcons[5];
+                break;
+                default:
+                  continue;
+                case 5:
+                  pClassIcon = ClassIcons[6];
+                break;
+              }
 
-    D2RosterStrc* pRoster = GAME::Roster::GetNextRosterPlayer(nullptr);
-    if (!pRoster) {
-      return 0;
-    }
+              if (pClassIcon) {
+                DrawHealthBar(nRosterGUID, 0, *pnX);
+                nIconDrawX = *pnY;
+                nX = *pnX;
+                UI_DrawHirelingNameFromString(GAME::Roster::GetRosterName(pRoster), nX, nIconDrawX);
+                if (*pnYOffset) {
+                  *pnY -= *pnYOffset;
+                  *pnYOffset = 0;
+                } else {
+                  *pnYOffset = 10;
+                  *pnY += 10;
+                }
 
-    for (; pRoster; pRoster = GAME::Roster::GetNextRosterPlayer(pRoster)) {
-      int16_t nRosterPartyId;
-      nRosterPartyId = GAME::Roster::GetRosterPartyId(pRoster);
-      if (nPartyId == nRosterPartyId) {
-        nRosterGUID = GAME::Roster::GetRosterGUID(pRoster);
-        if (nRosterGUID != nPlayerGUID) {
-          nRosterCharClass = GAME::Roster::GetRosterCharType(pRoster);
-          switch (nRosterCharClass) {
-            case 0:
-              pClassIcon = ClassIcons[0];
-            break;
-            case 1:
-              pClassIcon = ClassIcons[1];
-            break;
-            case 4:
-              pClassIcon = ClassIcons[2];
-            break;
-            case 3:
-              pClassIcon = ClassIcons[3];
-            break;
-            case 2:
-              pClassIcon = ClassIcons[4];
-            break;
-            case 6:
-              pClassIcon = ClassIcons[5];
-            break;
-            default:
-              continue;
-            case 5:
-              pClassIcon = ClassIcons[6];
-            break;
-          }
-
-          if (pClassIcon) {
-            DrawHealthBar(nRosterGUID, 0, *pnX);
-            nIconDrawX = *pnY;
-            nX = *pnX;
-            UI_DrawHirelingNameFromString(GAME::Roster::GetRosterName(pRoster), nX, nIconDrawX);
-            if (*pnYOffset) {
-              *pnY -= *pnYOffset;
-              *pnYOffset = 0;
-            } else {
-              *pnYOffset = 10;
-              *pnY += 10;
+                memset(&sGfxData, 0, 0x48);
+                sGfxData.pDC6 = pClassIcon;
+                D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, *pnX, 0x3c, -1, DRAW_TRANSPARENT, nullptr);
+                *pnX += 0x38;
+                bDrewAny = true;
+              }
             }
-
-            memset(&sGfxData, 0, 0x48);
-            sGfxData.pDC6 = pClassIcon;
-            D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, *pnX, 0x3c, -1, DRAW_TRANSPARENT, nullptr);
-            *pnX += 0x38;
-            bDrewAny = true;
           }
+        }
+
+        if (bDrewAny) {
+          return 1;
         }
       }
     }
 
-    if (!bDrewAny) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 static BOOL __stdcall HIRELING_DrawPortraitIcon(D2UnitStrc * pUnit, int * pnYToggle, int * pnY, int * pnX) {

@@ -38,8 +38,6 @@ struct D2SetItemsTxt;
 
 // Data types
 struct D2AllStatesDataTbl {
-    D2AllStatesDataTbl() = default;
-    D2AllStatesDataTbl(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ short nStateId;
@@ -60,8 +58,7 @@ struct D2BodyLocsTxt {
     /* 0x00 */ char code[4];
 };
 
-#pragma pack(push, 1)
-struct D2CharStatsTxt {
+struct __attribute__((packed)) D2CharStatsTxt {
     /* 0x00 */ uint16_t wszClass[16];
     /* 0x20 */ char szClass[16];
     /* 0x30 */ uint8_t str;
@@ -101,7 +98,6 @@ struct D2CharStatsTxt {
     /* 0xAE */ short Skill[10];
     /* 0xC2 */ uint16_t pad0xC2; // trailing record padding to 0xC4 stride (no column binds); merges 0xC2-0xC3
 };
-#pragma pack(pop)
 
 struct D2ColorsTxt {
     /* 0x00 */ char code[4];
@@ -122,8 +118,6 @@ struct D2ElemTypesTxt {
 };
 
 struct D2EventsTxt {
-    D2EventsTxt() = default;
-    D2EventsTxt(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ uint16_t event;
@@ -245,10 +239,7 @@ struct __attribute__((packed)) D2ItemTypesTxt {
 };
 
 struct D2LevelDefsColor {
-    D2LevelDefsColor() = default;
-    D2LevelDefsColor(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
     operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
-    D2LevelDefsColor(char a0, char a1, char a2, char a3) : Intensity(a0), Red(a1), Green(a2), Blue(a3) {}
 
     /* 0x00 */ char Intensity;
     /* 0x01 */ char Red;
@@ -311,8 +302,6 @@ struct D2MissCalcTxt {
 };
 
 struct D2MonAiTxt {
-    D2MonAiTxt() = default;
-    D2MonAiTxt(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ uint16_t AI;
@@ -350,18 +339,13 @@ struct D2MonModeTxtSmall {
 };
 
 struct D2MonPlaceTxt {
-    D2MonPlaceTxt() = default;
-    D2MonPlaceTxt(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ uint16_t code;
 };
 
 struct D2MonPresetTxt {
-    D2MonPresetTxt() = default;
-    D2MonPresetTxt(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
     operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
-    D2MonPresetTxt(uint8_t a0, uint8_t a1, uint16_t a2) : nAct(a0), nType(a1), wPlace(a2) {}
 
     /* 0x00 */ uint8_t nAct;
     /* 0x01 */ uint8_t nType;
@@ -536,8 +520,6 @@ struct D2ParsedChestTreasureClassStrc {
 };
 
 struct D2PassiveSkillsPerClassStrc {
-    D2PassiveSkillsPerClassStrc() = default;
-    D2PassiveSkillsPerClassStrc(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ short nSkillId;
@@ -617,6 +599,14 @@ struct D2SkillCalcTxt {
     /* 0x00 */ char code[4];
 };
 
+struct D2SkillChargeDescStrc {
+    /* 0x00 */ int32_t nFileIndex; // matched against the item file index and tested as a stat id (6..11 are >>8 shifted)
+    /* 0x04 */ int32_t nDescFunc; // must be 1, else halt line 0x141
+    /* 0x08 */ uint16_t wDescStrPos; // string id when the value is positive
+    /* 0x0A */ uint16_t wDescStrNeg; // string id when the value is negative
+    /* 0x0C */ int32_t nDescVal; // must be 2, else halt line 0x13d; read via the table base + 0xc
+};
+
 struct D2SkillDescTxt {
     /* 0x000 */ short skilldesc;
     /* 0x002 */ int8_t skillpage;
@@ -625,9 +615,9 @@ struct D2SkillDescTxt {
     /* 0x005 */ uint8_t ListRow;
     /* 0x006 */ uint8_t ListPool;
     /* 0x007 */ uint8_t iconcel;
-    /* 0x008 */ short strName;
+    /* 0x008 */ uint16_t strName;
     /* 0x00A */ short strShort;
-    /* 0x00C */ short strLong;
+    /* 0x00C */ uint16_t strLong;
     /* 0x00E */ short strAlt;
     /* 0x010 */ short strMana;
     /* 0x012 */ short descdam;
@@ -660,8 +650,6 @@ struct D2SkillDescTxt {
 };
 
 struct D2SkillsHeaderTxt {
-    D2SkillsHeaderTxt() = default;
-    D2SkillsHeaderTxt(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ uint16_t skill;
@@ -678,8 +666,6 @@ struct D2SkillsPerClassCounter {
 };
 
 struct D2SoundsTxtSmall {
-    D2SoundsTxtSmall() = default;
-    D2SoundsTxtSmall(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ short Sound;
@@ -862,8 +848,7 @@ struct __attribute__((packed)) D2ItemStatCostTxt {
     /* 0x140 */ int nChargedSkillLevelBits;
 };
 
-#pragma pack(push, 1)
-struct D2LevelDefsTxt {
+struct __attribute__((packed)) D2LevelDefsTxt {
     /* 0x00 */ int QuestFlag;
     /* 0x04 */ int QuestFlagEx;
     /* 0x08 */ int Layer;
@@ -886,7 +871,6 @@ struct D2LevelDefsTxt {
     /* 0x94 */ int SaveMonsters;
     /* 0x98 */ int LOSDraw;
 };
-#pragma pack(pop)
 
 struct __attribute__((packed)) D2MonPropTxt {
     /* 0x000 */ int Id;
@@ -1039,11 +1023,11 @@ struct __attribute__((packed)) D2DataTableTxtStrc {
     /* 0x170 */ int nAllStatesDataTblFlag0x04Size;
     /* 0x174 */ struct D2AllStatesDataTbl * pAllStatesDataTblFlag0x0B;
     /* 0x178 */ int nAllStatesDataTblFlag0x0BSize;
-    /* 0x17C */ struct D2AllStatesDataTbl * pAllStatesDataTblFlag0x10;
+    /* 0x17C */ uint16_t * pAllStatesDataTblFlag0x10;
     /* 0x180 */ int nAllStatesDataTblFlag0x10Size;
-    /* 0x184 */ struct D2AllStatesDataTbl * pAllStatesDataTblFlag0x05;
+    /* 0x184 */ uint16_t * pAllStatesDataTblFlag0x05;
     /* 0x188 */ int nAllStatesDataTblFlag0x05Size;
-    /* 0x18C */ struct D2AllStatesDataTbl * pStatesItemTypesDataTbl;
+    /* 0x18C */ uint16_t * pStatesItemTypesDataTbl;
     /* 0x190 */ int nStatesItemTypesDataTblSize;
     /* 0x194 */ struct D2SoundsTxtSmall * pTxtSounds;
     /* 0x198 */ struct D2TxtLinkStrc * pTxtSoundsLink;
@@ -1180,16 +1164,16 @@ int32_t __stdcall SKILLDESC_GetAuraBonusDamage();
 int __stdcall SKILLDESC_AccumulateAuraBonusDmg(struct D2UnitStrc * pUnit, int * pnMinDmgAcc, int * pnMaxDmgAcc, uint32_t * pdwElemColorOut);
 uint32_t SKILLDESC_FormatDamageRangeWithCalc(int32_t bPrefixSign, int32_t nMinVal, int32_t nMaxVal, uint16_t * wszText);
 void __stdcall SKILLDESC_FormatDecimalRange(uint16_t * wszText, int32_t bPrefixSign);
-void __stdcall SKILLDESC_CalcElemDamageRange(struct D2UnitStrc * pUnit, int * pnParam1, int * pnParam2, uint32_t * pdwParam, struct D2SkillStrc * pSkill);
-void __fastcall SKILLDESC_CalcAttackRateForWeapon(struct D2UnitStrc * pUnit, int * pnParam, uint32_t * param_1, uint32_t param_2, uint32_t dwParam1, int32_t nParam, struct D2SkillStrc * pSkill, uint32_t dwParam2, struct D2UnitStrc * pUnit2);
+int __stdcall SKILLDESC_CalcElemDamageRange(struct D2UnitStrc * pUnit, int * pnMinDamage, int * pnMaxDamage, uint32_t * pnColor, struct D2SkillStrc * pSkill);
+void __fastcall SKILLDESC_CalcAttackRateForWeapon(struct D2UnitStrc * pUnit, int * pnAttackRate, uint32_t * pnColor, uint32_t param_1, uint32_t dwParam1, int32_t nSkillLevel, struct D2SkillStrc * pSkill, uint32_t dwParam2, struct D2UnitStrc * pUnit2);
 void __fastcall SKILLDESC_CalcEquippedAttackRate(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill, struct D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t * pnMinDamage, int32_t * pnMinColor, int32_t * pnMaxDamage, int32_t * pnMaxColor);
 void __fastcall SKILLDESC_CalcCompareAttackRate(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill, struct D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t * pnMinDamage, int32_t * pnMinColor, int32_t * pnMaxDamage, int32_t * pnMaxColor);
-void __stdcall SKILLDESC_CalcDualWieldDmg(struct D2SkillStrc * param_1, int32_t * param_2, struct D2UnitStrc * pUnit, int32_t * pdwParam1, int32_t * pdwParam2, int32_t * pdwParam3, struct D2UnitStrc * pUnit2);
+void __stdcall SKILLDESC_CalcDualWieldDmg(struct D2SkillStrc * pSkill, int32_t * param_1, struct D2UnitStrc * pUnit, int32_t * pdwParam1, int32_t * pdwParam2, int32_t * pdwParam3, struct D2UnitStrc * pUnit2);
 void __fastcall SKILLDESC_CalcDualWieldWithAR(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill, struct D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t * pnMinDamage, int32_t * pnMinColor, int32_t * pnMaxDamage, int32_t * pnMaxColor);
 void __fastcall SKILLDESC_CalcDualWieldWithARState(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill, struct D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t * pnMinDamage, int32_t * pnMinColor, int32_t * pnMaxDamage, int32_t * pnMaxColor);
 void __fastcall SKILLDESC_CalcDualWieldSimple(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill, struct D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t * pnMinDamage, int32_t * pnMinColor, int32_t * pnMaxDamage, int32_t * pnMaxColor);
-void __fastcall SKILLDESC_DrawDamageWithRange(struct D2UnitStrc * pUnit, int * pnParam, int * param_1, uint32_t * param_2, int32_t nParam1, int32_t nParam2, struct D2SkillStrc * pSkill, uint32_t nParam, struct D2UnitStrc * pUnit2);
-void __fastcall SKILLDESC_DrawTwoLineText(uint16_t * wszText1, uint16_t * wszText2, int32_t nXLeft, int32_t nYBase, int32_t nParam1, int32_t nParam2, int32_t nParam3);
+void __fastcall SKILLDESC_DrawDamageWithRange(struct D2UnitStrc * pUnit, int * pnMinDamage, int * pnMaxDamage, uint32_t * pnColor, int32_t nDamagePctBonus, int32_t nFlatDamageBonus, struct D2SkillStrc * pSkill, uint32_t nSrcDamage, struct D2UnitStrc * pUnit2);
+void __fastcall SKILLDESC_DrawTwoLineText(uint16_t * wszText1, uint16_t * wszText2, int32_t nXLeft, int32_t nYBase, int32_t nXRight, int32_t dwColor1, int32_t dwColor2);
 void __fastcall SKILLDESC_DrawSkillDmgElemental(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill, struct D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t nXLeft, int32_t nY, int32_t nXRight);
 // @sourcefile .\UI\SkillDesc.cpp
 void __fastcall SKILLDESC_DrawSkillDmgWithElem(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill, struct D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t nXLeft, int32_t nY, int32_t nXRight);
@@ -1221,19 +1205,20 @@ void __fastcall SKILLDESC_DrawSkillDmgConversion(struct D2UnitStrc * pUnit, stru
 void __fastcall SKILLDESC_DrawSkillDmgSummon(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill, struct D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t nXLeft, int32_t nY, int32_t nXRight);
 void __fastcall SKILLDESC_DrawSkillDmgProgressive(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill, struct D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t nXLeft, int32_t nY, int32_t nXRight);
 void __fastcall SKILLDESC_DrawSkillDmgProgElem(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill, struct D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t nXLeft, int32_t nY, int32_t nXRight);
-void __stdcall SKILLDESC_DescLine29_FormatMonster(uint16_t * wszText, struct D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t nParam2);
-void __stdcall SKILLDESC_DescLine22_SkillSynergies(struct D2UnitStrc * pUnit, uint16_t * wszText, eD2Skills eSkill, short * nParam, int32_t nParam2);
+void __stdcall SKILLDESC_DescLine29_FormatMonster(uint16_t * wszText, struct D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t nMaxDmgBonus);
+void __stdcall SKILLDESC_DescLine22_SkillSynergies(struct D2UnitStrc * pUnit, uint16_t * wszText, eD2Skills eSkill, short * pSkillsTxt, int32_t nSkillLevel);
 void __stdcall SKILLDESC_DescLine35_BonusList(short * pSkillArgs, uint16_t wLabelStringId);
 int __stdcall SKILLDESC_HasAnyClassSkill(struct D2UnitStrc * pUnit);
 // Draws skill tooltip info panel with 3 sections: skill name, damage description (via gSkillDamageDescFuncTable dispatch), and attack rating text (via gpSkillDescAttackFuncTable dispatch). Layout positions from int32_t_ARRAY_ARRAY_0072d840. Validates descdam/descatt indices (<144/<72) and checks CanUseSkill result (0/1/6/8) to enable/disable sections.
 // @sourcefile .\UI\SkillDesc.cpp
 void __fastcall SKILLDESC_DrawSkillInfo(struct D2UnitStrc * pPlayerUnit, struct D2SkillStrc * pActiveSkill, int32_t nLayoutIndex);
 void __fastcall DRAW_UI_STAT_Damage(struct D2UnitStrc * pUnit);
-BOOL __fastcall SKILLDESC_GetSkillBonusText(struct D2UnitStrc * pUnit, int32_t nParam);
-BOOL __fastcall SKILLDESC_ProcessDescLine(struct D2UnitStrc * pUnit, uint16_t * pwszOutput, struct D2SkillsTxt * pSkillsTxt, eD2Skills eSkill, int32_t nSkillLevel, int32_t nCalcIndex, int32_t nDescLineIndex, char cCharClass);
-void __fastcall SKILLDESC_BuildSkillTooltip(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nClassMask, int32_t nSkillLevel, int32_t nCalcIndex, int32_t nScreenX, int32_t nScreenY);
+BOOL __fastcall SKILLDESC_GetSkillBonusText(struct D2UnitStrc * pUnit, int32_t bLeftSkill);
+BOOL __fastcall SKILLDESC_ProcessDescLine(struct D2UnitStrc * pUnit, uint16_t * pwszOutput, struct D2SkillsTxt * pSkillsTxt, eD2Skills eSkill, int32_t nSkillLevel, int32_t nCalcIndex, int32_t nDescLineIndex, int cCharClass);
+// ESI is not an argument: saved at 004eef12 PUSH ESI, then set from EDX.
+void __fastcall SKILLDESC_BuildSkillTooltip(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, int32_t nCalcIndex, int32_t nScreenX, int32_t nScreenY);
 void __fastcall SKILLDESC_BuildSkillTooltip_NoMaxLevelCheck(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, int32_t nCalcIndex, int32_t nScreenX, int32_t nScreenY);
-void __fastcall SKILLDESC_BuildSkillShortTooltip(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, int32_t nCalcIndex, int32_t nParam1, int32_t nParam2, int32_t nParam3);
+void __fastcall SKILLDESC_BuildSkillShortTooltip(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, int32_t nCalcIndex, int32_t nParam1, int32_t nScreenX, int32_t nScreenY);
 // 65 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::SkillDesc

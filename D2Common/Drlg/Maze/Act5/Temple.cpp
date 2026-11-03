@@ -64,22 +64,22 @@ int32_t ReplaceRooms(D2DrlgLevelStrc * pLevel) {
 }; D2_STATIC_GUARD(gaDrlgRoomReplacementsB, "D2Common::Drlg::Maze::Act5::Temple::ReplaceRooms::gaDrlgRoomReplacementsB");
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);
-    int32_t nRetValAfterA = (int32_t)((uint64_t)DVar1.nSeedLow * 0xaaaaaaab);
+    int32_t nRetValAfterA = (int32_t)(DVar1.nSeedLow * 0xaaaaaaab);
     pLevel->sSeed = DVar1;
     uint32_t nRollMod3 = DVar1.nSeedLow % 3;
     uint32_t nRoll = nRollMod3;
     if (pLevel->eD2LevelId != 0x7c) {
       nRetValAfterA = (int32_t)ReplaceRoom(gaDrlgRoomReplacementsA + nRollMod3, pLevel, &nRoll);
     }
-    if (pLevel->eD2LevelId != 0x7b) {
-      return nRetValAfterA;
-    }
-    if (nRoll == nRollMod3) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5fc);
-      exit(-1);
+    if (pLevel->eD2LevelId == 0x7b) {
+      if (nRoll == nRollMod3) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5fc);
+        exit(-1);
+      }
+
+      nRetValAfterA = (int32_t)ReplaceRoom(gaDrlgRoomReplacementsB + nRoll, pLevel, &nRoll);
     }
 
-    nRetValAfterA = (int32_t)ReplaceRoom(gaDrlgRoomReplacementsB + nRoll, pLevel, &nRoll);
     return nRetValAfterA;
 }
 

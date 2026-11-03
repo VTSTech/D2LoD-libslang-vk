@@ -60,17 +60,14 @@ BOOL __fastcall DrawEx(::D2WinTimer * pTimer) {
     uint32_t uVar1 = pTimer->sControl.dwState;
     if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
       dwTickCount = GetTickCount();
-      if (!(dwTickCount / 1000 - (uint32_t)pTimer->nCreationTickCount / 1000 > (uint32_t)pTimer->nTimeoutInSeconds)) {
-        return 1;
+      if (dwTickCount / 1000 - (uint32_t)pTimer->nCreationTickCount / 1000 > (uint32_t)pTimer->nTimeoutInSeconds) {
+        pfnOnPress = pTimer->sControl.fpOnPress;
+        if (pfnOnPress) {
+          sMsg.pControl = &pTimer->sControl;
+          (*pfnOnPress)(&sMsg);
+        }
       }
 
-      pfnOnPress = pTimer->sControl.fpOnPress;
-      if (!pfnOnPress) {
-        return 1;
-      }
-
-      sMsg.pControl = &pTimer->sControl;
-      (*pfnOnPress)(&sMsg);
       return 1;
     }
 
@@ -88,21 +85,20 @@ int __fastcall D2WINTIMER_GetElapsed(::D2WinTimer * pTimer) {
       exit(-1);
     }
 
-    uint32_t uVar1 = pTimer->sControl.dwState;
-    if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
-      OnPress pOVar2;
+    uint32_t dwState = pTimer->sControl.dwState;
+    if (gadwBitMasks[2] & dwState && gadwBitMasks[0] & dwState) {
+      OnPress pOVar1;
       dwTickCount = GetTickCount();
-      if (dwTickCount < gnTimerNextFireTick) {
-        return 1;
+      if (dwTickCount >= gnTimerNextFireTick) {
+        pOVar1 = pTimer->sControl.fpOnPress;
+        if (pOVar1) {
+          pCallbackArg.pControl = &pTimer->sControl;
+          (*pOVar1)(&pCallbackArg);
+        }
+
+        gnTimerNextFireTick = pTimer->nTimeoutInSeconds + dwTickCount;
       }
 
-      pOVar2 = pTimer->sControl.fpOnPress;
-      if (pOVar2) {
-        pCallbackArg.pControl = &pTimer->sControl;
-        (*pOVar2)(&pCallbackArg);
-      }
-
-      gnTimerNextFireTick = pTimer->nTimeoutInSeconds + dwTickCount;
       return 1;
     }
 
@@ -118,11 +114,10 @@ BOOL __stdcall Key(D2ControlMsg * pTimer) {
     }
     if (pTimer->uMsg != 0x102 && pTimer->wParam == 0x20) {
       pfnTimerCb = pControlRaw->sControl.fpOnPress;
-      if (!pfnTimerCb) {
-        return 1;
+      if (pfnTimerCb) {
+        (*pfnTimerCb)(pTimer);
       }
 
-      (*pfnTimerCb)(pTimer);
       return 1;
     }
 
@@ -135,8 +130,7 @@ BOOL __stdcall Key(D2ControlMsg * pTimer) {
     ::D2WinTimer* pTimer = D2_NEW_AT(::D2WinTimer, ".\\Src\\D2WinTimer.cpp", 0x1c);
     memset(pTimer, 0, 0x48);
     pTimer->sControl.neD2FormType = FORM_Timer;
-    int* pDwState = &pTimer->sControl.dwState;
-    *pDwState |= gadwBitMasks[0];
+    pTimer->sControl.dwState |= gadwBitMasks[0];
     pTimer->sControl.dwState |= gadwBitMasks[2];
     pTimer->nTimeoutInSeconds = nTimeoutInSeconds;
     dwCreationTick = GetTickCount();
@@ -147,6 +141,15 @@ BOOL __stdcall Key(D2ControlMsg * pTimer) {
     pTimer->sControl.fpKey = D2WinTimer::Key;
     D2WinMain::FORMS_AddControlToGlobalList(&pTimer->sControl);
     return pTimer;
+}
+
+void __fastcall D2WINEDITBOX_Destroy(int * pEditBox) {
+    if (*pEditBox != 8) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x45);
+      exit(-1);
+    }
+
+    pEditBox[8] = (int)D2WINTIMER_GetElapsed;
 }
 
 } // namespace D2Win::Src::D2WinTimer

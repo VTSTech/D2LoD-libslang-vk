@@ -21,11 +21,11 @@ namespace D2Client::UNIT::PlrSkills {
 
 // Function declarations
 // @sourcefile .\UNIT\PlrSkills.cpp
-void __fastcall PLRSKILLS_CheckSkillWhipAndLeap(struct D2UnitStrc * pUnit, uint32_t nParam);
-void __fastcall PLRSKILLS_DrawChargeTrailIfPrimary(struct D2UnitStrc * pUnit, uint32_t nParam);
+void __fastcall PLRSKILLS_CheckSkillWhipAndLeap(struct D2UnitStrc * pUnit, uint32_t nGamma);
+void __fastcall PLRSKILLS_DrawChargeTrailIfPrimary(struct D2UnitStrc * pUnit, uint32_t nGamma);
 // @sourcefile .\UNIT\PlrSkills.cpp
-void __fastcall PLRSKILLS_DrawSkillTrail_Secondary(struct D2UnitStrc * pUnit, uint32_t nParam);
-void __fastcall PLRSKILLS_DrawChargeTrailIfSecondary(struct D2UnitStrc * pUnit, uint32_t nParam);
+void __fastcall PLRSKILLS_DrawSkillTrail_Secondary(struct D2UnitStrc * pUnit, uint32_t nGamma);
+void __fastcall PLRSKILLS_DrawChargeTrailIfSecondary(struct D2UnitStrc * pUnit, uint32_t nGamma);
 void __fastcall PLRSKILLS_StateSetFn01_ProgressiveCharge(struct D2UnitStrc * pUnit, eD2States eState);
 void __fastcall PLRSKILLS_StateRemFn01_ProgressiveCharge(struct D2UnitStrc * pUnit, eD2States eState);
 void __fastcall PLRSKILLS_StateSetFn02_CloakOfShadows(struct D2UnitStrc * pUnit, eD2States eState);
@@ -34,12 +34,12 @@ void __fastcall PLRSKILLS_StateSetFn03_Blaze(struct D2UnitStrc * pUnit, eD2State
 void __fastcall PLRSKILLS_StateSetFn04_SourceUnit(struct D2UnitStrc * pUnit, eD2States eState);
 void __fastcall PLRSKILLS_StateRemFn02_SourceUnit(struct D2UnitStrc * pUnit, eD2States eState);
 void __fastcall PLRSKILLS_StateSetFn05_ChangeClass(struct D2UnitStrc * pUnit, eD2States eState);
-int32_t __stdcall STATES_CalcDamageSeverityTier(int32_t nParam1, int32_t nParam2);
+int32_t __stdcall STATES_CalcDamageSeverityTier(int32_t nMax, int32_t nValue);
 // State removal callback (index 03) invoked when a buff/state expires on a unit. Reads the castoverlay and all four overlay IDs from the D2StatesTxt entry for eState, then calls STATES_RemoveOverlayById three times each for castoverlay, overlay[0], overlay[1] (triple removal, likely for multi-layer overlays), and once each for overlay[2] and overlay[3]. Skips any overlay with a negative (invalid) ID.
 void __fastcall PLRSKILLS_StateRemFn03_BoneArmor(struct D2UnitStrc * pUnit, eD2States eState);
 // Bone Armor state update callback. Computes a 3-tier armor tier from current vs. max bone armor values (UNITSTAT_bonearmor/bonearmormax), stores the new tier in shortparam1, then adds or removes tier-keyed overlays via GFX_AddOverlayToUnit / STATES_RemoveOverlayById. Called each tick while Bone Armor state is active.
 void __fastcall PLRSKILLS_StateSetFn06_BoneArmor(struct D2UnitStrc * pUnit, eD2States eState);
-int32_t __stdcall PLRSKILLS_CalcDamageSeverityTier_Unreferenced(int32_t nParam1, int32_t nParam2);
+int32_t __stdcall PLRSKILLS_CalcDamageSeverityTier_Unreferenced(int32_t nMaxValue, int32_t nValue);
 // State-removal overlay cleanup: reads overlay[0..2] from the states.txt row for eState and removes each valid overlay (and overlay+1) from pUnit via STATES_RemoveOverlayById. Called as part of the state removal pipeline (RemFunc slot 5).
 void __fastcall PLRSKILLS_StateRemFn05_CycloneArmor(struct D2UnitStrc * pUnit, eD2States eState);
 // State set-callback for Bone Armor (and similar tiered-overlay states). Reads current bonearmor and bonearmormax stats from the state's stat list to compute a tier (1–3) based on remaining fraction. Compares to the previously stored tier (shortparam1). If tier increased, calls States_RemFunc05 then adds the appropriate overlay+lightning-overlay pairs via GFX_AddOverlayToUnit. If tier decreased, removes the no-longer-applicable overlays via STATES_RemoveOverlayById. Up to three overlay slots (pDVar1->overlay[0..2]) are supported.
@@ -75,7 +75,7 @@ void __fastcall STATES_SetStateOnUnit(struct D2UnitStrc * pUnit, eD2States eStat
 // @sourcefile .\UNIT\PlrSkills.cpp
 void __fastcall PLRSKILLS_RemoveStateFromUnit(struct D2UnitStrc * pUnit, eD2States eState);
 // @sourcefile .\UNIT\PlrSkills.cpp
-struct D2StatListExStrc * __fastcall NET_D2GS_CLIENT_HandleAddSTatUnit(struct D2UnitStrc * pUnit, struct D2StatListExStrc * pStatList, D2UnitDataUnion * param_1, eD2UnitStat eUnitStat, eD2Skills eSkill, uint32_t nParam);
+struct D2StatListExStrc * __fastcall NET_D2GS_CLIENT_HandleAddSTatUnit(struct D2UnitStrc * pUnit, struct D2StatListExStrc * pStatList, D2UnitDataUnion * eState, eD2UnitStat eUnitStat, eD2Skills eSkill, uint32_t nLayer);
 // Invokes the state's setfunc dispatch table entry (STATESSETFUNC[]) and attaches a client state event handler with modifier skill/level stats. Guards: pUnit non-null, eState in bounds, notondead check vs unit type/mode.
 void __fastcall STATES_DispatchSetFunc(struct D2UnitStrc * pUnit, eD2States eState);
 // Dispatches the removal function for a state being stripped from pUnit. Looks up the state's remfunc index in D2StatesTxt, bounds-checks against STATESREMFUNC table (max 0x1e entries), calls the matching removal callback if non-null, then removes any unit-event of type 1 tied to the state if a matching stat-list exists. Validates pUnit non-null and eState in-range before any action.

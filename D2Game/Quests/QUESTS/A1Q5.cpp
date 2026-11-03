@@ -20,6 +20,7 @@
 #include "D2Common/QuestRecord.h"
 #include "D2Common/Unit.h"
 #include "D2Common/Units.h"
+#include "D2Game/D2ObjectInitFnArg.h"
 #include "D2Game/D2ObjectOperateFnArg.h"
 #include "D2Game/D2QuestDataStrc.h"
 #include "D2Game/D2QuestGUIDStrc.h"
@@ -221,13 +222,13 @@ void __fastcall Q05_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     int nPlayerGuid;
     D2QuestDataA1Q5Strc* pA1Q4Data;
     ::SGAMEDATA* pGame;
-    uint16_t sVar1;
-    sVar1 = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
-    short int sVar2;
-    sVar2 = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
+    uint16_t nMsgId;
+    nMsgId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    short int nNpcClassNo;
+    nNpcClassNo = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
     D2QuestDataA1Q5Strc* pQuestSpecific;
     pQuestSpecific = pQuestData->pQuestSpecificData.pA1Q5;
-    if (sVar1 == 0x7f && pQuestData->bIsNotIntroduction != '\0') {
+    if (nMsgId == 0x7f && pQuestData->bIsNotIntroduction != '\0') {
       bool bStateChanged;
       bStateChanged = false;
       if (pQuestSpecific->bTalkedToNPC == '\x01') {
@@ -255,7 +256,7 @@ void __fastcall Q05_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     }
 
     handle_town_npc_talk:
-    if ((sVar2 == 0x9a || sVar2 == 0x96 || sVar2 == 0x109 || sVar2 == 0x9b || sVar2 == 0x94 || sVar2 == 0x93) && (sVar1 == 0x90 || sVar1 == 0x8c || sVar1 == 0x91 || sVar1 == 0x8d || sVar1 == 0x8f || sVar1 == 0x8e)) {
+    if ((nNpcClassNo == 0x9a || nNpcClassNo == 0x96 || nNpcClassNo == 0x109 || nNpcClassNo == 0x9b || nNpcClassNo == 0x94 || nNpcClassNo == 0x93) && (nMsgId == 0x90 || nMsgId == 0x8c || nMsgId == 0x91 || nMsgId == 0x8d || nMsgId == 0x8f || nMsgId == 0x8e)) {
       pGame = pQuestArgs->pGame;
       D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
       bResult = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_ForgottenTower, QUESTSTATE_JustCompleted);
@@ -377,7 +378,7 @@ void __fastcall Q05_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     int i;
     int32_t* pListEntry;
     int nPlayerGUID;
-    int32_t local_c;
+    int32_t nNpcClassId;
     uint32_t nGossipLineIdx;
     if (pQuestData->bIsNotIntroduction == '\0') {
       return;
@@ -397,9 +398,9 @@ void __fastcall Q05_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       return;
     }
     if (!pQuestArgs->pTarget) {
-      local_c = -1;
+      nNpcClassId = -1;
     } else {
-      local_c = pQuestArgs->pTarget->nClassId;
+      nNpcClassId = pQuestArgs->pTarget->nClassId;
     }
     if (!pQuestArgs->pPlayer) {
       nPlayerGUID = -1;
@@ -442,7 +443,7 @@ void __fastcall Q05_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       pListEntry = pQuestSpecific->aPlayersForRewardGUIDs;
       do {
         if (*pListEntry == nPlayerGUID) {
-          AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, local_c, 2);
+          AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNpcClassId, 2);
           return;
         }
 
@@ -474,7 +475,7 @@ void __fastcall Q05_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       }
     }
 
-    AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, local_c, nGossipLineIdx);
+    AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNpcClassId, nGossipLineIdx);
 }
 
 // 1.14d: 0x594dd0 | A1Q5 "The Forgotten Tower" — reward-award pass (per-player iterator callback).
@@ -518,10 +519,10 @@ BOOL __fastcall Q05_SetRewardForPlayersInTower(::SGAMEDATA * pGame, D2UnitStrc *
       nPlayerGUID = pUnit->nUnitGUID;
     }
 
-    D2QuestGUIDStrc* pA1Q5GUIDList = &pQuestData->pQuestSpecificData.pA1Q5->sQuestGUID;
-    bPlayerAlreadyTracked = QUESTGUID_SearchForValueInIntArray32(pA1Q5GUIDList, nPlayerGUID);
+    D2QuestDataA1Q5Strc* pA1Q5 = pQuestData->pQuestSpecificData.pA1Q5;
+    bPlayerAlreadyTracked = QUESTGUID_SearchForValueInIntArray32(&pA1Q5->sQuestGUID, nPlayerGUID);
     if (!bPlayerAlreadyTracked) {
-      QUESTGUID_AddPlayerToList(pA1Q5GUIDList, nPlayerGUID);
+      QUESTGUID_AddPlayerToList(&pA1Q5->sQuestGUID, nPlayerGUID);
     }
 
     /* SetQuestState(ForgottenTower, Completed=0) — mark cleared after recording
@@ -550,21 +551,16 @@ BOOL __fastcall OBJOP_A1Q5_ActivateCairnStone(D2ObjectOperateFnArg * pOperation)
     }
 
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_ForgottenTower);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
-      return 0;
+    if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
+      QUEST_SendNpcInfoPacket(pOperation->pAttacker, pOperation->sArg.pVictim, 0x7f);
+      if (pQuestData->nStateFlag <= 1) {
+        QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q5.cpp", 0x202);
+        if (pQuestData->nStateFlagPrev < 1) {
+          pQuestData->pQuestSpecificData.pA1Q5->bTalkedToNPC = '\x01';
+        }
+      }
     }
 
-    QUEST_SendNpcInfoPacket(pOperation->pAttacker, pOperation->sArg.pVictim, 0x7f);
-    if (pQuestData->nStateFlag > 1) {
-      return 0;
-    }
-
-    QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q5.cpp", 0x202);
-    if (pQuestData->nStateFlagPrev >= 1) {
-      return 0;
-    }
-
-    pQuestData->pQuestSpecificData.pA1Q5->bTalkedToNPC = '\x01';
     return 0;
 }
 
@@ -642,8 +638,8 @@ int __fastcall Q05_OnTowerComplete(::SGAMEDATA * pGame, D2QuestDataStrc * pQuest
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q5.cpp
 void __fastcall Q05_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     D2QuestDataA1Q5Strc* pA1Q4Data;
+    D2QuestDataA1Q5Strc* pA1Q5Data;
     ::SGAMEDATA* pGame;
-    D2QuestDataA1Q5Strc* pvVar2;
     int nIndex;
     nIndex = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
     if (pQuestData->bIsNotIntroduction == '\0') {
@@ -659,15 +655,15 @@ void __fastcall Q05_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
             return;
           }
         } else if (pQuestData->nStateFlag == 5 && pQuestData->bIsNotIntroduction != '\0') {
-          pvVar2 = pQuestData->pQuestSpecificData.pA1Q5;
+          pA1Q5Data = pQuestData->pQuestSpecificData.pA1Q5;
           if (!pQuestArgs->pPlayer) {
             nIndex = -1;
           } else {
             nIndex = pQuestArgs->pPlayer->nUnitGUID;
           }
 
-          bQuestState = Q05_RemovePlayerFromTrackingList(0, (int32_t)pvVar2, nIndex);
-          if (bQuestState && !pvVar2->nPlayersInTowerCount && !pvVar2->nPlayersForRewardCount) {
+          bQuestState = Q05_RemovePlayerFromTrackingList(0, (int32_t)pA1Q5Data, nIndex);
+          if (bQuestState && !pA1Q5Data->nPlayersInTowerCount && !pA1Q5Data->nPlayersForRewardCount) {
             pQuestData->bIsActive = '\0';
           }
         }
@@ -776,11 +772,11 @@ bool __fastcall Q05_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
         /* If target is Wariv; inactive */ if (nTargetClassId == 0x9b) {
           return false;
         }
-        /* If target is Gheed: inactive */ if (nTargetClassId != 0x93) {
-          /* Otherwise active */ return true;
+        /* If target is Gheed: inactive */ if (nTargetClassId == 0x93) {
+          return false;
         }
 
-        return false;
+        /* Otherwise active */ return true;
       }
 
       iTmpCount++;
@@ -794,32 +790,29 @@ BOOL __fastcall Q05_SetCannotCompleteInGame(::SGAMEDATA * pGame, D2UnitStrc * pU
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     BOOL bCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_ForgottenTower, QUESTSTATE_Completed);
-    if (bCompleted == 1) {
-      return 0;
+    if (bCompleted != 1) {
+      D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_ForgottenTower, QUESTSTATE_CannotCompleteQuestInGame);
+      QUEST_SendQuestStatePacket(pUnit, 5, 0);
     }
 
-    D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_ForgottenTower, QUESTSTATE_CannotCompleteQuestInGame);
-    QUEST_SendQuestStatePacket(pUnit, 5, 0);
     return 0;
 }
 
 BOOL __fastcall Q05_PropagateRewardToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_ForgottenTower, QUESTSTATE_JustCompleted);
-    if (!bJustCompleted) {
-      return 0;
+    if (bJustCompleted) {
+      uint16_t nPartyId;
+      nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+      if (nPartyId != 0xffff) {
+        UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q05_SetPartyMemberRewardStates, 0);
+      }
     }
 
-    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == 0xffff) {
-      return 0;
-    }
-
-    UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q05_SetPartyMemberRewardStates, 0);
     return 0;
 }
 
-void __fastcall Q05_SetCompletionForTrackedPlayers(::SGAMEDATA * pGame, D2QuestGUIDStrc * pQuestGUIDBase, eD2Quests param_1, int32_t nSoundId) {
+void __fastcall Q05_SetCompletionForTrackedPlayers(::SGAMEDATA * pGame, D2QuestGUIDStrc * pQuestGUIDBase, eD2Quests eQuest, int32_t nSoundId) {
     D2UnitDataPlayerStrc* pPlayerData;
     BOOL bCompleted;
     D2BitBufferStrc* pBitBuffer;
@@ -834,10 +827,10 @@ void __fastcall Q05_SetCompletionForTrackedPlayers(::SGAMEDATA * pGame, D2QuestG
       if (pUnit) {
         pPlayerData = D2Common::Units::GetPlayerData(pUnit);
         pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
-        bCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, param_1, QUESTSTATE_Completed);
+        bCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, eQuest, QUESTSTATE_Completed);
         if (bCompleted != 1) {
-          D2Common::QuestRecord::SetQuestState(pBitBuffer, param_1, QUESTSTATE_JustCompleted);
-          D2Common::QuestRecord::SetQuestState(pBitBuffer, param_1, QUESTSTATE_Completed);
+          D2Common::QuestRecord::SetQuestState(pBitBuffer, eQuest, QUESTSTATE_JustCompleted);
+          D2Common::QuestRecord::SetQuestState(pBitBuffer, eQuest, QUESTSTATE_Completed);
           if (nSoundId) {
             UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, nSoundId, pUnit);
           }
@@ -855,34 +848,34 @@ void __fastcall Q05_SetCompletionForTrackedPlayers(::SGAMEDATA * pGame, D2QuestG
 // (falls back to the chest's own coords). Marks the effect as fired (+0x119=1), then for each chest
 // launches a SKILL_Attack missile aimed at the chest and toggles its room portal flag — this drives
 // the gold/treasure-burst visual from the Countess's chests. No quest-state changes here (pure FX).
-void __stdcall Q05_SpawnCountessDeathEffect(D2QuestDataStrc * pQuestData, int32_t nParam2) {
+void __stdcall Q05_SpawnCountessDeathEffect(D2QuestDataStrc * pQuestData, D2QuestDataA1Q5Strc * pA1Q5Data) {
     D2UnitStrc* pChestUnit;
     D2RoomStrc* pNearbyRoom;
     int nFallbackPosY;
     uint32_t nPosY;
     uint32_t nPosX;
-    int32_t nY;
+    LONG nY;
     POINT sCountessKillPos;
     eD2UnitType eUnitType;
-    if (!(*(char*)(nParam2 + 0x118) != '\0' && *(char*)(nParam2 + 0x119) == '\0')) {
+    if (!(pA1Q5Data->bRewardDistributed && !pA1Q5Data->bDeathEffectPlayed)) {
       return;
     }
 
     int i;
     i = 0;
-    if ((uint16_t)*(short int*)(nParam2 + 0x88) <= 0) {
+    if ((uint16_t)pA1Q5Data->nCountessChestCount <= 0) {
       return;
     }
 
-    uint32_t* pnChestGUIDList;
-    pnChestGUIDList = (uint32_t*)(nParam2 + 0x68);
+    int32_t* pnChestGUIDList;
+    pnChestGUIDList = pA1Q5Data->nCountessChestGUID_0;
     D2UnitStrc* pCountessDeathActor;
     pCountessDeathActor = 0;
     do {
       pChestUnit = UNIT::SUnit::FindUnitFromTable(pQuestData->pGame, UNIT_OBJECT, *pnChestGUIDList);
       if (pChestUnit) {
-        sCountessKillPos.x = *(int32_t*)(nParam2 + 0x110);
-        nY = *(int32_t*)(nParam2 + 0x114);
+        sCountessKillPos.x = pA1Q5Data->ptCountessDeath.x;
+        nY = pA1Q5Data->ptCountessDeath.y;
         sCountessKillPos.y = nY;
         if (!pCountessDeathActor) {
           pNearbyRoom = D2Common::Units::UNITS_GetRoom(pChestUnit);
@@ -901,7 +894,7 @@ void __stdcall Q05_SpawnCountessDeathEffect(D2QuestDataStrc * pQuestData, int32_
           }
         }
 
-        *(uint8_t*)(nParam2 + 0x119) = 1;
+        pA1Q5Data->bDeathEffectPlayed = true;
         eUnitType = pChestUnit->eUnitType;
         if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
           nPosY = pChestUnit->pPath.pStaticPath->nPosY;
@@ -932,7 +925,7 @@ void __stdcall Q05_SpawnCountessDeathEffect(D2QuestDataStrc * pQuestData, int32_
       next_chest:
       pnChestGUIDList++;
       i++;
-    } while (i < (int)(uint32_t)*(uint16_t*)(nParam2 + 0x88));
+    } while (i < (int)(uint32_t)(uint16_t)pA1Q5Data->nCountessChestCount);
 }
 
 // 1.14d: 0x5956c0 | A1Q5 "The Forgotten Tower" — death-effect trigger (timer-driven thunk).
@@ -941,7 +934,7 @@ void __stdcall Q05_SpawnCountessDeathEffect(D2QuestDataStrc * pQuestData, int32_
 // (bDeathEffectPlayed==false), schedules event 7 on the unit ~10 frames out to play the final
 // death/treasure animation. No quest-record state changes; gates purely on A1Q5-specific flags.
 void __fastcall Q05_TriggerCountessDeathEffect(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
-    Q05_SpawnCountessDeathEffect(pQuestData, (int32_t)d2_bits_of(pQuestData->pQuestSpecificData));
+    Q05_SpawnCountessDeathEffect(pQuestData, pQuestData->pQuestSpecificData.pA1Q5);
     if (!(pQuestData->pQuestSpecificData.pA1Q5->bRewardDistributed && !pQuestData->pQuestSpecificData.pA1Q5->bDeathEffectPlayed)) {
       return;
     }
@@ -980,7 +973,7 @@ void __fastcall Q05_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
       AddQuestTimer(pQuestData, Q05_TimerNotifyCompletion, 7);
     }
 
-    Q05_SpawnCountessDeathEffect(pQuestData, (int32_t)pA1Q5Data);
+    Q05_SpawnCountessDeathEffect(pQuestData, pA1Q5Data);
     if (pA1Q5Data->bDeathEffectPlayed) {
       return;
     }
@@ -1048,7 +1041,7 @@ void __fastcall Q05_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[8] = Q05_Callback08_MonsterKilled;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q05_Callback13_PlayerStartedGame;
     pQuestData->nQuestIdReal = QUEST_ForgottenTower;
-    pQuestData->pNpcMessages = &A1Q5::aNpcGossipData;
+    pQuestData->pNpcMessages = A1Q5::aNpcGossipData;
     pQuestData->nStateFlagPrev = 0;
     pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
@@ -1061,6 +1054,22 @@ void __fastcall Q05_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->nSequenceQuestId = QUEST_ToolsOfTheTrade;
     memset(pQuestSpecificData, 0, 0x120);
     QUESTGUID_SetPlayerCountToZero(&pQuestSpecificData->sQuestGUID);
+}
+
+// A1Q6 (Sisters to the Slaughter) object init-fn 04. Marks the quest object (Andariel-related) as updatable while the Forgotten Tower quest is still in its intro phase (!bIsNotIntroduction). Halts if quest data missing. No quest-state transitions.
+void __fastcall Objects_InitFn04_TowerTome(D2ObjectInitFnArg * pInitArg) {
+    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_ForgottenTower);
+    if (pQuestData) {
+      if (pQuestData->bIsNotIntroduction != '\0') {
+        return;
+      }
+
+      D2Common::Units::SetupUpdateFlag(pInitArg->pObject, 3);
+      return;
+    }
+
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x423);
+    exit(-1);
 }
 
 } // namespace D2Game::Quests::QUESTS::A1Q5

@@ -3,7 +3,6 @@
 #include "D2Game/UNIT/sunitproxy.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Monster.h"
@@ -23,6 +22,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Seed.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
@@ -78,6 +78,9 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2NpcPlayerInteractionStrc) == 0xc,
 typedef void (__fastcall *fpSUnitIterateCallback)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArgs);
 #endif
 
+static D2NpcItemTablesStrc gaNpcItemTables[17] = {}; D2_STATIC_GUARD(gaNpcItemTables, "gaNpcItemTables");
+static uint8_t gbaNpcItemTableBuilt[17] = {}; D2_STATIC_GUARD(gbaNpcItemTableBuilt, "gbaNpcItemTableBuilt");
+
 namespace D2Game::UNIT::sunitproxy {
 
 D2MonsterAiStrc * __fastcall GetMonsterAI(D2UnitStrc * pUnit) {
@@ -107,7 +110,6 @@ D2GameNpcStrc * __fastcall GetGameNpcbyClassId(::SGAMEDATA * pGame, int32_t nNpc
     }
 
     return nullptr;
-    return nullptr;
 }
 
 D2GameNpcStrc * __fastcall GetGameNpcByUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int * pNpcIndex) {
@@ -124,7 +126,7 @@ D2GameNpcStrc * __fastcall GetGameNpcByUnit(::SGAMEDATA * pGame, D2UnitStrc * pU
 // @sourcefile .\UNIT\sunitproxy.cpp
 void __fastcall SUNITPROXY_AddItemToNpcProxy(D2UnitStrc * pNpcUnit, ::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t dwTradeParam) {
     int nLookupNpcClassId;
-    D2UnitStrc* nNpcIndex = pNpcUnit;
+    D2UnitStrc* nNpcIndex;
     D2SUnitProxyStrc_Line0x85* pProxyEntry = D2_NEW_POOL_AT(pGame->pMemoryPool, D2SUnitProxyStrc_Line0x85, ".\\UNIT\\sunitproxy.cpp", 0x85);
     if (!pNpcUnit) {
       nLookupNpcClassId = -1;
@@ -146,21 +148,21 @@ void __fastcall SUNITPROXY_AddItemToNpcProxy(D2UnitStrc * pNpcUnit, ::SGAMEDATA 
 }
 
 // @sourcefile .\UNIT\sunitproxy.cpp
-static void SUNITPROXY_InitNpcTradeItems(int32_t nParam1, ::SGAMEDATA * pGame, void * * pParam) {
+static void SUNITPROXY_InitNpcTradeItems(int32_t nNpcTableIdx, ::SGAMEDATA * pGame, void * * pTradeList) {
     void* nNpcTradeIdx;
-    if (nParam1 >= 0x11) {
+    if (nNpcTableIdx >= 0x11) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa4);
       exit(-1);
     }
 
-    pParam[1] = (void*)gaNpcItemTables[nParam1].nTradeCount;
-    nNpcTradeIdx = D2_ALLOC_POOL_AT(pGame->pMemoryPool, gaNpcItemTables[nParam1].nTradeCount * 0xc, ".\\UNIT\\sunitproxy.cpp", 0xa8);
-    *pParam = nNpcTradeIdx;
-    memcpy(nNpcTradeIdx, gaNpcItemTables[nParam1].pTradeItems, gaNpcItemTables[nParam1].nTradeCount * 0xc);
-    pParam[3] = (void*)gaNpcItemTables[nParam1].nQuestCount;
-    nNpcTradeIdx = D2_ALLOC_POOL_AT(pGame->pMemoryPool, gaNpcItemTables[nParam1].nQuestCount * 4, ".\\UNIT\\sunitproxy.cpp", 0xab);
-    pParam[2] = nNpcTradeIdx;
-    memcpy(nNpcTradeIdx, gaNpcItemTables[nParam1].pQuestItems, gaNpcItemTables[nParam1].nQuestCount * 4);
+    pTradeList[1] = (void*)gaNpcItemTables[nNpcTableIdx].nTradeCount;
+    nNpcTradeIdx = D2_ALLOC_POOL_AT(pGame->pMemoryPool, gaNpcItemTables[nNpcTableIdx].nTradeCount * 0xc, ".\\UNIT\\sunitproxy.cpp", 0xa8);
+    *pTradeList = nNpcTradeIdx;
+    memcpy(nNpcTradeIdx, gaNpcItemTables[nNpcTableIdx].pTradeItems, gaNpcItemTables[nNpcTableIdx].nTradeCount * 0xc);
+    pTradeList[3] = (void*)gaNpcItemTables[nNpcTableIdx].nQuestCount;
+    nNpcTradeIdx = D2_ALLOC_POOL_AT(pGame->pMemoryPool, gaNpcItemTables[nNpcTableIdx].nQuestCount * 4, ".\\UNIT\\sunitproxy.cpp", 0xab);
+    pTradeList[2] = nNpcTradeIdx;
+    memcpy(nNpcTradeIdx, gaNpcItemTables[nNpcTableIdx].pQuestItems, gaNpcItemTables[nNpcTableIdx].nQuestCount * 4);
 }
 
 // Server-side init of the game's NPC control table. Allocates the D2GameNpcControlStrc and its 0x1100-byte NPC array from the game pool, seeds its RNG from the game seed, and iterates every monstats.txt row: for each monster flagged as an NPC (npc bit), allocates a player-style inventory, assigns a control-table slot (max 64, halts via ErrorManager if exceeded), and copies init data (flags/name) from the static gpNpcControlInitTable. For trade-enabled NPCs (flag==1) it dispatches on monster id to SUNITPROXY_InitNpcTradeItems with the per-vendor store index and marks the slot tradeable/repair. Stores the result in pGame->pNpcControl. __fastcall(pGame).
@@ -169,307 +171,307 @@ void __fastcall SUNITPROXY_AllocNpcControl(::SGAMEDATA * pGame) {
     // Static local variables (originally global data)
     static int gnNpcControlInitCount = 0x2b; D2_STATIC_GUARD(gnNpcControlInitCount, "D2Game::UNIT::sunitproxy::SUNITPROXY_AllocNpcControl::gnNpcControlInitCount");
     static D2NpcControlInitStrc gaNpcControlInitTable[43] = {
-    D2NpcControlInitStrc(
+    {
         /* .nMonStatsId = */ 0x94,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x0,
         /* .nName = */ 0x1,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x92,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x0,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x9a,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x0,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x96,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x0,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x93,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x0,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x9b,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x0,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x10a,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x0,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xaf,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x1,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xb0,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x1,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xb1,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x1,
         /* .nName = */ 0x1,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xb2,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x1,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xca,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x1,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xc8,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x1,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xd2,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x1,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xc9,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x1,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xc6,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x1,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xc7,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x1,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x179,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x1,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x17a,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x1,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x109,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x0,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xf4,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x1,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xf5,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x2,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xfb,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x2,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xfc,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x2,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xfd,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x2,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xfe,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x2,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xff,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x2,
         /* .nName = */ 0x1,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x108,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x2,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0xf6,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x3,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x196,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x3,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x16f,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x3,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x198,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x3,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x101,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x3,
         /* .nName = */ 0x1,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x195,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x3,
         /* .nName = */ 0x1,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x129,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x2,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x14b,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x1,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x201,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x4,
         /* .nName = */ 0x1,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x200,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x4,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x1ff,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x4,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x202,
         /* .nFlags = */ 0x1,
         /* .nData = */ 0x4,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x203,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x4,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x209,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x4,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    ),
-    D2NpcControlInitStrc(
+    },
+    {
         /* .nMonStatsId = */ 0x208,
         /* .nFlags = */ 0x0,
         /* .nData = */ 0x4,
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
-    )
+    }
 }; D2_STATIC_GUARD(gaNpcControlInitTable, "D2Game::UNIT::sunitproxy::SUNITPROXY_AllocNpcControl::gaNpcControlInitTable");
 
     D2InventoryStrc* pNpcInventory;
@@ -477,7 +479,6 @@ void __fastcall SUNITPROXY_AllocNpcControl(::SGAMEDATA * pGame) {
     int32_t nTradeItemIdx;
     D2DataTableTxtStrc* pDataTable;
     PD2GameNpcProxyQueue pNpcEntry;
-    int nMonStatsByteOffset;
     int iVar1;
     int nNpcControlTableSize;
     bool bFoundInControlTable;
@@ -510,23 +511,22 @@ void __fastcall SUNITPROXY_AllocNpcControl(::SGAMEDATA * pGame) {
     nNpcCount = 0;
     int nMonStatsIdx;
     nMonStatsIdx = 0;
-    if (0 < nMonStatsTotal) {
+    if (nMonStatsTotal > 0) {
       char* pMonStatsTxtEntry;
-      nMonStatsByteOffset = 0;
       pNpcEntry = &pNpcArray->pNpc[0].pProxyQueue;
       pDataTable = sgptDataTable;
       do {
         if (nMonStatsIdx >= 0 && nMonStatsIdx < pDataTable->nTxtMonStatsSize) {
-          pMonStatsTxtEntry = pDataTable->pTxtMonStats->Code + nMonStatsByteOffset - 0x10;
+          pMonStatsTxtEntry = (char*)&pDataTable->pTxtMonStats[nMonStatsIdx].Id;
           if (pMonStatsTxtEntry && (uint8_t)pMonStatsTxtEntry[0xd] & gadwBitMasks[1]) {
             ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->nMonStatsId = nMonStatsIdx;
             ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->bTrading = 0;
             pNpcControl->nNpcCount2++;
             ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->pProxyQueue = 0;
             ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.bStoreFilled = 0;
-            ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.unk0x01 = 0;
+            ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.bHirelingsInitialized = 0;
             ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.dwLastTradeTick = 0;
-            ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.unk0x03 = 0;
+            ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.bHasStore = 0;
             pNpcInventory = D2Common::INVENTORY::Inventory::STRUCT_CreatePlayerInventory(pGame->pMemoryPool, nullptr);
             ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->pInventory = pNpcInventory;
             nControlTableIdx = 0;
@@ -556,11 +556,11 @@ void __fastcall SUNITPROXY_AllocNpcControl(::SGAMEDATA * pGame) {
               if (bFoundInControlTable) {
                 ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.nAct = gaNpcControlInitTable[nControlTableIdx].nData;
                 byNpcControlFlags = gaNpcControlInitTable[nControlTableIdx].nFlags;
-                ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.unk0x03 = byNpcControlFlags;
+                ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.bHasStore = byNpcControlFlags;
                 ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.unk0x04 = 0;
                 ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.unk0x05 = 0;
                 ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.unk0x06 = gaNpcControlInitTable[nControlTableIdx].nName;
-                ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.unk0x07 = 0;
+                ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.bRefillStorePending = 0;
                 if (byNpcControlFlags == 1) {
                   iVar1 = ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->nMonStatsId;
                   if (iVar1 <= 0x195) {
@@ -655,7 +655,6 @@ void __fastcall SUNITPROXY_AllocNpcControl(::SGAMEDATA * pGame) {
           }
         }
 
-        nMonStatsByteOffset += 0x1a8;
         nMonStatsIdx++;
       } while (nMonStatsIdx < nMonStatsTotal);
     }
@@ -800,7 +799,7 @@ void __fastcall SUNITPROXY_QueueTradeAction(D2UnitStrc * pNpcUnit, ::SGAMEDATA *
     }
 
     D2GameNpcStrc* pNpc = GetGameNpcbyClassId(pGame, nNpcClassId, &nNpcIndex);
-    if (!(pNpc && &pNpc->sTrade && pNpc->sTrade.unk0x03 == 1 && pNpc->sTrade.bStoreFilled == 1 && pNpc->bTrading == 1)) {
+    if (!(pNpc && &pNpc->sTrade && pNpc->sTrade.bHasStore == 1 && pNpc->sTrade.bStoreFilled == 1 && pNpc->bTrading == 1)) {
       return;
     }
 
@@ -1113,7 +1112,7 @@ D2InventoryStrc * __fastcall SUNITPROXY_GetPlayerProxyInventory(::SGAMEDATA * pG
 }
 
 // Finds or creates this player's interaction node on an NPC proxy and RETURNS THE NODE. The node is the 12 bytes allocated at 00536cef with EDX = 0xc: player GUID at +0, a flag the trade path reads at +4, next at +8. On the found path the search loop at 00536cd0 jumps to the epilogue with the node still in EAX; on the allocate path the new node is in EAX and the code falls into the same epilogue, so both exits return it. It had been typed void, which left its caller SUNITNPC_OpenTradeScreen at 00579360 reading a declared-but-never-assigned local, taking the identified-item branch for the merchant's own unidentified stock and returning null - no vendor item ever reached the client.
-int32_t __fastcall SUNITPROXY_AddPlayerInteraction(::SGAMEDATA * pGame, D2GameNpcStrc * pNpcProxy, D2UnitStrc * pPlayerUnit) {
+D2NpcPlayerInteractionStrc * __fastcall SUNITPROXY_AddPlayerInteraction(::SGAMEDATA * pGame, D2GameNpcStrc * pNpcProxy, D2UnitStrc * pPlayerUnit) {
     int nPlayerGuid = !pPlayerUnit ? -1 : pPlayerUnit->nUnitGUID;
     D2NpcPlayerInteractionStrc* pInteractionEntry = pNpcProxy->pPlayerInteractions;
     while (true) {
@@ -1122,7 +1121,7 @@ int32_t __fastcall SUNITPROXY_AddPlayerInteraction(::SGAMEDATA * pGame, D2GameNp
         pInteractionEntry->nPlayerGUID = nPlayerGuid;
         pInteractionEntry->pNext = pNpcProxy->pPlayerInteractions;
         pNpcProxy->pPlayerInteractions = pInteractionEntry;
-        return (int32_t)pInteractionEntry;
+        return pInteractionEntry;
       }
       if (pInteractionEntry->nPlayerGUID == nPlayerGuid) {
         break;
@@ -1131,7 +1130,7 @@ int32_t __fastcall SUNITPROXY_AddPlayerInteraction(::SGAMEDATA * pGame, D2GameNp
       pInteractionEntry = pInteractionEntry->pNext;
     }
 
-    return (int32_t)pInteractionEntry;
+    return pInteractionEntry;
 }
 
 void __fastcall SUNITPROXY_ResetNpcProxy(::SGAMEDATA * pGame, D2GameNpcStrc * pNpcProxy, D2UnitStrc * pUnit) {
@@ -1150,8 +1149,8 @@ void __fastcall SUNITPROXY_ResetNpcProxy(::SGAMEDATA * pGame, D2GameNpcStrc * pN
 // One-time initialisation of the trade and quest item tables for a specific NPC vendor (by nNpcIndex). Guards against re-entry via gbaNpcItemTableBuilt. Scans the Items.txt table twice: first pass counts trade vs quest items for the NPC; allocates gpaNpcTradeItemTable (12 bytes/entry) and gpaNpcQuestItemTable (4 bytes/entry); second pass fills both tables with item class IDs, flags, and level data from the txt rows. Quest items (non-zero npcquest column) go to the quest table; all others to the trade table.
 // @sourcefile .\UNIT\sunitproxy.cpp
 void __stdcall SUNITPROXY_BuildNpcItemTables(int32_t nNpcIndex) {
-    D2ItemsTxt* pDVar2;
     char* pItemRow;
+    int nRowsLeft;
     D2ItemsTableStrc* pItemTblSize = D2Common::DATATBLS::ItemTbls::TXT_Items_GetSize();
     if (gbaNpcItemTableBuilt[nNpcIndex]) {
       return;
@@ -1162,11 +1161,10 @@ void __stdcall SUNITPROXY_BuildNpcItemTables(int32_t nNpcIndex) {
     int nTradeCountTmp = 0;
     int nQuestCount = 0;
     if (pItemTblSize->nSize > 0) {
-      int iVar1;
       pItemRow = &pItemTblSize->pItems->bAkaraMagicMax + nNpcIndex;
-      iVar1 = pItemTblSize->nSize;
+      nRowsLeft = pItemTblSize->nSize;
       do {
-        nTradeCountTmp = iVar1;
+        nTradeCountTmp = nRowsLeft;
         if (pItemRow[-0x46 - nNpcIndex] != '\0' && (pItemRow[-0x22] != '\0' || *pItemRow != '\0')) {
           if (pItemRow[0x2b - nNpcIndex] == '\0') {
             nTradeCount++;
@@ -1176,9 +1174,9 @@ void __stdcall SUNITPROXY_BuildNpcItemTables(int32_t nNpcIndex) {
         }
 
         pItemRow += 0x1a8;
-        iVar1 = nTradeCountTmp - 1;
+        nRowsLeft = nTradeCountTmp - 1;
         nTradeCountTmp = nTradeCount;
-      } while (iVar1);
+      } while (nRowsLeft);
     }
 
     void* pAllocBuf = D2_ALLOC_POOL_AT(nullptr, nTradeCountTmp * 0xc, ".\\UNIT\\sunitproxy.cpp", 0x523);
@@ -1198,9 +1196,10 @@ void __stdcall SUNITPROXY_BuildNpcItemTables(int32_t nNpcIndex) {
     nTradeCount = 0;
     nQuestCount = 0;
     do {
-      pDVar2 = pItemTblSize->pItems;
-      if ((&pDVar2->bSpawnable)[nTradeCount] != '\0' && ((&pDVar2->bAkaraMax)[nNpcIndex + nTradeCount] != '\0' || (&pDVar2->bAkaraMagicMax)[nNpcIndex + nTradeCount] != '\0')) {
-        if ((&pDVar2->bPermStoreItem)[nTradeCount] == '\0') {
+      D2ItemsTxt* pDVar1;
+      pDVar1 = pItemTblSize->pItems;
+      if ((&pDVar1->bSpawnable)[nTradeCount] != '\0' && ((&pDVar1->bAkaraMax)[nNpcIndex + nTradeCount] != '\0' || (&pDVar1->bAkaraMagicMax)[nNpcIndex + nTradeCount] != '\0')) {
+        if ((&pDVar1->bPermStoreItem)[nTradeCount] == '\0') {
           *(char*)(nQuestCount + (int)gaNpcItemTables[nNpcIndex].pTradeItems) = (&pItemTblSize->pItems->bAkaraMin)[nNpcIndex + nTradeCount];
           *(char*)((int)gaNpcItemTables[nNpcIndex].pTradeItems + nQuestCount + 1) = (&pItemTblSize->pItems->bAkaraMax)[nTradeCount + nNpcIndex];
           *(char*)((int)gaNpcItemTables[nNpcIndex].pTradeItems + nQuestCount + 2) = (&pItemTblSize->pItems->bAkaraMagicMin)[nTradeCount + nNpcIndex];
@@ -1209,7 +1208,7 @@ void __stdcall SUNITPROXY_BuildNpcItemTables(int32_t nNpcIndex) {
           *(uint32_t*)((int)gaNpcItemTables[nNpcIndex].pTradeItems + nQuestCount + 4) = *(uint32_t*)(pItemTblSize->pItems->szSetInvFile + nTradeCount + 0x20);
           nQuestCount += 0xc;
         } else {
-          *(uint32_t*)(nTradeCountTmp + (int)gaNpcItemTables[nNpcIndex].pQuestItems) = *(uint32_t*)(pDVar2->szSetInvFile + nTradeCount + 0x20);
+          *(uint32_t*)(nTradeCountTmp + (int)gaNpcItemTables[nNpcIndex].pQuestItems) = *(uint32_t*)(pDVar1->szSetInvFile + nTradeCount + 0x20);
           nTradeCountTmp += 4;
         }
       }
@@ -1393,7 +1392,7 @@ void __stdcall SUNITPROXY_UpdateNpcProxiesForAct(::SGAMEDATA * pGame, char nAct,
       return;
     }
 
-    uint8_t* pNpcEntry = &pNpcArray->pNpc[0].sTrade.unk0x07;
+    uint8_t* pNpcEntry = &pNpcArray->pNpc[0].sTrade.bRefillStorePending;
     do {
       if (pNpcEntry != (uint8_t*)0x7 && pNpcEntry[-5] == nAct && pNpcEntry[-4] == 1 && *(int*)(pNpcEntry - 0xb) == 1 && ((D2NpcTradeStateStrc*)(pNpcEntry - 7))->bStoreFilled == 1) {
         if (bResult) {
@@ -1517,9 +1516,9 @@ void __fastcall SERVER_InitClassicTowns(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
     SUNITPROXY_UpdateNpcProxiesForAct(pGame, nActByte, (uint32_t)!sArgs.nCount);
 }
 
-void __fastcall SUNITPROXY_SendProxyItemsToClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nNpcProxy, D2ClientStrc * pClient) {
+void __fastcall SUNITPROXY_SendProxyItemsToClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * nNpcProxy, D2ClientStrc * pClient) {
     SendUpdatedItemsToClient(pGame, pUnit, pClient, nullptr);
-    D2InventoryStrc* pInventory = SUNITPROXY_GetPlayerProxyInventory(pGame, (D2UnitStrc*)nNpcProxy, pUnit);
+    D2InventoryStrc* pInventory = SUNITPROXY_GetPlayerProxyInventory(pGame, nNpcProxy, pUnit);
     if (!pInventory) {
       return;
     }

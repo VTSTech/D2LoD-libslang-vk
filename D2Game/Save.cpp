@@ -8,17 +8,25 @@
 
 namespace D2Game::Save {
 
-int __stdcall SAVEFILE_ReadEncodedInt14Bit(uint8_t * pbParam) {
-    return (pbParam[1] & 0x7f) * 0x80 + (*pbParam & 0x7f);
+int __stdcall SAVEFILE_ReadEncodedInt14Bit(uint8_t * pBuffer) {
+    return (pBuffer[1] & 0x7f) * 0x80 + (*pBuffer & 0x7f);
 }
 
-void __stdcall SAVEFILE_WriteEncodedInt14Bit(uint8_t * pbParam, uint32_t nParam) {
-    *pbParam = (uint8_t)nParam | 0x80;
-    pbParam[1] = (uint8_t)(nParam >> 7) | 0x80;
+void __stdcall SAVEFILE_WriteEncodedInt14Bit(uint8_t * pBuffer, uint32_t nValue) {
+    *pBuffer = (uint8_t)nValue | 0x80;
+    pBuffer[1] = (uint8_t)(nValue >> 7) | 0x80;
 }
 
-int __stdcall SAVEFILE_ReadEncodedInt32Bit(uint8_t * pbParam) {
-    return (((uint32_t)pbParam[3] * 0xff + (uint32_t)pbParam[2]) * 0xff + (uint32_t)pbParam[1]) * 0xff - 0xfe0200 + (uint32_t)*pbParam;
+int __stdcall SAVEFILE_ReadEncodedInt32Bit(uint8_t * pBuffer) {
+    return (((uint32_t)pBuffer[3] * 0xff + (uint32_t)pBuffer[2]) * 0xff + (uint32_t)pBuffer[1]) * 0xff - 0xfe0200 + (uint32_t)*pBuffer;
+}
+
+uint32_t __stdcall FOG_ParseStringValue(char * szText, uint32_t nNumber) {
+    *szText = (char)(nNumber / 0xff) + (char)nNumber + '\x01';
+    szText[1] = (char)(nNumber / 0xff % 0xff) + '\x01';
+    szText[2] = (char)(nNumber / 0xfe01 % 0xff) + '\x01';
+    szText[3] = (char)(nNumber / 0xfd02ff % 0xff) + '\x01';
+    return (int)(nNumber / 0xfd02ff / 0xff);
 }
 
 } // namespace D2Game::Save

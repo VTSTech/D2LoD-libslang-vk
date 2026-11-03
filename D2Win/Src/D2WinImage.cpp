@@ -4,12 +4,11 @@
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2Client/D2ControlStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
-#include "D2Lang/Unicode/UNISYS.h"
 #include "D2Launch/MainMenus.h"
 #include "D2Win/D2WinImage.h"
+#include "D2Win/D2WinImageEx.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
-#include "D2Win/Forms/D2WinImageEx.h"
 #include "D2Win/Src/D2WinMain.h"
 #include "D2Win/Src/D2WinScrollbar.h"
 #include "D2Win/Src/D2WinTextBox.h"
@@ -17,7 +16,6 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Win/D2WinImageEx.h"
 #include "D2Win/D2WinScrollbar.h"
 #include "D2Win/Src/D2WinFont.h"
 
@@ -32,6 +30,8 @@
 #endif
 
 static_assert(sizeof(void*) != 4 || sizeof(::D2WinImage) == 0x4c, "D2_NEW_AT(D2WinImage): the 32-bit layout must be the 0x4c bytes 1.14d allocates");
+
+static_assert(sizeof(void*) != 4 || sizeof(::D2WinImageEx) == 0x54, "D2_NEW_AT(D2WinImageEx): the 32-bit layout must be the 0x54 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_ImageHitArea
@@ -48,40 +48,6 @@ typedef BOOL (__fastcall *Draw)(D2ControlStrc * pControl);
 #endif
 
 namespace D2Win::Src::D2WinImage {
-
-void __fastcall D2WINTEXTBOX_SetTextFromAnsiSimple(::D2WinTextBox * pTextBox, char * szText) {
-    int nClearCount;
-    uint16_t* pBufCursor;
-    uint16_t wszWorkBuf[1024];
-    if (!pTextBox) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x109);
-      exit(-1);
-    }
-
-    for (nClearCount = 0; nClearCount < 0x400; nClearCount++) {
-      wszWorkBuf[nClearCount] = L'\0';
-    }
-
-    D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszWorkBuf, szText, 0x400);
-    D2WinTextBox::SetText(pTextBox, wszWorkBuf, 4, false, 0);
-}
-
-void __fastcall D2WINTEXTBOX_SetTextFromAnsi(::D2WinTextBox * pTextBox, char * szText, int32_t nLineStyle) {
-    int nClearCount;
-    uint16_t* pBufCursor;
-    uint16_t wszWorkBuf[1024];
-    for (nClearCount = 0; nClearCount < 0x400; nClearCount++) {
-      wszWorkBuf[nClearCount] = L'\0';
-    }
-
-    if (!pTextBox) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x11e);
-      exit(-1);
-    }
-
-    D2Lang::Unicode::UNISYS::STRING_ConvertCharToWchar(wszWorkBuf, szText, 0x400);
-    D2WinTextBox::SetText(pTextBox, wszWorkBuf, nLineStyle, false, 0);
-}
 
 void __fastcall D2WINTEXTBOX_SetTextW(::D2WinTextBox * pTextBox, uint16_t * wszText) {
     D2WinTextBox::SetText(pTextBox, wszText, 4, false, 0);
@@ -115,7 +81,7 @@ void __fastcall FORMS_DestroyD2WinImage(::D2WinImage * pWinImage) {
     D2WinMain::FORMS_DestroyControl(&pWinImage->sControl);
 }
 
-void __fastcall FORMS_DestroyD2WinImageEx(::D2WinImageEx * pWinImageEx) {
+void __fastcall FORMS_DestroyD2WinImageEx(D2WinImageEx * pWinImageEx) {
     D2WinMain::FORMS_DestroyControl((D2ControlStrc*)pWinImageEx);
 }
 
@@ -170,7 +136,7 @@ BOOL __fastcall Draw(::D2WinImage * pImage) {
     int nTileColCount;
     int nTileDrawX;
     int nPositionX;
-    D2GfxDataStrc local_60;
+    D2GfxDataStrc sGfxData;
     int nTileRowCount;
     int nTileDrawY;
     int nStartY;
@@ -191,10 +157,10 @@ BOOL __fastcall Draw(::D2WinImage * pImage) {
       nTileRowY = pImage->sControl.dwSizeY;
       nTilesY = (nTileRowY + 0xff >> 8) - 1;
       nTilesX = pImage->sControl.dwSizeX + 0xff >> 8;
-      memset(&local_60, 0, 0x48);
-      local_60.pDC6 = pImage->sControl.pDC6;
-      local_60.nFrameNumber = pImage->nFrame;
-      local_60.nDirection = 0;
+      memset(&sGfxData, 0, 0x48);
+      sGfxData.pDC6 = pImage->sControl.pDC6;
+      sGfxData.nFrameNumber = pImage->nFrame;
+      sGfxData.nDirection = 0;
       if (nTilesY > 0) {
         nTileDrawY = nStartY - nTileRowY + 0x101;
         nTileRowCount = nTilesY;
@@ -203,8 +169,8 @@ BOOL __fastcall Draw(::D2WinImage * pImage) {
           nTileDrawX = nPositionX;
           if (nTilesX > 0) {
             do {
-              D2gfx::D2GFX::D2GFX_DrawImage(&local_60, nTileDrawX, nTileDrawY, -1, pImage->eDrawMode, nullptr);
-              local_60.nFrameNumber++;
+              D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nTileDrawX, nTileDrawY, -1, pImage->eDrawMode, nullptr);
+              sGfxData.nFrameNumber++;
               nTileDrawX += 256;
               nTileColCount--;
             } while (nTileColCount);
@@ -219,8 +185,8 @@ BOOL __fastcall Draw(::D2WinImage * pImage) {
       }
 
       do {
-        D2gfx::D2GFX::D2GFX_DrawImage(&local_60, nPositionX, pImage->sControl.dwPosY, -1, pImage->eDrawMode, nullptr);
-        local_60.nFrameNumber++;
+        D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nPositionX, pImage->sControl.dwPosY, -1, pImage->eDrawMode, nullptr);
+        sGfxData.nFrameNumber++;
         nPositionX += 256;
         nTilesX--;
       } while (nTilesX);
@@ -235,28 +201,28 @@ static void __stdcall D2WinImage_Draw(D2GfxTileRectStrc * pScreenRect, D2GfxTile
     D2GfxTileRectStrc sClipRect;
     int nSrcX1;
     int nTileCountX = pDstRect->nX1 - pDstRect->nX0;
-    int iVar1 = pScreenRect->nX1 - pScreenRect->nX0;
-    int iVar2 = pDstRect->nY1 - pDstRect->nY0;
+    int nTilesX = pScreenRect->nX1 - pScreenRect->nX0;
+    int nTileHeight = pDstRect->nY1 - pDstRect->nY0;
     int nDstOffsetX = pScreenRect->nY1 - pScreenRect->nY0;
-    if (nTileCountX == iVar1 && iVar2 == nDstOffsetX) {
+    if (nTileCountX == nTilesX && nTileHeight == nDstOffsetX) {
       D2gfx::D2GFX::D2GFX_DrawSprite6(pGfxData, pScreenRect->nX0 - pDstRect->nX0, pScreenRect->nY1 - pDstRect->nY1 + 0x100, pScreenRect, 5);
       return;
     }
 
-    iVar1 = (iVar1 - 1 + nTileCountX) / nTileCountX;
-    int nTileRepeatX = (nDstOffsetX - 1 + iVar2) / iVar2;
+    nTilesX = (nTilesX - 1 + nTileCountX) / nTileCountX;
+    int nTileRepeatX = (nDstOffsetX - 1 + nTileHeight) / nTileHeight;
     nDstOffsetX = pScreenRect->nY0 - pDstRect->nY0 + 0x100;
     if (nTileRepeatX <= 0) {
       return;
     }
 
     do {
-      int nParam1;
-      nParam1 = pScreenRect->nX0 - pDstRect->nX0;
-      nSrcX1 = iVar1;
-      if (iVar1 > 0) {
+      int nDrawX;
+      nDrawX = pScreenRect->nX0 - pDstRect->nX0;
+      nSrcX1 = nTilesX;
+      if (nTilesX > 0) {
         do {
-          sClipRect.nX0 = pDstRect->nX0 + nParam1;
+          sClipRect.nX0 = pDstRect->nX0 + nDrawX;
           if (pScreenRect->nX0 > sClipRect.nX0) {
             sClipRect.nX0 = pScreenRect->nX0;
           }
@@ -272,22 +238,22 @@ static void __stdcall D2WinImage_Draw(D2GfxTileRectStrc * pScreenRect, D2GfxTile
           }
 
           sClipRect.nY1 = pScreenRect->nY1;
-          if (pScreenRect->nY1 >= sClipRect.nY0 + iVar2) {
-            sClipRect.nY1 = sClipRect.nY0 + iVar2;
+          if (pScreenRect->nY1 >= sClipRect.nY0 + nTileHeight) {
+            sClipRect.nY1 = sClipRect.nY0 + nTileHeight;
           }
 
-          D2gfx::D2GFX::D2GFX_DrawSprite6(pGfxData, nParam1, nDstOffsetX, &sClipRect, 5);
-          nParam1 += nTileCountX;
+          D2gfx::D2GFX::D2GFX_DrawSprite6(pGfxData, nDrawX, nDstOffsetX, &sClipRect, 5);
+          nDrawX += nTileCountX;
           nSrcX1--;
         } while (nSrcX1);
       }
 
-      nDstOffsetX += iVar2;
+      nDstOffsetX += nTileHeight;
       nTileRepeatX--;
     } while (nTileRepeatX);
 }
 
-BOOL __fastcall Draw(::D2WinImageEx * pImageEx) {
+BOOL __fastcall Draw(D2WinImageEx * pImageEx) {
     int nBorderY;
     D2GfxDataStrc sGfxData;
     D2GfxTileRectStrc sScreenRect;
@@ -349,7 +315,7 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
     BOOL bPressResult;
     int nHitAreaIdx;
     int nRelMouseY;
-    int iVar2;
+    int nRelMouseX;
     D2WinImageHitArea* pHitAreaCur;
     D2WinImageHitArea* pHitAreaTable;
     ImageHitArea pfnHitEntry;
@@ -360,17 +326,17 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
       exit(-1);
     }
 
-    uint32_t uVar1 = pImage->sControl.dwState;
-    if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
+    uint32_t dwState = pImage->sControl.dwState;
+    if (gadwBitMasks[2] & dwState && gadwBitMasks[0] & dwState) {
       nRelMouseY = pImage->sControl.dwSizeY - pImage->sControl.dwPosY + D2Client::Mouse::nPosY;
-      iVar2 = D2Client::Mouse::nPosX - pImage->sControl.dwPosX;
+      nRelMouseX = D2Client::Mouse::nPosX - pImage->sControl.dwPosX;
       pHitAreaTable = pImage->pHitAreas;
       if (pHitAreaTable) {
         nHitAreaIdx = 0;
         pfnHitEntry = pHitAreaTable->pfnOnHit;
         pHitAreaCur = pHitAreaTable;
         while (pfnHitEntry) {
-          if (iVar2 >= pHitAreaCur->nX && nRelMouseY >= pHitAreaCur->nY - pHitAreaCur->nHeight && iVar2 < pHitAreaCur->nWidth + pHitAreaCur->nX && nRelMouseY < pHitAreaCur->nY) {
+          if (nRelMouseX >= pHitAreaCur->nX && nRelMouseY >= pHitAreaCur->nY - pHitAreaCur->nHeight && nRelMouseX < pHitAreaCur->nWidth + pHitAreaCur->nX && nRelMouseY < pHitAreaCur->nY) {
             bPressResult = pHitAreaTable[nHitAreaIdx].pfnOnHit(pControlMsg);
             return bPressResult;
           }
@@ -394,21 +360,20 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
 }
 
 // @sourcefile .\Src\D2WinImage.cpp
-::D2WinImage * __fastcall D2WinImage(int32_t nParam1, int32_t nParam2, int32_t nSizeX, int32_t nSizeY, DC6 * pDC6, OnPress pfnOnPress, D2WinImageHitArea * pHitAreas, ::Key pKey) {
-    uint32_t uVar1;
+::D2WinImage * __fastcall D2WinImage(int32_t nPosX, int32_t nPosY, int32_t nSizeX, int32_t nSizeY, DC6 * pDC6, OnPress pfnOnPress, D2WinImageHitArea * pHitAreas, ::Key pKey) {
+    uint32_t dwState;
     ::D2WinImage* pNewImage = D2_NEW_AT(::D2WinImage, ".\\Src\\D2WinImage.cpp", 0x1d);
     memset(pNewImage, 0, 0x4c);
     pNewImage->sControl.neD2FormType = FORM_Image;
-    int* pDwState = &pNewImage->sControl.dwState;
-    *pDwState |= gadwBitMasks[0];
-    uVar1 = pNewImage->sControl.dwState | gadwBitMasks[2];
+    pNewImage->sControl.dwState |= gadwBitMasks[0];
+    dwState = pNewImage->sControl.dwState | gadwBitMasks[2];
     pNewImage->sControl.pDC6 = pDC6;
-    pNewImage->sControl.dwState = uVar1;
+    pNewImage->sControl.dwState = dwState;
     pNewImage->sControl.dwSizeX = nSizeX;
     pNewImage->sControl.dwSizeY = nSizeY;
     pNewImage->sControl.fpKey = pKey;
-    pNewImage->sControl.dwPosX = nParam1;
-    pNewImage->sControl.dwPosY = nParam2;
+    pNewImage->sControl.dwPosX = nPosX;
+    pNewImage->sControl.dwPosY = nPosY;
     pNewImage->sControl.fpDraw = (::Draw)(BOOL (__fastcall *)(::D2WinImage*))D2WinImage::Draw;
     pNewImage->sControl.pNext = 0;
     pNewImage->sControl.fpPush = D2WinImage::Push;
@@ -420,6 +385,34 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
     pNewImage->eDrawMode = DRAW_SOLID;
     D2WinMain::FORMS_AddControlToGlobalList(&pNewImage->sControl);
     return pNewImage;
+}
+
+// @sourcefile .\Src\D2WinImage.cpp
+D2WinImageEx * __fastcall D2WINIMAGE_CreateImageEx(int32_t nPosX, int32_t nPosY, int32_t nSizeX, int32_t nSizeY, DC6 * pDC6, int32_t nBorderX, int32_t nBorderY) {
+    D2WinImageEx* pNewImageEx = D2_NEW_AT(D2WinImageEx, ".\\Src\\D2WinImage.cpp", 0x3b);
+    memset(pNewImageEx, 0, 0x54);
+    pNewImageEx->sImage.sControl.neD2FormType = FORM_Image;
+    pNewImageEx->sImage.sControl.dwState |= gadwBitMasks[0];
+    pNewImageEx->sImage.sControl.dwState |= gadwBitMasks[2];
+    pNewImageEx->sImage.sControl.pDC6 = pDC6;
+    pNewImageEx->sImage.sControl.dwPosX = nPosX;
+    pNewImageEx->sImage.sControl.dwSizeX = nSizeX;
+    pNewImageEx->sImage.sControl.dwPosY = nPosY;
+    pNewImageEx->sImage.sControl.dwSizeY = nSizeY;
+    pNewImageEx->sImage.sControl.fpDraw = (::Draw)(BOOL (__fastcall *)(D2WinImageEx*))D2WinImage::Draw;
+    pNewImageEx->sImage.sControl.pNext = 0;
+    pNewImageEx->sImage.sControl.fpPush = D2WinImage::Push;
+    pNewImageEx->sImage.sControl.fpMouse = 0;
+    pNewImageEx->sImage.sControl.fpListCheck = 0;
+    pNewImageEx->sImage.sControl.fpKey = 0;
+    pNewImageEx->sImage.sControl.fpOnPress = 0;
+    pNewImageEx->sImage.pHitAreas = 0;
+    pNewImageEx->sImage.nFrame = 0;
+    pNewImageEx->sImage.eDrawMode = DRAW_SOLID;
+    pNewImageEx->nBorderX = nBorderX;
+    pNewImageEx->nBorderY = nBorderY;
+    D2WinMain::FORMS_AddControlToGlobalList((D2ControlStrc*)pNewImageEx);
+    return pNewImageEx;
 }
 
 } // namespace D2Win::Src::D2WinImage

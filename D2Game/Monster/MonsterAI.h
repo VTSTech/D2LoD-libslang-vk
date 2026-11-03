@@ -49,13 +49,13 @@ uint32_t __fastcall NpcStateIs2(struct D2UnitStrc * pNpc, struct D2UnitStrc * pP
 // Removes a specific unit (pUnit) from a monster's AI sub-list (pMonsterAi->pAiSub), frees the D2MonsterAiSubStrc from the game memory pool, and clears any interact-info on pUnit if it was targeting a monster. If the sub-list becomes empty after removal, also strips the player's proxy inventory via SUNITPROXY_RemovePlayerProxyInventory. Fires QUEST_OnNpcDeactivate on entry. Handles both active (nState > 0) and pending (nState == 0) sub-AI records.
 // @sourcefile .\MONSTER\MonsterAI.cpp
 void __fastcall FreeAndResetAiSub(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pMonster, struct D2MonsterAiStrc * pMonsterAi);
-void __fastcall NPC_BeginInteractionFromUnit(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pMonster, struct D2MonsterAiStrc * pMonsterAi, uint8_t bUnknown);
+void __fastcall NPC_BeginInteractionFromUnit(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pMonster, struct D2MonsterAiStrc * pMonsterAi, uint8_t nQuestActionType);
 // nParam arrives in EDX, survives the UnitHasSwitchAiSet call (that callee clobbers only EAX/ECX) and is stored to nAiRelated2.
-BOOL __fastcall AI_SetSwitchAiTargetParams(struct D2UnitStrc * pUnit, int32_t nParam, uint32_t nTargetGUID);
+BOOL __fastcall AI_SetSwitchAiTargetParams(struct D2UnitStrc * pUnit, int32_t nSwitchAiMode, uint32_t nTargetGUID);
 struct D2UnitPlayerListStrc * __fastcall AI_GetSwitchAiParam1(struct D2UnitStrc * pUnit);
 struct D2UnitDataPlayerArenaStrc * __fastcall AI_GetSwitchAiParam2(struct D2UnitStrc * pUnit);
 void __fastcall AI_ClearSwitchAiTargetParams(struct D2UnitStrc * pUnit);
-uint32_t __fastcall NpcStateIsntZero(struct D2UnitStrc * pUnit, int32_t nParam);
+uint32_t __fastcall NpcStateIsntZero(struct D2UnitStrc * pUnit, struct D2UnitStrc * pPlayer);
 // Tears down a monster's D2MonsterAiSubStrc list. For each sub-AI node: sends 0x62 MakeUnitTargetable packet to the interacting client, optionally clears that client's interact-info (if bClientSide and the client was interacting with this monster), calls an optional fpFunction cleanup callback, then frees the node. Sets pMonsterAi->pAiSub to NULL when done.
 // @sourcefile .\MONSTER\MonsterAI.cpp
 void __fastcall ClearAISub(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, fpAiClear fpFunction, bool bClientSide);

@@ -30,6 +30,11 @@
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
+#ifndef RECON_FPTD_fpRequiredUserAction
+#define RECON_FPTD_fpRequiredUserAction
+typedef BOOL (*fpRequiredUserAction)();
+#endif
+
 namespace D2Client::Engine::Application {
 
 // Main app init. Client path loads MPQ data/media, sets renderer/window, optional keyhook, sound/gamma/vsync, then loops ApplicationRunCurrentMode until exit. On exit unloads MPQs and cleans up.
@@ -63,7 +68,7 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
     // marks, the hangwatch arm and the ini bootstrap actually run, in the order the
     // d2boot patch intended.
     D2BOOT_MarkFmt("ApplicationMain enter (mode=%d)", (int)geD2ApplicationMode); // [d2boot]
-    D2BOOT_Mark("Vanilla+0.0.6-R59"); // [d2boot] build self-identification (local builds do not always rotate the commit hash)
+    D2BOOT_Mark("Vanilla+0.0.7-R101"); // [d2boot] build self-identification (local builds do not always rotate the commit hash)
     D2HANGWATCH_Start(); // [vanilla-plus hangwatch] arm the freeze watchdog (evaluates from the first main-loop beat)
     // VP-BEGIN [alt-toggle]: create d2vp.ini next to the exe when missing
     // (documented all-defaults template, one attempt per process) so the
@@ -75,7 +80,7 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
     __frame0.bSoundInit = 0;
     Fog::Source::SFile::SFILE_InitializeFileSystem((uint32_t)pD2IniData->bDIRECT, 0);
     D2BOOT_Mark("SFile filesystem init ok"); // [d2boot]
-    Fog::Src::AsyncData::STRUCT_AllocAsyncData(1);
+    Fog::Src::AsyncData::STRUCT_AllocAsyncData(1, 0);
     Fog::Return();
     Fog::Src::D2Net::NET_SERVER_SentPacketLog_Clear();
     if (geD2ApplicationMode != APPMODE_server) {
@@ -123,7 +128,7 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
         D2BOOT_Fail("D2GFX_PreSetupBeforeCreatingWindow returned 0"); // [d2boot]
         return 0;
       }
-      if (pD2IniData->bPERSPECTIVE && RENDERED_DirectDraw < eD2ApplicationModeAndRenderer) {
+      if (pD2IniData->bPERSPECTIVE && (int32_t)RENDERED_DirectDraw < (int32_t)eD2ApplicationModeAndRenderer) {
         D2gfx::D2GFX::D2GFX_SetPerspective(1);
       }
 
@@ -168,12 +173,14 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
       Storm::Source::SReg::SRegSaveValue("Diablo II", "Resolution", 0, 0);
     }
     if (!pD2IniData->bNOSOUND && geD2ApplicationMode != APPMODE_server) {
-      // [sound fix] bSOUNDBKG is a bool (ini struct offset 0x224), not a window handle —
-      // passing it made SOUND_Initialize see hwnd=0/1 and the DDA music stream bind to a
-      // dead window (the round-3 directx log's hwnd=00000000). The game window exists by
-      // now (CreateWindowWithChecks above), so hand over the real one.
-      D2BOOT_MarkFmt("SOUND_Initialize enter (hwnd=%08lx)", (unsigned long)D2gfx::D2GFX::GetHwnd()); // [d2boot] pins a pre-sound freeze (enter written, done never) and reports the init verdict
-      D2Sound::Sound::SOUND_Initialize(*(uint32_t*)pD2IniData->bD2ExpMpqExistsOrLanugageCode, D2gfx::D2GFX::GetHwnd());
+      // [sound fix superseded R99] upstream 0fe2eda8 (ghidra 1870 sound names) recovered
+      // the second SOUND_Initialize parameter as BOOL bSoundInBackground (stored to
+      // gbSoundInBackground; g_hwndSoundWindow is gone from the recovery) - the fork's
+      // hwnd-interpretation fix (pass GetHwnd() so the DDA music stream binds a live
+      // window) has no site left. The retail call shape passes the ini BOOL again; the
+      // d2boot enter/done marks stay (freeze triage is fork-side).
+      D2BOOT_MarkFmt("SOUND_Initialize enter (bkg=%d)", (int)pD2IniData->bSOUNDBKG); // [d2boot] pins a pre-sound freeze (enter written, done never) and reports the init verdict
+      D2Sound::Sound::SOUND_Initialize(*(uint32_t*)pD2IniData->bD2ExpMpqExistsOrLanugageCode, (uint32_t)pD2IniData->bSOUNDBKG);
       D2BOOT_MarkFmt("SOUND_Initialize done (dsoundInit=%d eax=%d)", (int)D2Sound::SOUND_GetDirectSoundInitializedFlag(), (int)D2Sound::SOUND_GetEAXEnabledFlag()); // [d2boot] dsoundInit=0 means the whole engine failed to start: no menu music, no effects
       __frame0.bSoundInit = 1;
     }

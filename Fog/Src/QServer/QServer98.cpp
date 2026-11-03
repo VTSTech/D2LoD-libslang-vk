@@ -26,8 +26,8 @@ void __fastcall QSERVER_CloseAllConnections(D2QServerStrc * pQServer) {
 
 BOOL __fastcall SendToClientOnline(D2QServerStrc * pQServer, D2QServerClientConnectionStrc * pQServerClient, char * pBytes, int nSize) {
     /* int flags for send */ /* int len for send */ /* char * buf for send */ /* SOCKET s for send */ unsigned int socket = pQServerClient->socket;
-    int iVar1 = send(socket, pBytes, nSize, 0);
-    if (iVar1 == -1) {
+    int nBytesSent = send(socket, pBytes, nSize, 0);
+    if (nBytesSent == -1) {
       WSAGetLastError();
       return 0;
     }
@@ -36,13 +36,12 @@ BOOL __fastcall SendToClientOnline(D2QServerStrc * pQServer, D2QServerClientConn
 }
 
 // NOTE: Callee-saved register params inferred (medium confidence): pQServerStrc (ESI): D2QServerStrc*
-void * __fastcall QSERVER_AllocateConnectionStruct(int nSocket, uint32_t nParam, D2QServerStrc * pQServerStrc) {
-    D2QServerClientContainerStrc* pClientContainer = AddClient(pQServerStrc, nSocket, nParam);
-    if (!pQServerStrc->pfnOnClientAcceptedHook) {
-      return pClientContainer;
+void * __fastcall QSERVER_AllocateConnectionStruct(int nSocket, uint32_t nIpAddress, D2QServerStrc * pQServerStrc) {
+    D2QServerClientContainerStrc* pClientContainer = AddClient(pQServerStrc, nSocket, nIpAddress);
+    if (pQServerStrc->pfnOnClientAcceptedHook) {
+      pClientContainer = (D2QServerClientContainerStrc*)pQServerStrc->pfnOnClientAcceptedHook(pQServerStrc, pClientContainer->client.nClientToken, ".\\Src\\QServer\\QServer98.cpp", 0x91);
     }
 
-    pClientContainer = (D2QServerClientContainerStrc*)pQServerStrc->pfnOnClientAcceptedHook(pQServerStrc, pClientContainer->client.nClientToken, ".\\Src\\QServer\\QServer98.cpp", 0x91);
     return pClientContainer;
 }
 
@@ -75,7 +74,6 @@ DWORD __stdcall SocketThreadMain(void * lpThreadParam) {
     timeval tvSelectTimeout;
     LPCRITICAL_SECTION pClientLock;
     uint32_t nSelectResult;
-    sockaddr_in sClientAddr;
     char aRecvBuf[1460];
     char szErrBuf[100];
     D2QServerStrc* pQServerCopy;
@@ -140,7 +138,7 @@ DWORD __stdcall SocketThreadMain(void * lpThreadParam) {
         pClientLock = (LPCRITICAL_SECTION)((uintptr_t)&pClientLock->DebugInfo + 1);
       } while ((int)pClientLock < 0x40);
 
-      tvSelectTimeout.tv_usec = (long int)(100000 / (int64_t)(((D2QServerStrc*)lpThreadParam)->nConnectedClients / 64 + 1));
+      tvSelectTimeout.tv_usec = (long int)(100000 / (((D2QServerStrc*)lpThreadParam)->nConnectedClients / 64 + 1));
       nFdIsSetResult = 0;
       tvSelectTimeout.tv_sec = 0;
       __frame0.nBucketIdx = nClientIdx;
@@ -200,15 +198,12 @@ DWORD __stdcall SocketThreadMain(void * lpThreadParam) {
       }
 
       /* timeval * timeout for select */ /* fd_set * exceptfds for select */ /* fd_set * writefds for select */ /* fd_set * readfds for select */ /* int nfds for select */ nSelectResult = select(0x40, &fsset0, nullptr, &fsset1, &tvSelectTimeout);
-      nClientIdx = 0;
-      if (__frame0.nClientCount > 0) {
-        do {
-          pClientIter = (D2QServerClientConnectionStrc*)aScannedClientPtrs[nClientIdx];
-          /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pClientIter->clientLock);
-          RemoveClientAndClearLog((D2QServerStrc*)lpThreadParam, pClientIter);
-          nClientIdx++;
-        } while (nClientIdx < __frame0.nClientCount);
+      for (nClientIdx = 0; nClientIdx < __frame0.nClientCount; nClientIdx++) {
+        pClientIter = (D2QServerClientConnectionStrc*)aScannedClientPtrs[nClientIdx];
+        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pClientIter->clientLock);
+        RemoveClientAndClearLog((D2QServerStrc*)lpThreadParam, pClientIter);
       }
+
       if (!nSelectResult) {
         /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&((D2QServerStrc*)lpThreadParam)->csClientLifecycle);
         nClientIdx = ((D2QServerStrc*)lpThreadParam)->aAcceptThreadStopFlags[0];
@@ -216,7 +211,7 @@ DWORD __stdcall SocketThreadMain(void * lpThreadParam) {
         LeaveCriticalSection(&((D2QServerStrc*)lpThreadParam)->csClientLifecycle);
         if (nClientIdx) {
           /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA("Server thread close #1\n");
-          ErrorManager::StubHook2();
+          ErrorManager::StubHook2(0);
           /* DWORD dwExitCode for ExitThread */ ExitThread(0);
         }
       } else if (nSelectResult != -1 && (__frame0.nSocketIdx = -1 , -1 < __frame0.nClientCount)) {
@@ -234,10 +229,7 @@ DWORD __stdcall SocketThreadMain(void * lpThreadParam) {
             if (nClientIdx) {
               if (socketCur == ((D2QServerStrc*)lpThreadParam)->aListenSockets[0]) {
                 __frame0.nAddrLen = 0x10;
-                sClientAddr.sin_family = 0;
-                sClientAddr.sin_port = 0;
-                sClientAddr.sin_addr = 0;
-                memset(sClientAddr.sin_zero, 0, 8 * sizeof(sClientAddr.sin_zero[0]));
+                sockaddr_in sClientAddr = {0};
                 nSelectResult = 0;
                 while (true) {
                   /* int iError for WSASetLastError */ _Wrappers::WSASetLastError(0);
@@ -346,7 +338,7 @@ BOOL __fastcall CreateSocketOnline(D2QServerStrc * pQServer, u_short nPort) {
     HANDLE hThread;
     char optTcpNoDelay[8];
     u_long ulNonBlocking;
-    char optReuseAddr[4];
+    int optReuseAddr;
     sockaddr bindAddr;
     /* int protocol for socket */ /* int type for socket */ /* int af for socket */ pQServer->nPerIpConnectionLimit = 1;
     SOCKET s = socket(2, 1, 0);
@@ -362,11 +354,8 @@ BOOL __fastcall CreateSocketOnline(D2QServerStrc * pQServer, u_short nPort) {
       optTcpNoDelay[2] = '\0';
       optTcpNoDelay[3] = '\0';
       /* char * optval for setsockopt */ /* int optname for setsockopt */ /* int level for setsockopt */ /* SOCKET s for setsockopt */ setsockopt(s, 0xffff, 8, optTcpNoDelay, 4);
-      /* int optlen for setsockopt */ optReuseAddr[0] = '\x01';
-      optReuseAddr[1] = '\0';
-      optReuseAddr[2] = '\0';
-      optReuseAddr[3] = '\0';
-      /* char * optval for setsockopt */ /* int optname for setsockopt */ /* int level for setsockopt */ /* SOCKET s for setsockopt */ setsockopt(pQServer->aListenSockets[0], 0xffff, 4, optReuseAddr, 4);
+      /* int optlen for setsockopt */ /* char * optval for setsockopt */ /* int optname for setsockopt */ /* int level for setsockopt */ /* SOCKET s for setsockopt */ optReuseAddr = 1;
+      setsockopt(pQServer->aListenSockets[0], 0xffff, 4, (char*)&optReuseAddr, 4);
       /* u_long * argp for ioctlsocket */ /* long cmd for ioctlsocket */ /* SOCKET s for ioctlsocket */ ulNonBlocking = 1;
       ioctlsocket(s, -0x7ffb9982, &ulNonBlocking);
       memset(bindAddr.sa_data + 2, 0, 12 * sizeof(bindAddr.sa_data[0]));
@@ -388,7 +377,7 @@ BOOL __fastcall CreateSocketOnline(D2QServerStrc * pQServer, u_short nPort) {
         /* LPDWORD lpThreadId for CreateThread */ /* DWORD dwCreationFlags for CreateThread */ /* LPVOID lpParameter for CreateThread */ /* LPTHREAD_START_ROUTINE lpStartAddress for CreateThread */ /* SIZE_T dwStackSize for CreateThread */ /* LPSECURITY_ATTRIBUTES lpThreadAttributes for CreateThread */ pQServer->hEmptyEvent = hThread;
         hThread = CreateThread((LPSECURITY_ATTRIBUTES)0x0, 0, (LPTHREAD_START_ROUTINE)SocketThreadMain, pQServer, 0, (LPDWORD)pQServer->aAcceptThreadIds);
         pQServer->aAcceptThreadHandles[0] = hThread;
-        ErrorManager::StubHook1();
+        ErrorManager::StubHook1(pQServer->aAcceptThreadIds[0], hThread);
         return 1;
       }
 

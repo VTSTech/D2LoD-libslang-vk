@@ -8,7 +8,6 @@
 #include "D2Win/Src/D2Comp.h"
 #include "D2Win/Src/D2WinFont.h"
 #include "D2Win/Src/D2WinMain.h"
-#include "Storm/_unnamespaced.h"
 
 
 // =============================================================================
@@ -24,12 +23,12 @@ D2WinWndHandlerStrc gaUIWindowHandlers[33] = {
     {
         /* .nType = */ 0x0,
         /* .nMessage = */ 0xa0,
-        /* .pfnCallback = */ (D2WinWndHandlerFn)&D2Win::Src::D2WinMain::D2WIN_HandleCursorHide
+        /* .pfnCallback = */ &D2Win::Src::D2WinMain::D2WIN_HandleCursorHide
     },
     {
         /* .nType = */ 0x0,
         /* .nMessage = */ 0x2a3,
-        /* .pfnCallback = */ (D2WinWndHandlerFn)&D2Win::Src::D2WinMain::D2WIN_HandleMouseLeave
+        /* .pfnCallback = */ &D2Win::Src::D2WinMain::D2WIN_HandleMouseLeave
     },
     {
         /* .nType = */ 0x0,
@@ -154,22 +153,22 @@ D2WinWndHandlerStrc gaUIWindowHandlers[33] = {
     {
         /* .nType = */ 0x3,
         /* .nMessage = */ 0x4d,
-        /* .pfnCallback = */ (D2WinWndHandlerFn)&D2Win::Src::D2WinMain::D2WIN_ToggleMusicOptions
+        /* .pfnCallback = */ &D2Win::Src::D2WinMain::D2WIN_ToggleMusicOptions
     },
     {
         /* .nType = */ 0x0,
         /* .nMessage = */ 0x1c,
-        /* .pfnCallback = */ (D2WinWndHandlerFn)&D2Win::Src::D2WinMain::D2WIN_HandleActivation
+        /* .pfnCallback = */ &D2Win::Src::D2WinMain::D2WIN_HandleActivation
     },
     {
         /* .nType = */ 0x0,
         /* .nMessage = */ 0x112,
-        /* .pfnCallback = */ (D2WinWndHandlerFn)&D2Win::Src::D2WinMain::D2WIN_HandleSystemCommand
+        /* .pfnCallback = */ &D2Win::Src::D2WinMain::D2WIN_HandleSystemCommand
     },
     {
         /* .nType = */ 0x2,
         /* .nMessage = */ 0x2c,
-        /* .pfnCallback = */ (D2WinWndHandlerFn)&D2Win::Src::D2WinMain::D2WIN_Unused_Placeholder_5
+        /* .pfnCallback = */ &D2Win::Src::D2WinMain::D2WIN_TakeScreenshotMsgHandler
     },
     {
         /* .nType = */ 0x2,
@@ -1789,6 +1788,12 @@ uint8_t gPaletteActNeutral[65536] = {}; D2_GLOBAL_GUARD(gPaletteActNeutral, "gPa
 
 D2FontCacheEntryStrc gaFontCache[14] = {}; D2_GLOBAL_GUARD(gaFontCache, "gaFontCache");
 
+D2TooltipTextStrc DisplayedTooltip = {}; D2_GLOBAL_GUARD(DisplayedTooltip, "DisplayedTooltip");
+
+uint16_t gnFontTableCharWidthCache[2] = {}; D2_GLOBAL_GUARD(gnFontTableCharWidthCache, "gnFontTableCharWidthCache");
+
+uint16_t gwFontHeightDefault[2] = {}; D2_GLOBAL_GUARD(gwFontHeightDefault, "gwFontHeightDefault");
+
 uint8_t gaGlideEmblemPrimaryColorTableEntries[12] = {}; D2_GLOBAL_GUARD(gaGlideEmblemPrimaryColorTableEntries, "gaGlideEmblemPrimaryColorTableEntries");
 
 D2CompCharacterCompositeItemStrc gaCompCharacterCompositeItems[255] = {}; D2_GLOBAL_GUARD(gaCompCharacterCompositeItems, "gaCompCharacterCompositeItems");
@@ -1807,12 +1812,6 @@ char gpSmackerVideoBuffer[260] = {}; D2_GLOBAL_GUARD(gpSmackerVideoBuffer, "gpSm
 uint32_t gbCursorVisible = 0x1; D2_GLOBAL_GUARD(gbCursorVisible, "gbCursorVisible");
 uint32_t gbWindowIsActive = 0x1; D2_GLOBAL_GUARD(gbWindowIsActive, "gbWindowIsActive");
 uint32_t gbMessageLoopActive = 0x1; D2_GLOBAL_GUARD(gbMessageLoopActive, "gbMessageLoopActive");
-uint32_t gbPaletteGammaShiftEnabled = 0x1; D2_GLOBAL_GUARD(gbPaletteGammaShiftEnabled, "gbPaletteGammaShiftEnabled");
-uint32_t gnTextBoxLineSpacing = 0x4; D2_GLOBAL_GUARD(gnTextBoxLineSpacing, "gnTextBoxLineSpacing");
-int32_t gnLastUsedFontId = 0x1; D2_GLOBAL_GUARD(gnLastUsedFontId, "gnLastUsedFontId");
-uint32_t gnFontIdSmall = 0x10; D2_GLOBAL_GUARD(gnFontIdSmall, "gnFontIdSmall");
-uint32_t gnFontIdLarge = 0x11; D2_GLOBAL_GUARD(gnFontIdLarge, "gnFontIdLarge");
-uint32_t gnFontIdBody = 0x3; D2_GLOBAL_GUARD(gnFontIdBody, "gnFontIdBody");
 uint32_t gnD2CompCOFLayerCount = 0x14; D2_GLOBAL_GUARD(gnD2CompCOFLayerCount, "gnD2CompCOFLayerCount");
 // also labelled: gnD2CompItemColorMappingCount
 unsigned int gnCompWeaponClassCodeMapCount = 0xd; D2_GLOBAL_GUARD(gnCompWeaponClassCodeMapCount, "gnCompWeaponClassCodeMapCount");
@@ -1829,13 +1828,14 @@ D2FogArchiveStrc * MPQ_d2char = 0; D2_GLOBAL_GUARD(MPQ_d2char, "MPQ_d2char");
 D2FogArchiveStrc * MPQ_d2video = 0; D2_GLOBAL_GUARD(MPQ_d2video, "MPQ_d2video");
 D2FogArchiveStrc * MPQ_d2Xtalk = 0; D2_GLOBAL_GUARD(MPQ_d2Xtalk, "MPQ_d2Xtalk");
 D2FogArchiveStrc * MPQ_d2data = 0; D2_GLOBAL_GUARD(MPQ_d2data, "MPQ_d2data");
+D2FogArchiveStrc * MPQ_d2kfixup_mpq = 0; D2_GLOBAL_GUARD(MPQ_d2kfixup_mpq, "MPQ_d2kfixup_mpq");
 D2FogArchiveStrc * MPQ_d2kfixup = 0; D2_GLOBAL_GUARD(MPQ_d2kfixup, "MPQ_d2kfixup");
 D2FogArchiveStrc * MPQ_d2speech = 0; D2_GLOBAL_GUARD(MPQ_d2speech, "MPQ_d2speech");
 D2FogArchiveStrc * MPQ_d2music = 0; D2_GLOBAL_GUARD(MPQ_d2music, "MPQ_d2music");
 D2FogArchiveStrc * MPQ_d2Xvideo = 0; D2_GLOBAL_GUARD(MPQ_d2Xvideo, "MPQ_d2Xvideo");
 D2FogArchiveStrc * MPQ_patch_d2 = 0; D2_GLOBAL_GUARD(MPQ_patch_d2, "MPQ_patch_d2");
 D2FogArchiveStrc * MPQ_d2exp = 0; D2_GLOBAL_GUARD(MPQ_d2exp, "MPQ_d2exp");
-uint32_t gnPaletteGammaShiftState = 0; D2_GLOBAL_GUARD(gnPaletteGammaShiftState, "gnPaletteGammaShiftState");
+int gnPaletteGammaShiftState = 0; D2_GLOBAL_GUARD(gnPaletteGammaShiftState, "gnPaletteGammaShiftState");
 uint8_t gPaletteAct1[196608] = {}; D2_GLOBAL_GUARD(gPaletteAct1, "gPaletteAct1");
 uint32_t gbGammaShiftActive = 0; D2_GLOBAL_GUARD(gbGammaShiftActive, "gbGammaShiftActive");
 unsigned int gdwPaletteShiftStartTick = {}; D2_GLOBAL_GUARD(gdwPaletteShiftStartTick, "gdwPaletteShiftStartTick");
@@ -1861,7 +1861,6 @@ int gnPentaSpinCursorMaxFrames = 0; D2_GLOBAL_GUARD(gnPentaSpinCursorMaxFrames, 
 uint8_t gbSmackerVideoFlags = 0; D2_GLOBAL_GUARD(gbSmackerVideoFlags, "gbSmackerVideoFlags");
 uint32_t gbSmackerKeepTempFile = 0; D2_GLOBAL_GUARD(gbSmackerKeepTempFile, "gbSmackerKeepTempFile");
 DC6 * gpPentSpinCursorDC6 = 0; D2_GLOBAL_GUARD(gpPentSpinCursorDC6, "gpPentSpinCursorDC6");
-D2WinPopup * gpD2WinPopupControl = 0; D2_GLOBAL_GUARD(gpD2WinPopupControl, "gpD2WinPopupControl");
 
 namespace D2Common::Drlg::Maze {
 
@@ -1984,9 +1983,9 @@ namespace Fog::_3rdparty::crashy {
 
 } // namespace Fog::_3rdparty::crashy
 
-namespace Storm::SFile {
+namespace Storm::Source::SFile {
 
-} // namespace Storm::SFile
+} // namespace Storm::Source::SFile
 
 namespace Class::FILEREC {
 

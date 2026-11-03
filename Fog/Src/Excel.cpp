@@ -6,13 +6,13 @@
 #include "D2Common/Txt/D2TxtLinkNodeStrc.h"
 #include "Fog/BitBuffer.h"
 #include "Fog/Memory.h"
-#include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
+#include "Fog/Src/String/FogString.h"
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
 #include "Storm/Source/SFile.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
-#include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -49,6 +49,8 @@ typedef void (__fastcall *PFN_TxtFieldLinker)(char * szText, void * pRecord, int
 typedef uint16_t (__fastcall *PFN_TxtKeyToWord)(char * szKey);
 #endif
 
+static char * gnExcelRecordFieldNotFound = (char *)0x006ccb30; D2_STATIC_GUARD(gnExcelRecordFieldNotFound, "gnExcelRecordFieldNotFound");
+
 namespace Fog::Src::Excel {
 
 // @sourcefile .\Src\Excel\Excel.cpp
@@ -61,13 +63,14 @@ size_t __stdcall TXT_GetLinesCountFromBinFieldExcel(D2BinFieldExcelStrc * pBinFi
     return pBinFieldExcel->nLinesCount;
 }
 
-int __stdcall FOG_ParseBinField(int pOutMapping, D2BinFieldExcelStrc * pBinFieldExcel, D2BinFieldInputStrc * pBinFieldInput) {
+int __stdcall FOG_ParseBinField(short * pOutMapping, D2BinFieldExcelStrc * pBinFieldExcel, D2BinFieldInputStrc * pBinFieldInput) {
     D2BinFieldInputStrc* pBoolFieldPrev;
     uint32_t nHashKey;
     int32_t nFieldByteOffset;
     uint32_t nBoolRunLen;
     int nOutputCount;
     D2BinFieldHashNodeStrc* pDVar2;
+    D2BinFieldInputStrc** pHashNodeSlot;
     D2BinFieldHashNodeStrc aFieldHashNodes[280];
     D2BinFieldHashNodeStrc* aHashBuckets[256];
     D2BinFieldHashNodeStrc* pHashNode;
@@ -105,7 +108,7 @@ int __stdcall FOG_ParseBinField(int pOutMapping, D2BinFieldExcelStrc * pBinField
       eFieldType = pBoolFieldPrev->eType;
     }
 
-    Storm::Source::SSystem::SMemZero(aHashBuckets, 0x400);
+    Storm::Source::SMem::SMemZero(aHashBuckets, 0x400);
     if (pBinFieldInput->eType != FIELDTYPE_END) {
       D2BinFieldHashNodeStrc* pDVar1;
       pDVar2 = aFieldHashNodes;
@@ -144,13 +147,13 @@ int __stdcall FOG_ParseBinField(int pOutMapping, D2BinFieldExcelStrc * pBinField
             if (!nFieldByteOffset) {
               pHashNode->nHash = 0;
               nErrorAddress = (int)pHashNode->pField - (int)pBinFieldInput;
-              *(short int*)(pOutMapping + nOutputIndex * 2) = (short int)(nErrorAddress / 0x14) + (short int)(nErrorAddress >> 0x1f) - (short int)((int64_t)nErrorAddress * 0x66666667 >> 0x3f);
+              pOutMapping[nOutputIndex] = (short int)(nErrorAddress / 0x14);
               goto next_column;
             }
           }
         }
 
-        *(uint16_t*)(pOutMapping + nOutputIndex * 2) = 0x7fff;
+        pOutMapping[nOutputIndex] = 0x7fff;
         next_column:
         nErrorAddress = nOutputIndex + 1;
         cCurChar = *pColNameIter;
@@ -164,21 +167,19 @@ int __stdcall FOG_ParseBinField(int pOutMapping, D2BinFieldExcelStrc * pBinField
         nOutputIndex = nErrorAddress;
       } while (nColumnIndex < (uint32_t)pBinFieldExcel->nColumnCount);
     }
-    if (nFieldCount <= 0) {
-      return nErrorAddress;
+    if (nFieldCount > 0) {
+      pHashNodeSlot = &aFieldHashNodes[0].pField;
+      do {
+        if (pHashNodeSlot[-1]) {
+          nOutputCount = (int)*pHashNodeSlot - (int)pBinFieldInput;
+          pOutMapping[nErrorAddress] = (short int)(nOutputCount / 0x14);
+          nErrorAddress++;
+        }
+
+        pHashNodeSlot += 3;
+        nFieldCount--;
+      } while (nFieldCount);
     }
-
-    D2BinFieldInputStrc** pHashNodeSlot = &aFieldHashNodes[0].pField;
-    do {
-      if (pHashNodeSlot[-1]) {
-        nOutputCount = (int)*pHashNodeSlot - (int)pBinFieldInput;
-        *(short int*)(pOutMapping + nErrorAddress * 2) = (short int)(nOutputCount / 0x14) + (short int)(nOutputCount >> 0x1f) - (short int)((int64_t)nOutputCount * 0x66666667 >> 0x3f);
-        nErrorAddress++;
-      }
-
-      pHashNodeSlot += 3;
-      nFieldCount--;
-    } while (nFieldCount);
 
     return nErrorAddress;
 }
@@ -312,7 +313,7 @@ BOOL __stdcall FOG_GetTxtLinkRecord(D2TxtLinkStrc * pTxtLink, int nRecordId, voi
     return 0;
 }
 
-uint32_t __stdcall FillUpTxtLinkSub0x08(D2TxtLinkStrc * pTxtLink, char * nItemCode) {
+uint32_t __stdcall FOG_AddTxtLinkRecord(D2TxtLinkStrc * pTxtLink, char * nItemCode) {
     int nMidIndex;
     int nLowIndex;
     int nHighIndex;
@@ -370,17 +371,17 @@ uint32_t __stdcall FillUpTxtLinkSub0x08(D2TxtLinkStrc * pTxtLink, char * nItemCo
     }
 }
 
-int __fastcall FOG_GetRecordField(D2TxtLinkNodeStrc * pClientSideData, int nParam) {
+int __fastcall FOG_GetRecordField(D2TxtLinkNodeStrc * pClientSideData, int nLinkIndex) {
     char* nSearchResult;
     char* nNotFoundSentinel = gnExcelRecordFieldNotFound;
     if (!pClientSideData) {
       return (int)gnExcelRecordFieldNotFound;
     }
-    if (pClientSideData->nLinkIndex == nParam) {
+    if (pClientSideData->nLinkIndex == nLinkIndex) {
       return (int)pClientSideData;
     }
     if (pClientSideData->pPrevious) {
-      nSearchResult = (char*)FOG_GetRecordField(pClientSideData->pPrevious, nParam);
+      nSearchResult = (char*)FOG_GetRecordField(pClientSideData->pPrevious, nLinkIndex);
       if (nSearchResult != nNotFoundSentinel) {
         return (int)nSearchResult;
       }
@@ -389,7 +390,7 @@ int __fastcall FOG_GetRecordField(D2TxtLinkNodeStrc * pClientSideData, int nPara
       return (int)nNotFoundSentinel;
     }
 
-    nSearchResult = (char*)FOG_GetRecordField(pClientSideData->pNext, nParam);
+    nSearchResult = (char*)FOG_GetRecordField(pClientSideData->pNext, nLinkIndex);
     if (nSearchResult == nNotFoundSentinel) {
       return (int)nNotFoundSentinel;
     }
@@ -397,16 +398,16 @@ int __fastcall FOG_GetRecordField(D2TxtLinkNodeStrc * pClientSideData, int nPara
     return (int)nSearchResult;
 }
 
-int __stdcall FOG_ParseIntField(int * pnParam, int nParam1, int nParam2) {
-    char* pcVar1 = gnExcelRecordFieldNotFound;
-    if (pnParam && nParam1 >= 0 && nParam1 < *pnParam) {
-      pcVar1 = (char*)FOG_GetRecordField((D2TxtLinkNodeStrc*)pnParam[3], nParam1);
-      if ((!pcVar1 || pcVar1 == gnExcelRecordFieldNotFound) && nParam2) {
+int __stdcall FOG_ParseIntField(int * pTxtLink, int nLinkIndex, int nParam2) {
+    char* pRecord = gnExcelRecordFieldNotFound;
+    if (pTxtLink && nLinkIndex >= 0 && nLinkIndex < *pTxtLink) {
+      pRecord = (char*)FOG_GetRecordField((D2TxtLinkNodeStrc*)pTxtLink[3], nLinkIndex);
+      if ((!pRecord || pRecord == gnExcelRecordFieldNotFound) && nParam2) {
         return (int)gnExcelRecordFieldNotFound;
       }
     }
 
-    return (int)pcVar1;
+    return (int)pRecord;
 }
 
 int32_t __stdcall GetLinkNodeIndex(D2TxtLinkStrc * pLink, char * szItemCode, uint32_t dwParam3) {
@@ -414,7 +415,7 @@ int32_t __stdcall GetLinkNodeIndex(D2TxtLinkStrc * pLink, char * szItemCode, uin
     int32_t iVar1;
     uint8_t szUpperItemCode[32];
     Storm::Source::SSTR::SStrCopy((char*)szUpperItemCode, szItemCode, 0x20);
-    SMem::SMemStringToUppercase((char*)szUpperItemCode, 0x20);
+    String::FogString::SMemStringToUppercase((char*)szUpperItemCode, 0x20);
     D2TxtLinkNodeStrc* pCurNode = pLink->pTxtLinkNode;
     if (pLink->nRecords) {
       if (!pCurNode) {
@@ -471,12 +472,12 @@ static uint8_t * __fastcall FOG_ValidateBytePtr(uint8_t * pbyte, uint8_t * pKey)
 
 // @sourcefile .\Src\Excel\Excel.cpp
 int __stdcall FOG_ParseStringField(D2TxtLinkStrc * pTxtLink, char * szText) {
-    uint8_t* pKey;
+    int nRecordIndex;
     if (!pTxtLink) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x4b2);
       exit(-1);
     } else {
-      int iVar1;
+      uint8_t* pKey;
       if (pTxtLink->pTxtLinkSub0x08) {
         ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x4b6);
         exit(-1);
@@ -485,12 +486,12 @@ int __stdcall FOG_ParseStringField(D2TxtLinkStrc * pTxtLink, char * szText) {
       pKey = (uint8_t*)D2_ALLOC_POOL_AT(nullptr, 0x2c, ".\\Src\\Excel\\Excel.cpp", 0x4b9);
       memset(pKey, 0, 0x2c);
       Storm::Source::SSTR::SStrCopy((char*)pKey, szText, 0x20);
-      SMem::SMemStringToUppercase((char*)pKey, 0x20);
+      String::FogString::SMemStringToUppercase((char*)pKey, 0x20);
       *(int*)(pKey + 0x20) = pTxtLink->nRecords;
       FOG_ValidateBytePtr((uint8_t*)&pTxtLink->pTxtLinkNode, pKey);
-      iVar1 = pTxtLink->nRecords;
-      pTxtLink->nRecords = iVar1 + 1;
-      return iVar1;
+      nRecordIndex = pTxtLink->nRecords;
+      pTxtLink->nRecords = nRecordIndex + 1;
+      return nRecordIndex;
     }
 }
 
@@ -500,26 +501,25 @@ int __fastcall FOG_ParseTxtLink(D2TxtLinkStrc * pTxtLink, char * szText) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x4cc);
       exit(-1);
     } else {
-      int iVar1;
+      int nRecordIndex;
       if (pTxtLink->pTxtLinkSub0x08) {
         ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x4d0);
         exit(-1);
       }
 
-      iVar1 = GetLinkNodeIndex(pTxtLink, szText, 0);
-      if (iVar1 >= 0) {
-        return iVar1;
+      nRecordIndex = GetLinkNodeIndex(pTxtLink, szText, 0);
+      if (nRecordIndex < 0) {
+        pKey = (uint8_t*)D2_ALLOC_POOL_AT(nullptr, 0x2c, ".\\Src\\Excel\\Excel.cpp", 0x4d9);
+        memset(pKey, 0, 0x2c);
+        Storm::Source::SSTR::SStrCopy((char*)pKey, szText, 0x20);
+        String::FogString::SMemStringToUppercase((char*)pKey, 0x20);
+        *(int*)(pKey + 0x20) = pTxtLink->nRecords;
+        FOG_ValidateBytePtr((uint8_t*)&pTxtLink->pTxtLinkNode, pKey);
+        nRecordIndex = pTxtLink->nRecords;
+        pTxtLink->nRecords = nRecordIndex + 1;
       }
 
-      pKey = (uint8_t*)D2_ALLOC_POOL_AT(nullptr, 0x2c, ".\\Src\\Excel\\Excel.cpp", 0x4d9);
-      memset(pKey, 0, 0x2c);
-      Storm::Source::SSTR::SStrCopy((char*)pKey, szText, 0x20);
-      SMem::SMemStringToUppercase((char*)pKey, 0x20);
-      *(int*)(pKey + 0x20) = pTxtLink->nRecords;
-      FOG_ValidateBytePtr((uint8_t*)&pTxtLink->pTxtLinkNode, pKey);
-      iVar1 = pTxtLink->nRecords;
-      pTxtLink->nRecords = iVar1 + 1;
-      return iVar1;
+      return nRecordIndex;
     }
 }
 
@@ -557,64 +557,64 @@ D2BinFieldExcelStrc * __stdcall STRUCT_CreateBinFieldExcelAndFillData(D2ArchiveS
     char cCurChar;
     cCurChar = *(char*)&pD2Archive->pPrevLink;
     *(char*)&pScanPos->pPrevLink = '\0';
-    if (cCurChar == '\n') {
-      int32_t iVar1;
-      pBinFieldExcel->nColumnCount++;
-      pScanPos = (D2ArchiveStrc*)((uintptr_t)&pScanPos->pPrevLink + 2);
-      if (pScanPos >= pCurPos) {
-        error:
-        D2_FREE_AT(pBinFieldExcel->pD2Archive, ".\\Src\\Excel\\Excel.cpp", 0x9a);
-        D2_FREE_POOL_AT(nullptr, pBinFieldExcel, ".\\Src\\Excel\\Excel.cpp", 0x9b);
-        return nullptr;
-      }
-      if ((uint32_t)pBinFieldExcel->nColumnCount <= 0x118) {
-        pBinFieldExcel->pDataStart = (char*)pScanPos;
-        pLineStart = pScanPos;
-        do {
-          pNextLineStart = pScanPos;
-          if (pNextLineStart < pCurPos) {
-            pScanPos = (D2ArchiveStrc*)((uintptr_t)&pNextLineStart->pPrevLink + 1);
-            if (*(char*)&pNextLineStart->pPrevLink == '\t') {
-              *(char*)&pNextLineStart->pPrevLink = '\0';
-              continue;
-            }
-            if (*(char*)&pNextLineStart->pPrevLink != '\r') {
-              continue;
-            }
-
-            cNextChar = *(char*)&pScanPos->pPrevLink;
-            *(char*)&pNextLineStart->pPrevLink = '\0';
-            if (cNextChar != '\n') {
-              ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x75);
-              exit(-1);
-            }
-
-            pNextLineStart = (D2ArchiveStrc*)((uintptr_t)&pNextLineStart->pPrevLink + 2);
-            /* Count lines and add value */ pBinFieldExcel->nLinesCount++;
-          }
-
-          iVar1 = Storm::Source::SSTR::SStrCmp((char*)pLineStart, "Expansion", 10);
-          if (!iVar1) {
-            pBinFieldExcel->nLinesCount--;
-            Storm::Source::SSystem::SMemCopy(pLineStart, pNextLineStart, (int)pCurPos - (int)pNextLineStart);
-            pCurPos = (D2ArchiveStrc*)((int)pCurPos + ((int)pLineStart - (int)pNextLineStart));
-            pNextLineStart = pLineStart;
-          }
-
-          pScanPos = pNextLineStart;
-          pLineStart = pNextLineStart;
-          if (pNextLineStart >= pCurPos) {
-            return pBinFieldExcel;
-          }
-        } while (true);
-      }
-
-      ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x67);
-      exit(-1);
-    } else {
+    if (cCurChar != '\n') {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x5c);
       exit(-1);
     }
+
+    int32_t nCmp;
+    pBinFieldExcel->nColumnCount++;
+    pScanPos = (D2ArchiveStrc*)((uintptr_t)&pScanPos->pPrevLink + 2);
+    if (pScanPos >= pCurPos) {
+      error:
+      D2_FREE_AT(pBinFieldExcel->pD2Archive, ".\\Src\\Excel\\Excel.cpp", 0x9a);
+      D2_FREE_POOL_AT(nullptr, pBinFieldExcel, ".\\Src\\Excel\\Excel.cpp", 0x9b);
+      return nullptr;
+    }
+    if ((uint32_t)pBinFieldExcel->nColumnCount <= 0x118) {
+      pBinFieldExcel->pDataStart = (char*)pScanPos;
+      pLineStart = pScanPos;
+      do {
+        pNextLineStart = pScanPos;
+        if (pNextLineStart < pCurPos) {
+          pScanPos = (D2ArchiveStrc*)((uintptr_t)&pNextLineStart->pPrevLink + 1);
+          if (*(char*)&pNextLineStart->pPrevLink == '\t') {
+            *(char*)&pNextLineStart->pPrevLink = '\0';
+            continue;
+          }
+          if (*(char*)&pNextLineStart->pPrevLink != '\r') {
+            continue;
+          }
+
+          cNextChar = *(char*)&pScanPos->pPrevLink;
+          *(char*)&pNextLineStart->pPrevLink = '\0';
+          if (cNextChar != '\n') {
+            ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x75);
+            exit(-1);
+          }
+
+          pNextLineStart = (D2ArchiveStrc*)((uintptr_t)&pNextLineStart->pPrevLink + 2);
+          /* Count lines and add value */ pBinFieldExcel->nLinesCount++;
+        }
+
+        nCmp = Storm::Source::SSTR::SStrCmp((char*)pLineStart, "Expansion", 10);
+        if (!nCmp) {
+          pBinFieldExcel->nLinesCount--;
+          Storm::Source::SMem::SMemCopy(pLineStart, pNextLineStart, (int)pCurPos - (int)pNextLineStart);
+          pCurPos = (D2ArchiveStrc*)((int)pCurPos + ((int)pLineStart - (int)pNextLineStart));
+          pNextLineStart = pLineStart;
+        }
+
+        pScanPos = pNextLineStart;
+        pLineStart = pNextLineStart;
+        if (pNextLineStart >= pCurPos) {
+          return pBinFieldExcel;
+        }
+      } while (true);
+    }
+
+    ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x67);
+    exit(-1);
 }
 
 // Two passes over the txt rows: pass 1 resolves link-type columns (CODE*/NAME_I*), pass 2 parses every
@@ -629,6 +629,7 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
     int nLinkCodeLen;
     int nRawCodeLen;
     int nClassCodeLen;
+    D2TxtCodeBufUnion* pDVar2;
     char* pParseBufCursor;
     int nScanColIndex;
     char* pFieldCursor;
@@ -641,8 +642,7 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
     uint32_t dwCodePadded;
     uint16_t aColumnFieldMap[280];
     char aFieldParseBuf[288];
-    uint32_t dwCodeBuf;
-    char cLinkNameTerm;
+    D2TxtCodeBufUnion uCodeBuf;
     PFN_TxtFieldLinker pfnLinker;
     PFN_TxtFieldLinker pfnDefaultLinker;
     eD2BinFieldInputType eFieldType3;
@@ -665,198 +665,191 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
       exit(-1);
     } else {
       if ((uint32_t)nEndOffset > 0) {
-        nMappedFieldCount = FOG_ParseBinField((int)aColumnFieldMap, pBinFieldExcel, pBinFieldInput);
+        nMappedFieldCount = FOG_ParseBinField((short int*)aColumnFieldMap, pBinFieldExcel, pBinFieldInput);
         nColumnCount = pBinFieldExcel->nColumnCount;
         bHasLinkFields = false;
-        nScanColIndex = 0;
-        if (nColumnCount > 0) {
-          do {
-            if (aColumnFieldMap[nScanColIndex] != 0x7fff && true) {
-              switch (pBinFieldInput[aColumnFieldMap[nScanColIndex]].eType) {
-                case FIELDTYPE_CODE4:
+        for (nScanColIndex = 0; nScanColIndex < nColumnCount; nScanColIndex++) {
+          if (aColumnFieldMap[nScanColIndex] != 0x7fff && true) {
+            switch (pBinFieldInput[aColumnFieldMap[nScanColIndex]].eType) {
+              case FIELDTYPE_CODE4:
 
-                case FIELDTYPE_CODE1:
+              case FIELDTYPE_CODE1:
 
-                case FIELDTYPE_CODE2:
+              case FIELDTYPE_CODE2:
 
-                case FIELDTYPE_NAME_I:
+              case FIELDTYPE_NAME_I:
 
-                case FIELDTYPE_NAME_I_WORD:
+              case FIELDTYPE_NAME_I_WORD:
 
-                case FIELDTYPE_NAME_I_INT:
-                  bHasLinkFields = true;
-              }
+              case FIELDTYPE_NAME_I_INT:
+                bHasLinkFields = true;
             }
-
-            nScanColIndex++;
-          } while (nScanColIndex < nColumnCount);
+          }
         }
+
         if (bHasLinkFields) {
           pCurDataPos = pBinFieldExcel->pDataStart;
           nLineIndex = 0;
           if ((int)pBinFieldExcel->nLinesCount > 0) {
             do {
-              nColIndex = 0;
-              if (nColumnCount > 0) {
-                do {
-                  nFieldMapIdx = aColumnFieldMap[nColIndex];
-                  if (nFieldMapIdx == 0x7fff) {
+              for (nColIndex = 0; nColIndex < nColumnCount; nColIndex++) {
+                nFieldMapIdx = aColumnFieldMap[nColIndex];
+                if (nFieldMapIdx == 0x7fff) {
+                  cCurChar = *pCurDataPos;
+                  while (cCurChar != '\0') {
+                    pCurDataPos++;
+                    cCurChar = *pCurDataPos;
+                  }
+
+                  next_column:
+                  pCurDataPos++;
+                } else {
+                  pFieldDst = pCurrentRecord + pBinFieldInput[nFieldMapIdx].nOffset;
+                  if (false) {
+                    default_case:
                     cCurChar = *pCurDataPos;
                     while (cCurChar != '\0') {
                       pCurDataPos++;
                       cCurChar = *pCurDataPos;
                     }
 
-                    next_column:
-                    pCurDataPos++;
-                  } else {
-                    pFieldDst = pCurrentRecord + pBinFieldInput[nFieldMapIdx].nOffset;
-                    if (false) {
-                      default_case:
+                    goto next_column;
+                  }
+
+                  switch (pBinFieldInput[nFieldMapIdx].eType) {
+                    case FIELDTYPE_CODE4:
+
+                    case FIELDTYPE_CODE1:
+
+                    case FIELDTYPE_CODE2:
+                      uCodeBuf.dwCode = 0;
+                    cCurChar = *pCurDataPos;
+                    nLinkCodeLen = 0;
+                    dwCode = uCodeBuf.dwCode;
+                    read_link_code_char:
+                    uCodeBuf.dwCode = dwCode;
+                    if (cCurChar != '\0') {
+                      if (nLinkCodeLen < 4) {
+                        pCurDataPos++;
+                        uCodeBuf.szCode[nLinkCodeLen] = cCurChar;
+                        cCurChar = *pCurDataPos;
+                        nLinkCodeLen++;
+                        dwCode = uCodeBuf.dwCode;
+                        goto read_link_code_char;
+                      }
+
                       cCurChar = *pCurDataPos;
                       while (cCurChar != '\0') {
                         pCurDataPos++;
                         cCurChar = *pCurDataPos;
                       }
-
-                      goto next_column;
                     }
 
-                    switch (pBinFieldInput[nFieldMapIdx].eType) {
-                      case FIELDTYPE_CODE4:
-
-                      case FIELDTYPE_CODE1:
-
-                      case FIELDTYPE_CODE2:
-                        dwCodeBuf = 0;
-                      cCurChar = *pCurDataPos;
-                      nLinkCodeLen = 0;
-                      dwCode = dwCodeBuf;
-                      read_link_code_char:
-                      dwCodeBuf = dwCode;
-                      if (cCurChar != '\0') {
-                        if (nLinkCodeLen < 4) {
-                          pCurDataPos++;
-                          *(char*)((uintptr_t)&dwCodeBuf + nLinkCodeLen) = cCurChar;
-                          cCurChar = *pCurDataPos;
-                          nLinkCodeLen++;
-                          dwCode = dwCodeBuf;
-                          goto read_link_code_char;
-                        }
-
-                        cCurChar = *pCurDataPos;
-                        while (cCurChar != '\0') {
-                          pCurDataPos++;
-                          cCurChar = *pCurDataPos;
-                        }
-                      }
-
-                      pCurDataPos++;
-                      if ((char)dwCode == '\0') {
-                        dwCodePadded = 0x20202020;
-                      } else if ((char)(dwCode >> 8) == '\0') {
-                        *(uint16_t*)(char*)&dwCodePadded = (uint16_t)((uint16_t)(uint8_t)0x20 << 8 | (uint16_t)(uint8_t)(char)dwCode);
+                    pCurDataPos++;
+                    if ((char)dwCode == '\0') {
+                      dwCodePadded = 0x20202020;
+                    } else if ((char)((uint32_t)dwCode >> 8) == '\0') {
+                      *(uint16_t*)(char*)&dwCodePadded = (uint16_t)((uint16_t)(uint8_t)0x20 << 8 | (uint16_t)(uint8_t)(char)dwCode);
+                      d2_store24((char*)&dwCodePadded, (uint32_t)((uint32_t)((uint32_t)(uint8_t)0x20 << 16 | (uint32_t)(uint16_t)dwCodePadded) & 0xffffffu));
+                      dwCodePadded = (uint32_t)((uint32_t)(uint8_t)0x20 << 24 | (uint32_t)((uint32_t)dwCodePadded & 0xffffffu));
+                    } else {
+                      uCodeBuf.szCode[2] = (char)((uint32_t)dwCode >> 0x10);
+                      *(uint16_t*)(char*)&dwCodePadded = (uint16_t)dwCode;
+                      if (uCodeBuf.szCode[2] == '\0') {
                         d2_store24((char*)&dwCodePadded, (uint32_t)((uint32_t)((uint32_t)(uint8_t)0x20 << 16 | (uint32_t)(uint16_t)dwCodePadded) & 0xffffffu));
                         dwCodePadded = (uint32_t)((uint32_t)(uint8_t)0x20 << 24 | (uint32_t)((uint32_t)dwCodePadded & 0xffffffu));
                       } else {
-                        *(uint8_t*)((char*)&dwCodeBuf + 2) = (char)(dwCode >> 0x10);
-                        *(uint16_t*)(char*)&dwCodePadded = (uint16_t)dwCode;
-                        if (*(uint8_t*)((char*)&dwCodeBuf + 2) == '\0') {
-                          d2_store24((char*)&dwCodePadded, (uint32_t)((uint32_t)((uint32_t)(uint8_t)0x20 << 16 | (uint32_t)(uint16_t)dwCodePadded) & 0xffffffu));
-                          dwCodePadded = (uint32_t)((uint32_t)(uint8_t)0x20 << 24 | (uint32_t)((uint32_t)dwCodePadded & 0xffffffu));
-                        } else {
-                          d2_store24((char*)&dwCodePadded, (uint32_t)dwCode & 0xffffffu);
-                          dwCodePadded = (uint32_t)((uint32_t)(uint8_t)0x20 << 24 | (uint32_t)((uint32_t)dwCodePadded & 0xffffffu));
-                          *(uint8_t*)((char*)&dwCodeBuf + 3) = (char)(dwCode >> 0x18);
-                          if (*(uint8_t*)((char*)&dwCodeBuf + 3) != '\0') {
-                            dwCodePadded = dwCode;
-                          }
+                        d2_store24((char*)&dwCodePadded, (uint32_t)dwCode & 0xffffffu);
+                        dwCodePadded = (uint32_t)((uint32_t)(uint8_t)0x20 << 24 | (uint32_t)((uint32_t)dwCodePadded & 0xffffffu));
+                        uCodeBuf.szCode[3] = (char)((uint32_t)dwCode >> 0x18);
+                        if (uCodeBuf.szCode[3] != '\0') {
+                          dwCodePadded = dwCode;
                         }
                       }
+                    }
 
-                      nLinkIndex = FillUpTxtLinkSub0x08(*(D2TxtLinkStrc**)pBinFieldInput[nFieldMapIdx].fpLinker, (char*)dwCodePadded);
-                      eFieldType3 = pBinFieldInput[nFieldMapIdx].eType;
-                      switch (eFieldType3) {
-                        case FIELDTYPE_CODE4:
-                          {
-                            *(uint32_t*)pFieldDst = dwCodePadded;
-                            break;
+                    nLinkIndex = FOG_AddTxtLinkRecord(*(D2TxtLinkStrc**)pBinFieldInput[nFieldMapIdx].fpLinker, (char*)dwCodePadded);
+                    eFieldType3 = pBinFieldInput[nFieldMapIdx].eType;
+                    switch (eFieldType3) {
+                      case FIELDTYPE_CODE4:
+                        {
+                          *(uint32_t*)pFieldDst = dwCodePadded;
+                          break;
+                        }
+                      case FIELDTYPE_CODE1:
+                        {
+                          if (nLinkIndex > 0xff) {
+                            ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x156);
+                            exit(-1);
                           }
-                        case FIELDTYPE_CODE1:
-                          {
-                            if (nLinkIndex > 0xff) {
-                              ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x156);
-                              exit(-1);
-                            }
 
-                            *pFieldDst = (char)dwCodePadded;
-                            break;
+                          *pFieldDst = (char)dwCodePadded;
+                          break;
+                        }
+                      case FIELDTYPE_CODE2:
+                        {
+                          if (nLinkIndex > 0xffff) {
+                            ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x15a);
+                            exit(-1);
                           }
-                        case FIELDTYPE_CODE2:
-                          {
-                            if (nLinkIndex > 0xffff) {
-                              ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x15a);
-                              exit(-1);
-                            }
 
-                            *(uint16_t*)pFieldDst = (uint16_t)dwCodePadded;
-                            break;
-                          }
-                      }
+                          *(uint16_t*)pFieldDst = (uint16_t)dwCodePadded;
+                          break;
+                        }
+                    }
 
-                      break;
-                      default:
-                        goto default_case;
-                      case FIELDTYPE_NAME_I:
-                        cCurChar = *pCurDataPos;
-                      nNameSize = pBinFieldInput[nFieldMapIdx].nSize;
-                      for (pCopyCursor = pFieldDst; cCurChar != '\0' && pCopyCursor < pFieldDst + (nNameSize - 1); pCopyCursor++) {
-                        pCurDataPos++;
-                        *pCopyCursor = cCurChar;
-                        cCurChar = *pCurDataPos;
-                      }
-
-                      *pCopyCursor = '\0';
+                    break;
+                    default:
+                      goto default_case;
+                    case FIELDTYPE_NAME_I:
                       cCurChar = *pCurDataPos;
-                      while (cCurChar != '\0') {
-                        pCurDataPos++;
-                        cCurChar = *pCurDataPos;
-                      }
-
+                    nNameSize = pBinFieldInput[nFieldMapIdx].nSize;
+                    for (pCopyCursor = pFieldDst; cCurChar != '\0' && pCopyCursor < pFieldDst + (nNameSize - 1); pCopyCursor++) {
                       pCurDataPos++;
-                      FOG_ParseStringField(*(D2TxtLinkStrc**)pBinFieldInput[nFieldMapIdx].fpLinker, pFieldDst);
-                      break;
-                      case FIELDTYPE_NAME_I_WORD:
-
-                      case FIELDTYPE_NAME_I_INT:
-                        cCurChar = *pCurDataPos;
-                      for (pDstChar = aFieldParseBuf + 0x100; cCurChar != '\0' && pDstChar < aFieldParseBuf + 0x11f; pDstChar++) {
-                        pCurDataPos++;
-                        *pDstChar = cCurChar;
-                        cCurChar = *pCurDataPos;
-                      }
-
+                      *pCopyCursor = cCurChar;
                       cCurChar = *pCurDataPos;
-                      *pDstChar = '\0';
-                      while (cCurChar != '\0') {
-                        pCurDataPos++;
-                        cCurChar = *pCurDataPos;
-                      }
+                    }
 
+                    *pCopyCursor = '\0';
+                    cCurChar = *pCurDataPos;
+                    while (cCurChar != '\0') {
                       pCurDataPos++;
-                      nResolvedLinkId = FOG_ParseTxtLink(*(D2TxtLinkStrc**)pBinFieldInput[nFieldMapIdx].fpLinker, aFieldParseBuf + 0x100);
-                      if (pBinFieldInput[nFieldMapIdx].eType == FIELDTYPE_NAME_I_WORD) {
-                        *(short int*)(pCurrentRecord + pBinFieldInput[nFieldMapIdx].nOffset) = (short int)nResolvedLinkId;
-                      } else {
-                        *(int32_t*)(pCurrentRecord + pBinFieldInput[nFieldMapIdx].nOffset) = nResolvedLinkId;
-                      }
+                      cCurChar = *pCurDataPos;
+                    }
+
+                    pCurDataPos++;
+                    FOG_ParseStringField(*(D2TxtLinkStrc**)pBinFieldInput[nFieldMapIdx].fpLinker, pFieldDst);
+                    break;
+                    case FIELDTYPE_NAME_I_WORD:
+
+                    case FIELDTYPE_NAME_I_INT:
+                      cCurChar = *pCurDataPos;
+                    for (pDstChar = aFieldParseBuf + 0x100; cCurChar != '\0' && pDstChar < aFieldParseBuf + 0x11f; pDstChar++) {
+                      pCurDataPos++;
+                      *pDstChar = cCurChar;
+                      cCurChar = *pCurDataPos;
+                    }
+
+                    cCurChar = *pCurDataPos;
+                    *pDstChar = '\0';
+                    while (cCurChar != '\0') {
+                      pCurDataPos++;
+                      cCurChar = *pCurDataPos;
+                    }
+
+                    pCurDataPos++;
+                    nResolvedLinkId = FOG_ParseTxtLink(*(D2TxtLinkStrc**)pBinFieldInput[nFieldMapIdx].fpLinker, aFieldParseBuf + 0x100);
+                    if (pBinFieldInput[nFieldMapIdx].eType == FIELDTYPE_NAME_I_WORD) {
+                      *(short int*)(pCurrentRecord + pBinFieldInput[nFieldMapIdx].nOffset) = (short int)nResolvedLinkId;
+                    } else {
+                      *(int32_t*)(pCurrentRecord + pBinFieldInput[nFieldMapIdx].nOffset) = nResolvedLinkId;
                     }
                   }
+                }
 
-                  nColumnCount = pBinFieldExcel->nColumnCount;
-                  nColIndex++;
-                } while (nColIndex < nColumnCount);
+                nColumnCount = pBinFieldExcel->nColumnCount;
               }
+
               if (*pCurDataPos != '\n') {
                 ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x185);
                 exit(-1);
@@ -898,11 +891,7 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
                   case 0:
                     cCurChar = *pCurDataPos;
                   pDstChar = pCurDataPos;
-                  if (cCurChar == '\0') {
-                    terminate_string:
-                    pDstChar = pCurDataPos + 1;
-                    *pFieldCursor = '\0';
-                  } else {
+                  if (cCurChar != '\0') {
                     do {
                       pCurDataPos = pDstChar;
                       if (pFieldCursor >= pFieldEnd) {
@@ -923,6 +912,174 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
 
                     pDstChar = pCurDataPos + 2;
                     *pFieldCursor = '\0';
+                  } else {
+                    terminate_string:
+                    pDstChar = pCurDataPos + 1;
+                    *pFieldCursor = '\0';
+                  }
+
+                  break;
+                  case 2:
+                    nRawCodeLen = 0;
+                  uCodeBuf.dwCode = 0;
+                  cCurChar = *pCurDataPos;
+                  dwCode = uCodeBuf.dwCode;
+                  read_raw_code_char:
+                  uCodeBuf.dwCode = dwCode;
+                  if (cCurChar != '\0') {
+                    if (nRawCodeLen < 4) {
+                      pCurDataPos++;
+                      uCodeBuf.szCode[nRawCodeLen] = cCurChar;
+                      cCurChar = *pCurDataPos;
+                      nRawCodeLen++;
+                      dwCode = uCodeBuf.dwCode;
+                      goto read_raw_code_char;
+                    }
+
+                    cCurChar = *pCurDataPos;
+                    while (cCurChar != '\0') {
+                      pCurDataPos++;
+                      cCurChar = *pCurDataPos;
+                    }
+                  }
+
+                  uCodeBuf.szCode[0] = (char)dwCode;
+                  pDstChar = pCurDataPos + 1;
+                  if (uCodeBuf.szCode[0] == '\0') {
+                    memcpy(pRecord + nOffset, "    ", 4);
+                  } else {
+                    *pFieldCursor = uCodeBuf.szCode[0];
+                    cCurChar = (char)((uint32_t)dwCode >> 8);
+                    if (cCurChar == '\0') {
+                      pFieldCursor[1] = ' ';
+                      pFieldCursor[2] = ' ';
+                      pFieldCursor[3] = ' ';
+                    } else {
+                      pFieldCursor[1] = cCurChar;
+                      uCodeBuf.szCode[2] = (char)((uint32_t)dwCode >> 0x10);
+                      if (uCodeBuf.szCode[2] == '\0') {
+                        pFieldCursor[2] = ' ';
+                        pFieldCursor[3] = ' ';
+                      } else {
+                        pFieldCursor[2] = uCodeBuf.szCode[2];
+                        uCodeBuf.szCode[3] = (char)((uint32_t)dwCode >> 0x18);
+                        if (uCodeBuf.szCode[3] == '\0') {
+                          pFieldCursor[3] = ' ';
+                        } else {
+                          pFieldCursor[3] = uCodeBuf.szCode[3];
+                        }
+                      }
+                    }
+                  }
+
+                  break;
+                  case 3:
+                    cCurChar = *pCurDataPos;
+                  while (cCurChar != '\0') {
+                    pCurDataPos++;
+                    cCurChar = *pCurDataPos;
+                  }
+
+                  pDstChar = pCurDataPos + 1;
+                  break;
+                  case 4:
+                    uCodeBuf.dwCode = 0;
+                  cCurChar = *pCurDataPos;
+                  nClassCodeLen = 0;
+                  if (cCurChar != '\0') {
+                    read_lookup_code_char:
+                    if (nClassCodeLen < 4) {
+                      pCurDataPos++;
+                      uCodeBuf.szCode[nClassCodeLen] = cCurChar;
+                      cCurChar = *pCurDataPos;
+                      nClassCodeLen++;
+                      if (cCurChar == '\0') {
+                        goto pad_and_lookup_code;
+                      }
+
+                      goto read_lookup_code_char;
+                    }
+                    cCurChar = *pCurDataPos;
+                    while (cCurChar != '\0') {
+                      pCurDataPos++;
+                      cCurChar = *pCurDataPos;
+                    }
+                  }
+
+                  pad_and_lookup_code:
+                  pDstChar = pCurDataPos + 1;
+                  if ((char)uCodeBuf.dwCode == '\0') {
+                    dwCodePadded = 0x20202020;
+                  } else if ((char)((uint32_t)*(uint32_t*)(char*)&uCodeBuf >> 8) == '\0') {
+                    *(uint16_t*)(char*)&dwCodePadded = (uint16_t)((uint16_t)(uint8_t)0x20 << 8 | (uint16_t)(uint8_t)(char)uCodeBuf.dwCode);
+                    d2_store24((char*)&dwCodePadded, (uint32_t)((uint32_t)((uint32_t)(uint8_t)0x20 << 16 | (uint32_t)(uint16_t)dwCodePadded) & 0xffffffu));
+                    dwCodePadded = (uint32_t)((uint32_t)(uint8_t)0x20 << 24 | (uint32_t)((uint32_t)dwCodePadded & 0xffffffu));
+                  } else {
+                    *(uint16_t*)(char*)&dwCodePadded = (uint16_t)uCodeBuf.dwCode;
+                    if (uCodeBuf.szCode[2] == '\0') {
+                      d2_store24((char*)&dwCodePadded, (uint32_t)((uint32_t)((uint32_t)(uint8_t)0x20 << 16 | (uint32_t)(uint16_t)dwCodePadded) & 0xffffffu));
+                      dwCodePadded = (uint32_t)((uint32_t)(uint8_t)0x20 << 24 | (uint32_t)((uint32_t)dwCodePadded & 0xffffffu));
+                    } else {
+                      d2_store24((char*)&dwCodePadded, (uint32_t)uCodeBuf.dwCode & 0xffffffu);
+                      dwCodePadded = (uint32_t)((uint32_t)(uint8_t)0x20 << 24 | (uint32_t)((uint32_t)dwCodePadded & 0xffffffu));
+                      if (uCodeBuf.szCode[3] != '\0') {
+                        dwCodePadded = uCodeBuf.dwCode;
+                      }
+                    }
+                  }
+
+                  nFieldValue = GetClassIdFromName(*(D2TxtLinkStrc**)pBinFieldInput[nFieldMapIdx].fpLinker, dwCodePadded, 1);
+                  eFieldType2 = pBinFieldInput[nFieldMapIdx].eType;
+                  switch (eFieldType2) {
+                    case FIELDTYPE_CODE_INT:
+                      {
+                        store_int:
+                        *(uint32_t*)pFieldCursor = nFieldValue;
+                        break;
+                      }
+                    case FIELDTYPE_CODE_CHAR:
+                      {
+                        goto case_FIELDTYPE_CHAR;
+                      }
+                    case FIELDTYPE_CODE_SHORT:
+                      {
+                        *(short int*)pFieldCursor = (short int)nFieldValue;
+                        break;
+                      }
+                  }
+
+                  break;
+                  case 5:
+                    cCurChar = *pCurDataPos;
+                  for (pDVar2 = &uCodeBuf; cCurChar != '\0' && pDVar2 < (D2TxtCodeBufUnion*)(uCodeBuf.szCode + 0x1f); pDVar2 = (D2TxtCodeBufUnion*)(pDVar2->szCode + 1)) {
+                    pCurDataPos++;
+                    pDVar2->szCode[0] = cCurChar;
+                    cCurChar = *pCurDataPos;
+                  }
+
+                  pDVar2->szCode[0] = '\0';
+                  cCurChar = *pCurDataPos;
+                  while (cCurChar != '\0') {
+                    pCurDataPos++;
+                    cCurChar = *pCurDataPos;
+                  }
+
+                  pDstChar = pCurDataPos + 1;
+                  nFieldValue = GetLinkNodeIndex(*(D2TxtLinkStrc**)pBinFieldInput[nFieldMapIdx].fpLinker, uCodeBuf.szCode, 1);
+                  eFieldType = pBinFieldInput[nFieldMapIdx].eType;
+                  switch (eFieldType) {
+                    case FIELDTYPE_NAME_INT:
+                      {
+                        goto store_int;
+                      }
+                    case FIELDTYPE_NAME_SHORT:
+                      {
+                        goto case_FIELDTYPE_SHORT;
+                      }
+                    case FIELDTYPE_NAME_CHAR:
+                      {
+                        goto case_FIELDTYPE_CHAR;
+                      }
                   }
 
                   break;
@@ -970,170 +1127,6 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
                         BitBuffer::UnsetBitAtOffset(pFieldCursor, nFieldSize);
                       } else {
                         BitBuffer::SetBitAtOffset(pFieldCursor, nFieldSize);
-                      }
-                  }
-
-                  break;
-                  case 2:
-                    nRawCodeLen = 0;
-                  dwCodeBuf = 0;
-                  cCurChar = *pCurDataPos;
-                  dwCode = dwCodeBuf;
-                  read_raw_code_char:
-                  dwCodeBuf = dwCode;
-                  if (cCurChar != '\0') {
-                    if (nRawCodeLen < 4) {
-                      pCurDataPos++;
-                      *(char*)((uintptr_t)&dwCodeBuf + nRawCodeLen) = cCurChar;
-                      cCurChar = *pCurDataPos;
-                      nRawCodeLen++;
-                      dwCode = dwCodeBuf;
-                      goto read_raw_code_char;
-                    }
-
-                    cCurChar = *pCurDataPos;
-                    while (cCurChar != '\0') {
-                      pCurDataPos++;
-                      cCurChar = *pCurDataPos;
-                    }
-                  }
-
-                  *(uint8_t*)(char*)&dwCodeBuf = (char)dwCode;
-                  pDstChar = pCurDataPos + 1;
-                  if ((char)dwCodeBuf == '\0') {
-                    memcpy(pRecord + nOffset, "    ", 4);
-                  } else {
-                    *pFieldCursor = (char)dwCodeBuf;
-                    cCurChar = (char)(dwCode >> 8);
-                    if (cCurChar == '\0') {
-                      pFieldCursor[1] = ' ';
-                      pFieldCursor[2] = ' ';
-                      pFieldCursor[3] = ' ';
-                    } else {
-                      pFieldCursor[1] = cCurChar;
-                      *(uint8_t*)((char*)&dwCodeBuf + 2) = (char)(dwCode >> 0x10);
-                      if (*(uint8_t*)((char*)&dwCodeBuf + 2) == '\0') {
-                        pFieldCursor[2] = ' ';
-                        pFieldCursor[3] = ' ';
-                      } else {
-                        pFieldCursor[2] = *(uint8_t*)((char*)&dwCodeBuf + 2);
-                        *(uint8_t*)((char*)&dwCodeBuf + 3) = (char)(dwCode >> 0x18);
-                        if (*(uint8_t*)((char*)&dwCodeBuf + 3) == '\0') {
-                          pFieldCursor[3] = ' ';
-                        } else {
-                          pFieldCursor[3] = *(uint8_t*)((char*)&dwCodeBuf + 3);
-                        }
-                      }
-                    }
-                  }
-
-                  break;
-                  case 3:
-                    cCurChar = *pCurDataPos;
-                  while (cCurChar != '\0') {
-                    pCurDataPos++;
-                    cCurChar = *pCurDataPos;
-                  }
-
-                  pDstChar = pCurDataPos + 1;
-                  break;
-                  case 4:
-                    dwCodeBuf = 0;
-                  cCurChar = *pCurDataPos;
-                  nClassCodeLen = 0;
-                  if (cCurChar != '\0') {
-                    read_lookup_code_char:
-                    if (nClassCodeLen < 4) {
-                      pCurDataPos++;
-                      *(char*)((uintptr_t)&dwCodeBuf + nClassCodeLen) = cCurChar;
-                      cCurChar = *pCurDataPos;
-                      nClassCodeLen++;
-                      if (cCurChar == '\0') {
-                        goto pad_and_lookup_code;
-                      }
-
-                      goto read_lookup_code_char;
-                    }
-                    cCurChar = *pCurDataPos;
-                    while (cCurChar != '\0') {
-                      pCurDataPos++;
-                      cCurChar = *pCurDataPos;
-                    }
-                  }
-
-                  pad_and_lookup_code:
-                  pDstChar = pCurDataPos + 1;
-                  if ((char)dwCodeBuf == '\0') {
-                    dwCodePadded = 0x20202020;
-                  } else if ((char)(dwCodeBuf >> 8) == '\0') {
-                    *(uint16_t*)(char*)&dwCodePadded = (uint16_t)((uint16_t)(uint8_t)0x20 << 8 | (uint16_t)(uint8_t)(char)dwCodeBuf);
-                    d2_store24((char*)&dwCodePadded, (uint32_t)((uint32_t)((uint32_t)(uint8_t)0x20 << 16 | (uint32_t)(uint16_t)dwCodePadded) & 0xffffffu));
-                    dwCodePadded = (uint32_t)((uint32_t)(uint8_t)0x20 << 24 | (uint32_t)((uint32_t)dwCodePadded & 0xffffffu));
-                  } else {
-                    *(uint16_t*)(char*)&dwCodePadded = (uint16_t)dwCodeBuf;
-                    if (*(uint8_t*)((char*)&dwCodeBuf + 2) == '\0') {
-                      d2_store24((char*)&dwCodePadded, (uint32_t)((uint32_t)((uint32_t)(uint8_t)0x20 << 16 | (uint32_t)(uint16_t)dwCodePadded) & 0xffffffu));
-                      dwCodePadded = (uint32_t)((uint32_t)(uint8_t)0x20 << 24 | (uint32_t)((uint32_t)dwCodePadded & 0xffffffu));
-                    } else {
-                      d2_store24((char*)&dwCodePadded, (uint32_t)dwCodeBuf & 0xffffffu);
-                      dwCodePadded = (uint32_t)((uint32_t)(uint8_t)0x20 << 24 | (uint32_t)((uint32_t)dwCodePadded & 0xffffffu));
-                      if (*(uint8_t*)((char*)&dwCodeBuf + 3) != '\0') {
-                        dwCodePadded = dwCodeBuf;
-                      }
-                    }
-                  }
-
-                  nFieldValue = GetClassIdFromName(*(D2TxtLinkStrc**)pBinFieldInput[nFieldMapIdx].fpLinker, dwCodePadded, 1);
-                  eFieldType2 = pBinFieldInput[nFieldMapIdx].eType;
-                  switch (eFieldType2) {
-                    case FIELDTYPE_CODE_INT:
-                      {
-                        store_int:
-                        *(uint32_t*)pFieldCursor = nFieldValue;
-                        break;
-                      }
-                    case FIELDTYPE_CODE_CHAR:
-                      {
-                        goto case_FIELDTYPE_CHAR;
-                      }
-                    case FIELDTYPE_CODE_SHORT:
-                      {
-                        *(short int*)pFieldCursor = (short int)nFieldValue;
-                        break;
-                      }
-                  }
-
-                  break;
-                  case 5:
-                    cCurChar = *pCurDataPos;
-                  for (pDstChar = (char*)&dwCodeBuf; cCurChar != '\0' && pDstChar < &cLinkNameTerm; pDstChar++) {
-                    pCurDataPos++;
-                    *pDstChar = cCurChar;
-                    cCurChar = *pCurDataPos;
-                  }
-
-                  *pDstChar = '\0';
-                  cCurChar = *pCurDataPos;
-                  while (cCurChar != '\0') {
-                    pCurDataPos++;
-                    cCurChar = *pCurDataPos;
-                  }
-
-                  pDstChar = pCurDataPos + 1;
-                  nFieldValue = GetLinkNodeIndex(*(D2TxtLinkStrc**)pBinFieldInput[nFieldMapIdx].fpLinker, (char*)&dwCodeBuf, 1);
-                  eFieldType = pBinFieldInput[nFieldMapIdx].eType;
-                  switch (eFieldType) {
-                    case FIELDTYPE_NAME_INT:
-                      {
-                        goto store_int;
-                      }
-                    case FIELDTYPE_NAME_SHORT:
-                      {
-                        goto case_FIELDTYPE_SHORT;
-                      }
-                    case FIELDTYPE_NAME_CHAR:
-                      {
-                        goto case_FIELDTYPE_CHAR;
                       }
                   }
 

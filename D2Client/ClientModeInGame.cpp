@@ -23,6 +23,7 @@
 #include "D2Win/Src/D2WinArchive.h"
 #include "D2Win/Src/D2WinMain.h"
 #include "D2gfx/D2GFX.h"
+#include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Fog.h"
 #include "Fog/Memory.h"
@@ -33,7 +34,10 @@
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 #include "D2Client/Engine.h"
+#include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "Fog/D2QServerStrc.h"
+#include "Storm/H/CCritSect.h"
+#include "Storm/H/stpl.h"
 #include "support/d2_boot.h" // [vanilla-plus] enter-world stage marks
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -59,6 +63,8 @@ typedef LRESULT (__stdcall *WndProcB)(HWND param_1, uint32_t uMsg, uint32_t para
 #define RECON_FPTD_fpGameLoopFunction
 typedef uint32_t (__stdcall *fpGameLoopFunction)(uint32_t param_1);
 #endif
+
+static TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0> gQServerGameState; D2_STATIC_GUARD(gQServerGameState, "gQServerGameState");
 
 namespace D2Client::ClientModeInGame {
 
@@ -110,19 +116,18 @@ eD2ClientAppMode __stdcall CLIENTMODE_GetCurrentAppMode() {
 // If first time and user != "rseis", show MessageBox with available command-line options text.
 BOOL __stdcall CmdLine_ShowHelpIfNotDeveloper(CMDPARAMS * pParams, char * szCmdLine) {
     char szUserName[16];
-    if (gnClientAppModeQueueState) {
-      return 0;
+    DWORD dwUserNameSize;
+    if (!gnClientAppModeQueueState) {
+      int32_t nCmpResult;
+      /* LPDWORD pcbBuffer for GetUserNameA */ /* LPSTR lpBuffer for GetUserNameA */ gnClientAppModeQueueState = 1;
+      dwUserNameSize = 0xf;
+      GetUserNameA(szUserName, &dwUserNameSize);
+      nCmpResult = Storm::Source::SSTR::SStrCmp(szUserName, "rseis", 0x7fffffff);
+      if (nCmpResult) {
+        /* UINT uType for MessageBoxA */ /* LPCSTR lpCaption for MessageBoxA */ /* LPCSTR lpText for MessageBoxA */ /* HWND hWnd for MessageBoxA */ MessageBoxA((HWND)0x0, "Available command line options:\n  -set[default command line]\t\tSet new default command line string\n  -lng[lngfile]\t\t\tUse \"lngfile\" for language resources\n", gpszCmdLineCaptionStr, 0);
+      }
     }
 
-    /* LPDWORD pcbBuffer for GetUserNameA */ /* LPSTR lpBuffer for GetUserNameA */ gnClientAppModeQueueState = 1;
-    DWORD dwUserNameSize = 0xf;
-    GetUserNameA(szUserName, &dwUserNameSize);
-    int32_t nCmpResult = Storm::Source::SSTR::SStrCmp(szUserName, "rseis", 0x7fffffff);
-    if (!nCmpResult) {
-      return 0;
-    }
-
-    /* UINT uType for MessageBoxA */ /* LPCSTR lpCaption for MessageBoxA */ /* LPCSTR lpText for MessageBoxA */ /* HWND hWnd for MessageBoxA */ MessageBoxA((HWND)0x0, "Available command line options:\n  -set[default command line]\t\tSet new default command line string\n  -lng[lngfile]\t\t\tUse \"lngfile\" for language resources\n", gpszCmdLineCaptionStr, 0);
     return 0;
 }
 
@@ -152,8 +157,8 @@ void __stdcall CLIENTMODEIN_CmdLineCallback_ShowHelp(uint32_t * pnErrorCode) {
 // "-set" command-line callback: saves the option's string value with SRegSaveString("Diablo II", "Default Command Line") and returns its result.
 // @provenance 1.14d asm 0044b5e0; the help text in CmdLine_SetAppMode lists -set as "Set new default command line string".
 BOOL __stdcall CmdLine_SaveDefaultCommandLine(CMDPARAMS * pParams, char * szCmdLine) {
-    int32_t iVar1 = Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Default Command Line", 0, pParams->uValue.szStringValue);
-    return iVar1;
+    int32_t bSaved = Storm::Source::SReg::SRegSaveString("Diablo II", "Default Command Line", 0, pParams->uValue.szStringValue);
+    return bSaved;
 }
 
 // App-mode command-line callback: matches the option's string value case-insensitively against gaClientModeHandlerTable and sets gdwAppMode on a hit (returns TRUE). Otherwise, once, shows the command-line help box (skipped for user name "rseis") and returns FALSE.
@@ -164,9 +169,9 @@ BOOL __stdcall CmdLine_SetAppMode(CMDPARAMS * pParams, char * szCmdLine) {
 
     int nNameCmp;
     char szUserName[16];
+    CMDPARAMS* pEntry = pParams;
     eD2ClientAppMode eAppMode = 0;
     do {
-      CMDPARAMS* pEntry = pParams;
       if ((char*)gaClientModeHandlerTable[eAppMode]) {
         nNameCmp = _stricmp((char*)gaClientModeHandlerTable[eAppMode], pEntry->uValue.szStringValue);
         if (!nNameCmp) {
@@ -178,19 +183,17 @@ BOOL __stdcall CmdLine_SetAppMode(CMDPARAMS * pParams, char * szCmdLine) {
       eAppMode += APPMODE_CONTINUE;
     } while (eAppMode < eD2ClientAppMode_ns::APPMODE_COUNT);
 
-    if (gnClientAppModeQueueState) {
-      return 0;
+    if (!gnClientAppModeQueueState) {
+      int32_t nCmpResult;
+      /* LPDWORD pcbBuffer for GetUserNameA */ /* LPSTR lpBuffer for GetUserNameA */ gnClientAppModeQueueState = 1;
+      pParams = (CMDPARAMS*)0xf;
+      GetUserNameA(szUserName, (LPDWORD)&pParams);
+      nCmpResult = Storm::Source::SSTR::SStrCmp(szUserName, "rseis", 0x7fffffff);
+      if (nCmpResult) {
+        /* UINT uType for MessageBoxA */ /* LPCSTR lpCaption for MessageBoxA */ /* LPCSTR lpText for MessageBoxA */ /* HWND hWnd for MessageBoxA */ MessageBoxA((HWND)0x0, "Available command line options:\n  -set[default command line]\t\tSet new default command line string\n  -lng[lngfile]\t\t\tUse \"lngfile\" for language resources\n", gpszCmdLineCaptionStr, 0);
+      }
     }
 
-    /* LPDWORD pcbBuffer for GetUserNameA */ /* LPSTR lpBuffer for GetUserNameA */ gnClientAppModeQueueState = 1;
-    pParams = (CMDPARAMS*)0xf;
-    GetUserNameA(szUserName, (LPDWORD)&pParams);
-    int32_t nCmpResult = Storm::Source::SSTR::SStrCmp(szUserName, "rseis", 0x7fffffff);
-    if (!nCmpResult) {
-      return 0;
-    }
-
-    /* UINT uType for MessageBoxA */ /* LPCSTR lpCaption for MessageBoxA */ /* LPCSTR lpText for MessageBoxA */ /* HWND hWnd for MessageBoxA */ MessageBoxA((HWND)0x0, "Available command line options:\n  -set[default command line]\t\tSet new default command line string\n  -lng[lngfile]\t\t\tUse \"lngfile\" for language resources\n", gpszCmdLineCaptionStr, 0);
     return 0;
 }
 
@@ -252,11 +255,11 @@ char * __stdcall CLIENTMODE_GetGamePasswordPart1() {
 
     char* pszCursor = D2IniData_client->szGAMENAME;
     pszCursor = pszCursor + strlen(pszCursor) + 1;
-    if (pszCursor == D2IniData_client->szGAMENAME + 1) {
-      return nullptr;
+    if (pszCursor != D2IniData_client->szGAMENAME + 1) {
+      return D2IniData_client->szGAMENAME;
     }
 
-    return D2IniData_client->szGAMENAME;
+    return nullptr;
 }
 
 char * __stdcall CLIENTMODE_GetGamePasswordPart2() {
@@ -267,11 +270,11 @@ char * __stdcall CLIENTMODE_GetGamePasswordPart2() {
 
     char* pszCursor = D2IniData_client->szGamePassword;
     pszCursor = pszCursor + strlen(pszCursor) + 1;
-    if (pszCursor == D2IniData_client->szGamePassword + 1) {
-      return nullptr;
+    if (pszCursor != D2IniData_client->szGamePassword + 1) {
+      return D2IniData_client->szGamePassword;
     }
 
-    return D2IniData_client->szGamePassword;
+    return nullptr;
 }
 
 char * __stdcall CLIENTMODE_GetGamePasswordPart3() {
@@ -282,11 +285,11 @@ char * __stdcall CLIENTMODE_GetGamePasswordPart3() {
 
     char* pServerIp = D2IniData_client->szSERVERIP;
     pServerIp = pServerIp + strlen(pServerIp) + 1;
-    if (pServerIp == D2IniData_client->szSERVERIP + 1) {
-      return nullptr;
+    if (pServerIp != D2IniData_client->szSERVERIP + 1) {
+      return D2IniData_client->szSERVERIP;
     }
 
-    return D2IniData_client->szSERVERIP;
+    return nullptr;
 }
 
 uint32_t __stdcall CLIENTMODE_GetIngameUIFlags() {
@@ -328,16 +331,14 @@ int32_t __stdcall fAPPMODE_client_ReturnAppMode(HMODULE hModule, D2IniConfigStrc
     D2Win::D2GFX::UI_Init();
     D2GFX::INIT_SetWndProcBGlobalPointer((::WndProcB)_Message::WndProcB);
     bIsExpansion = Fog::D2CheckExpansionGame();
-    D2PoolManagerStrc* pArchive = D2Win::Src::D2WinArchive::ReturnZero();
-    int bStringsLoaded = D2Lang::StrTable::strtable::TABLES_LoadStrings(pArchive, nullptr, bIsExpansion);
+    int bStringsLoaded = D2Lang::StrTable::strtable::TABLES_LoadStrings(D2Win::Src::D2WinArchive::ReturnZero(), nullptr, bIsExpansion);
     if (!bStringsLoaded) {
       return 0;
     }
 
     D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation((char*)&D2IniData, 0);
     uint32_t bIsOBNetHost = (uint32_t)(pIniData->nGAMETYPE == GAMETYPE_OBNET_HOST);
-    int32_t dwErrorLine = 0;
-    D2Common::DATATBLS::DataTbls::TXT_InitTxtFiles(D2Win::Src::D2WinArchive::ReturnZero(), dwErrorLine, bIsOBNetHost);
+    D2Common::DATATBLS::DataTbls::TXT_InitTxtFiles(D2Win::Src::D2WinArchive::ReturnZero(), 0, bIsOBNetHost);
     gdwAppMode = APPMODE_SAVE;
     gbQuitGame = 1;
     do {
@@ -426,7 +427,7 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
     UI::ui::DRAW_RefreshNpcDialog();
 }
 
-uint32_t __stdcall CLIENTMODE_Unused3(uint32_t dwUnused) {
+uint32_t __stdcall CLIENTMODE_WaitForQServerConnection(uint32_t dwUnused) {
     int32_t nState;
     uint8_t packetBuffer[512];
     if (eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER || eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER_UNCAPPED) {
@@ -539,13 +540,13 @@ eD2ClientAppMode __stdcall NET_QServer_StartServer() {
     wait_for_connection:
     gdwQServerStartTime = GetTickCount();
     gnClientModeInitValue = 0;
-    _Message::MessageGameLoop((::fpGameLoopFunction)CLIENTMODE_Unused3);
+    _Message::MessageGameLoop((::fpGameLoopFunction)CLIENTMODE_WaitForQServerConnection);
     D2BOOT_MarkFmt("enter-world: connect wait done (connected=%d)", (int)D2GS_Connected); // [d2boot] connected=0 = the 10 s refused path, not a hang
     eD2ClientAppMode eAppMode = CLIENTMODE_GetCurrentAppMode();
     return eAppMode;
 }
 
-uint32_t __stdcall CLIENTMODE_Unused4(uint32_t dwUnused) {
+uint32_t __stdcall CLIENTMODE_WaitForServerShutdown(uint32_t dwUnused) {
     uint8_t packetBuffer[512];
     D2gfx::D2GFX::D2GFX_EndCutSceneReturnSceneState();
     if (eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER || eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER_UNCAPPED) {
@@ -565,7 +566,7 @@ uint32_t __stdcall CLIENTMODE_Unused4(uint32_t dwUnused) {
 // pfModes_ShutdownServer: run MessageGameLoop while shutting down, free QServer, send 0xB0 to clients.
 eD2ClientAppMode __stdcall NET_QServer_ShutdownServer() {
     gdwLastPacketActivityTick = GetTickCount();
-    _Message::MessageGameLoop((::fpGameLoopFunction)CLIENTMODE_Unused4);
+    _Message::MessageGameLoop((::fpGameLoopFunction)CLIENTMODE_WaitForServerShutdown);
     D2Net::SRC::Client::NET_CLIENT_ShutdownConnection();
     if (eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER || eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER_UNCAPPED || eD2GSGameType_007a0610 == GAMETYPE_OBNET_HOST || eD2GSGameType_007a0610 == GAMETYPE_LAN_HOST) {
       D2Net::Game::Server::NET_QServer_FreeAndSend0xB0ToEveryone();
@@ -573,6 +574,32 @@ eD2ClientAppMode __stdcall NET_QServer_ShutdownServer() {
 
     eD2ClientAppMode eAppMode = CLIENTMODE_GetCurrentAppMode();
     return eAppMode;
+}
+
+void StaticInit_gpszCmdLineCaptionStr() {
+    gpszCmdLineCaptionStr = gpszDiabloIICaption;
+}
+
+void StaticInit_gpszDiabloIICaptionCopy() {
+    // Static local variables (originally global data)
+    // also labelled: gbCmdLineCaptionPadding
+static LPCSTR gpszDiabloIICaptionCopy; D2_STATIC_GUARD_BSS(gpszDiabloIICaptionCopy, "D2Client::ClientModeInGame::StaticInit_gpszDiabloIICaptionCopy::gpszDiabloIICaptionCopy");
+
+    gpszDiabloIICaptionCopy = gpszDiabloIICaption;
+}
+
+void __stdcall QSERVER_InitGlobalGameState() {
+    gQServerGameState.TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>::Constructor();
+    /* LPCRITICAL_SECTION lpCriticalSection for InitializeCriticalSection */ gQServerGameState.nSequence = 0xf85f96f;
+    gQServerGameState.bWrapped = 0;
+    gQServerGameState.pVtable = (TSHashTable<::SGAMEDATA, HASHKEY_NONE>::Vtable*)(void*)TSExportTableSync<::SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>::vftable;
+    InitializeCriticalSection(&gQServerGameState.tSync.m_critsect);
+    atexit(QSERVER_DestroyGlobalGameState);
+}
+
+void QSERVER_DestroyGlobalGameState() {
+    DeleteCriticalSection(&gQServerGameState.tSync.m_critsect);
+    gQServerGameState.TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>::Destructor();
 }
 
 } // namespace D2Client::ClientModeInGame

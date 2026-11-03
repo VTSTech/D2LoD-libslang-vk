@@ -38,6 +38,8 @@ typedef BOOL (__fastcall *Draw)(D2ControlStrc * pControl);
 typedef BOOL (__fastcall *DrawEx)(D2ControlStrc * pControl);
 #endif
 
+static D2WinPopup * gpD2WinPopupControl = 0; D2_STATIC_GUARD(gpD2WinPopupControl, "gpD2WinPopupControl");
+
 namespace D2Win::Src::D2WinPopup {
 
 // Destroys the global popup control if it exists. Calls FORMS_DestroyControl and clears the global pointer.
@@ -52,24 +54,24 @@ void __stdcall D2WINPOPUP_Destroy() {
 
 // Returns TRUE if the popup control exists, is of type FORM_Popup (0xb), is active (state & 4), and is visible (state & 1). Used to check if popup is ready for interaction.
 BOOL __stdcall D2WINPOPUP_IsActiveAndVisible() {
-    if (!gpD2WinPopupControl) {
-      return 0;
-    }
-    if (gpD2WinPopupControl->sControl.neD2FormType != FORM_Popup) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x62);
-      exit(-1);
-    }
+    if (gpD2WinPopupControl) {
+      uint32_t uVar1;
+      if (gpD2WinPopupControl->sControl.neD2FormType != FORM_Popup) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x62);
+        exit(-1);
+      }
 
-    uint32_t uVar1 = gpD2WinPopupControl->sControl.dwState;
-    if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
-      return 1;
+      uVar1 = gpD2WinPopupControl->sControl.dwState;
+      if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
+        return 1;
+      }
     }
 
     return 0;
 }
 
 // Adds a message entry to the popup. Validates message count (max 8), copies 132-byte message data into next slot, calculates text width using font 1, updates popup width/height. Returns TRUE on success.
-uint32_t __stdcall D2WINPOPUP_AddMessage(D2WinPopupEntry * pnParam) {
+uint32_t __stdcall D2WINPOPUP_AddMessage(D2WinPopupEntry * pEntry) {
     int nCopyCount;
     int32_t nLine;
     ::D2WinPopup* pPopup = gpD2WinPopupControl;
@@ -81,7 +83,7 @@ uint32_t __stdcall D2WINPOPUP_AddMessage(D2WinPopupEntry * pnParam) {
       return 0;
     }
 
-    D2WinPopupEntry* pMsgSrc = pnParam;
+    D2WinPopupEntry* pMsgSrc = pEntry;
     D2WinPopupEntry* pMsgDst = gpD2WinPopupControl->wszMessages + gpD2WinPopupControl->nMessageCount;
     for (nCopyCount = 0x21; nCopyCount; nCopyCount--) {
       *(uint32_t*)pMsgDst->wszText = *(uint32_t*)pMsgSrc->wszText;
@@ -90,7 +92,7 @@ uint32_t __stdcall D2WINPOPUP_AddMessage(D2WinPopupEntry * pnParam) {
     }
 
     D2WinFont::SetAndReturnLastFont(1);
-    nLine = D2WinFont::DRAW_text0(pnParam->wszText);
+    nLine = D2WinFont::DRAW_text0(pEntry->wszText);
     nCopyCount = pPopup->sControl.dwSizeX;
     if (nCopyCount > nLine) {
       nLine = nCopyCount;
@@ -123,7 +125,7 @@ BOOL __stdcall D2WINPOPUP_HandleClick(D2UIMouseMsgStrc * pMsg) {
 }
 
 BOOL __fastcall DrawEx(::D2WinPopup * pPopup) {
-    int iVar2;
+    int nRelMouseX;
     int nRelX;
     int nSizeY;
     if (pPopup->sControl.neD2FormType != FORM_Popup) {
@@ -135,13 +137,12 @@ BOOL __fastcall DrawEx(::D2WinPopup * pPopup) {
     if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
       nSizeY = pPopup->sControl.dwSizeY;
       pPopup->bCentered = -1;
-      iVar2 = D2Client::Mouse::nPosX - pPopup->sControl.dwPosX;
+      nRelMouseX = D2Client::Mouse::nPosX - pPopup->sControl.dwPosX;
       nRelX = nSizeY - pPopup->sControl.dwPosY + D2Client::Mouse::nPosY;
-      if (!(iVar2 >= 0 && iVar2 <= pPopup->sControl.dwSizeX && nRelX >= 0 && nRelX <= nSizeY)) {
-        return 1;
+      if (nRelMouseX >= 0 && nRelMouseX <= pPopup->sControl.dwSizeX && nRelX >= 0 && nRelX <= nSizeY) {
+        pPopup->bCentered = nRelX / 0x14;
       }
 
-      pPopup->bCentered = nRelX / 0x14;
       return 1;
     }
 
@@ -203,8 +204,7 @@ void __stdcall D2WinPopup() {
     ::D2WinPopup* pNewPopup = D2_NEW_AT(::D2WinPopup, ".\\Src\\D2WinPopup.cpp", 0x29);
     memset(pNewPopup, 0, 0x468);
     pNewPopup->sControl.neD2FormType = FORM_Popup;
-    int* pStateField = &pNewPopup->sControl.dwState;
-    *pStateField |= gadwBitMasks[0];
+    pNewPopup->sControl.dwState |= gadwBitMasks[0];
     uVar1 = pNewPopup->sControl.dwState | gadwBitMasks[2];
     pNewPopup->sControl.dwState = uVar1;
     pNewPopup->sControl.dwState = uVar1 | gadwBitMasks[3];

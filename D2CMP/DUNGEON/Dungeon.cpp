@@ -3,8 +3,8 @@
 #include "D2CMP/DUNGEON/Dungeon.h"
 #include "D2CMP/SRC/FindTiles.h"
 #include "D2CMP/SRC/LRUCache.h"
+#include "D2CMP/SRC/SubTile.h"
 #include "D2CMP/SRC/TileProjects.h"
-#include "D2Client/D2GfxHelperStrc.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
@@ -47,28 +47,28 @@ int * __stdcall TILEPROJECT_AllocSlot(void * pTileProject, char * szFilename) {
     exit(-1);
 }
 
-void __stdcall TILEPROJECT_FreeSlot(int32_t nParam1, int32_t nParam2) {
-    if (!nParam2) {
+void __stdcall TILEPROJECT_FreeSlot(int32_t pnProjectIds, int32_t pProject) {
+    if (!pProject) {
       return;
     }
 
-    int nProjectId = SRC::TileProjects::TILEPROJECT_GetProjectId((char*)(nParam2 + 8));
+    int nProjectId = SRC::TileProjects::TILEPROJECT_GetProjectId((char*)(pProject + 8));
     if (!nProjectId) {
       return;
     }
 
     int nSlotIndex = 0;
-    while (*(int*)(nParam1 + nSlotIndex * 4) != nProjectId) {
+    while (*(int*)(pnProjectIds + nSlotIndex * 4) != nProjectId) {
       nSlotIndex++;
       if (nSlotIndex >= 0x20) {
         return;
       }
     }
 
-    *(uint32_t*)(nParam1 + nSlotIndex * 4) = 0;
+    *(uint32_t*)(pnProjectIds + nSlotIndex * 4) = 0;
 }
 
-uint32_t __stdcall TILEPROJECT_LookupTilesInAllProjects(void * * ppProjects, int32_t nParam2, int32_t nParam3, int32_t nParam4, int * pnFoundTiles, uint32_t nParam) {
+uint32_t __stdcall TILEPROJECT_LookupTilesInAllProjects(void * * ppProjects, int32_t nTileType, int32_t nTileSubType, int32_t nSubIndex, D2TileLibraryEntryStrc * * pnFoundTiles, uint32_t nMaxTiles) {
     int32_t nTotalFound;
     if (!ppProjects) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5d);
@@ -77,23 +77,23 @@ uint32_t __stdcall TILEPROJECT_LookupTilesInAllProjects(void * * ppProjects, int
 
     int nFoundInProjectAccum = 0;
     int iProjectIdx = 0;
-    uint32_t nRemaining = nParam;
+    uint32_t nRemaining = nMaxTiles;
     do {
       if (!ppProjects[iProjectIdx]) {
         break;
       }
 
-      nTotalFound = SRC::FindTiles::FINDTILE_Lookup((int**)ppProjects[iProjectIdx], (int32_t)(pnFoundTiles + nFoundInProjectAccum), nRemaining, nParam2, nParam3, nParam4);
+      nTotalFound = SRC::FindTiles::FINDTILE_Lookup((int**)ppProjects[iProjectIdx], pnFoundTiles + nFoundInProjectAccum, nRemaining, nTileType, nTileSubType, nSubIndex);
       nRemaining -= nTotalFound;
       nFoundInProjectAccum += nTotalFound;
       if (!nRemaining) {
-        return nParam;
+        return nMaxTiles;
       }
 
       iProjectIdx++;
     } while (iProjectIdx < 0x20);
 
-    return nParam - nRemaining;
+    return nMaxTiles - nRemaining;
 }
 
 int32_t __stdcall GetOrientation(D2TileLibraryEntryStrc * pTileLibraryEntry) {
@@ -102,7 +102,6 @@ int32_t __stdcall GetOrientation(D2TileLibraryEntryStrc * pTileLibraryEntry) {
       exit(-1);
     }
 
-    return pTileLibraryEntry->nOrientation;
     return pTileLibraryEntry->nOrientation;
 }
 
@@ -113,17 +112,15 @@ int32_t __stdcall GetIndex(D2TileLibraryEntryStrc * pTileLibraryEntry) {
     }
 
     return pTileLibraryEntry->nIndex;
-    return pTileLibraryEntry->nIndex;
 }
 
-uint32_t __stdcall TILEPROJECT_GetTileCount(int32_t nParam) {
-    if (!nParam) {
+uint32_t __stdcall TILEPROJECT_GetTileCount(D2TileLibraryEntryStrc * pTileEntry) {
+    if (!pTileEntry) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x7b);
       exit(-1);
     }
 
-    return (uint32_t)*(uint16_t*)(nParam + 6);
-    return (uint32_t)*(uint16_t*)(nParam + 6);
+    return (uint32_t)(uint16_t)pTileEntry->nFlags;
 }
 
 uint32_t __stdcall TILEPROJECT_GetTileDataPtr(int32_t nParam) {
@@ -133,17 +130,15 @@ uint32_t __stdcall TILEPROJECT_GetTileDataPtr(int32_t nParam) {
     }
 
     return *(uint32_t*)(nParam + 0xc);
-    return *(uint32_t*)(nParam + 0xc);
 }
 
-uint32_t __stdcall TILEPROJECT_GetAnimatedTileDataPtr(int32_t nParam) {
-    if (!nParam) {
+int __stdcall TILEPROJECT_GetAnimatedTileDataPtr(D2TileLibraryEntryStrc * pTileLibraryEntry) {
+    if (!pTileLibraryEntry) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x7d);
       exit(-1);
     }
 
-    return *(uint32_t*)(nParam + 0x20);
-    return *(uint32_t*)(nParam + 0x20);
+    return pTileLibraryEntry->nFrame_Rarity;
 }
 
 int32_t __stdcall GetSubIndex(D2TileLibraryEntryStrc * pTileLibraryEntry) {
@@ -152,7 +147,6 @@ int32_t __stdcall GetSubIndex(D2TileLibraryEntryStrc * pTileLibraryEntry) {
       exit(-1);
     }
 
-    return pTileLibraryEntry->nSubIndex;
     return pTileLibraryEntry->nSubIndex;
 }
 
@@ -163,17 +157,15 @@ uint32_t __stdcall TILEPROJECT_GetTileOrientationIndex(uint32_t * pnOrientationI
     }
 
     return *pnOrientationIndex;
-    return *pnOrientationIndex;
 }
 
-int __stdcall TILEPROJECT_GetRoofHeightIndex(int32_t nParam) {
-    if (!nParam) {
+int __stdcall TILEPROJECT_GetRoofHeightIndex(D2TileLibraryEntryStrc * pTileLibraryEntry) {
+    if (!pTileLibraryEntry) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x80);
       exit(-1);
     }
 
-    return *(int*)(nParam + 8);
-    return *(int*)(nParam + 8);
+    return pTileLibraryEntry->nHeight;
 }
 
 BYTE * __stdcall TILE_GetTileFlags(D2TileLibraryEntryStrc * pTileLibraryEntry) {
@@ -182,7 +174,6 @@ BYTE * __stdcall TILE_GetTileFlags(D2TileLibraryEntryStrc * pTileLibraryEntry) {
       exit(-1);
     }
 
-    return pTileLibraryEntry->abSubTileFlags;
     return pTileLibraryEntry->abSubTileFlags;
 }
 

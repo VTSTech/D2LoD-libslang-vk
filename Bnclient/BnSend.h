@@ -7,14 +7,18 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "Bnclient/net_sid.h"
-#include "Storm/D2SHA1.h"
 
 // Forward declarations
 struct D2BNetGatewayAccessStr;
+struct D2CDKeyHashStrc;
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
+struct __time32_t;
 struct sockaddr;
 #endif // _WIN32
+#ifndef RECON_FPTD_pfnNewsEntryCallback
+#define RECON_FPTD_pfnNewsEntryCallback
+typedef void (__fastcall *pfnNewsEntryCallback)(uint32_t dwEntryId, char * szMessage);
+#endif
 #ifndef RECON_FPTD_pfnVoidNoArgCallback
 #define RECON_FPTD_pfnVoidNoArgCallback
 typedef void (__stdcall *pfnVoidNoArgCallback)();
@@ -35,17 +39,15 @@ struct __attribute__((packed)) BnCDKeyHashInput26 {
     /* 0x10 */ uint8_t abPrivateValue[10];
 };
 
-struct __attribute__((packed)) BnDoubleHashInput {
-    /* 0x00 */ uint32_t dwClientToken;
-    /* 0x04 */ uint32_t dwServerToken;
-    /* 0x08 */ D2SHA1 sHash;
-};
-
 struct D2BnNewsTableStrc {
     /* 0x00 */ uint32_t nCapacity; // unsigned JBE compares
     /* 0x04 */ uint32_t nCount;
     /* 0x08 */ void * pEntries; // 0x408-byte entries (IMUL 0x408); entry layout not modelled
     /* 0x0C */ uint32_t nGrowStep; // 0 -> BNNEWS_RoundToPowerOfTwo sets 8
+};
+
+struct D2XSHA1Strc {
+    /* 0x00 */ DWORD h[5];
 };
 
 struct SID_C2S_CheckAd {
@@ -65,35 +67,28 @@ struct SID_C2S_ClickAd {
     /* 0x04 */ uint32_t dwRequestType; // EDX!=0
 };
 
-struct __attribute__((packed)) SID_C2S_ClientId2 {
+struct SID_C2S_ClientId2 {
     /* 0x00 */ uint32_t dwServerVersion;
     /* 0x04 */ uint32_t dwRegVersion;
     /* 0x08 */ uint32_t dwRegAuthority;
     /* 0x0C */ uint32_t dwClientId;
     /* 0x10 */ uint32_t dwClientToken;
     /* 0x14 */ char szComputerName[1];
-    /* 0x15 */ char szUserName[1];
+    /* 0x15 */ char szUserName[1023];
 };
 
-struct __attribute__((packed)) SID_C2S_DisplayAd {
+struct SID_C2S_DisplayAd {
     /* 0x00 */ uint32_t dwPlatformId;
     /* 0x04 */ uint32_t dwProductId;
     /* 0x08 */ uint32_t dwAdId;
     /* 0x0C */ char szFilename[1];
-    /* 0x0D */ char szUrl[1];
+    /* 0x0D */ char szUrl[1279];
 };
 
 struct SID_C2S_GetFileTime {
     /* 0x00 */ uint32_t dwRequestId;
     /* 0x04 */ uint32_t dwUnknown;
     /* 0x08 */ char szFilename[260];
-};
-
-struct __attribute__((packed)) SID_C2S_LogonResponse {
-    /* 0x00 */ uint32_t dwClientToken;
-    /* 0x04 */ uint32_t dwServerToken;
-    /* 0x08 */ D2SHA1 sPasswordHash;
-    /* 0x1C */ char szUsername[256];
 };
 
 struct SID_C2S_ReportVersion {
@@ -131,6 +126,19 @@ struct __attribute__((packed)) SID_C2S_LocaleInfo {
     /* 0x20 */ char szStrings[256];
 };
 
+struct __attribute__((packed)) BnDoubleHashInput {
+    /* 0x00 */ uint32_t dwClientToken;
+    /* 0x04 */ uint32_t dwServerToken;
+    /* 0x08 */ D2XSHA1Strc sHash;
+};
+
+struct __attribute__((packed)) SID_C2S_LogonResponse {
+    /* 0x00 */ uint32_t dwClientToken;
+    /* 0x04 */ uint32_t dwServerToken;
+    /* 0x08 */ D2XSHA1Strc sPasswordHash;
+    /* 0x1C */ char szUsername[256];
+};
+
 namespace Bnclient::BnSend {
 
 // Function declarations
@@ -144,26 +152,29 @@ int __fastcall NET_SID_CLIENT_Send_0x29_LogonResponse(char * szText1, char * szT
 int __fastcall NET_SID_CLIENT_Send_0x3A_LogonResponse2(char * szText1, char * szText2);
 int __fastcall NET_SID_CLIENT_Send_0x3D_CreateAccount2(char * szText1, char * szText2);
 int __fastcall NET_SID_CLIENT_Send_0x31_ChangePassword(char * szText1, char * szText2, char * szNewPassword);
-void __fastcall NET_SID_CLIENT_Send_0x07_ReportVersion(uint32_t dwExeHash, uint32_t dwParam2, char * szExeInfoStr);
-void NET_SID_CLIENT_Send_0x06_StartVersioning();
+void __fastcall NET_SID_CLIENT_Send_0x07_ReportVersion(uint32_t dwExeHash, uint32_t dwExeChecksum, char * szExeInfoStr);
+void __fastcall NET_SID_CLIENT_Send_0x06_StartVersioning();
 // @sourcefile .\BnSend.cpp
 void __fastcall BNSEND_StoreCDKeyHashData(void * pKeyHashData, size_t nSize);
-int32_t __fastcall NET_SID_CLIENT_Send_0x41_QueryAdURL(uint32_t dwParam);
+// @sourcefile .\BnSend.cpp
+void BNSEND_FreeRealmQueryData();
+int32_t __fastcall NET_SID_CLIENT_Send_0x41_QueryAdURL(uint32_t dwAdId);
 // SID_QUERYREALMS2 (0x40) client request sender. Queries available Battle.net realms. Packet format: empty (no payload). Sends request, waits for 0x40 response containing realm list with names and descriptions. Returns gpRealmQueryData on success, 0 on send failure.
 void * __stdcall NET_SID_CLIENT_Send_0x40_QueryRealms2();
 // @sourcefile .\BnSend.cpp
 void __stdcall BNSEND_FreeChannelListData();
-int __fastcall NET_SID_CLIENT_Send_0x0B_GetChannelList(int32_t nParam);
-void __fastcall NET_SID_CLIENT_Send_0x0C_JoinChannel(char * szText, int32_t nParam, int32_t nJoinType);
-uint32_t __fastcall BNSEND_EncodePacketEscape(char * szText, uint32_t nParam);
+int __fastcall NET_SID_CLIENT_Send_0x0B_GetChannelList(int32_t bIsExpansionChar);
+void __fastcall NET_SID_CLIENT_Send_0x0C_JoinChannel(char * szText, int32_t bForceJoin, int32_t nJoinType);
+uint32_t __fastcall BNSEND_EncodePacketEscape(char * szText, uint32_t nByteCount);
 void __fastcall NET_SID_CLIENT_Send_0x0B_GetChannelList_0x0A_EnterChat(char * szText1, char * szText2, uint32_t dwProductCode);
-uint32_t NET_SID_CLIENT_Send_0x10_LeaveChat();
-void __fastcall NET_SID_CLIENT_Send_0x0E_ChatCommand(uint8_t * pbParam);
+uint32_t __fastcall NET_SID_CLIENT_Send_0x10_LeaveChat();
+void __fastcall NET_SID_CLIENT_Send_0x0E_ChatCommand(uint8_t * szChatText);
 int __stdcall NET_SID_CLIENT_Send_0x15_CheckAd();
-int __stdcall NET_SID_CLIENT_Send_0x21_DisplayAd();
+// Registers: ECX and EDX are loaded by the only caller but not read.
+int __fastcall NET_SID_CLIENT_Send_0x21_DisplayAd(char * szDestPath, void * pPoolMgr);
 void __fastcall NET_SID_CLIENT_Send_0x1C_StartAdVex3(char * szGameName, char * szGamePassword, char * szGameDescription, int32_t nFlags);
 DWORD __stdcall BNCLIENT_SendKeepAlive();
-uint32_t __fastcall thunk_NET_SID_CLIENT_Send(uint8_t bParam, char * szText);
+uint32_t __fastcall thunk_NET_SID_CLIENT_Send(uint8_t nPacketId, char * szText);
 int __stdcall NET_SID_CLIENT_Send_0x1F_LeaveGame();
 BOOL __fastcall BNCLIENT_GetEnterChatResponseFlags(uint32_t * pOutFlags);
 // @sourcefile .\BnSend.cpp
@@ -175,7 +186,7 @@ void __fastcall BNSEND_StoreUserProfileData(uint8_t * pbProfileData, size_t nDat
 // SID_LOGONREALMEX (0x3E) client request sender. Computes double-SHA1 password hash for realm logon. Packet format: (DWORD)ClientToken, (BYTE[20])PasswordHash, (STRING)RealmName. Hash computed as SHA1(SHA1(ClientToken, ServerToken, Password)). Sends request, waits for 0x3E response containing MCP server connection info. Increments gnBNetRealmClientToken client token counter.
 void * __fastcall NET_SID_CLIENT_Send_0x3E_LogonRealmEx(char * szRealmName, char * szPassword);
 void __stdcall NET_SID_CLIENT_Send_0x12_LocaleInfo();
-int __fastcall NET_SID_CLIENT_Send_0x16_ClickAd(uint32_t dwParam, int32_t nParam);
+int __fastcall NET_SID_CLIENT_Send_0x16_ClickAd(uint32_t dwAdId, int32_t bRequestType);
 // @sourcefile .\BnSend.cpp
 uint32_t __fastcall NET_SID_CLIENT_Send_0x27_WriteUserData(char * szAccount, uint32_t nCount, char * * pszKeys, char * * pszValues);
 // @sourcefile .\BnSend.cpp
@@ -187,7 +198,7 @@ int __fastcall BNSEND_GetStoredReadUserData(int32_t nKeyCount, int32_t nRequestI
 void __fastcall NET_SID_CLIENT_Send_0x59_SetEmail(char * szText);
 BOOL __fastcall NET_SID_CLIENT_Send_0x5A_ResetPassword(char * szText1, char * szText2);
 BOOL __fastcall NET_SID_CLIENT_Send_0x5B_ChangeEmail(char * szText1, char * szText2, char * szNewEmail);
-void __stdcall NET_SID_CLIENT_Send_0x5D_ReportCrash();
+BOOL __stdcall NET_SID_CLIENT_Send_0x5D_ReportCrash();
 // @sourcefile .\BnSend.cpp
 void __fastcall BNSEND_StoreRealmQueryData(uint8_t * pbRealmData, size_t nSize);
 // @sourcefile .\BnSend.cpp
@@ -198,9 +209,9 @@ void BNCLIENT_InterlockedCompareExchange(long * pDestination, LONG nExchange, LO
 BOOL __stdcall D2CheckExpansionGame();
 // lpStartAddress parameter of CreateThread
 DWORD __stdcall GetDnsResults(void * lpThreadParam);
-void __fastcall GetDnsRecordSync(char * * ppszDnsOutput, int nDnsThreadParam2);
+void __fastcall GetDnsRecordSync(char * * ppszDnsOutput, char * nDnsThreadParam2);
 struct D2BNetGatewayAccessStr * __stdcall BnetLoadAndReturn();
-void __fastcall GetBnetIp(char * szText, int32_t nParam);
+void __fastcall GetBnetIp(char * szText, int32_t nBufferOutputLength);
 // Returns current Battle.net connection state into output parameter. Validates param is non-null.
 void __fastcall BNSEND_GetConnectionState(uint32_t * pdwOutState);
 int __fastcall BNCLIENT_SendLogonRequest(char * szUsername, char * szPassword);
@@ -217,7 +228,7 @@ void __fastcall BNCLIENT_ParseAndEnqueueChatMessages(char * szMessageText);
 // BATTLE.NET PACKET DISPATCH LOOP
 // Iterates over received network buffer, scanning for 0xFF packet start markers and dispatching complete packets to NET_SID_CLIENT_IncomingPacketHandler. For each packet: validates 4-byte header (0xFF, ID, size_lo, size_hi), checks if buffer contains full packet based on 2-byte little-endian size field, dispatches packet data (excluding 4-byte header) to handler, advances buffer pointer by packet size. Returns pointer to remaining unparsed buffer data for next iteration.
 char * __fastcall NET_SID_CLIENT_IncomingPacketHandlerLoop(char * pBytes, size_t nSize);
-void __stdcall BnetReadFunction(uint32_t dwParam);
+void __stdcall BnetReadFunction(uint32_t dwThreadParam);
 uint32_t __fastcall BNCLIENT_GetSocketPeerName(sockaddr * pSockAddr, int * pAddrLen);
 // Thread-safe wrapper around Fog::Safesock::GetSockNameDoesReturn. Returns local socket address info for Battle.net connection. Used by SID_AUTH_INFO sender.
 uint32_t __fastcall BNSEND_GetSocketAddress(sockaddr * pOutAddr, int * pOutAddrLen);
@@ -230,13 +241,14 @@ void __fastcall BNSEND_SetGlobalFlag(uint32_t dwThreadInitFlag);
 void __stdcall NET_SID_CLIENT_LogonSequence(char * szServerList);
 // lpStartAddress parameter of CreateThread
 int __stdcall BattleConnectFastest();
-HANDLE ConnectingToBattleNet();
+HANDLE __fastcall ConnectingToBattleNet();
 void __fastcall BNNEWS_SetNewsChannel(int bIsClassic);
 int __thiscall BNNEWS_GetNewsEntryByIndex(int * pNewsTable, int nIndex);
 uint32_t __thiscall BNNEWS_RoundToPowerOfTwo(struct D2BnNewsTableStrc * pNewsTable, uint32_t dwSize);
 DWORD __stdcall BNNEWS_RoundUpToMultiple(DWORD dwValue, DWORD dwMultiple);
 // @sourcefile .\BNNews.cpp
 void __stdcall BNNEWS_SaveToCache();
+// Calls g_pfnMotdCallback(dwEntryId in ECX, szMessage in EDX) once per unread news entry.
 void __stdcall BNNEWS_InvokeCallbacks();
 void * __thiscall BNNEWS_DestroyNewsTable(void * pNewsTable, uint8_t bFreeMemory);
 void __thiscall BNNEWS_ReallocateNewsTable(struct D2BnNewsTableStrc * pNewsTable, uint32_t dwNewCapacity);
@@ -251,7 +263,7 @@ void __thiscall BNNEWS_SetNewsEntryCount(struct D2BnNewsTableStrc * pNewsTable, 
 BOOL __fastcall NET_SID_CLIENT_Incoming0x46(char * pBytes, size_t nSize);
 // @sourcefile .\BNNews.cpp
 BOOL __stdcall BNNEWS_LoadCachedNews();
-int __fastcall NET_SID_CLIENT_Send_0x46_NewsInfo(pfnVoidNoArgCallback pfnMotdCallback, pfnVoidNoArgCallback pfnNewsCallback);
+int __fastcall NET_SID_CLIENT_Send_0x46_NewsInfo(pfnNewsEntryCallback pfnMotdCallback, pfnVoidNoArgCallback pfnNewsCallback);
 // Returns _time32(pTime) with pTime passed in EAX (CRT inline time() copy).
 // Provenance: asm 0051dc70..0051dc79; unreferenced in 1.14d.
 __time32_t __stdcall BNSEND_GetTime32(__time32_t * pTime);
@@ -268,6 +280,7 @@ void __fastcall BNSEND_HashCDKeyByType(struct D2CDKeyHashStrc * pOutHash, uint32
 int __fastcall BNSEND_SendRawBytes(void * pBytes, size_t nSize);
 int __fastcall BNSEND_SendString(char * szString);
 void __fastcall NET_SID_CLIENT_Send_0x33_GetFileTime(char * szText, uint32_t dwRequestId);
+void StaticInit_gpBNetNewsCache();
 void StaticFini_gpBNetNewsCache();
 // 2 internal functions (defined in .cpp)
 

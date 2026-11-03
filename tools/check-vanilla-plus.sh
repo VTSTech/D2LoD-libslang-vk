@@ -60,7 +60,10 @@ gate "d2boot: server frame marks"         D2Game/GAME/Server.cpp          'serve
 gate "d2boot: SP create-game marks"       D2Game/GAME/Server.cpp          'SP create-game'             2
 gate "d2boot: state-cmd choke mark"       D2Game/GAME/SCmd.cpp            'srv state-cmd 0x'           1
 gate "d2boot: state transition mark"      D2Game/GAME/Clients.cpp         'client state %d -> %d'      1
-gate "d2boot: join stage marks (Clients)" D2Game/GAME/Clients.cpp         'join: (PlacePlayerInRoom|LoadCharacter|TellClientToLoadAct)' 3
+gate "d2boot: join stage marks (Clients)" D2Game/GAME/Clients.cpp         'join: (PlacePlayerInRoom|LoadCharacter)' 2
+# upstream 088c4ee3..94ec239d moved TellClientToLoadAct (and its join mark) from
+# Clients.cpp into Level.cpp; the mark itself is re-applied there (R99+ merge)
+gate "d2boot: join stage mark (Level)"      D2Game/GAME/Level.cpp           'join: TellClientToLoadAct' 1
 gate "d2boot: DRLG worldgen marks"        D2Game/GAME/Level.cpp           'DRLG: '                     2
 # ---- [d2boot-fix] rev 34: SP packet-queue race fix + dispatcher spin guards --
 gate "d2boot-fix: enqueue lock (queue race)" D2Net/SRC/Client.cpp          'Serialize with the pop path' 1
@@ -215,13 +218,23 @@ gate "class sound tables right-sized [11]" globals/globals.h            'extern 
 gate "class sound tables initialized"      globals/globals.cpp          'int gaUnitSoundIds\w+\[11\] = \{' 7
 gate "pointer table targets Amazon table"  globals/D2Client.cpp         'gaUnitSoundIdsAmazon' 1
 # restored retail values (1.14d Game.exe .data): full-initializer tripwire per class
-gate "sound table Amazon restored (retail .data)"      globals/globals.cpp 'int gaUnitSoundIdsAmazon\[11\] = \{ 2878, 2883, 2953, 2957, 2955, 2934, 2936, 2959, 2937, 2961, 2768 \}' 1
-gate "sound table Barbarian restored (retail .data)"   globals/globals.cpp 'int gaUnitSoundIdsBarbarian\[11\] = \{ 2902, 2907, 3031, 3035, 3033, 3012, 3014, 3037, 3015, 3039, 2816 \}' 1
-gate "sound table Necromancer restored (retail .data)" globals/globals.cpp 'int gaUnitSoundIdsNecromancer\[11\] = \{ 2894, 2899, 3109, 3113, 3111, 3090, 3092, 3115, 3093, 3117, 2720 \}' 1
-gate "sound table Paladin restored (retail .data)"     globals/globals.cpp 'int gaUnitSoundIdsPaladin\[11\] = \{ 2886, 2891, 3187, 3191, 3189, 3168, 3170, 3193, 3171, 3195, 2768 \}' 1
-gate "sound table Sorceress restored (retail .data)"   globals/globals.cpp 'int gaUnitSoundIdsSorceress\[11\] = \{ 2910, 2915, 3265, 3269, 3267, 3246, 3248, 3271, 3249, 3273, 2720 \}' 1
-gate "sound table Assassin restored (retail .data)"    globals/globals.cpp 'int gaUnitSoundIdsAssassin\[11\] = \{ 2918, 2923, 3343, 3347, 3345, 3324, 3326, 3349, 3327, 3351, 2720 \}' 1
-gate "sound table Druid restored (retail .data)"       globals/globals.cpp 'int gaUnitSoundIdsDruid\[11\] = \{ 2926, 2931, 3421, 3425, 3423, 3402, 3404, 3427, 3405, 3429, 2720 \}' 1
+# [R99 re-pin] upstream 0fe2eda8 (ghidra 1870 sound names) recovered the retail tables
+# in multi-line hex form (values verified identical to the fork's decimal hand-build);
+# each class now pins the upstream spelling's opening line plus its unique first value.
+gate "sound table Amazon restored (retail .data)"      globals/globals.cpp 'int gaUnitSoundIdsAmazon\[11\] = \{' 1
+gate "sound table Amazon value [0] (retail .data)"     globals/globals.cpp '^\s+0xb3e,\s*$' 1
+gate "sound table Barbarian restored (retail .data)"   globals/globals.cpp 'int gaUnitSoundIdsBarbarian\[11\] = \{' 1
+gate "sound table Barbarian value [0] (retail .data)"  globals/globals.cpp '^\s+0xb56,\s*$' 1
+gate "sound table Necromancer restored (retail .data)" globals/globals.cpp 'int gaUnitSoundIdsNecromancer\[11\] = \{' 1
+gate "sound table Necromancer value [0] (retail .data)" globals/globals.cpp '^\s+0xb4e,\s*$' 1
+gate "sound table Paladin restored (retail .data)"     globals/globals.cpp 'int gaUnitSoundIdsPaladin\[11\] = \{' 1
+gate "sound table Paladin value [0] (retail .data)"    globals/globals.cpp '^\s+0xb46,\s*$' 1
+gate "sound table Sorceress restored (retail .data)"   globals/globals.cpp 'int gaUnitSoundIdsSorceress\[11\] = \{' 1
+gate "sound table Sorceress value [0] (retail .data)"  globals/globals.cpp '^\s+0xb5e,\s*$' 1
+gate "sound table Assassin restored (retail .data)"    globals/globals.cpp 'int gaUnitSoundIdsAssassin\[11\] = \{' 1
+gate "sound table Assassin value [0] (retail .data)"   globals/globals.cpp '^\s+0xb66,\s*$' 1
+gate "sound table Druid restored (retail .data)"       globals/globals.cpp 'int gaUnitSoundIdsDruid\[11\] = \{' 1
+gate "sound table Druid value [0] (retail .data)"      globals/globals.cpp '^\s+0xb6e,\s*$' 1
 # the decompile's phantom "init flag" (really Amazon[0]'s low byte) must stay gone
 gate "bUnitSoundTableInit phantom gone (cpp)" globals/globals.cpp 'uint8_t bUnitSoundTableInit' 0
 gate "bUnitSoundTableInit phantom gone (h)"   globals/globals.h   'uint8_t bUnitSoundTableInit' 0
@@ -233,8 +246,11 @@ gate "bUnitSoundTableInit phantom gone (h)"   globals/globals.h   'uint8_t bUnit
 # so ClampVolume pinned EVERY engine volume to DSBVOLUME_MIN (-10000) — the
 # "sound only on the intro video" field signature. These gates hold the
 # decoded state so no future merge can lose it again.
-gate "sound: ClampVolume/Attenuation epsilon decoded" D2Sound/Src/D2SoundSmp.cpp '\(long double\)0\.0001'    4
-gate "sound: -2000 centibel scale restored"           D2Sound/Src/D2SoundSmp.cpp 'fVar1 \* -2000\.0'        1
+# R87 merge: upstream spelled the same decoded doubles exactly (9.999999747378752e-05
+# IS (long double)0.0001 as the compiler sees it — float32 0.0001 promoted; and the
+# -2000.0 scale now rides an explicit (long double) cast). Same state, retail spelling.
+gate "sound: ClampVolume/Attenuation epsilon decoded (R87 retail-exact)" D2Sound/Src/D2SoundSmp.cpp '\(long double\)9\.999999747378752e-05'    4
+gate "sound: -2000 centibel scale restored (R87 retail-exact)"           D2Sound/Src/D2SoundSmp.cpp 'fVar1 \* \(long double\)-2000\.0'        1
 gate "sound: ClampAttenuation bound decoded"          D2Sound/Src/D2SoundSmp.cpp '\(long double\)-10000\.0' 1
 gate "sound: ClampAttenuation divisor decoded"        D2Sound/Src/D2SoundSmp.cpp '\(long double\)2000\.0'   1
 gate "sound: no raw IEEE-754 volume literals left"    D2Sound/Src/D2SoundSmp.cpp '\(double\)(0x3f1a36e2e0000000|-0x3f3c780000000000|0x409f400000000000|-0x3f60c00000000000)' 0
@@ -246,7 +262,9 @@ gate "sound: no raw IEEE-754 volume literals left"    D2Sound/Src/D2SoundSmp.cpp
 gate "resolution: draw callback wired (row)" globals/globals.cpp         'UI_SLIDER_DrawResolutionValue' 1
 gate "resolution: draw fn defined"           D2Client/UI/EscMenu.cpp     '__fastcall UI_SLIDER_DrawResolutionValue' 1
 # Both resolution callbacks (Apply + LoadAndApply) live in EscMenu.cpp on the
-# 1775+ layout; main carried LoadAndApply in Storm/_unnamespaced.cpp.
+# 1775+ layout; main carried LoadAndApply in Storm/_unnamespaced.cpp until the
+# 1839 merge, where upstream moved that file to root _unnamespaced.cpp and a
+# new D2Hell module (the old UI include pin on it retired with the move).
 gate "resolution: apply maps mode 4"         D2Client/UI/EscMenu.cpp     'RequestedScreenModeMaybe = 4' 2
 gate "resolution: decl in EscMenu.h"         D2Client/UI/EscMenu.h       'UI_SLIDER_DrawResolutionValue' 1
 gate "resolution: init attach"                  D2Client/UI/EscMenu.cpp     'VPRES_BuildBlankPlaceholder|nSubImageCount = 3' 2
@@ -254,8 +272,17 @@ gate "resolution: minipanel clamp + mode 4"  D2Client/UI/MiniPanel.cpp   'nResol
 gate "resolution: core blank builder"        D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_BuildBlankPlaceholder' 1
 gate "resolution: core font pick"            D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_PickFontMatchingDC6' 1
 gate "resolution: self-check wiring"         D2Client/UI/VanillaPlusCore.cpp 'UI_SLIDER_DrawResolutionValue' 1
+# Issue #23: the visible 1280x720 label must sit where the retail value
+# images sit - right-aligned to the value-column anchor (alignment 2) and on
+# their ink line (glyph-cell descent compensated: DRAW_text anchors the cell
+# bottom, the value DC6s bake ~4 px of padding under their ink).
+gate "resolution: label right-align (#23)"   D2Client/UI/EscMenu.cpp     'ScreenSizeX / 2 \+ 0xe6 - nLabelWidth' 1
+gate "resolution: label descender comp (#23)" D2Client/UI/EscMenu.cpp    'RESLABEL_DESCENDER_COMP' 2
 gate "fork-api include in EscMenu.cpp"       D2Client/UI/EscMenu.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
-gate "fork-api include in _unnamespaced.cpp" Storm/_unnamespaced.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
+# 1839 merge: D2FILE_CreateProcess moved to the new D2Hell module; the
+# [d2boot] CreateProcess marks re-planted there (merge-tripwire against a
+# future regen dropping them again).
+gate "d2boot: D2Hell CreateProcess marks"    D2Hell/D2Hell.cpp           'D2BOOT_MarkFmt\("CreateProcess' 2
 
 # ---- resolution site-5: wide-layout classification + centered 800-px UI ----
 # Wide modes (3=1344x700 dormant, 4=1280x720) join the retail 800x600 UI
@@ -310,12 +337,15 @@ gate "row-10: dispatch hoisted (rev44)"    D2Client/UI/Draw.cpp            'rend
 # both icon passes must consume nStartX (right grid) or the shifted 0x50
 # (swap grid) exactly as their tooltip passes do.
 gate "site-5: spell grid shifts (R45)"      D2Client/UI/SpellSel.cpp        'VPRES_GetWideUiOffsetX' 5
-gate "site-5: spell right-grid icons bar-anchored (R45)" D2Client/UI/SpellSel.cpp 'SPELLSEL_DrawSkillGrid\(pPlayerUnit_lcl, nStartX,' 2
-gate "site-5: spell swap-grid icons ride panel (R45)" D2Client/UI/SpellSel.cpp 'SPELLSEL_DrawSkillGrid\(pPlayerUnit_lcl, 0x50 \+ VPRES_GetWideUiOffsetX' 2
-gate "site-5: spell icons not vanilla-anchored (R45)" D2Client/UI/SpellSel.cpp 'DrawSkillGrid\(pPlayerUnit_lcl, 0x50,' 0
-gate "site-5: summit clouds gate"          D2Client/GAME/View.cpp          'VPRES_IsWideLayoutMode' 1
+gate "site-5: spell right-grid icons bar-anchored (R45)" D2Client/UI/SpellSel.cpp 'SPELLSEL_DrawSkillGrid\(UNIT::Player::GetPlayerUnit_UI\(\), nStartX,' 2
+gate "site-5: spell swap-grid icons ride panel (R45)" D2Client/UI/SpellSel.cpp 'SPELLSEL_DrawSkillGrid\(UNIT::Player::GetPlayerUnit_UI\(\), 0x50 \+ VPRES_GetWideUiOffsetX' 2
+gate "site-5: spell icons not vanilla-anchored (R45)" D2Client/UI/SpellSel.cpp 'DrawSkillGrid\(UNIT::Player::GetPlayerUnit_UI\(\), 0x50,' 0
+# R93: 1 -> 2 (the issue #26 border-3 scene-build guard adds a second
+# VPRES_IsWideLayoutMode call in GAMEVIEW_PrepareScene)
+gate "site-5: summit clouds gate"          D2Client/GAME/View.cpp          'VPRES_IsWideLayoutMode' 2
 gate "site-5: level edges gate (GAME)"     D2Client/GAME/Draw.cpp          'VPRES_IsWideLayoutMode' 1
-gate "site-5: level edges gate (client)"   D2Client/D2Client.cpp           'VPRES_IsWideLayoutMode' 1
+# R92: 1 -> 2 (the issue #26 warp-fade wide guard adds a second classifier call)
+gate "site-5: level edges gate (client)"   D2Client/D2Client.cpp           'VPRES_IsWideLayoutMode' 2
 gate "site-5: listbox metrics gate"        D2Client/UI/ListBox/ListBoxImplementation.cpp 'VPRES_IsWideLayoutMode' 1
 gate "site-5: fork-api include in ui.cpp"  D2Client/UI/ui.cpp              'include "D2Client/UI/VanillaPlusCore\.h"' 1
 gate "site-5: fork-api include in Help.cpp" D2Client/UI/Help.cpp           'include "D2Client/UI/VanillaPlusCore\.h"' 1
@@ -341,7 +371,7 @@ gate "site-6: belt hover Y virtualization (R52)" D2Client/UI/Panel.cpp          
 gate "site-6: belt tooltip Y anchor (R52)"        D2Client/UI/Panel.cpp           'gnBeltTooltipY = aInvRect\[2\] \+ VPRES_GetWideUiOffsetY' 1
 gate "site-6: inv table + text Y shifts"   D2Client/UI/Inv.cpp             'VPRES_GetWideUiOffsetY' 15
 gate "site-6: party panel Y shifts"        D2Client/UI/Party.cpp           'VPRES_GetWideUiOffsetY' 54
-gate "site-6: waypoint Y shifts"           D2Client/UI/Waypoint.cpp        'VPRES_GetWideUiOffsetY' 10
+gate "site-6: waypoint Y shifts (R81)"      D2Client/UI/Waypoint.cpp        'VPRES_GetWideUiOffsetY' 12
 gate "site-6: waypoint input inverse"      D2Client/UI/Waypoint.cpp        'gnPanelOffsetY - VPRES_GetWideUiOffsetY' 3
 gate "site-6: questlog Y shifts"           D2Client/UI/QuestLog.cpp        'VPRES_GetWideUiOffsetY' 10
 gate "site-6: questlog input inverse"      D2Client/UI/QuestLog.cpp        'gnPanelOffsetY - VPRES_GetWideUiOffsetY' 3
@@ -363,6 +393,8 @@ gate "site-6: fork-api include in Engine.cpp" D2Client/Engine.cpp          'incl
 gate "resfix: d3d mode-4 perspective path"  D2Direct3D/Renderer/Direct3D.cpp 'nResolutionMode != 2 && nResolutionMode != 3 && nResolutionMode != 4' 1
 gate "resfix: gdi dib mode-4 1280x720"      D2Gdi/Renderer/Windowed.cpp   'nResolutionMode == 4' 1
 gate "resfix: gdi scale width 1280"         D2Gdi/Renderer/Windowed.cpp   'nParam == 4' 1
+gate "resfix: gdi DrawSolidRectEx sig header (link tripwire)"     D2Gdi/Renderer/Windowed.h   'void __fastcall DrawSolidRectEx\(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dwColor' 1
+gate "resfix: gdi DrawSolidRectEx sig definition (link tripwire)"  D2Gdi/Renderer/Windowed.cpp 'void __fastcall DrawSolidRectEx\(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dwColor' 1
 gate "resfix: ddraw size tables extended"   D2DDraw/Renderer/DirectDraw.cpp '0x540, 0x500' 1
 gate "resfix: ddraw horizontal bound 1280"  D2DDraw/Renderer/DirectDraw.cpp 'gnDDrawRenderWidth = 1280' 1
 
@@ -515,17 +547,20 @@ fi
 # (R50) only run from roster-update packets, so in SP the wrong spawn tint
 # stuck for the unit's whole life. Regression signature: any `!uMercType`
 # feeding nPalShiftIdx in CUnit.cpp.
+# R89: a second good site was added on purpose — skeleton classes 0x16b/0x16c
+# get ownership polarity forced regardless of byUtrans (UNIT_CreateMonster).
+# R90-merge: expectation re-pinned raw=1 -> raw=2 (both sites good polarity).
 if command -v awk >/dev/null 2>&1; then
   eval "$(awk '
     /nPalShiftIdx = \(uint32_t\)!uMercType;/ { sp_bad++ }
     /nPalShiftIdx = \(uint32_t\)uMercType;/ { sp_good++ }
     END { printf "vp_sp_bad=%d vp_sp_good=%d", sp_bad+0, sp_good+0 }
   ' D2Client/UNIT/CUnit.cpp)"
-  if [ "${vp_sp_bad:-0}" -eq 0 ] && [ "${vp_sp_good:-0}" -eq 1 ]; then
+  if [ "${vp_sp_bad:-0}" -eq 0 ] && [ "${vp_sp_good:-0}" -eq 2 ]; then
     printf 'ok   %-46s %s inverted=%s raw=%s\n' "spawn: ownership palshift polarity (R51)" "D2Client/UNIT/CUnit.cpp" "${vp_sp_bad:-0}" "${vp_sp_good:-0}"
     PASS=$((PASS + 1))
   else
-    printf 'FAIL %-46s inverted=%s raw=%s (want inverted=0 raw=1) - !uMercType spawns own skeletons into the yellow hostile sub-table (issue #8)\n' "spawn: ownership palshift polarity (R51)" "${vp_sp_bad:-0}" "${vp_sp_good:-0}"
+    printf 'FAIL %-46s inverted=%s raw=%s (want inverted=0 raw=2) - !uMercType spawns own skeletons into the yellow hostile sub-table (issue #8)\n' "spawn: ownership palshift polarity (R51)" "${vp_sp_bad:-0}" "${vp_sp_good:-0}"
     FAIL=$((FAIL + 1))
   fi
 fi
@@ -563,13 +598,38 @@ gate "quest: gossip add marks (R54)"          D2Game/Quests/QUESTS.cpp        'q
 gate "quest: npc interact 0x27 mark (R54)"    D2Game/Monster/MonsterAI.cpp    'quest: npc interact 0x27 send' 1
 gate "s2c 0x27 overhead marks (R54)"          D2Client/UI/Text.cpp            's2c 0x27 overhead' 2
 gate "npc menu branch marks (R54)"            D2Client/UI/ui.cpp              'npc menu:' 6
-gate "gossip: A1Q1 5-slot table (R54)"        globals/D2Game.cpp              'A1Q1 gossip table 5 slots' 1
-gate "gossip: A2Q1 5-slot table (R54)"        globals/D2Game.cpp              'A2Q1 gossip table 5 slots' 1
+# R87 merge: upstream bc47c6bc recovered the retail gossip tables verbatim (sizes and
+# flavor string ids the fork could not invent); the R54/R85 hand-built 5-slot tables are
+# superseded. Gates now pin the retail-exact sizes via the VP history notes.
+gate "gossip: A1Q1 retail table 8 slots (R87)"  globals/D2Game.cpp              'A1Q1 table: retail-exact 8 slots' 1
+gate "gossip: A2Q1 retail table 9 slots (R87)"  globals/D2Game.cpp              'A2Q1 table: retail-exact 9 slots' 1
 gate "gossip: Den turn-in entry present (R54)" globals/D2Game.cpp             '/\* .nStringIndex = \*/ 0x4c' 1
-gate "gossip: A1Q1 extern 5-slot (R54)"       globals/globals.h               'A1Q1: 5-slot gossip table' 1
-gate "gossip: A2Q1 extern 5-slot (R54)"       globals/globals.h               'A2Q1: 5-slot gossip table' 1
+gate "gossip: A1Q1 extern 8-slot (R87)"       globals/globals.h               'A1Q1: retail-exact 8-slot table' 1
+gate "gossip: A2Q1 extern 9-slot (R87)"       globals/globals.h               'A2Q1: retail-exact 9-slot table' 1
 gate "gossip: A1Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A1Q1.cpp   'pNpcMessages = A1Q1::aNpcGossipData' 1
 gate "gossip: A2Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A2Q1.cpp   'pNpcMessages = A2Q1::aNpcGossipData' 1
+
+# ---- [gossip] R85: issue #22 (track P) A1Q2 Bloodraven turn-in — the track-J root-cause family ----
+# Same regen truncation as issue #13 (R54): A1Q2's gossip table was SINGULAR
+# (accept entry only) while Q02_Callback00_NpcActivate picks slot 3 on
+# RewardAwaits — the Blood Raven reward line never existed, so Kashya's
+# turn-in never echoed c2s 0x31 with msg 0x5c and
+# Q02_Callback11_ScrollMessage's HireMercFromNpc gate was never asked.
+# Fixed to a 5-slot array (slot 0 accept 0x51 preserved + slot 3 turn-in 0x5c
+# pinned by A1Q2's own gate; flavor slots 1/2/4 left empty), plus the Kashya
+# chain marks mirroring the R53 A1Q1 set.
+gate "gossip: A1Q2 retail table 6 slots (R87)" globals/D2Game.cpp              'A1Q2 table: retail-exact 6 slots' 1
+# R87 merge: retail has TWO 0x5c entries in A1Q2's table (bMenu 0 and bMenu 2 variants
+# of the Bloodraven turn-in line, monstats 0x96 both times) — the fork's hand-built
+# table only had the one, so the old expectation of 1 was an artifact, not a regression.
+gate "gossip: Bloodraven turn-in entries (retail x2)" globals/D2Game.cpp        '/\* .nStringIndex = \*/ 0x5c' 2
+gate "gossip: A1Q2 extern 6-slot (R87)"       globals/globals.h               'A1Q2: retail-exact 6-slot table' 1
+gate "gossip: A1Q2 decay assignment (R85)"    D2Game/Quests/QUESTS/A1Q2.cpp   'pNpcMessages = A1Q2::aNpcGossipData' 1
+gate "quest: kashya activate marks (R85)"     D2Game/Quests/QUESTS/A1Q2.cpp   'quest: kashya activate' 4
+gate "quest: kashya gossip echo mark (R85)"   D2Game/Quests/QUESTS/A1Q2.cpp   'quest: kashya gossip msg=' 1
+gate "quest: turn-in gate mark A1Q2 (R85)"    D2Game/Quests/QUESTS/A1Q2.cpp   'quest: turn-in gate REJECTED' 1
+gate "quest: bloodraven grant mark (R85)"     D2Game/Quests/QUESTS/A1Q2.cpp   'quest: bloodraven reward GRANTED' 1
+gate "d2boot include in A1Q2 (R85)"           D2Game/Quests/QUESTS/A1Q2.cpp   'support/d2_boot\.h' 1
 
 # ---- [item-ilvl] R57+R59: optional " (N)" suffix on the tooltip name (d2vp.ini item_ilvl)
 # D2R "Advanced Tooltips" parity (the ilvl readout half), R56 presentation
@@ -599,6 +659,318 @@ gate "ilvl: decl + cache busted on write"     D2Client/UI/VanillaPlusCore.cpp   
 gate "ilvl: header declares gate + suffix"    D2Client/UI/VanillaPlusCore.h     'ITEMILVL_' 2
 gate "ilvl: suffix call sites (id+unid+set)"  D2Client/UI/Inv.cpp               'ITEMILVL_AppendNameSuffix' 3
 gate "options page: ilvl row present"         D2Client/UI/VanillaPlusOptions.cpp '"item_ilvl"' 1
+
+# ---- [shared-stash options row] R67: track N's in-game Options toggle -------
+# The "Shared" tab is no longer ini-only: the Vanilla+ Options page gains a
+# sixth row ("Shared Stash") wired through the same D2VP_* bridge as the
+# other five. D2VP_ConfigReloaded also busts the client stash gate cache so
+# the tab follows the toggle the same frame; the server half keeps its own
+# 2 s poll (D2Game cannot import D2Client helpers - module boundary).
+gate "options page: stash row present"        D2Client/UI/VanillaPlusOptions.cpp '"shared_stash"' 1
+gate "stash: options gate flush (R67)"        D2Client/UI/VanillaPlusCore.cpp   'VPSHAREDUI_FlushGateCache' 3
+
+# ---- [save-reenter] R60: issue #19 (save a game, re-enter crashes) — instrumentation + hardening
+# Theory of record: the upstream heap corruptor (proven alive by the R54 field log's
+# two roster-heal 64-node cap marks during load, on regroup code that is provably
+# correct on clean data) lands fatally on the second session. No save/load block
+# asymmetry exists (R60 audit: all ten .d2s blocks byte-symmetric), so the round
+# ships (a) join/exit roster-state probes that discriminate cross-session stale
+# state in one log, (b) the merc petdata null guard (RollMercStats FALSE leaves a
+# petdata-less merc whose next SaveMercData was an unguarded NULL deref), (c) the
+# pRosterPartyList exit free (the only roster-adjacent global ClearBothRosterLists
+# never cleaned), (d) the corpse-flags determinism fix. One owner field run names
+# the corruptor's landing site via the walk names + probes.
+gate "roster: exit-state probe (R60)"         D2Client/GAME/Roster.cpp          'roster: clear lists players=' 1
+gate "roster: party-list freed at exit (R60)" D2Client/GAME/Roster.cpp          'FreeRosterPartyList\(\);' 2
+gate "client: 0x5B roster-state probe (R60)"  D2Client/GAME/SCmd.cpp            'roster state: players=' 1
+gate "save: merc petdata null guard (R60)"    D2Game/PLAYER/PlayerSave2.cpp     'merc petdata missing - merc fields skipped' 1
+gate "save: corpse flags initialized (R60)"   D2Game/PLAYER/PlayerSave2.cpp     'dwCorpseFlags = 1' 1
+gate "merc: roll-fail mark (R60)"             D2Game/Monster/MonsterAI.cpp      'merc: RollMercStats FALSE - petdata not registered' 1
+
+# ---- [save-reenter] R61: issue #19 ROOT-CAUGHT — the VP Resolution row's runtime
+# blank-attach mutates the STATIC esc-menu table (nSubImageCount 2->3) while
+# szSubImage3Path stays empty; ESCMENU_Initialize re-runs on every game entry
+# (0x01 -> InitializeUI), so init #2 walked the empty third path and hit the
+# retail fatal HaltTail(0x501) = the field crash ("HALT line=1281"). The save is
+# irrelevant: ANY second game entry in one process died. Fix: the loader's two
+# data guards degrade to marks (empty stop -> keep prior DC6; count out of range
+# -> clamp) and the type-1 draw site skips NULL slots + clamps the index.
+gate "escmenu: empty-stop degrade (R61)"      D2Client/UI/EscMenu.cpp           'path empty - prior dc6 kept' 1
+gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           'out of range - clamped' 1
+gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
+gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
+gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
+# R95: string bumped R94 -> R95 (issue #26 round 4: the no-panel-shift feature)
+# R96: string bumped R95 -> R96 (issue #26 D3D perspective-toggle triage probes;
+# zero behavior change, see the videoopt/world/d3d probe rows below)
+# R97: string bumped R96 -> R97 (issue #26: the R96 field log pinned the death
+# to halt line=200 - the D3D floor/subtile texture-cache promote range checks -
+# on the first frame after a runtime 1 -> 0 flip; R97 guards both promote
+# callers and re-arms the probes, see the R97 rows below)
+gate "res: self-id 0.0.7-R101"                D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R101' 1
+
+# ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
+# triangles. Root cause: every panel-open world cull/pan is a fraction of the
+# WINDOW width (half/quarter), tuned for 640x480/800x600 where the open panel
+# reaches the screen edge; the 800-class panel floats 240 px inboard at
+# 1280x720, so the margin-side cut left the outer strip unrendered (black).
+# R92 keeps the pan (the mouse mapping rides it) and opens the margin side of
+# every cull in wide layouts only: the tile walk (Path.cpp), the renderer
+# perspective rect (D3D + Glide), the unit-click reject (CUnit.cpp), the warp
+# fade (D2Client.cpp) and the weather clamps (Weather.cpp).
+gate "issue26: wide walk span (R92)"          D2Client/UI/Path.cpp              'issue #26 / R92' 3
+gate "issue26: wide d3d vp rect (R92)"        D2Direct3D/Renderer/Direct3D.cpp  'issue #26 / R92' 1
+gate "issue26: wide glide bounds (R92)"       D2Glide/Renderer/Glide.cpp        'issue #26 / R92' 1
+gate "issue26: wide click reject (R92)"       D2Client/UNIT/CUnit.cpp           'issue #26 / R92' 1
+gate "issue26: wide warp fade (R92)"          D2Client/D2Client.cpp             'issue #26 / R92' 1
+gate "issue26: wide weather clamps (R92)"     D2Client/Draw/Weather.cpp         'issue #26 / R92' 4
+# R93 (rev 123): the R92 field pass (owner: "left side ... no more blackness
+# ... right side still does ... both panels ... black on all sides") showed
+# three more members of the cull family: (1) the NON-perspective half-screen
+# tile clips in every renderer (D3D defaults perspective OFF, so
+# BuildWallTileVerticesNoPerspective / BuildShadowTileVertices + the Glide
+# Simple drawers + the DDraw/GDI wall/shadow/trans clips are the live path);
+# (2) GAMEVIEW_PrepareScene skipped WALL2_BuildSceneDrawList entirely for
+# border 3 (both panels open = nothing rendered = all black); (3) R92's
+# case-2 walk left flip broke the non-perspective wall pan (pView.left IS
+# the pan origin in the software passes) - R93 keeps the retail +quarter
+# anchor and rides the extra span on the right edge (w+3q).
+gate "issue26: d3d nonpersp clips (R93)"      D2Direct3D/Renderer/Direct3D.cpp  'issue #26 / R93' 5
+gate "issue26: glide nonpersp clips (R93)"    D2Glide/Renderer/Glide.cpp        'issue #26 / R93' 7
+gate "issue26: ddraw clips (R93)"             D2DDraw/Renderer/DirectDraw.cpp   'issue #26 / R93' 7
+gate "issue26: gdi window clips (R93)"        D2Gdi/Renderer/Windowed.cpp       'issue #26 / R93' 7
+gate "issue26: border3 scene build (R93)"     D2Client/GAME/View.cpp            'issue #26 / R93' 1
+gate "issue26: case2 pan anchor (R93)"        D2Client/UI/Path.cpp              'issue #26 / R92\+R93' 1
+# R94 (rev 124): the R93 field pass (owner: "with it off. both right and left
+# individually are good. both panels, still black. there is a little bit of
+# black on the bottom of the screen with perspective mode off ... with
+# perspective mode on, left side is ok, right side still has black triangles
+# at edge. same black outside panels with both panels") exposed two more
+# family members: (1) Game.cpp skips the WHOLE ViewDraw2 world pass for
+# border 3 (retail fill-rate save; the 800-class UI floats 240 px inboard at
+# 720p so the outer strips still show world -> pure black backbuffer on
+# every renderer, both perspective modes - R93's scene-list build fed a pass
+# that never ran); (2) the bottom-band vertical cuts - the non-perspective
+# wall/shadow builders anchor-cut at h-0xf (a thin black strip at the screen
+# bottom with perspective OFF) and the perspective cull rects reserve the
+# bottom 0x2f px for the retail full-width HUD (bottom corners show world at
+# 720p). All opened on wide layouts only.
+gate "issue26: border3 world draw (R94)"      D2Client/GAME/Game/Game.cpp       'issue #26 / R94' 1
+gate "issue26: d3d bottom band (R94)"         D2Direct3D/Renderer/Direct3D.cpp  'issue #26 / R94' 3
+gate "issue26: glide bottom band (R94)"       D2Glide/Renderer/Glide.cpp        'issue #26 / R94' 3
+
+# ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
+# stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared
+# set into the retail page-4 stash grid; the .sss file (_d2vp_shared.sss) is
+# the pool's own save; the client tab rides 0x4F/0x7D; the save flush keeps
+# every .d2s retail-pure (I1). Owner constraints: own save file, retail-
+# compatible character saves, stash-panel access, no hotkey, gold + items.
+gate "stash: server TU header"                D2Game/PLAYER/VanillaPlusStash.h   'VPSHARED_BUTTON_TOGGLE = 0x7D' 1
+gate "stash: sss io DWORD outparam"           D2Game/PLAYER/VanillaPlusStash.cpp 'DWORD dwGot' 1
+gate "stash: tab right edge anchor (R83)"     D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TAB_RIGHT_EDGE = 0x130' 1
+gate "stash: tab out of right-art cover"      D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TAB_RIGHT_EDGE = 0x1(4|[5-9a-f])[0-9a-f]' 0
+gate "stash: tab row above the gold rows (R77)" D2Client/UI/VanillaPlusCore.cpp  'bIsExpansion \? 0x1cc : 0x108' 1
+gate "stash: old gold-max row retired (R77)"  D2Client/UI/VanillaPlusCore.cpp    'bIsExpansion \? 0x19f : 0xdb' 0
+gate "stash: click-button intercept site"     D2Game/PLAYER/PlayerTrade.cpp      'VPSHARED_ShouldInterceptClickButton\(pGame, pUnit, nButtonId\)' 1
+gate "stash: click-button include"            D2Game/PLAYER/PlayerTrade.cpp      'PLAYER/VanillaPlusStash\.h' 1
+gate "stash: save flush site"                 D2Game/PLAYER/PlayerSave.cpp       'VPSHARED_FlushBeforeSave\(pGame, pUnit\)' 1
+gate "stash: save flush include"              D2Game/PLAYER/PlayerSave.cpp       'PLAYER/VanillaPlusStash\.h' 1
+gate "stash: client tab draw site"            D2Client/UI/Inv.cpp                'VPSHAREDUI_DrawTab\(\); // VP: site-N' 1
+gate "stash: client tab click site"           D2Client/UI/Inv.cpp                'VPSHAREDUI_HandleStashClick\(\(int\)uMouseX, \(int\)uMouseY\)' 1
+gate "stash: client reset site"               D2Client/UI/Draw.cpp               'VPSHAREDUI_ResetForNewGame\(\);' 1
+gate "stash: ini template key"                D2Client/UI/VanillaPlusCore.cpp    'shared_stash=0' 1
+gate "stash: client gate key"                 D2Client/UI/VanillaPlusCore.cpp    '"features", "shared_stash", 0' 1
+gate "stash: server gate key"                 D2Game/PLAYER/VanillaPlusStash.cpp '"features", "shared_stash", 0' 1
+gate "stash: sss file name"                   D2Game/PLAYER/VanillaPlusStash.cpp '_d2vp_shared\.sss' 2
+gate "stash: sss magic"                       D2Game/PLAYER/VanillaPlusStash.cpp "'V', 'P', 'S', '1'" 1
+# R75: two shared pages + pager arrows + outlined label. bad-header(size)
+# fires twice now (per-page ingest + the v2 page-1 extent pre-check).
+gate "stash: load marks"                      D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: (no file|bad header|checksum fail|item count)' 6
+gate "stash: write marks"                     D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: (write failed|saved)' 5
+gate "stash: toggle marks"                    D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: (shared page|switched to page|personal page restored)' 3
+gate "stash: save flush mark"                 D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: flush before save' 1
+gate "stash: atomic write"                    D2Game/PLAYER/VanillaPlusStash.cpp 'MoveFileExA' 3
+gate "stash: .bak generation"                 D2Game/PLAYER/VanillaPlusStash.cpp 'CopyFileA' 1
+gate "stash: goldbank borrow"                 D2Game/PLAYER/VanillaPlusStash.cpp 'UNITSTAT_goldbank' 5
+gate "stash: retail item encoder"             D2Game/PLAYER/VanillaPlusStash.cpp 'Items::SerializeItem' 2
+gate "stash: retail item loader"              D2Game/PLAYER/VanillaPlusStash.cpp 'PLRSAVE_DispatchItemLoadByFormat' 2
+gate "stash: dematerialize via retail remove" D2Game/PLAYER/VanillaPlusStash.cpp 'ITEM_RemoveItemFromCurrentLocation' 2
+gate "stash: client resync 0x9C"              D2Game/PLAYER/VanillaPlusStash.cpp 'Send0x9CItemPutInContainer' 1
+gate "stash: scope guard SP-only"             D2Game/PLAYER/VanillaPlusStash.cpp 'SGAMETYPE_SINGLEPLAYER' 2
+
+# ---- [vanilla-plus shared-stash] R75: page 2 + pager arrows + outlined tab
+# Owner ask: "give the current stash tab label an outline" + "add a 2nd page
+# and buttons/arrows to navigate pages". Server: two shared pages as two 'JM'
+# blocks, .sss v2 (magic VPS2, per-page size/checksum pairs) with the v1
+# field files read back as page 1; the 0x4F/0x7D param word now carries the
+# ABSOLUTE desired page (0/1/2). Client: outlined composite (word + < >),
+# click bands from the same measured layout the draw uses.
+gate "stash: two-page state"                  D2Game/PLAYER/VanillaPlusStash.cpp 'apSharedBlock\[VPSTASH_PAGES\]' 1
+gate "stash: v2 file magic"                   D2Game/PLAYER/VanillaPlusStash.cpp "'V', 'P', 'S', '2'" 1
+gate "stash: v1 file read-back"               D2Game/PLAYER/VanillaPlusStash.cpp 'VPSTASH_FILE_VERSION_V1' 2
+gate "stash: per-page ingest helper"          D2Game/PLAYER/VanillaPlusStash.cpp 'VPSHARED_IngestPageBlock' 2  # R82: one call site inside the per-page ingest loop
+gate "stash: page switch mark"                D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: switched to page' 1
+gate "stash: page param range mark"           D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: page %d out of range' 1
+gate "stash: pager page count"                D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_PAGE_COUNT = 10' 1  # R82 (was 2 at R75)
+gate "stash: outlined label helper"           D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_DrawOutlinedText' 4
+gate "stash: outline shadow palette"          D2Client/UI/VanillaPlusCore.cpp    'aOffs\[4\]\[2\]' 1
+gate "stash: pager arrow glyphs"              D2Client/UI/VanillaPlusCore.cpp    'L"<"' 1
+gate "stash: page word variants"              D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_PageWord' 3
+gate "stash: layout shared by draw+click"     D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TabLayout' 3
+
+# ---- [vanilla-plus shared-stash] R82: ten shared pages ---------------------
+# Owner ask: "increase the shared stash pages to 10" - the widening the v2
+# header reserved room for (SHARED-STASH-PLAN.md: "10 pages. Then 100.").
+# Same VPS2 magic + version, pageCount 2 -> 10 (header 28 -> 92 bytes), the
+# two fixed ingest calls became a per-page loop, and the reader accepts any
+# pageCount this build can hold so pre-R82 two-page files read back with
+# pages 3..10 empty (the next save rewrites ten). Client pager labels come
+# from a literal word table (Shared 1 .. Shared 10); arrows still step ONE
+# page; ONE shared gold pool across all ten.
+gate "stash: ten-page server constant (R82)"  D2Game/PLAYER/VanillaPlusStash.cpp 'VPSTASH_PAGE_COUNT = 10' 1
+gate "stash: ten-page pager constant (R82)"   D2Game/PLAYER/VanillaPlusStash.cpp 'constexpr int VPSTASH_PAGES = 10' 1
+gate "stash: v2 header sized by page count"   D2Game/PLAYER/VanillaPlusStash.cpp 'VPSTASH_HEADER_SIZE_V2 = 12 \+ 8 \* VPSTASH_PAGE_COUNT' 1
+gate "stash: reader accepts pre-R82 widths"   D2Game/PLAYER/VanillaPlusStash.cpp 'nPages >= 1 && nPages <= VPSTASH_PAGE_COUNT' 1
+gate "stash: header tail sized by pageCount"  D2Game/PLAYER/VanillaPlusStash.cpp 'uint32_t dwHeaderSize = 12 \+ 8 \* \(uint32_t\)nPages' 1
+gate "stash: pre-R82 readback mark (R82)"     D2Game/PLAYER/VanillaPlusStash.cpp 'start empty \(pre-R82 file\)' 1
+gate "stash: page word table (R82)"           D2Client/UI/VanillaPlusCore.cpp    'L"Shared 10"' 1
+
+# ---- [sync] Rev 76: the 1781 merge re-planted SCmd.cpp's srv state-cmd
+# [d2boot] mark but dropped the fork's include of support/d2_boot.h (last line
+# of the include block - classic merge-drop, invisible to presence gates and
+# fatal at compile: "D2BOOT_MarkFmt was not declared in this scope"). This row
+# pins the regression site; scripts/d2boot_visibility_audit.py checks the
+# WHOLE class (every D2BOOT_* user TU must see the declaration) - run it
+# alongside rev47/rev48 after any merge (docs/merge-upstream.md step 4).
+gate "d2boot: SCmd.cpp include (merge-drop tripwire)" D2Game/GAME/SCmd.cpp 'support/d2_boot\.h' 1
+
+# ---- [vanilla-plus item-tooltip] R84: single-value elemental/poison varargs -
+# Issue #16: items dropped with "0 poison damage over 0 seconds" and 'of Frost'
+# items with "+0 cold damage". Root cause: SKILLDESC_BuildStatDescription's
+# single-value branches (fire 0xe1c, lightning 0xe20, magic 0xe22, cold 0xe1e,
+# poison 0xe24) called UNICODE_FormatWideString with NO varargs, so any
+# min==max roll printed the stack residue instead of the number. 'of Frost'
+# (weap) rolls cold-max 1..2 with cold-min fixed 1 -> half the drops collapse;
+# poison ranges collapse through the len_disp rounding (and length-0 content
+# lands here too). Fix passes the same values the sibling range branches pass
+# (extra varargs are harmless in cdecl). Five VP-marked sites, one per branch.
+gate "itemdesc: zero-fix VP marks (R84)"      D2Client/UI/SkillDesc.cpp          'item-tooltip-zero-fix R84' 5
+gate "itemdesc: elemental single-value varargs (R84)" D2Client/UI/SkillDesc.cpp  'wszFmtTemplate, pStatDescResult, (psVar1|pMaxDamage)\);' 8
+gate "itemdesc: poison single-value varargs (R84)" D2Client/UI/SkillDesc.cpp      'pStatDescResult, (psVar1|pMaxDamage), (iVar2|nPoisonSeconds)\);' 2
+
+# ---- [vanilla-plus nointro] R86: the -nointro command-line switch ----------
+# The two logo .biks (New_BLIZ/BlizNorth) play on EVERY launch, and the title
+# screen auto-fires the d2intro .bik from its timer form
+# (gaPredefinedForms[1] -> UIMENU_PlayIntroAndReturnToMainScreen). Both
+# boot/title cutscene entries now consult VPNOINTRO_IsRequested (fork-owned
+# one-shot parse of GetCommandLineA in VanillaPlusCore.cpp) and, with the
+# switch present, never enter BeginCutSceneAtResolutionMode0 - each site's
+# retail begin-failed fallthrough (no cutscene, straight to the next screen)
+# becomes the boot path. In-game quest cutscenes ride a different call path
+# and stay vanilla. Without the switch the flag reads 0: boot is untouched.
+gate "nointro: parse + d2boot mark (R86)"  D2Client/UI/VanillaPlusCore.cpp 'cmdline -nointro: boot intro videos disabled' 1
+gate "nointro: token compare (R86)"        D2Client/UI/VanillaPlusCore.cpp '_stricmp\(szCompare, "-nointro"\)' 1
+gate "nointro: header entry point (R86)"   D2Client/UI/VanillaPlusCore.h   'VPNOINTRO_IsRequested' 1
+gate "nointro: MainMenus include (R86)"    D2Launch/MainMenus.cpp          'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "nointro: cutscene gates (R86)"       D2Launch/MainMenus.cpp          'VPNOINTRO_IsRequested\(\) \? 0 : D2Win::D2GFX::BeginCutSceneAtResolutionMode0' 2
+gate "nointro: host decl (R86)"            d2_platform.h                   'LPSTR GetCommandLineA\(\);' 1
+
+# ---- [vanilla-plus no-panel-shift] R95: static world with one panel open ---
+# Retail slides the world a quarter screen when exactly one panel is open so
+# the action re-centers in the uncovered strip - exact only when the panel
+# reaches the screen edge (640x480/800x600). At the wide stops the 800-class
+# UI floats 240 px inboard, the slide drags world out from under the visible
+# outer margins, and the perspective projection (player-anchored, expanding
+# from the screen center) makes every panned channel a separate artifact
+# source - the whole R92-R94 tail of issue #26 lived on that panned path.
+# no_panel_shift=1 renders the world exactly like the both-panels-open case
+# (border 3: no slide, full unpanned view rect) and lets the panel float over
+# it. The renderers receive 0 through PANELSHIFT_BorderForWorld and take
+# their own border-0 full-screen path - zero renderer edits; the R92-R94
+# renderer guards stay live for the vanilla slide. UI/interaction consumers
+# keep reading the real border type. Retail dims: gate false, byte-identical.
+gate "noshift: ini key + reader (R95)"     D2Client/UI/VanillaPlusCore.cpp 'GetPrivateProfileIntA\("features", "no_panel_shift", 0, szIniPath\)' 1
+gate "noshift: ini template entry (R95)"   D2Client/UI/VanillaPlusCore.cpp 'no_panel_shift=0' 2
+gate "noshift: wide dims gate (R95)"       D2Client/UI/VanillaPlusCore.cpp 'PANELSHIFT_NoShiftWorld' 3
+gate "noshift: header decls (R95)"         D2Client/UI/VanillaPlusCore.h   'PANELSHIFT_BorderForWorld' 1
+gate "noshift: camera pan gate (R95)"      D2Client/UI/Path.cpp            'MouseYRelatedB = PANELSHIFT_NoShiftWorld\(\) \? 0' 2
+gate "noshift: border-0 view rects (R95)"  D2Client/UI/Path.cpp            'if \(PANELSHIFT_NoShiftWorld\(\)\) \{' 2
+gate "noshift: world-draw origins (R95)"   D2Client/GAME/Draw.cpp          'PANELSHIFT_BorderForWorld\(UI::Path::DRAW_GetTypeOfBorder\(\)\)' 6
+gate "noshift: weather clips (R95)"        D2Client/Draw/Weather.cpp       'PANELSHIFT_BorderForWorld\(UI::Path::DRAW_GetTypeOfBorder\(\)\)' 3
+gate "noshift: automap pan (R95)"          D2Client/UI/Automap.cpp         'PANELSHIFT_BorderForWorld\(Path::DRAW_GetTypeOfBorder\(\)\)' 1
+gate "noshift: config cache bust (R95)"    D2Client/UI/VanillaPlusCore.cpp 'dwNoPanelShiftLastCheck = 0' 2
+# R100: the unit-sprite draw path (Ghidra-1864+ retail bodies hand-pan
+# sprites/shadows/selection rings/hover text +/-quarter off the REAL border
+# in the perspective branch) must ride the same border-0 camera as the
+# terrain passes when no_panel_shift=1.
+gate "noshift: unit sprite pan (R100)"      D2Client/Engine/Gfx.cpp         'PANELSHIFT_BorderForWorld\(UI::Path::DRAW_GetTypeOfBorder\(\)\)' 7
+gate "noshift: unit cof direction (R100)"   D2Client/Engine/GfxUtil.cpp     'PANELSHIFT_BorderForWorld\(UI::Path::DRAW_GetTypeOfBorder\(\)\)' 1
+gate "noshift: unit hover text (R100)"      D2Client/UI/Text.cpp            'PANELSHIFT_BorderForWorld\(Path::DRAW_GetTypeOfBorder\(\)\)' 2
+gate "noshift: item label anchor (R100)"    D2Client/UI/ShowItems.cpp       'PANELSHIFT_BorderForWorld\(Path::DRAW_GetTypeOfBorder\(\)\)' 1
+gate "noshift: unit overlays (R100)"        D2Client/UI/ui.cpp              'PANELSHIFT_BorderForWorld\(Path::DRAW_GetTypeOfBorder\(\)\)' 3
+
+# ---- [issue #26 / R101] the options-page row (toggle no longer ini-only) -----
+# Field-proven R100 -> owner: "no_panel_shift is working as intended now. Let's
+# add the toggle to the Vanilla+ Options panel". The row is the R67 stash-row
+# shape: one gaVanillaPlusRows entry riding the existing D2VP_* bridge (the
+# write bridge already busts dwNoPanelShiftLastCheck in D2VP_ConfigReloaded,
+# so the very next PANELSHIFT_NoShiftWorld poll re-reads the key). Seventh row
+# forces the Previous Menu row down one pitch (0x124 -> 0x144); the layout
+# check comment in VanillaPlusOptions.cpp carries the arithmetic.
+gate "options page: noshift row present (R101)"  D2Client/UI/VanillaPlusOptions.cpp '"no_panel_shift"' 1
+gate "options page: seven rows (R101)"           D2Client/UI/VanillaPlusOptions.cpp 'VPP_ROW_COUNT = 7' 1
+gate "options page: back row below 7th (R101)"   D2Client/UI/VanillaPlusOptions.cpp 'VPPAGE_BACK_ROW_Y = 0x144' 1
+
+# ---- [issue #26 / R96] D3D perspective-toggle death triage probes -------------
+# Owner field report (R95): toggling perspective in D3D kills the process;
+# Glide toggles fine; with no_panel_shift=0 the R95 code is inert at the
+# toggle moment (options menu = border 0/3 unchanged, every gate call site
+# returns its retail value), so the R95 feature itself is not the trigger.
+# R96 ships five one-shot d2boot.log probes that bracket the toggle (slider
+# load + apply), the first perspective world frame (enter/drawn) and the D3D
+# perspective floor path, plus the two-artifact ask (d2crash-*.txt per
+# VANILLA-PLUS.md). Read-out matrix is documented in SMOKE-CHECKLIST §L.
+gate "probe: perspective load mark (R96)"   D2Client/UI/EscMenu.cpp            'videoopt: perspective load reg=%d capable=%d \[R96\]' 1
+gate "probe: perspective apply mark (R96)"  D2Client/UI/EscMenu.cpp            'videoopt: perspective apply renderer=%d active=%d -> %d \[R96\]' 1
+gate "probe: world frame enter (R96)"       D2Client/GAME/View.cpp             'world: first perspective frame enter \(renderer=%d\) \[R96\]' 1
+gate "probe: world frame drawn (R96)"       D2Client/GAME/View.cpp             'world: first perspective frame drawn \[R96\]' 1
+gate "probe: d3d floor path mark (R96)"     D2Direct3D/Renderer/Direct3D.cpp   'd3d: first perspective DrawGroundTile \(panels=%d w=%d h=%d\) \[R96\]' 1
+
+# ---- [issue #26 / R97] D3D texture-cache promote guards + re-armed probes -----
+# The R96 field log names the death: halt line=200 = D3DFLOOR_PromoteNodeToMRU
+# / D3DSUBTILE_PromoteNodeToMRU range check (nIndex > nMaxNodes), same 15 ms
+# tick as the slider apply (1 -> 0), D3D 800x600. Every static link audits
+# retail-clean (cache init once per device init; Free(1) invalidates all tile
+# indices; SetViewRectangleSize is rects only; alias offsets verified), so the
+# out-of-range word is runtime state. R97: both promote callers validate before
+# promoting - dead cache skips the draw, out-of-range index is logged and
+# healed to uncached (fresh alloc + re-upload) - and the one-shot R96 probes
+# are complemented by transition marks that re-arm on every flip.
+gate "guard: floor promote heal (R97)"      D2Direct3D/d3dFloorCache.cpp       'floor promote out-of-range idx=%d max=%d used=%d bufNull=%d tile=%p - healed to uncached \[R97\]' 1
+gate "guard: floor dead-cache skip (R97)"   D2Direct3D/d3dFloorCache.cpp       'floor texture cache dead \(max=%d used=%d bufNull=%d tile=%p\) - tile skipped \[R97\]' 1
+gate "guard: subtile promote heal (R97)"    D2Direct3D/d3dFloorCache.cpp       'subtile promote out-of-range idx=%d max=%d used=%d bufNull=%d subtile=%p - healed to uncached \[R97\]' 1
+gate "guard: subtile dead-cache skip (R97)" D2Direct3D/d3dFloorCache.cpp       'subtile texture cache dead \(max=%d used=%d bufNull=%d subtile=%p\) - subtile skipped \[R97\]' 1
+gate "probe: d3d floor transition (R97)"    D2Direct3D/Renderer/Direct3D.cpp   'd3d: perspective now %d, floor tile pass \(panels=%d w=%d h=%d\) \[R97\]' 1
+gate "probe: world transition (R97)"        D2Client/GAME/View.cpp             'world: perspective now %d, view frame \[R97\]' 1
+
+# ---- [issue #26 / R98] flat wall byte-offset iterator widened -----------------
+# The R97 field pass returned outcome (b): death WITH the guard mark. The mark
+# plus the AV decode to one defect: BuildWallTileVerticesNoPerspective walked
+# pSubTiles by BYTE OFFSET with a uint8_t iterator (+0x14 per 0x14-byte record,
+# wraps at 256 after 12 records - a decompiler artifact merging the dead
+# nParam4 arg slot; every sibling iterator is full-width int). From the 13th
+# subtile the loop read +4-shifted pseudo-records: nTextureCacheIndex = the
+# real record's DT1 wFormat word (idx=4097 = 0x1001, the word that halted
+# line=200 in R96) and pPixelData = the next record's {nOffsetY<<16|nOffsetX}
+# packed (AV READ at FF600060 = -160/+96 wall offsets), which the R97 heal
+# dereferenced in the alloc path. Perspective-ON walls and both shadow builders
+# index the array properly - only the flat builder walked raw bytes, so the
+# death fires on the first post-flip frame and Glide toggles clean. R98 widens
+# the iterator to int and adds a bounded wide-tile probe; the R97 guards stay
+# as defense in depth.
+gate "fix: flat wall int iterator (R98)"     D2Direct3D/Renderer/Direct3D.cpp   'int nSubtileByteOffset;' 1
+gate "probe: flat wall wide-tile (R98)"      D2Direct3D/Renderer/Direct3D.cpp   'd3d: flat wall subtiles=%d tile=%p \[R98\]' 1
+
 
 echo
 if [ "$FAIL" -eq 0 ]; then

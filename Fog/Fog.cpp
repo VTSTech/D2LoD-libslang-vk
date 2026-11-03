@@ -43,17 +43,15 @@ BOOL __stdcall D2CheckExpansionGame() {
     return BVar1;
 }
 
-int32_t __fastcall BitScanReverse(uint32_t nParam) {
-    if (!nParam) {
+int32_t __fastcall BitScanReverse(uint32_t dwBits) {
+    if (!dwBits) {
       return 0;
     }
 
     int nBitIndex = 0x1f;
-    if (!nParam) {
-      return nBitIndex + 1;
+    if (dwBits) {
+      for (; !(dwBits >> nBitIndex); nBitIndex--) {}
     }
-
-    for (; !(nParam >> nBitIndex); nBitIndex--) {}
 
     return nBitIndex + 1;
 }

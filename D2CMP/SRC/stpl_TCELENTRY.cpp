@@ -15,7 +15,7 @@
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Storm/H/CCritSect.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 
@@ -23,11 +23,10 @@
 
 
 template<> TSLink<::TCELENTRY>* TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Link(::TCELENTRY * ptr) {
-    if (ptr) {
-      return &ptr->m_link;
+    if (!ptr) {
+      ptr = (::TCELENTRY*)&this->m_terminator;
     }
 
-    ptr = (::TCELENTRY*)&this->m_terminator;
     return &ptr->m_link;
 }
 
@@ -43,12 +42,7 @@ template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::LinkNode(::TCELENTRY * 
     if (pHead) {
       int* pBackLink;
       pTmp = pEntry->m_link.m_next;
-      if ((int)pTmp < 0) {
-        pBackLink = (int*)~pTmp;
-      } else {
-        pBackLink = (int*)((int)pEntry + (pTmp - pHead->m_next));
-      }
-
+      pBackLink = (int*)D2_StormNextLink(pEntry, -1);
       *pBackLink = (int)pHead;
       pEntry->m_link.m_prevlink->m_next = pEntry->m_link.m_next;
       pEntry->m_link.m_prevlink = 0;
@@ -95,8 +89,8 @@ template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Next(::TCELENT
       ptr = (::TCELENTRY*)&this->m_terminator;
     }
 
-    uint32_t uVar1 = ptr->m_link.m_next;
-    return (::TCELENTRY*)((int)uVar1 <= 0 ? 0 : uVar1);
+    uint32_t dwNext = ptr->m_link.m_next;
+    return (::TCELENTRY*)((int)dwNext <= 0 ? 0 : dwNext);
 }
 
 template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::UnlinkNode(::TCELENTRY * ptr) {
@@ -110,13 +104,7 @@ template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::UnlinkNode(::TCELENTRY 
       return;
     }
 
-    uint32_t nLinkField = ptr->m_link.m_next;
-    if ((int)nLinkField < 0) {
-      pBackLink = (int*)~nLinkField;
-    } else {
-      pBackLink = (int*)((int)ptr + (nLinkField - nEntry->m_next));
-    }
-
+    pBackLink = (int*)D2_StormNextLink(ptr, -1);
     *pBackLink = (int)nEntry;
     ptr->m_link.m_prevlink->m_next = ptr->m_link.m_next;
     ptr->m_link.m_prevlink = 0;
@@ -134,7 +122,6 @@ template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::RawNext(::TCEL
 template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::UnlinkAll() {
     int* pBackLink;
     int* pNode;
-    uint32_t uLinkOffset;
     while (true) {
       int nNext;
       pNode = (int*)this->m_terminator.m_next;
@@ -144,13 +131,7 @@ template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::UnlinkAll() {
 
       nNext = *pNode;
       if (nNext) {
-        uLinkOffset = pNode[1];
-        if ((int)uLinkOffset < 0) {
-          pBackLink = (int*)~uLinkOffset;
-        } else {
-          pBackLink = (int*)((int)pNode + (uLinkOffset - *(int*)(nNext + 4)));
-        }
-
+        pBackLink = (int*)D2_StormNextLink(pNode, -1);
         *pBackLink = nNext;
         *(int*)(*pNode + 4) = pNode[1];
         *pNode = 0;
@@ -193,17 +174,18 @@ template<> TSList<::TCELENTRY, TSGetLink<TCELENTRY>>* TSList<TCELENTRY, TSGetLin
 }
 
 template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::NewNode(uint32_t nLinkType, uint32_t nExtraBytes, uint32_t dwFlags) {
-    ::TCELENTRY* pNewEntry = (::TCELENTRY*)Storm::SMem::SMemAlloc(nExtraBytes + 0x24, s___AUTCELENTRY___00741f14, -2, dwFlags | 8);
-    if (pNewEntry) {
-      pNewEntry->m_link.m_prevlink = 0;
-      pNewEntry->m_link.m_next = 0;
+    ::TCELENTRY* pNewEntryNew = (::TCELENTRY*)Storm::Source::SMem::SMemAlloc(nExtraBytes + 0x24, s___AUTCELENTRY___00741f14, -2, dwFlags | 8);
+    ::TCELENTRY* pNewEntry;
+    if (pNewEntryNew) {
+      pNewEntryNew->m_link.m_prevlink = 0;
+      pNewEntryNew->m_link.m_next = 0;
+      pNewEntry = pNewEntryNew;
     } else {
       pNewEntry = 0;
     }
-    if (!nLinkType) {
-      return pNewEntry;
+    if (nLinkType) {
+      this->LinkNode(pNewEntry, nLinkType, nullptr);
     }
 
-    this->LinkNode(pNewEntry, nLinkType, nullptr);
     return pNewEntry;
 }

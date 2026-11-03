@@ -15,7 +15,7 @@
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Storm/H/CCritSect.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 #include "D2Common/Chat.h"
@@ -32,10 +32,10 @@ typedef _EXCEPTION_DISPOSITION (*pfnEHHandlerRoutine)(EHExceptionRecord * pExcep
 template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::InternalClear(int32_t bUnlinkOnly) {
     TSExplicitList<::MappingEntryNode, -572662307>* pTVar1;
     ::MappingEntryNode* pNode;
-    int iVar2;
     int* pSlot;
     int* pPrevLink;
     int nHeadEntry;
+    int nLinkOffset;
     uint32_t nNextLink;
     this->nFullnessIndicator = 0;
     this->tFullList.UnlinkAll();
@@ -52,9 +52,9 @@ template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::InternalClear(int32
           break;
         }
         if (bUnlinkOnly) {
-          iVar2 = pTVar1[iBucket].m_linkoffset;
-          nHeadEntry = *(int*)((uintptr_t)&pNode->m_hashval + iVar2);
-          pSlot = (int*)((uintptr_t)&pNode->m_hashval + iVar2);
+          nLinkOffset = pTVar1[iBucket].m_linkoffset;
+          nHeadEntry = *(int*)((uintptr_t)&pNode->m_hashval + nLinkOffset);
+          pSlot = (int*)((uintptr_t)&pNode->m_hashval + nLinkOffset);
           if (nHeadEntry) {
             nNextLink = pSlot[1];
             if ((int)nNextLink < 0) {
@@ -87,13 +87,7 @@ void __thiscall Destructor_Unreferenced(TSExplicitList<::MappingEntryNode, -5726
       return;
     }
 
-    uint32_t nNextLink = pThis->m_terminator.m_next;
-    if ((int)nNextLink < 0) {
-      pPrevLink = (int*)~nNextLink;
-    } else {
-      pPrevLink = (int*)((int)pTVar1 + (nNextLink - nHeadEntry->m_next));
-    }
-
+    pPrevLink = (int*)D2_StormNextLink(pTVar1, -1);
     *pPrevLink = (int)nHeadEntry;
     pTVar1->m_prevlink->m_next = pThis->m_terminator.m_next;
     pTVar1->m_prevlink = 0;
@@ -117,11 +111,11 @@ template<> ::MappingEntryNode * TSExplicitList<MappingEntryNode, -572662307>::De
     TSLink<::MappingEntryNode>* pListHead = !pNode ? &this->m_terminator : (TSLink<::MappingEntryNode>*)((uintptr_t)&pNode->m_hashval + this->m_linkoffset);
     uint32_t uNextOffset = pListHead->m_next;
     if (pNode->szMappedValue) {
-      Storm::SMem::SMemFree(pNode->szMappedValue, ".\\Chat\\Ignorelist.cpp", 0x11, 0);
+      Storm::Source::SMem::SMemFree(pNode->szMappedValue, ".\\Chat\\Ignorelist.cpp", 0x11, 0);
     }
 
     pNode->Destructor();
-    Storm::SMem::SMemFree(pNode, s___AUMappingEntryNode___0074362c, -2, 0);
+    Storm::Source::SMem::SMemFree(pNode, s___AUMappingEntryNode___0074362c, -2, 0);
     return (::MappingEntryNode*)((int)uNextOffset <= 0 ? 0 : uNextOffset);
 }
 
@@ -203,11 +197,10 @@ template<> TSExplicitList<::MappingEntryNode, -572662307>* TSExplicitList<Mappin
       pTVar1->m_prevlink = 0;
       this->m_terminator.m_next = 0;
     }
-    if (!(dwFlags & 1 && this)) {
-      return this;
+    if (dwFlags & 1 && this) {
+      Storm::Source::SMem::SMemFree(this, "delete", -1, 0);
     }
 
-    Storm::SMem::SMemFree(this, "delete", -1, 0);
     return this;
 }
 
@@ -217,14 +210,14 @@ template<> ::MappingEntryNode * TSHashTable<MappingEntryNode, HASHKEY_STRI>::Ptr
     pfnEHHandlerRoutine pExHandler = D2Common::Chat::__GSHandlerCheck_EH_6ca2b8;
     void* pExSave = ExceptionList;
     ExceptionList = &pExSave;
-    char* pszDupKey = (char*)Storm::Source::SSTR::SStrDup(szKey);
+    char* pszDupKey = Storm::Source::SSTR::SStrDup(szKey);
     ::HASHKEY_STRI* ppszSearchKey = (::HASHKEY_STRI*)&szKey;
     nExState = 0;
     szKey = pszDupKey;
     uint32_t uHash = Storm::Source::SSTR::SStrHash(pszText, 0, 0);
     uint32_t* pFoundEntry = (uint32_t*)this->Ptr(uHash, ppszSearchKey);
     if (pszDupKey) {
-      Storm::SMem::SMemFree(pszDupKey, "d:\\diablo2\\Diablo2\\3rdparty\\storm\\h\\stpl.h", 0x5e4, 0);
+      Storm::Source::SMem::SMemFree(pszDupKey, "d:\\diablo2\\Diablo2\\3rdparty\\storm\\h\\stpl.h", 0x5e4, 0);
     }
 
     ExceptionList = pExSave;
@@ -241,13 +234,7 @@ void __thiscall Destructor_UnreferencedCopy(TSExplicitList<::MappingEntryNode, -
       return;
     }
 
-    uint32_t uLink = pThis->m_terminator.m_next;
-    if ((int)uLink < 0) {
-      pListHead = (int*)~uLink;
-    } else {
-      pListHead = (int*)((int)pTVar1 + (uLink - nHead->m_next));
-    }
-
+    pListHead = (int*)D2_StormNextLink(pTVar1, -1);
     *pListHead = (int)nHead;
     pTVar1->m_prevlink->m_next = pThis->m_terminator.m_next;
     pTVar1->m_prevlink = 0;
@@ -257,8 +244,8 @@ void __thiscall Destructor_UnreferencedCopy(TSExplicitList<::MappingEntryNode, -
 template<> void TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>::ReallocData(uint32_t nAlloc) {
     TSExplicitList<::MappingEntryNode, -572662307>* pBucket;
     int* pPrevLink;
-    uint32_t* puVar2;
-    TSLink<::MappingEntryNode>* pTVar3;
+    TSLink<::MappingEntryNode>* pTVar2;
+    uint32_t* pNewTerminator;
     TSLink<::MappingEntryNode>* uHeadEntry;
     uint32_t uLinkOffset;
     uint32_t uNewCount;
@@ -267,36 +254,31 @@ template<> void TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>::R
     if (nAlloc < this->m_count) {
       pBucket = pBlock + nAlloc;
       do {
-        pTVar3 = &pBucket->m_terminator;
-        ((TSExplicitList<::MappingEntryNode, -572662307>*)((int)(pTVar3 - 1) + 4))->UnlinkAll();
-        uHeadEntry = pTVar3->m_prevlink;
+        pTVar2 = &pBucket->m_terminator;
+        ((TSExplicitList<::MappingEntryNode, -572662307>*)((int)(pTVar2 - 1) + 4))->UnlinkAll();
+        uHeadEntry = pTVar2->m_prevlink;
         if (uHeadEntry) {
-          uLinkOffset = pTVar3->m_next;
-          if ((int)uLinkOffset < 0) {
-            pPrevLink = (int*)~uLinkOffset;
-          } else {
-            pPrevLink = (int*)((int)pTVar3 + (uLinkOffset - uHeadEntry->m_next));
-          }
-
+          uLinkOffset = pTVar2->m_next;
+          pPrevLink = (int*)D2_StormNextLink(pTVar2, -1);
           *pPrevLink = (int)uHeadEntry;
-          pTVar3->m_prevlink->m_next = pTVar3->m_next;
-          pTVar3->m_prevlink = 0;
-          pTVar3->m_next = 0;
+          pTVar2->m_prevlink->m_next = pTVar2->m_next;
+          pTVar2->m_prevlink = 0;
+          pTVar2->m_next = 0;
         }
 
         nAlloc++;
-        pBucket = (TSExplicitList<::MappingEntryNode, -572662307>*)(pTVar3 + 1);
+        pBucket = (TSExplicitList<::MappingEntryNode, -572662307>*)(pTVar2 + 1);
       } while (nAlloc < this->m_count);
     }
 
     this->m_alloc = uSavedSize;
-    pBucket = (TSExplicitList<::MappingEntryNode, -572662307>*)Storm::SMem::SMemReAlloc((uint32_t*)pBlock, uSavedSize * 0xc, s___AV__TSExplicitList_UMappingEnt_007436ac, -2, 0x10);
+    pBucket = (TSExplicitList<::MappingEntryNode, -572662307>*)Storm::Source::SMem::SMemReAlloc((uint32_t*)pBlock, uSavedSize * 0xc, s___AV__TSExplicitList_UMappingEnt_007436ac, -2, 0x10);
     this->m_data = pBucket;
     if (pBucket) {
       return;
     }
 
-    pBucket = (TSExplicitList<::MappingEntryNode, -572662307>*)Storm::SMem::SMemAlloc(uSavedSize * 0xc, s___AV__TSExplicitList_UMappingEnt_007436ac, -2, 0);
+    pBucket = (TSExplicitList<::MappingEntryNode, -572662307>*)Storm::Source::SMem::SMemAlloc(uSavedSize * 0xc, s___AV__TSExplicitList_UMappingEnt_007436ac, -2, 0);
     this->m_data = pBucket;
     if (!pBlock) {
       return;
@@ -311,28 +293,23 @@ template<> void TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>::R
       pBucket = pBlock;
       do {
         uHeadEntry = &pBucket->m_terminator;
-        puVar2 = (uint32_t*)(-4 - (int)pBlock + (int)uHeadEntry + (int)this->m_data);
-        if (puVar2) {
-          puVar1 = puVar2 + 1;
-          *puVar1 = 0;
-          puVar2[2] = 0;
+        puVar1 = (uint32_t*)(-4 - (int)pBlock + (int)uHeadEntry + (int)this->m_data);
+        if (puVar1) {
+          pNewTerminator = puVar1 + 1;
+          *pNewTerminator = 0;
+          puVar1[2] = 0;
           uNewCount = *(uint32_t*)((int)(uHeadEntry - 1) + 4);
-          *puVar1 = (uint32_t)(uintptr_t)puVar1;
-          *puVar2 = uNewCount;
-          puVar2[2] = ~(uint32_t)puVar1;
+          *pNewTerminator = (uint32_t)(uintptr_t)pNewTerminator;
+          *puVar1 = uNewCount;
+          puVar1[2] = ~(uint32_t)pNewTerminator;
         }
 
         ((TSExplicitList<::MappingEntryNode, -572662307>*)((int)(uHeadEntry - 1) + 4))->UnlinkAll();
-        pTVar3 = uHeadEntry->m_prevlink;
-        if (pTVar3) {
+        pTVar2 = uHeadEntry->m_prevlink;
+        if (pTVar2) {
           uLinkOffset = uHeadEntry->m_next;
-          if ((int)uLinkOffset < 0) {
-            pPrevLink = (int*)~uLinkOffset;
-          } else {
-            pPrevLink = (int*)((int)uHeadEntry + (uLinkOffset - pTVar3->m_next));
-          }
-
-          *pPrevLink = (int)pTVar3;
+          pPrevLink = (int*)D2_StormNextLink(uHeadEntry, -1);
+          *pPrevLink = (int)pTVar2;
           uHeadEntry->m_prevlink->m_next = uHeadEntry->m_next;
           uHeadEntry->m_prevlink = 0;
           uHeadEntry->m_next = 0;
@@ -343,14 +320,13 @@ template<> void TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>::R
       } while (nAlloc);
     }
 
-    Storm::SMem::SMemFree(pBlock, s___AV__TSExplicitList_UMappingEnt_007436ac, -2, 0);
+    Storm::Source::SMem::SMemFree(pBlock, s___AV__TSExplicitList_UMappingEnt_007436ac, -2, 0);
 }
 
 template<> void TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>::Destructor() {
     TSExplicitList<::MappingEntryNode, -572662307>* pBucket;
     int* pPrevLink;
     TSLink<::MappingEntryNode>* nHead;
-    uint32_t uLink;
     uint32_t nBucketIdx = 0;
     if (this->m_count > 0) {
       TSLink<::MappingEntryNode>* pTVar1;
@@ -360,13 +336,7 @@ template<> void TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>::D
         nHead = pBucket->m_terminator.m_prevlink;
         pTVar1 = &pBucket->m_terminator;
         if (nHead) {
-          uLink = pBucket->m_terminator.m_next;
-          if ((int)uLink < 0) {
-            pPrevLink = (int*)~uLink;
-          } else {
-            pPrevLink = (int*)((int)pTVar1 + (uLink - nHead->m_next));
-          }
-
+          pPrevLink = (int*)D2_StormNextLink(pTVar1, -1);
           *pPrevLink = (int)nHead;
           pTVar1->m_prevlink->m_next = pBucket->m_terminator.m_next;
           pTVar1->m_prevlink = 0;
@@ -380,7 +350,7 @@ template<> void TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>::D
       return;
     }
 
-    Storm::SMem::SMemFree(this->m_data, s___AV__TSExplicitList_UMappingEnt_007436ac, -2, 0);
+    Storm::Source::SMem::SMemFree(this->m_data, s___AV__TSExplicitList_UMappingEnt_007436ac, -2, 0);
 }
 
 template<> void TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>::Reserve(uint32_t nCount, int32_t bRound) {
@@ -465,12 +435,7 @@ template<> void TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>::S
         pTVar1 = &pSrcBucket->m_terminator;
         if (pTVar3) {
           uVar2 = pSrcBucket->m_terminator.m_next;
-          if ((int)uVar2 < 0) {
-            pPrevLink = (int*)~uVar2;
-          } else {
-            pPrevLink = (int*)((int)pTVar1 + (uVar2 - pTVar3->m_next));
-          }
-
+          pPrevLink = (int*)D2_StormNextLink(pTVar1, -1);
           *pPrevLink = (int)pTVar3;
           pTVar1->m_prevlink->m_next = pSrcBucket->m_terminator.m_next;
           pTVar1->m_prevlink = 0;
@@ -519,22 +484,23 @@ template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::Destructor() {
 }
 
 template<> ::MappingEntryNode * TSExplicitList<MappingEntryNode, -572662307>::NewNode(uint32_t nLocation, uint32_t nExtraBytes, uint32_t dwFlags) {
-    ::MappingEntryNode* pNode = (::MappingEntryNode*)Storm::SMem::SMemAlloc(nExtraBytes + 0x1c, s___AUMappingEntryNode___0074362c, -2, dwFlags | 8);
-    if (pNode) {
-      pNode->m_linktoslot.m_prevlink = 0;
-      pNode->m_linktoslot.m_next = 0;
-      pNode->m_linktofull.m_prevlink = 0;
-      pNode->m_linktofull.m_next = 0;
-      pNode->m_key.szString = 0;
-      pNode->szMappedValue = 0;
+    ::MappingEntryNode* pNodeNew = (::MappingEntryNode*)Storm::Source::SMem::SMemAlloc(nExtraBytes + 0x1c, s___AUMappingEntryNode___0074362c, -2, dwFlags | 8);
+    ::MappingEntryNode* pNode;
+    if (pNodeNew) {
+      pNodeNew->m_linktoslot.m_prevlink = 0;
+      pNodeNew->m_linktoslot.m_next = 0;
+      pNodeNew->m_linktofull.m_prevlink = 0;
+      pNodeNew->m_linktofull.m_next = 0;
+      pNodeNew->m_key.szString = 0;
+      pNodeNew->szMappedValue = 0;
+      pNode = pNodeNew;
     } else {
       pNode = 0;
     }
-    if (!nLocation) {
-      return pNode;
+    if (nLocation) {
+      this->LinkNode(pNode, nLocation, nullptr);
     }
 
-    this->LinkNode(pNode, nLocation, nullptr);
     return pNode;
 }
 
@@ -542,18 +508,18 @@ template<> ::MappingEntryNode * TSExplicitList<MappingEntryNode, -572662307>::Ne
 // @blizzard TSHashTable<MappingEntryNode,HASHKEY_STRI>::InternalDelete (STORM.H)
 template<> void __thiscall TSHashTable<MappingEntryNode, HASHKEY_STRI>::InternalDelete(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis, ::MappingEntryNode * pNode) {
     if (pNode->szMappedValue) {
-      Storm::SMem::SMemFree(pNode->szMappedValue, ".\\Chat\\Ignorelist.cpp", 0x11, 0);
+      Storm::Source::SMem::SMemFree(pNode->szMappedValue, ".\\Chat\\Ignorelist.cpp", 0x11, 0);
     }
 
     pNode->Destructor();
-    Storm::SMem::SMemFree(pNode, s___AUMappingEntryNode___0074362c, -2, 0);
+    Storm::Source::SMem::SMemFree(pNode, s___AUMappingEntryNode___0074362c, -2, 0);
 }
 
 // @blizzard TSHashTable<MappingEntryNode,HASHKEY_STRI>::InternalNew (STORM.H)
 template<> ::MappingEntryNode * __thiscall TSHashTable<MappingEntryNode, HASHKEY_STRI>::InternalNew(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis, TSExplicitList<::MappingEntryNode, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags) {
     TSLink<::MappingEntryNode>* pBucketHead;
-    uint32_t piVar2;
-    ::MappingEntryNode* pNode = (::MappingEntryNode*)Storm::SMem::SMemAlloc(nExtraBytes + 0x1c, s___AUMappingEntryNode___0074362c, -2, dwFlags | 8);
+    uint32_t dwNext;
+    ::MappingEntryNode* pNode = (::MappingEntryNode*)Storm::Source::SMem::SMemAlloc(nExtraBytes + 0x1c, s___AUMappingEntryNode___0074362c, -2, dwFlags | 8);
     if (pNode) {
       pNode->m_linktoslot.m_prevlink = 0;
       pNode->m_linktoslot.m_next = 0;
@@ -570,13 +536,8 @@ template<> ::MappingEntryNode * __thiscall TSHashTable<MappingEntryNode, HASHKEY
     TSLink<::MappingEntryNode>* pHeadEntry = pBucketHead->m_prevlink;
     if (pHeadEntry) {
       int* pPrev;
-      piVar2 = pBucketHead->m_next;
-      if ((int)piVar2 < 0) {
-        pPrev = (int*)~piVar2;
-      } else {
-        pPrev = (int*)((int)pBucketHead + (piVar2 - pHeadEntry->m_next));
-      }
-
+      dwNext = pBucketHead->m_next;
+      pPrev = (int*)D2_StormNextLink(pBucketHead, -1);
       *pPrev = (int)pHeadEntry;
       pBucketHead->m_prevlink->m_next = pBucketHead->m_next;
       pBucketHead->m_prevlink = 0;
@@ -586,10 +547,10 @@ template<> ::MappingEntryNode * __thiscall TSHashTable<MappingEntryNode, HASHKEY
     pHeadEntry = &pList->m_terminator;
     pBucketHead->m_prevlink = pHeadEntry;
     pBucketHead->m_next = pList->m_terminator.m_next;
-    piVar2 = pList->m_terminator.m_next;
+    dwNext = pList->m_terminator.m_next;
     int pNext = pList->m_linkoffset;
-    if ((int)piVar2 < 0) {
-      *(TSLink<::MappingEntryNode>**)~piVar2 = (TSLink<::MappingEntryNode>*)pBucketHead;
+    if ((int)dwNext < 0) {
+      *(TSLink<::MappingEntryNode>**)~dwNext = (TSLink<::MappingEntryNode>*)pBucketHead;
       pList->m_terminator.m_next = (int)pNode;
       return pNode;
     }
@@ -597,18 +558,17 @@ template<> ::MappingEntryNode * __thiscall TSHashTable<MappingEntryNode, HASHKEY
       pNext = (int)pHeadEntry - pHeadEntry->m_prevlink->m_next;
     }
 
-    *(TSLink<::MappingEntryNode>**)(piVar2 + pNext) = (TSLink<::MappingEntryNode>*)pBucketHead;
+    *(TSLink<::MappingEntryNode>**)(dwNext + pNext) = (TSLink<::MappingEntryNode>*)pBucketHead;
     pList->m_terminator.m_next = (int)pNode;
     return pNode;
 }
 
 template<> TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>> * TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>::ScalarDeletingDestructor(uint32_t dwFlags) {
     this->Destructor();
-    if (!(dwFlags & 1 && this)) {
-      return this;
+    if (dwFlags & 1 && this) {
+      Storm::Source::SMem::SMemFree(this, "delete", -1, 0);
     }
 
-    Storm::SMem::SMemFree(this, "delete", -1, 0);
     return this;
 }
 
@@ -633,11 +593,10 @@ template<> void __thiscall TSHashTable<MappingEntryNode, HASHKEY_STRI>::Destroy(
 // @blizzard TSHashTable<MappingEntryNode,HASHKEY_STRI> scalar deleting destructor (STORM.H)
 template<> TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* __thiscall TSHashTable<MappingEntryNode, HASHKEY_STRI>::ScalarDeletingDestructor(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis, uint32_t dwFlags) {
     pThis->Destructor();
-    if (!(dwFlags & 1 && pThis)) {
-      return pThis;
+    if (dwFlags & 1 && pThis) {
+      Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     }
 
-    Storm::SMem::SMemFree(pThis, "delete", -1, 0);
     return pThis;
 }
 
@@ -655,7 +614,6 @@ template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::GrowListArray() {
     int* pBackPtr;
     int nBucketOffset;
     TSExplicitList<::MappingEntryNode, -572662307> tempList;
-    uint32_t pBackLink;
     TSLink<::MappingEntryNode>* pPrevLink;
     tempList.m_terminator.m_prevlink = &tempList.m_terminator;
     uint32_t nOldBucketCount = pThis->nSlotMask + 1;
@@ -683,13 +641,7 @@ template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::GrowListArray() {
           pBucket = (TSLink<::MappingEntryNode>*)(nBucketOffset + 4);
           pPrevLink = pBucket->m_prevlink;
           if (pPrevLink) {
-            pBackLink = *(uint32_t*)(nBucketOffset + 8);
-            if ((int)pBackLink < 0) {
-              pBackPtr = (int*)~pBackLink;
-            } else {
-              pBackPtr = (int*)((int)pBucket + (pBackLink - pPrevLink->m_next));
-            }
-
+            pBackPtr = (int*)D2_StormNextLink(pBucket, -1);
             *pBackPtr = (int)pPrevLink;
             pBucket->m_prevlink->m_next = *(int*)(nBucketOffset + 8);
             pBucket->m_prevlink = 0;
@@ -742,12 +694,7 @@ template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::GrowListArray() {
       ppTempListHead = pBucket->m_prevlink;
       if (ppTempListHead) {
         nOldBucketCount = pBucket->m_next;
-        if ((int)nOldBucketCount < 0) {
-          pBackPtr = (int*)~nOldBucketCount;
-        } else {
-          pBackPtr = (int*)((int)pBucket + (nOldBucketCount - ppTempListHead->m_next));
-        }
-
+        pBackPtr = (int*)D2_StormNextLink(pBucket, -1);
         *pBackPtr = (int)ppTempListHead;
         pBucket->m_prevlink->m_next = pBucket->m_next;
         pBucket->m_prevlink = 0;
@@ -874,12 +821,7 @@ template<> ::MappingEntryNode * TSHashTable<MappingEntryNode, HASHKEY_STRI>::New
     if (pTVar1) {
       int* pBackLink;
       nBucketIdx = pListNode->m_next;
-      if ((int)nBucketIdx < 0) {
-        pBackLink = (int*)~nBucketIdx;
-      } else {
-        pBackLink = (int*)((int)pListNode + (nBucketIdx - pTVar1->m_next));
-      }
-
+      pBackLink = (int*)D2_StormNextLink(pListNode, -1);
       *pBackLink = (int)pTVar1;
       pListNode->m_prevlink->m_next = pListNode->m_next;
       pListNode->m_prevlink = 0;
@@ -892,13 +834,13 @@ template<> ::MappingEntryNode * TSHashTable<MappingEntryNode, HASHKEY_STRI>::New
     pTVar1->m_next = (int)pEntry;
     this->tFullList.m_terminator.m_prevlink = pListNode;
     pEntry->m_hashval = dwHashVal;
-    char* pObject = pEntry->m_key.szString;
-    if (pObject) {
-      Storm::SMem::SMemFree(pObject, "d:\\diablo2\\Diablo2\\3rdparty\\storm\\h\\stpl.h", 0x5e9, 0);
+    char* pDupStr = pEntry->m_key.szString;
+    if (pDupStr) {
+      Storm::Source::SMem::SMemFree(pDupStr, "d:\\diablo2\\Diablo2\\3rdparty\\storm\\h\\stpl.h", 0x5e9, 0);
     }
 
-    uint32_t* pDupStr = Storm::Source::SSTR::SStrDup(pKey->szString);
-    pEntry->m_key.szString = (char*)pDupStr;
+    pDupStr = Storm::Source::SSTR::SStrDup(pKey->szString);
+    pEntry->m_key.szString = pDupStr;
     return pEntry;
 }
 
@@ -908,16 +850,16 @@ template<> ::MappingEntryNode * TSHashTable<MappingEntryNode, HASHKEY_STRI>::New
     pfnEHHandlerRoutine pExceptionLabel = D2Common::Chat::__GSHandlerCheck_EH_6ca418;
     void* pPrevExceptionList = ExceptionList;
     ExceptionList = &pPrevExceptionList;
-    uint32_t* pObject = Storm::Source::SSTR::SStrDup(szKey);
+    char* pObject = Storm::Source::SSTR::SStrDup(szKey);
     ::HASHKEY_STRI* pKey = (::HASHKEY_STRI*)&szKey;
     nSehState = 0;
-    szKey = (char*)pObject;
+    szKey = pObject;
     uint32_t dwExtraData1 = nExtraBytes;
     uint32_t dwExtraData2 = dwFlags;
     uint32_t dwHash = Storm::Source::SSTR::SStrHash(pszText, 0, 0);
     ::MappingEntryNode* pszDup = this->New(dwHash, pKey, dwExtraData1, dwExtraData2);
     if (pObject) {
-      Storm::SMem::SMemFree(pObject, "d:\\diablo2\\Diablo2\\3rdparty\\storm\\h\\stpl.h", 0x5e4, 0);
+      Storm::Source::SMem::SMemFree(pObject, "d:\\diablo2\\Diablo2\\3rdparty\\storm\\h\\stpl.h", 0x5e4, 0);
     }
 
     ExceptionList = pPrevExceptionList;

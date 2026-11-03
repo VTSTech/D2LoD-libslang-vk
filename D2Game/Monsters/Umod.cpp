@@ -4,7 +4,6 @@
 #include "D2Client/Archive.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
@@ -18,6 +17,7 @@
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/Preset.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Seed.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
@@ -40,8 +40,8 @@
 
 namespace D2Game::Monsters::Umod {
 
-void __fastcall MONUMOD_RollNameSeed(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
-    if (!(pUnit && bUnknown)) {
+void __fastcall MONUMOD_RollNameSeed(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnique) {
+    if (!(pUnit && bUnique)) {
       return;
     }
 
@@ -76,17 +76,17 @@ static void UMOD_IncreaseMonsterHp(uint32_t nUmodConstant, D2UnitStrc * pUnit) {
     }
 
     int64_t nDivResult;
-    nDivResult = _alldiv((uint32_t)((int64_t)(int)nBaseHp * (int64_t)(int)nUmodConstant), (uint32_t)((uint64_t)((int64_t)(int)nBaseHp * (int64_t)(int)nUmodConstant) >> 0x20), 100, 0);
+    nDivResult = (int64_t)(int)nBaseHp * (int64_t)(int)nUmodConstant / 100;
     nHpBonus = (int)nDivResult;
     apply_hp_bonus:
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxhp, nBaseHp + nHpBonus, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, nBaseHp + nHpBonus, 0);
 }
 
-void __fastcall MONUMOD_ApplyHpBonus(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
+void __fastcall MONUMOD_ApplyHpBonus(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnique) {
     uint32_t nUmodConst;
     int32_t nUmodConstIdx;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
@@ -99,7 +99,7 @@ void __fastcall MONUMOD_ApplyHpBonus(D2UnitStrc * pUnit, int32_t nIndex, BOOL bU
     if (byDifficulty >= 3) {
       return;
     }
-    if (!bUnknown) {
+    if (!bUnique) {
       nUmodConst = GetUmodConstant(byDifficulty + 1);
       UMOD_IncreaseMonsterHp(nUmodConst, pUnit);
       return;
@@ -129,10 +129,10 @@ void __fastcall MONUMOD_ApplyChampionLevelBonus(D2UnitStrc * pUnit, int32_t nInd
 }
 
 // Applies champion-tier stat bonuses to a monster unit. Decrements level by 1, reduces XP by 40%, then adds difficulty-scaled damage percent (MonUmod[11].constants) and to-hit percent (MonUmod[10].constants) bonuses. Also adds a velocity bonus based on nIndex: 0x24 subtracts speed, 0x25 computes a formula from base Velocity, other values add a flat +20%. Skips Griswold (classId 0x76) with halved damage bonus.
-void __fastcall MONUMOD_ApplyChampionStats(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
+void __fastcall MONUMOD_ApplyChampionStats(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnique) {
     int32_t nBaseMonId;
     int nToHitBonus;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
@@ -142,12 +142,8 @@ void __fastcall MONUMOD_ApplyChampionStats(D2UnitStrc * pUnit, int32_t nIndex, B
     }
 
     int nClassId = pUnit->nClassId;
-    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize)) {
-      return;
-    }
-
-    D2MonStatsTxt* pMonStatsTxt = sgptDataTable->pTxtMonStats;
-    if (!(pMonStatsTxt + nClassId && bUnknown)) {
+    D2MonStatsTxt* pMonStatsTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nClassId : nullptr;
+    if (!(pMonStatsTxt && bUnique)) {
       return;
     }
 
@@ -183,7 +179,7 @@ void __fastcall MONUMOD_ApplyChampionStats(D2UnitStrc * pUnit, int32_t nIndex, B
 
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_damagepercent, nDamageBonus, 0);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_item_tohit_percent, nToHitBonus, 0);
-    short int nVelocity = pMonStatsTxt[nClassId].Velocity;
+    short int nVelocity = pMonStatsTxt->Velocity;
     if (!(nVelocity > 0 && nIndex != 0x24)) {
       return;
     }
@@ -196,7 +192,7 @@ void __fastcall MONUMOD_ApplyChampionStats(D2UnitStrc * pUnit, int32_t nIndex, B
         }
       case 0x25:
         {
-          nBaseMonId = (int)(0x800 / (int64_t)(int)nVelocity) - 0x80;
+          nBaseMonId = (int)(0x800 / (int)nVelocity) - 0x80;
           if (nBaseMonId > 10) {
             if (nBaseMonId >= 100) {
               nBaseMonId = 100;
@@ -284,23 +280,22 @@ void __fastcall MONUMOD_ApplyColdEnchant(D2UnitStrc * pUnit, int32_t nIndex, BOO
 
     nLvlDmgBase = pMonLvl->DM[nLvlDmgBase * 3 + bUnknown];
     int32_t nMaxDamConst = GetUmodConstant(bUnknown + 0x19);
-    int16_t nLayer = 0;
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_coldmindam, GetUmodConstant(bUnknown + 0x16) * nLvlDmgBase / 100, nLayer);
+    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_coldmindam, GetUmodConstant(bUnknown + 0x16) * nLvlDmgBase / 100, 0);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_coldmaxdam, nMaxDamConst * nLvlDmgBase / 100, 0);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_coldlength, 0x96, 0);
 }
 
-void __fastcall MONUMOD_ApplyBerserker(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && bUnknown)) {
+void __fastcall MONUMOD_ApplyBerserker(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnique) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && bUnique)) {
       return;
     }
 
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_armor_percent, -0x46, 0);
-    MONUMOD_ApplyChampionStats(pUnit, nIndex, bUnknown);
+    MONUMOD_ApplyChampionStats(pUnit, nIndex, bUnique);
 }
 
-void __fastcall MONUMOD_ApplyPossessed(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && bUnknown)) {
+void __fastcall MONUMOD_ApplyPossessed(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnique) {
+    if (!((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && bUnique)) {
       return;
     }
     if (true && pUnit->pUnitData.pUnitDataMonster) {
@@ -310,16 +305,16 @@ void __fastcall MONUMOD_ApplyPossessed(D2UnitStrc * pUnit, int32_t nIndex, BOOL 
     }
 
     UMOD_IncreaseMonsterHp(100, pUnit);
-    MONUMOD_ApplyChampionStats(pUnit, nIndex, bUnknown);
+    MONUMOD_ApplyChampionStats(pUnit, nIndex, bUnique);
 }
 
-void __fastcall MONUMOD_ApplyFanatic(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
+void __fastcall MONUMOD_ApplyFanatic(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnique) {
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
       return;
     }
 
     ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit);
-    if (!(pGame && bUnknown)) {
+    if (!(pGame && bUnique)) {
       return;
     }
 
@@ -342,7 +337,7 @@ void __fastcall MONUMOD_ApplyFanatic(D2UnitStrc * pUnit, int32_t nIndex, BOOL bU
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_item_tohit_percent, nValue, 0);
 }
 
-void __fastcall MONUMOD_SetEventTimer(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
+void __fastcall MONUMOD_SetEventTimer(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnused) {
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
       return;
     }
@@ -358,7 +353,7 @@ void __fastcall MONUMOD_SetEventTimer(D2UnitStrc * pUnit, int32_t nIndex, BOOL b
 // Monster unique-modifier handler that grants resistances. For a monster unit (when bUnknown is set), dispatched by nIndex (modifier id): index 0x1c doubles armorclass and adds 0x32 to damageresist; 8 ("Stone Skin") and 0x1b raise cold/fire/light resist (+0x28 / +0x14) but bail once two or more resists are already capped (>99); single-element mods 9/0x12/0x11/0x17 add +0x4b to fire/cold/light/poison resist, 0x19 adds +0x14 magicresist. Modifies the unit's resist stats in place via STATLIST_SetUnitStat.
 void __fastcall MagicResist(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
     int nFireRes;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && bUnknown)) {
+    if (!((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && bUnknown)) {
       return;
     }
     if (nIndex == 0x1c) {
@@ -388,7 +383,7 @@ void __fastcall MagicResist(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
     if (nMagicRes >= 100) {
       bUnknown++;
     }
-    if ((uint32_t)bUnknown >= 2) {
+    if ((int32_t)(uint32_t)bUnknown >= 2) {
       return;
     }
     if (nIndex == 8) {
@@ -398,14 +393,14 @@ void __fastcall MagicResist(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
           bUnknown++;
         }
       }
-      if ((uint32_t)bUnknown < 2) {
+      if ((int32_t)(uint32_t)bUnknown < 2) {
         if (nFireRes < 100) {
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_fireresist, nFireRes + 0x28, 0);
           if (nFireRes + 0x28 >= 100) {
             bUnknown++;
           }
         }
-        if ((uint32_t)bUnknown < 2 && nLightRes < 100) {
+        if ((int32_t)(uint32_t)bUnknown < 2 && nLightRes < 100) {
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_lightresist, nLightRes + 0x28, 0);
           if (nLightRes + 0x28 >= 100) {
             return;
@@ -440,14 +435,14 @@ void __fastcall MagicResist(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
             bUnknown++;
           }
         }
-        if ((uint32_t)bUnknown < 2) {
+        if ((int32_t)(uint32_t)bUnknown < 2) {
           if (nFireRes < 0x4b) {
             D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_fireresist, nFireRes + 0x14, 0);
             if (nFireRes + 0x14 >= 100) {
               bUnknown++;
             }
           }
-          if ((uint32_t)bUnknown < 2 && nLightRes < 0x4b) {
+          if ((int32_t)(uint32_t)bUnknown < 2 && nLightRes < 0x4b) {
             D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_lightresist, nLightRes + 0x14, 0);
             if (nLightRes + 0x14 >= 100) {
               return;
@@ -460,8 +455,8 @@ void __fastcall MagicResist(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
     }
 }
 
-void __fastcall TeleHeal(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && bUnknown)) {
+void __fastcall TeleHeal(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnique) {
+    if (!((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && bUnique)) {
       return;
     }
 
@@ -535,7 +530,7 @@ void __fastcall AuraEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
     uint16_t wNameSeed;
     D2SeedStrc sNameSeed;
     int32_t nAuraEntryOffset;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && bUnknown)) {
+    if (!((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && bUnknown)) {
       return;
     }
 
@@ -601,7 +596,7 @@ void __fastcall AuraEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
 }
 
 // Applies the ExtraStrong unique-mod stat bonuses to a monster unit. Reads champion/unique damage-percent and to-hit-percent constants from MonUMod.txt rows 0xC/0xD (normal) or 0xD/0xE (bUnknown=true), scales them by the current difficulty's ChampionDamageBonus, halves damage for Viper class (nClassId==0x76), then calls STATLIST_AddUnitStat for UNITSTAT_damagepercent and UNITSTAT_item_tohit_percent.
-void __fastcall ExtraStrong(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
+void __fastcall ExtraStrong(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnique) {
     D2DifficultyLevelsTxt* pDiffLevels;
     D2MonUModTxt* pUmodEntry;
     int nValue;
@@ -620,7 +615,7 @@ void __fastcall ExtraStrong(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
 
     int nToHitConst;
     nToHitConst = sgptDataTable->nTxtMonUmodSize;
-    if (bUnknown) {
+    if (bUnique) {
       if (nToHitConst <= 0xf) {
         nValue = 0;
       } else if (sgptDataTable->pTxtMonUmod == (D2MonUModTxt*)-480) {
@@ -687,20 +682,22 @@ void __fastcall ExtraFast(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
       return;
     }
 
-    int32_t nValue = (int)(0x800 / (int64_t)(int)nBaseVelocity) - 0x80;
-    if (nValue <= 0xa) {
-      D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, 10, 0);
+    int32_t nValue = (int)(0x800 / (int)nBaseVelocity) - 0x80;
+    if (nValue > 0xa) {
+      if (nValue >= 100) {
+        nValue = 100;
+      }
+
+      D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, nValue, 0);
       return;
     }
-    if (nValue >= 100) {
-      nValue = 100;
-    }
 
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, nValue, 0);
+    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, 10, 0);
+    return;
 }
 
 // Applies the Fire Enchanted monster modifier (umod) to pUnit. Requires a live UNIT_MONSTER with a game pointer. Derives difficulty (0-2) and a single/multiplayer flag (BNET_HOST + SINGLEPLAYER => 0 else 1), reads the unit level, and indexes monlvl.txt DM[mp*3+diff] for a base damage. Computes fire min/max damage from GetUmodConstant: index diff+0x10/+0x13 when bUnknown==0 else diff+0x1c/+0x1f (min uses a /100 reciprocal-multiply, max uses *base/100), adds UNITSTAT_firemindam/firemaxdam, then chains MagicResist. No-op if unit/game null or monlvl row out of range.
-void __fastcall FireEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
+void __fastcall FireEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnique) {
     int32_t nMaxDamConst;
     uint32_t nDifficulty;
     int bIsMultiplayer;
@@ -754,7 +751,7 @@ void __fastcall FireEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
     }
 
     nLevelClamped = pMonLvlTxt->DM[bIsMultiplayer * 3 + nDifficulty];
-    if (bUnknown) {
+    if (bUnique) {
       nMaxDamConst = GetUmodConstant(nDifficulty + 0x1c);
       nLevelIdx = (int)((uint64_t)((int64_t)(nMaxDamConst * nLevelClamped) * 0x51eb851f) >> 0x20);
       nLevel = nDifficulty + 0x1f;
@@ -767,11 +764,11 @@ void __fastcall FireEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
     nMaxDamConst = GetUmodConstant(nLevel);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_firemindam, (nLevelIdx >> 5) - (nLevelIdx >> 0x1f), 0);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_firemaxdam, nMaxDamConst * nLevelClamped / 100, 0);
-    MagicResist(pUnit, nIndex, bUnknown);
+    MagicResist(pUnit, nIndex, bUnique);
 }
 
 // Applies the Lightning Enchanted monster modifier (umod) to pUnit. Identical structure to FireEnchanted: requires a live UNIT_MONSTER + game pointer, derives difficulty (0-2) and single/multiplayer flag, reads unit level, indexes monlvl.txt DM[mp*3+diff], and computes light min/max damage from GetUmodConstant (diff+0x10/+0x13, or +0x1c/+0x1f when bUnknown set), adding UNITSTAT_lightmindam/lightmaxdam and chaining MagicResist. No-op on null unit/game or out-of-range monlvl row.
-void __fastcall LightningEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
+void __fastcall LightningEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnique) {
     int32_t nMaxDamConst;
     uint32_t nDifficulty;
     int bIsMultiplayer;
@@ -825,7 +822,7 @@ void __fastcall LightningEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnk
     }
 
     nLevelClamped = pMonLvlTxt->DM[bIsMultiplayer * 3 + nDifficulty];
-    if (bUnknown) {
+    if (bUnique) {
       nMaxDamConst = GetUmodConstant(nDifficulty + 0x1c);
       nLevelIdx = (int)((uint64_t)((int64_t)(nMaxDamConst * nLevelClamped) * 0x51eb851f) >> 0x20);
       nLevel = nDifficulty + 0x1f;
@@ -838,11 +835,11 @@ void __fastcall LightningEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnk
     nMaxDamConst = GetUmodConstant(nLevel);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_lightmindam, (nLevelIdx >> 5) - (nLevelIdx >> 0x1f), 0);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_lightmaxdam, nMaxDamConst * nLevelClamped / 100, 0);
-    MagicResist(pUnit, nIndex, bUnknown);
+    MagicResist(pUnit, nIndex, bUnique);
 }
 
 // Monster modifier (umod) application for the Cold Enchanted boss affix. For a UNIT_MONSTER, derives difficulty index (0/1/2) and a single-vs-multiplayer index, reads the level-scaled damage base from MonLvl.txt DM[], and using GetUmodConstant scalars computes and adds cold min/max damage (UNITSTAT_coldmindam/coldmaxdam) and a cold-length stat. Picks the normal vs alternate (bUnknown) constant set. Then chains into MagicResist for the affix's resistance component. No return value.
-void __fastcall ColdEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
+void __fastcall ColdEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnique) {
     int32_t nMaxDamConst;
     int nMinDamScaled;
     uint32_t nDifficulty;
@@ -897,7 +894,7 @@ void __fastcall ColdEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
     }
 
     nLvlDamage = pMonLvlTxt->DM[bIsMultiplayer * 3 + nDifficulty];
-    if (bUnknown) {
+    if (bUnique) {
       nMaxDamConst = GetUmodConstant(nDifficulty + 0x1c);
       nMinDamScaled = (int)((uint64_t)((int64_t)(nMaxDamConst * nLvlDamage) * 0x51eb851f) >> 0x20);
       nLevel = nDifficulty + 0x1f;
@@ -911,11 +908,11 @@ void __fastcall ColdEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_coldmindam, (nMinDamScaled >> 5) - (nMinDamScaled >> 0x1f), 0);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_coldmaxdam, nMaxDamConst * nLvlDamage / 100, 0);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_coldlength, nLevelIdx * 5 + 100, 0);
-    MagicResist(pUnit, nIndex, bUnknown);
+    MagicResist(pUnit, nIndex, bUnique);
 }
 
 // Monster modifier (umod) application for the Poison Enchanted boss affix. Same shape as ColdEnchanted: for a UNIT_MONSTER derives difficulty (0/1/2) and SP/MP index, reads level-scaled base damage from MonLvl.txt DM[], and via GetUmodConstant scalars adds poison min/max damage (UNITSTAT_poisonmindam/poisonmaxdam) and poison length (note length uses (idx*5+0x96)*2). Selects normal vs alternate (bUnknown) constant set, then chains into MagicResist. No return value.
-void __fastcall PoisonEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
+void __fastcall PoisonEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnique) {
     int32_t nMaxDamConst;
     int nMinDamScaled;
     uint32_t nDifficulty;
@@ -970,7 +967,7 @@ void __fastcall PoisonEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknow
     }
 
     nLvlDamage = pMonLvlTxt->DM[bIsMultiplayer * 3 + nDifficulty];
-    if (bUnknown) {
+    if (bUnique) {
       nMaxDamConst = GetUmodConstant(nDifficulty + 0x1c);
       nMinDamScaled = (int)((uint64_t)((int64_t)(nMaxDamConst * nLvlDamage) * 0x51eb851f) >> 0x20);
       nLevel = nDifficulty + 0x1f;
@@ -984,11 +981,11 @@ void __fastcall PoisonEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknow
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_poisonmindam, (nMinDamScaled >> 5) - (nMinDamScaled >> 0x1f), 0);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_poisonmaxdam, nMaxDamConst * nLvlDamage / 100, 0);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_poisonlength, (nLevelIdx * 5 + 0x96) * 2, 0);
-    MagicResist(pUnit, nIndex, bUnknown);
+    MagicResist(pUnit, nIndex, bUnique);
 }
 
 // Applies the Mana Burn monster modifier (umod) to pUnit. Same structure as Fire/LightningEnchanted: requires a live UNIT_MONSTER + game pointer, derives difficulty (0-2) and single/multiplayer flag, reads unit level, and indexes monlvl.txt DM[mp*3+diff]. Computes the drain amounts from GetUmodConstant (diff+0x10/+0x13 or +0x1c/+0x1f when bUnknown set) and adds UNITSTAT_manadrainmindam/manadrainmaxdam, each scaled by 0x100 (256, mana fixed-point) before chaining MagicResist. No-op on null unit/game or out-of-range monlvl row.
-void __fastcall ManaBurn(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
+void __fastcall ManaBurn(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnique) {
     int32_t nMaxDamConst;
     uint32_t nDifficulty;
     int bIsMultiplayer;
@@ -1042,7 +1039,7 @@ void __fastcall ManaBurn(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
     }
 
     nLvlDamage = pMonLvlTxt->DM[bIsMultiplayer * 3 + nDifficulty];
-    if (bUnknown) {
+    if (bUnique) {
       nMaxDamConst = GetUmodConstant(nDifficulty + 0x1c);
       nLevelIdx = (int)((uint64_t)((int64_t)(nMaxDamConst * nLvlDamage) * 0x51eb851f) >> 0x20);
       nLevel = nDifficulty + 0x1f;
@@ -1055,7 +1052,7 @@ void __fastcall ManaBurn(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
     nMaxDamConst = GetUmodConstant(nLevel);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_manadrainmindam, ((nLevelIdx >> 5) - (nLevelIdx >> 0x1f)) * 0x100, 0);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_manadrainmaxdam, nMaxDamConst * nLvlDamage / 100 * 0x100, 0);
-    MagicResist(pUnit, nIndex, bUnknown);
+    MagicResist(pUnit, nIndex, bUnique);
 }
 
 } // namespace D2Game::Monsters::Umod

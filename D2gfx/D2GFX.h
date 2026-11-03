@@ -100,7 +100,7 @@ void __stdcall EndCutScene(int32_t nResolution);
 // Start render frame. Dispatches to backend (Glide/D3D/OpenGL/Rave) via vtable.
 // bClear=1 clears backbuffer. RGB sets clear color (level-specific darkness).
 BOOL __stdcall D2GFX_BeginScene(BOOL bClear, DWORD nRed, DWORD nGreen, DWORD nBlue);
-double __stdcall D2GFX_GetGammaFloat_Unused();
+double __stdcall D2GFX_GetPerformanceFrequency();
 double D2GFX_CalculateGammaRamp();
 // End render frame. Dispatches EndScene1/2 to backend, then Sleep() for frame pacing.
 // 5ms frame budget enforced - if frame took <5ms, sleeps remainder to throttle FPS.
@@ -122,7 +122,7 @@ void __stdcall D2GFX_DrawPerspectiveImage(struct D2GfxDataStrc * pData, int32_t 
 BOOL __stdcall D2GFX_DrawImage(struct D2GfxDataStrc * pGfxData, int32_t nPositionX, int32_t nPositionY, int32_t dwGamma, DRAWMODE eDrawMode, struct D2GamePalShiftGreenBloodStrc * pPalette);
 void __stdcall D2GFX_DrawShiftedImage(struct D2GfxDataStrc * pDC6Context, int32_t nPositionX, int32_t nPositionY, int32_t dwGamma, DRAWMODE eMode, GLOBALPALLETE nGlobalPaletteShift);
 void __stdcall D2GFX_DrawVerticalCropImage(struct D2GfxDataStrc * pDC6Context, int32_t nPositionX, int32_t nPositionY, int32_t nPercentHideFromBottom, int32_t nPercentShowFromBottom, DRAWMODE nDrawMode);
-void __stdcall D2GFX_DrawSprite6(struct D2GfxDataStrc * pDC6Context, int32_t nParam1, int32_t nParam2, struct D2GfxTileRectStrc * pClipRect, int32_t nParam3);
+void __stdcall D2GFX_DrawSprite6(struct D2GfxDataStrc * pDC6Context, int32_t nPosX, int32_t nPosY, struct D2GfxTileRectStrc * pClipRect, int32_t nDrawMode);
 void __stdcall D2GFX_DrawShadow(struct D2GfxDataStrc * pDC6Context, int32_t nPositionX, int32_t nPositionY);
 void __stdcall D2GFX_DrawImageColoredShape(struct D2GfxDataStrc * pDC6Context, int32_t nPositionX, int32_t nPositionY, int32_t nPaletteIndex);
 void __stdcall D2GFX_DebugFillBackBuffer(int32_t nXpos, int32_t nYpos);
@@ -149,5 +149,8 @@ void __stdcall D2GFX_InitializeLineBuffer();
 void __fastcall PALETTE_InitColorLookupTables(BYTE * * ppPaletteTable);
 void __stdcall D2GFX_InitializeWindowSize();
 BOOL __stdcall CreateWindowWithChecks(BOOL bWindowed, int32_t nResolutionMode);
+void StaticInit_gpszWindowClassName();
+void StaticInit_szWindowClassName();
+void StaticInit_gpszWindowTitle();
 
 } // namespace D2gfx::D2GFX

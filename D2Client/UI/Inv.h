@@ -101,7 +101,7 @@ BOOL __fastcall IsInInventoryScreenRange(int32_t nX, int32_t nY);
 BOOL __stdcall INV_IsPlayerInventoryMode();
 void __stdcall INV_DrawSocketedItems(struct D2UnitStrc * pUnit, struct D2GridScreenCoordinates * pGridCoords, int32_t nBaseX, int32_t nBaseY);
 void __stdcall DRAW_UI_InventoryContent(struct D2UnitStrc * pUnit);
-void InitInventory();
+void __fastcall InitInventory();
 // Formats weapon damage text for item tooltips, handling one-handed, two-handed, barbarian dual-wield, throwable, and missile potion damage display. Calculates min/max damage based on weapon type, applies color coding for modified stats, and formats elemental damage for missile potions with duration scaling.
 void __stdcall szPrintfBuffer(struct D2UnitStrc * pUnit, uint16_t * wszText);
 void __stdcall INV_FormatArmorClassText(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, uint16_t * wszText);
@@ -110,31 +110,31 @@ void __stdcall INV_FreeBodySlotImages();
 int32_t __stdcall INV_GetGoldButtonX();
 int32_t __stdcall INV_GetGoldButtonY();
 // Returns whether the inventory is in an interactive (shop/stash/trade) mode. Thirty-three bytes that touch EAX only - a global load, a jump table and a return - so it preserves ECX. Declaring it __stdcall made the decompiler treat ECX as killed by the call, and ClickItemLeft carries a SETZ result in ECX across exactly this call. The lost register became an unassigned local, the pick-up branch was never taken, and clicking an inventory item stopped lifting it.
-BOOL INV_IsInteractiveMode();
+BOOL __fastcall INV_IsInteractiveMode();
 BOOL __stdcall INV_IsInteractiveModeEx();
 int __stdcall INV_CheckActionThrottle();
-BOOL __fastcall INV_IsMouseOverCloseButton(int32_t nParam1, int32_t nParam2);
+BOOL __fastcall INV_IsMouseOverCloseButton(int32_t nMouseX, int32_t nMouseY);
 void __stdcall INV_HandleInventoryRightClick(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INV_HandleMouseMove(struct D2UIMouseMsgStrc * pMsg);
-int32_t __stdcall ClickItemRight(struct D2UnitStrc * pItem, struct D2InventoryStrc * pGridCoords, int32_t nPage, struct D2UnitStrc * pPlayer, struct D2InventoryStrc * pInventory);
+int32_t __stdcall ClickItemRight(int32_t pItem, int32_t pGridCoords, int32_t nPage, struct D2UnitStrc * pPlayer, struct D2InventoryStrc * pInventory);
 // Resets the shop/inventory panel UI state. Fifty-six bytes whose only writes are stores to globals through EAX, so it preserves ECX. Typed __stdcall, the decompiler treated ECX as killed by the call, and INV_HandleShopLeftClick carries its button-loop stride there across two calls to this function - the stride became an unassigned local and the shop button scan advanced by garbage.
-void INV_ResetHoverAndContextState();
+void __fastcall INV_ResetHoverAndContextState();
 void __fastcall INV_ClearItemDescription(struct D2UnitStrc * pUnit);
-void __stdcall INV_SetShopPageFromNpc(uint8_t bParam);
+void __stdcall INV_SetShopPageFromNpc(uint8_t byPage);
 void __stdcall INV_ResetInventoryState();
 void __stdcall INV_SetRefreshFlag();
 void __stdcall INV_SetMercInventoryMode();
-void __stdcall INV_HandleShopAction(DWORD nAction, int32_t pTarget, struct D2UnitStrc * pUnit, DWORD dwParam1, DWORD dwParam2, DWORD dwParam3, DWORD dwParam4);
+void __stdcall INV_HandleShopAction(DWORD nAction, struct D2UnitStrc * pTarget, struct D2UnitStrc * pUnit, DWORD dwSell, DWORD dwParam2, DWORD bSkipConfirm, DWORD dwMode);
 int __stdcall INV_EnterShopMode();
 void __stdcall INV_ReturnToShopFromRepair();
 void __stdcall INV_SetRepairMode();
-void __stdcall INV_TrySetRepairMode();
+BOOL __stdcall INV_TrySetRepairMode();
 void __stdcall INV_SelectDefaultNpcButton();
 void __stdcall INV_SetIdentifyMode();
 void __stdcall INV_ExitIdentifyMode();
 void __stdcall INV_InitNpcButtonsByClass();
 // Draws gold amount and coin icon in inventory UI for three contexts: stash (param=0), inventory (param=1), and trade (param=2). Retrieves player's gold from appropriate stat (UNITSTAT_goldbank for stash, UNITSTAT_gold for inventory), formats the number, renders text and animated coin icon at context-specific screen coordinates.
-void __fastcall DRAW_UI_INVENTORY_Gold(int32_t nParam);
+void __fastcall DRAW_UI_INVENTORY_Gold(int32_t nGoldPanelMode);
 void __stdcall DRAW_UI_Inventory_DrawShop();
 void __stdcall INV_DrawNpcButtonTooltip();
 BOOL __stdcall INV_CanReturnToShop();
@@ -152,7 +152,7 @@ BOOL __fastcall INV_HandleInventoryLeftDown(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INV_LoadShopTabImages();
 void __stdcall INV_FreeShopTabImages();
 // Initializes trade mode UI. Clears gbInventoryDragInProgress flag, sets up trade window inventory grids, loads partner inventory data. Called when trade UI opens.
-void __fastcall INV_InitTradeMode(int32_t nParam);
+void __fastcall INV_InitTradeMode(int32_t nTradeMode);
 void __stdcall INV_HandleTradeMouseMove(struct D2UIMouseMsgStrc * pMsg);
 // Handles left-click in trade window. Sets/clears gbInventoryDragInProgress based on cursor state. Picks up item from trade grid or places item, sends trade update packet to partner.
 void __stdcall INV_HandleTradeLeftClick(struct D2UIMouseMsgStrc * pMsg);
@@ -164,7 +164,7 @@ uint32_t __stdcall INV_IsRepairMode();
 BOOL __stdcall INV_GetGambleFlag();
 void __stdcall INV_StashOpened();
 void __stdcall INV_StashOpenedWithGold();
-void __fastcall INV_SetInventoryActive(int32_t nParam);
+void __fastcall INV_SetInventoryActive(int32_t bActive);
 void __stdcall INV_HandleStashMouseMove(struct D2UIMouseMsgStrc * pMsg);
 // Handles left-click in stash window. Sets/clears gbInventoryDragInProgress based on cursor state. Picks up item from stash grid or places item, sends stash update packet to server.
 void __stdcall INV_HandleStashLeftClick(struct D2UIMouseMsgStrc * pMsg);
@@ -196,7 +196,8 @@ void __stdcall INV_LoadCubeImages();
 void __stdcall INV_FreeCubeImages();
 void __fastcall INV_StartCubeTransmuteAnim(int32_t nMenuActionId);
 void __stdcall INV_FreeItemGfxCache();
-void INV_HandleGambleMessage(short * pPacket);
+// EDI is not an argument: the body never reads it.
+void INV_HandleGambleMessage();
 void __stdcall INV_ResetOverlayFlag();
 void __stdcall INV_ResetShopState();
 void __stdcall INV_SetItemDescPending();
@@ -215,6 +216,7 @@ void __stdcall INV_HandleMercInvMouseMove(struct D2UIMouseMsgStrc * pMsg);
 void __thiscall CloseScrollOfWhatever(void * pThis, int32_t nColor);
 void __stdcall INV_DrawRecipeScroll();
 void __stdcall INV_HandleRecipeScrollClick(struct D2UIMouseMsgStrc * pMsg);
+void __stdcall INV_PanelKeyNoOp(struct D2UIMouseMsgStrc * pMsg);
 void __fastcall INV_ExtractTextBetweenBrackets(uint16_t * wszText, short * wszDelimStart);
 void wsprintf(uint16_t * wszDest, uint16_t * wszFormat, ...);
 void __fastcall GetItemName(struct D2UnitStrc * pUnit, uint16_t * wBuffer, size_t nSize);
@@ -243,6 +245,7 @@ void __stdcall INPUT_WeaponSwap(struct D2UIMouseMsgStrc * pMsg);
 // Input handler for cube left-click. Maps mouse coords to cube grid, calls INV_HandleCubeLeftClick. Clears gbInventoryDragInProgress on cancel, sets on drag start. Handles transmute button.
 void __stdcall INPUT_CubeLeftClick(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall DrawMercInventory();
+void StaticInit_gpInvRecipeScrollImage();
 // 50 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::Inv

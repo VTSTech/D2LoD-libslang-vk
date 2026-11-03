@@ -3,6 +3,7 @@
 #include "D2Client/UI/Button/ButtonImplementation.h"
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2Client/ButtonWrapper.h"
+#include "D2Client/Cursor.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/Button/ButtonWrapper.h"
@@ -15,7 +16,7 @@
 #include "D2Win/Src/D2WinTextBox.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/3rdparty/crashy/Report.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Button.h"
 #include "D2Client/UI/Dialog.h"
@@ -43,9 +44,9 @@ void __thiscall Destructor(::ButtonImplementation * pThis) {
 }
 
 BOOL __thiscall IsMouseInBounds(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
-    uint32_t uVar1 = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
-    uint32_t uVar2 = (uint32_t)pMsg->uLParam.sMousePos.nMouseY;
-    if ((int)uVar1 >= pThis->nPosX && (int)uVar1 <= pThis->nWidth + pThis->nPosX && (int)uVar2 >= pThis->nPosY - pThis->nHeight && (int)uVar2 <= pThis->nPosY) {
+    uint32_t nMouseX = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
+    uint32_t nMouseY = (uint32_t)pMsg->uLParam.sMousePos.nMouseY;
+    if ((int)nMouseX >= pThis->nPosX && (int)nMouseX <= pThis->nWidth + pThis->nPosX && (int)nMouseY >= pThis->nPosY - pThis->nHeight && (int)nMouseY <= pThis->nPosY) {
       return 1;
     }
 
@@ -158,11 +159,10 @@ int __thiscall OnMouseWheel(::ButtonImplementation * pThis, D2UIMouseMsgStrc * p
 ::ButtonImplementation * __thiscall ScalarDeletingDestructor(::ButtonImplementation * pThis, uint32_t nFlags) {
     pThis->pVtable = (ButtonImplementationVtable*)(void*)ButtonImplementation::vftable;
     UI::Destructor((::UIWidget*)pThis);
-    if (!(nFlags & 1)) {
-      return pThis;
+    if (nFlags & 1) {
+      Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     }
 
-    Storm::SMem::SMemFree(pThis, "delete", -1, 0);
     return pThis;
 }
 
@@ -173,9 +173,9 @@ void __thiscall Draw(::ButtonImplementation * pThis) {
     sGfxData.nFrameNumber = (uint32_t)pThis->nFrameBase + pThis->bPressed;
     sGfxData.nDirection = 0;
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pThis->nPosX, pThis->nPosY, -1, DRAW_SOLID, nullptr);
-    uint32_t nCurMouseX = ui::GetMouseX();
-    uint32_t nCurMouseY = ui::GetMouseY();
-    if (!((int)(nCurMouseX & 0xffff) >= pThis->nPosX && (int)(nCurMouseX & 0xffff) <= pThis->nWidth + pThis->nPosX && (int)(nCurMouseY & 0xffff) >= pThis->nPosY - pThis->nHeight && (int)(nCurMouseY & 0xffff) <= pThis->nPosY)) {
+    uint32_t nCurMouseX = Cursor::GetMouseX();
+    uint32_t nCurMouseY = Cursor::GetMouseY();
+    if (!((int)(uint16_t)nCurMouseX >= pThis->nPosX && (int)(uint16_t)nCurMouseX <= pThis->nWidth + pThis->nPosX && (int)(nCurMouseY & 0xffff) >= pThis->nPosY - pThis->nHeight && (int)(nCurMouseY & 0xffff) <= pThis->nPosY)) {
       return;
     }
 

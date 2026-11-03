@@ -92,9 +92,9 @@ D2LightMapStrc * __fastcall AllocLightMap(D2UnitStrc * pUnit, int32_t nLightType
 
       pLightMap->nUnitGUID = nUnitGUID;
       if (!pUnit || !(pUnit->eUnitFlags >> 0x15 & 1)) {
-        pLightMap->bUnknown = '\0';
+        pLightMap->bServerSideUnit = '\0';
       } else {
-        pLightMap->bUnknown = '\x01';
+        pLightMap->bServerSideUnit = '\x01';
       }
 
       uint32_t nPrecision = D2Common::Units::GetPrecisionX(pUnit);
@@ -144,23 +144,23 @@ void __fastcall SetRadiusY(D2LightMapStrc * pLightMap, int32_t nValue) {
     pLightMap->nRadiusY = nValue * 8;
 }
 
-void __fastcall LIGHTMAP_SetRadius(D2LightMapStrc * pLightMap, int32_t nParam) {
-    if (nParam <= 0) {
+void __fastcall LIGHTMAP_SetRadius(D2LightMapStrc * pLightMap, int32_t nDiameter) {
+    if (nDiameter <= 0) {
       return;
     }
-    if (nParam >= 0x12) {
-      nParam = 0x12;
+    if (nDiameter >= 0x12) {
+      nDiameter = 0x12;
     }
     if (!pLightMap) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x141);
       exit(-1);
     }
-    if (nParam >= 0x12) {
-      nParam = 0x12;
+    if (nDiameter >= 0x12) {
+      nDiameter = 0x12;
     }
 
-    pLightMap->nRadiusX = nParam * 8;
-    pLightMap->nRadiusY = nParam * 8;
+    pLightMap->nRadiusX = nDiameter * 8;
+    pLightMap->nRadiusY = nDiameter * 8;
     if (pLightMap->nLightType != 2) {
       return;
     }
@@ -179,7 +179,6 @@ int32_t __fastcall GetRadiusX(D2LightMapStrc * pLightMap) {
       exit(-1);
     }
 
-    return pLightMap->nRadiusX >> 3;
     return pLightMap->nRadiusX >> 3;
 }
 
@@ -336,7 +335,7 @@ void __stdcall LIGHTMAP_InitFromPlayerAndRooms(uint32_t bForceBlack) {
       nIntensity = 0;
       ROOM_GetAmbientLightColor(pRoom, &nIntensity, &nRed, &nGreen, (char*)((uintptr_t)&bForceBlack + 3), 1);
       LIGHTMAP_FillGridRect(0, (uint32_t)(uint32_t)((uint32_t)((uint32_t)(uint16_t)((uint16_t)(uint8_t)*(uint8_t*)((char*)&bForceBlack + 3) << 8 | (uint16_t)(uint8_t)nGreen) << 8 | (uint32_t)(uint8_t)nRed) & 0xffffffu) << 8 | nIntensity, 0, 0x2f, 0x2f);
-      if (0 < nNumRooms) {
+      if (nNumRooms > 0) {
         do {
           if (ppRoomList[nRoomIndex] != pRoom) {
             ROOM_GetAmbientLightColor(ppRoomList[nRoomIndex], &nIntensity, &nRed, &nGreen, (char*)((uintptr_t)&bForceBlack + 3), 1);
@@ -408,17 +407,17 @@ static void __stdcall LIGHTMAP_AddLightToCell(int nX, int nIntensity, uint8_t nR
       uint32_t nNewRed;
       nFalloff = gnLightmapInterpolationState[nCellY + 1];
       nNewRed = (gaLightMapCells[nCellOffset].nRed * nCellX + (uint32_t)nRed * nIntensity) * nFalloff >> 0x10;
-      if (0xff < nNewRed) {
+      if (0xff < (int32_t)nNewRed) {
         nNewRed = 0xff;
       }
 
       nNewGreen = (gaLightMapCells[nCellOffset].nGreen * nCellX + (uint32_t)nGreen * nIntensity) * nFalloff >> 0x10;
-      if (0xff < nNewGreen) {
+      if (0xff < (int32_t)nNewGreen) {
         nNewGreen = 0xff;
       }
 
       nCellX = (gaLightMapCells[nCellOffset].nBlue * nCellX + (uint32_t)nBlue * nIntensity) * nFalloff >> 0x10;
-      if (0xff < nCellX) {
+      if (0xff < (int32_t)nCellX) {
         nCellX = 0xff;
       }
 
@@ -506,7 +505,7 @@ static void __stdcall LIGHTMAP_ApplyPointLight(int nQuality, D2LightMapStrc * pL
         }
 
         nApproxDist = WEATHER_ApproximateDistanceCustomCC(nApproxDist, nDistY);
-        nIntensity = (int)((nLightRadius - nApproxDist) * (int)((int64_t)((uint64_t)nGamma << 0x10) / (int64_t)nLightRadius)) >> 0x10;
+        nIntensity = (int)((nLightRadius - nApproxDist) * (int)((nGamma << 0x10) / nLightRadius)) >> 0x10;
         if (nIntensity > 0) {
           LIGHTMAP_AddLightToCell(nQuality, nIntensity, pLightMap->nRed, pLightMap->nGreen, pLightMap->nBlue, nCurX);
         }
@@ -528,7 +527,7 @@ static void __fastcall LIGHTMAP_SampleGridToBuffer(D2LightMapStrc * pLightMap) {
     int nStartX = pLightMap->nGridX - (pLightMap->nGridX & 7U) - nCurX;
     int nYCoord = pLightMap->nGridY - (pLightMap->nGridY & 7U) - nCurX;
     int nCellSpan = nCurX * 2 >> 3;
-    if (-1 >= nCellSpan) {
+    if (nCellSpan < 0) {
       return;
     }
 
@@ -802,7 +801,7 @@ static void LIGHTMAP_ApplyStaticLightWithShadow(D2LightMapStrc * pLightMap) {
             nDistX = nGridCellX * 0x3d7 + nRadiusCells * 0x197;
           }
 
-          nGridCellX = (8 - ((int)*pBufferCell >> 1)) * ((int)((pLightMap->nRadiusX - (nDistX >> 10)) * (int)((int64_t)((uint64_t)nGamma << 0x10) / (int64_t)nRadius)) >> 0x10) >> 3;
+          nGridCellX = (8 - ((int)*pBufferCell >> 1)) * ((int)((pLightMap->nRadiusX - (nDistX >> 10)) * (int)((nGamma << 0x10) / nRadius)) >> 0x10) >> 3;
           if (nGridCellX > 0) {
             LIGHTMAP_AddLightToCell(nYBase, nGridCellX, pLightMap->nRed, pLightMap->nGreen, pLightMap->nBlue, nStartY);
           }
@@ -854,7 +853,7 @@ static void LIGHTMAP_ApplyCollisionOccludedLight(D2LightMapStrc * pLightMap) {
     if (eUnitType == UNIT_COUNT) {
       return;
     }
-    if (pLightMap->bUnknown != '\0') {
+    if (pLightMap->bServerSideUnit != '\0') {
       pUnit = UNIT::Player::UNITS_FindServerSideUnit(pLightMap->nUnitGUID, eUnitType);
     } else {
       pUnit = UNIT::Player::UNITS_FindClientSideUnit(pLightMap->nUnitGUID, eUnitType);
@@ -865,113 +864,113 @@ static void LIGHTMAP_ApplyCollisionOccludedLight(D2LightMapStrc * pLightMap) {
 
     int32_t nUnitX;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    if (pRoom) {
-      eCollisionFlags eCollision;
-      nUnitX = Units::GetXPosFromDynamicPathUnit(pUnit);
-      nUnitY = Units::GetYPosFromDynamicPathUnit(pUnit);
-      nCollisionY = 0;
-      pCollisionCell = (int32_t*)gaLightmapInterpBuffer;
-      do {
-        nCellRight = 0;
-        do {
-          eCollision = D2Common::Collision::CheckCollision_BlockPlayerMissile(pRoom, nCellRight + nUnitX - 0x20, nCollisionY + nUnitY - 0x20, COLLIDE_BLANK | COLLIDE_BLOCK_MISSILE);
-          *pCollisionCell = eCollision != COLLIDE_NONE ? 0x10 : 0;
-          nCellRight++;
-          pCollisionCell++;
-        } while (nCellRight < 0x40);
-
-        nCollisionY++;
-      } while ((int)pCollisionCell < (intptr_t)((char*)&gaLightmapInterpBuffer + sizeof(gaLightmapInterpBuffer)));
-
-      if (nRadiusCells >= 2) {
-        nCoordYBottom = nGridCellY * 8 + 0x14;
-        nCoordXRightEdge = nGridCellX * 8 + 0x14;
-        nCollisionY = nGridCellY * 8 - 0xc;
-        nCoordXLeftEdge = nGridCellX * 8 - 0xc;
-        nYBuffer = 0x22;
-        nXBuffer = 0x1e;
-        do {
-          if (-1 < nYBuffer - 0x20) {
-            nCoordYTop = nGridCellY * 8 + 4;
-            nCoordXLeft = nGridCellX * 8 + 4;
-            nCellRight = 0x20;
-            nXCellsLeft = nYBuffer - 0x1f;
-            nBufferX = 0x20;
-            nCoordYBot = nCoordYTop;
-            nCoordXRight = nCoordXLeft;
-            do {
-              LIGHTMAP_ComputeInterpolationDir(nCoordXLeft, nCollisionY, pLightMap);
-              LIGHTMAP_InterpolateCell(nBufferX, nXBuffer);
-              LIGHTMAP_ComputeInterpolationDir(nCoordXRight, nCollisionY, pLightMap);
-              LIGHTMAP_InterpolateCell(nCellRight, nXBuffer);
-              LIGHTMAP_ComputeInterpolationDir(nCoordXLeft, nCoordYBottom, pLightMap);
-              LIGHTMAP_InterpolateCell(nBufferX, nYBuffer);
-              LIGHTMAP_ComputeInterpolationDir(nCoordXRight, nCoordYBottom, pLightMap);
-              LIGHTMAP_InterpolateCell(nCellRight, nYBuffer);
-              LIGHTMAP_ComputeInterpolationDir(nCoordXRightEdge, nCoordYTop, pLightMap);
-              LIGHTMAP_InterpolateCell(nYBuffer, nBufferX);
-              LIGHTMAP_ComputeInterpolationDir(nCoordXRightEdge, nCoordYBot, pLightMap);
-              LIGHTMAP_InterpolateCell(nYBuffer, nCellRight);
-              LIGHTMAP_ComputeInterpolationDir(nCoordXLeftEdge, nCoordYTop, pLightMap);
-              LIGHTMAP_InterpolateCell(nXBuffer, nBufferX);
-              LIGHTMAP_ComputeInterpolationDir(nCoordXLeftEdge, nCoordYBot, pLightMap);
-              LIGHTMAP_InterpolateCell(nXBuffer, nCellRight);
-              nCoordXRight += 8;
-              nCoordYBot += 8;
-              nCoordXLeft += -8;
-              nCoordYTop += -8;
-              nBufferX--;
-              nCellRight++;
-              nXCellsLeft--;
-            } while (nXCellsLeft);
-          }
-
-          nXBuffer--;
-          nCoordXRightEdge += 8;
-          nCoordYBottom += 8;
-          nCoordXLeftEdge += -8;
-          nCollisionY += -8;
-          nCellRight = nYBuffer - 0x1f;
-          nYBuffer++;
-        } while (nCellRight <= nRadiusCells);
-      }
-      if (pLightMap->bPixelMapReady) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x454);
-        exit(-1);
-      }
-
-      pDstPixel = (uint32_t*)pLightMap->pPixelMap;
-      if (!pDstPixel) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x455);
-        exit(-1);
-      }
-      if (nCellSpan >= 0) {
-        nCellSpan++;
-        pSrcCell = gLightMapBuffer + (0x20 - (pLightMap->nRadiusX >> 3)) * 0x41;
-        nRadiusCells = nCellSpan;
-        nYCopyLeft = nCellSpan;
-        pSrcRow = pSrcCell;
-        do {
-          do {
-            *pDstPixel = *pSrcCell;
-            pDstPixel++;
-            pSrcCell++;
-            nRadiusCells--;
-          } while (nRadiusCells);
-
-          pSrcCell = pSrcRow + 0x40;
-          nYCopyLeft--;
-          nRadiusCells = nCellSpan;
-          pSrcRow = pSrcCell;
-        } while (nYCopyLeft);
-      }
-
-      pLightMap->bPixelMapReady = 1;
-      return;
-    } else {
+    if (!pRoom) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x414);
       exit(-1);
     }
+
+    eCollisionFlags eCollision;
+    nUnitX = Units::GetXPosFromDynamicPathUnit(pUnit);
+    nUnitY = Units::GetYPosFromDynamicPathUnit(pUnit);
+    nCollisionY = 0;
+    pCollisionCell = (int32_t*)gaLightmapInterpBuffer;
+    do {
+      nCellRight = 0;
+      do {
+        eCollision = D2Common::Collision::CheckCollision_BlockPlayerMissile(pRoom, nCellRight + nUnitX - 0x20, nCollisionY + nUnitY - 0x20, COLLIDE_BLANK | COLLIDE_BLOCK_MISSILE);
+        *pCollisionCell = eCollision != COLLIDE_NONE ? 0x10 : 0;
+        nCellRight++;
+        pCollisionCell++;
+      } while (nCellRight < 0x40);
+
+      nCollisionY++;
+    } while ((int)pCollisionCell < (intptr_t)((char*)&gaLightmapInterpBuffer + sizeof(gaLightmapInterpBuffer)));
+
+    if (nRadiusCells >= 2) {
+      nCoordYBottom = nGridCellY * 8 + 0x14;
+      nCoordXRightEdge = nGridCellX * 8 + 0x14;
+      nCollisionY = nGridCellY * 8 - 0xc;
+      nCoordXLeftEdge = nGridCellX * 8 - 0xc;
+      nYBuffer = 0x22;
+      nXBuffer = 0x1e;
+      do {
+        if (-1 < nYBuffer - 0x20) {
+          nCoordYTop = nGridCellY * 8 + 4;
+          nCoordXLeft = nGridCellX * 8 + 4;
+          nCellRight = 0x20;
+          nXCellsLeft = nYBuffer - 0x1f;
+          nBufferX = 0x20;
+          nCoordYBot = nCoordYTop;
+          nCoordXRight = nCoordXLeft;
+          do {
+            LIGHTMAP_ComputeInterpolationDir(nCoordXLeft, nCollisionY, pLightMap);
+            LIGHTMAP_InterpolateCell(nBufferX, nXBuffer);
+            LIGHTMAP_ComputeInterpolationDir(nCoordXRight, nCollisionY, pLightMap);
+            LIGHTMAP_InterpolateCell(nCellRight, nXBuffer);
+            LIGHTMAP_ComputeInterpolationDir(nCoordXLeft, nCoordYBottom, pLightMap);
+            LIGHTMAP_InterpolateCell(nBufferX, nYBuffer);
+            LIGHTMAP_ComputeInterpolationDir(nCoordXRight, nCoordYBottom, pLightMap);
+            LIGHTMAP_InterpolateCell(nCellRight, nYBuffer);
+            LIGHTMAP_ComputeInterpolationDir(nCoordXRightEdge, nCoordYTop, pLightMap);
+            LIGHTMAP_InterpolateCell(nYBuffer, nBufferX);
+            LIGHTMAP_ComputeInterpolationDir(nCoordXRightEdge, nCoordYBot, pLightMap);
+            LIGHTMAP_InterpolateCell(nYBuffer, nCellRight);
+            LIGHTMAP_ComputeInterpolationDir(nCoordXLeftEdge, nCoordYTop, pLightMap);
+            LIGHTMAP_InterpolateCell(nXBuffer, nBufferX);
+            LIGHTMAP_ComputeInterpolationDir(nCoordXLeftEdge, nCoordYBot, pLightMap);
+            LIGHTMAP_InterpolateCell(nXBuffer, nCellRight);
+            nCoordXRight += 8;
+            nCoordYBot += 8;
+            nCoordXLeft += -8;
+            nCoordYTop += -8;
+            nBufferX--;
+            nCellRight++;
+            nXCellsLeft--;
+          } while (nXCellsLeft);
+        }
+
+        nXBuffer--;
+        nCoordXRightEdge += 8;
+        nCoordYBottom += 8;
+        nCoordXLeftEdge += -8;
+        nCollisionY += -8;
+        nCellRight = nYBuffer - 0x1f;
+        nYBuffer++;
+      } while (nCellRight <= nRadiusCells);
+    }
+    if (pLightMap->bPixelMapReady) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x454);
+      exit(-1);
+    }
+
+    pDstPixel = (uint32_t*)pLightMap->pPixelMap;
+    if (!pDstPixel) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x455);
+      exit(-1);
+    }
+    if (nCellSpan >= 0) {
+      nCellSpan++;
+      pSrcCell = gLightMapBuffer + (0x20 - (pLightMap->nRadiusX >> 3)) * 0x41;
+      nRadiusCells = nCellSpan;
+      nYCopyLeft = nCellSpan;
+      pSrcRow = pSrcCell;
+      do {
+        do {
+          *pDstPixel = *pSrcCell;
+          pDstPixel++;
+          pSrcCell++;
+          nRadiusCells--;
+        } while (nRadiusCells);
+
+        pSrcCell = pSrcRow + 0x40;
+        nYCopyLeft--;
+        nRadiusCells = nCellSpan;
+        pSrcRow = pSrcCell;
+      } while (nYCopyLeft);
+    }
+
+    pLightMap->bPixelMapReady = 1;
+    return;
 }
 
 static void LIGHTMAP_ApplyLightWithPixelMap(D2LightMapStrc * pLightMap) {
@@ -1028,7 +1027,7 @@ static void LIGHTMAP_ApplyLightWithPixelMap(D2LightMapStrc * pLightMap) {
             }
 
             nDistX = Weather::WEATHER_ApproximateDistance(nDistX, nDistY);
-            nIntensity = ((int)((pLightMap->nRadiusX - nDistX) * (int)((int64_t)((uint64_t)nGamma << 0x10) / (int64_t)nRadius)) >> 0x10) * (8 - (nIntensity >> 1)) >> 3;
+            nIntensity = ((int)((pLightMap->nRadiusX - nDistX) * (int)((nGamma << 0x10) / nRadius)) >> 0x10) * (8 - (nIntensity >> 1)) >> 3;
             if (nIntensity > 0) {
               LIGHTMAP_AddLightToCell(nYCoord, nIntensity, pLightMap->nRed, pLightMap->nGreen, pLightMap->nBlue, nCurX);
             }
@@ -1057,7 +1056,7 @@ static void __stdcall LIGHTMAP_UpdateSingleLight(int nQuality, D2LightMapStrc * 
       D2UnitStrc* pUnit;
       eUnitType = pLightMap->eUnitType;
       if (eUnitType != UNIT_COUNT) {
-        if (pLightMap->bUnknown != '\0') {
+        if (pLightMap->bServerSideUnit != '\0') {
           pUnit = UNIT::Player::UNITS_FindServerSideUnit(pLightMap->nUnitGUID, eUnitType);
         } else {
           pUnit = UNIT::Player::UNITS_FindClientSideUnit(pLightMap->nUnitGUID, eUnitType);
@@ -1100,21 +1099,23 @@ static void __stdcall LIGHTMAP_UpdateSingleLight(int nQuality, D2LightMapStrc * 
       LIGHTMAP_ApplyStaticLightWithShadow(pLightMap);
       return;
     }
-    if (pLightMap->nLightType != 2) {
-      LIGHTMAP_ApplyPointLight(nQuality, pLightMap);
-      return;
-    }
-    if (!pLightMap->bPixelMapReady) {
-      if (!pLightMap->pPixelMap) {
-        nRadius = (pLightMap->nRadiusX >> 3) * 2 + 1;
-        pPixelMap = (int*)D2_ALLOC_AT(nRadius * nRadius * 4, ".\\DRAW\\dLightMap.cpp", 0x4f1);
-        pLightMap->pPixelMap = pPixelMap;
+    if (pLightMap->nLightType == 2) {
+      if (!pLightMap->bPixelMapReady) {
+        if (!pLightMap->pPixelMap) {
+          nRadius = (pLightMap->nRadiusX >> 3) * 2 + 1;
+          pPixelMap = (int*)D2_ALLOC_AT(nRadius * nRadius * 4, ".\\DRAW\\dLightMap.cpp", 0x4f1);
+          pLightMap->pPixelMap = pPixelMap;
+        }
+
+        LIGHTMAP_ApplyCollisionOccludedLight(pLightMap);
       }
 
-      LIGHTMAP_ApplyCollisionOccludedLight(pLightMap);
+      LIGHTMAP_ApplyLightWithPixelMap(pLightMap);
+      return;
     }
 
-    LIGHTMAP_ApplyLightWithPixelMap(pLightMap);
+    LIGHTMAP_ApplyPointLight(nQuality, pLightMap);
+    return;
 }
 
 void __stdcall LIGHTMAP_BuildCollisionFlags() {
@@ -1191,17 +1192,17 @@ int __stdcall LIGHTMAP_GetQualityLevel() {
     nQualityLevel = 0;
     commit_with_hysteresis:
     dwTickCount = gdwLightmapQualityLastCheck;
-    int iVar1 = gnLightmapQualityLevel;
+    int nNewLevel = gnLightmapQualityLevel;
     if (nQualityLevel != gnLightmapQualityLevel) {
       dwTickCount = GetTickCount();
-      iVar1 = nQualityLevel;
+      nNewLevel = nQualityLevel;
       if (dwTickCount - gdwLightmapQualityLastCheck <= 0x7d0) {
         return gnLightmapQualityLevel;
       }
     }
 
     gdwLightmapQualityLastCheck = dwTickCount;
-    gnLightmapQualityLevel = iVar1;
+    gnLightmapQualityLevel = nNewLevel;
     return nQualityLevel;
 }
 
@@ -1271,6 +1272,83 @@ void __stdcall LIGHTMAP_FreeAll() {
     }
 
     gpLightMap = 0;
+}
+
+// Client-side light-map activation callback. Iterates the gpLightMap linked list looking for dynamic (nLightType==2) entries. For each, resolves the owning unit (client- or server-side lookup via bUnknown flag) and checks whether the light radius edge (±nRadiusX>>3 cells in X and Y) touches pRoom via DRLGROOM_FindBetterNearbyRoom. If the light bleeds into pRoom, marks bPixelMapReady=0 so the renderer will rebuild the pixel map for that room on the next frame.
+void __fastcall ACTCALLBACKFN(D2RoomStrc * pRoom) {
+    D2UnitStrc* pUnit;
+    D2RoomStrc* pUnitRoom;
+    int nUnitX;
+    int nUnitY;
+    D2RoomStrc* pNearbyRoom;
+    int nRadiusCells;
+    eD2UnitType eLightUnitType;
+    D2LightMapStrc* pLightMap = gpLightMap;
+    do {
+      if (!pLightMap) {
+        return;
+      }
+      if (pLightMap->nLightType == 2) {
+        eLightUnitType = pLightMap->eUnitType;
+        if (eLightUnitType == UNIT_COUNT) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x591);
+          exit(-1);
+        }
+        if (pLightMap->bServerSideUnit != '\0') {
+          pUnit = UNIT::Player::UNITS_FindServerSideUnit(pLightMap->nUnitGUID, eLightUnitType);
+        } else {
+          pUnit = UNIT::Player::UNITS_FindClientSideUnit(pLightMap->nUnitGUID, eLightUnitType);
+        }
+        if (!pUnit) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x591);
+          exit(-1);
+        }
+
+        pUnitRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+        if (pUnitRoom != pRoom) {
+          eLightUnitType = pUnit->eUnitType;
+          if (eLightUnitType == UNIT_OBJECT || (int)eLightUnitType > 3 && (int)eLightUnitType <= 5) {
+            nUnitX = pUnit->pPath.pStaticPath->nPosX;
+          } else if (pUnit->pPath.pDynamicPath) {
+            nUnitX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+          } else {
+            nUnitX = 0;
+          }
+
+          eLightUnitType = pUnit->eUnitType;
+          if (eLightUnitType == UNIT_OBJECT || (int)eLightUnitType > 3 && (int)eLightUnitType <= 5) {
+            nUnitY = pUnit->pPath.pStaticPath->nPosY;
+          } else if (pUnit->pPath.pDynamicPath) {
+            nUnitY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+          } else {
+            nUnitY = 0;
+          }
+
+          nRadiusCells = pLightMap->nRadiusX >> 3;
+          pNearbyRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX + nRadiusCells, nUnitY);
+          if (pNearbyRoom == pRoom) {
+            pLightMap->bPixelMapReady = 0;
+          } else {
+            pNearbyRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX - nRadiusCells, nUnitY);
+            if (pNearbyRoom == pRoom) {
+              pLightMap->bPixelMapReady = 0;
+            } else {
+              pNearbyRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX, nUnitY + nRadiusCells);
+              if (pNearbyRoom == pRoom) {
+                pLightMap->bPixelMapReady = 0;
+              } else {
+                pUnitRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX, nUnitY - nRadiusCells);
+                if (pUnitRoom == pRoom) {
+                  pLightMap->bPixelMapReady = 0;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      pLightMap = pLightMap->pPrev;
+    } while (true);
 }
 
 } // namespace D2Client::Draw::LightMap

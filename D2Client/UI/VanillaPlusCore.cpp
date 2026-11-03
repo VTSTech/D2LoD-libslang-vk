@@ -5,7 +5,6 @@
 #include "D2Client/D2Client.h"
 #include "D2Client/UI/VanillaPlusCore.h"
 #include "D2Client/UI/VanillaPlusOptions.h" // self-check pins the row wiring
-#include "Storm/_unnamespaced.h" // self-check pins the Resolution row init callback
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2Client/ClientModeInGame.h"
@@ -84,7 +83,6 @@
 #include "D2Common/Units.h"
 #include "D2DDraw/Renderer/DirectDraw.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
-#include "D2Game/D2UnitFindDataStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/Objects/Objects.h"
@@ -221,7 +219,26 @@ static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
         ";   0 = item tooltips exactly as retail               (vanilla behavior)\r\n"
         ";   1 = append \" (N)\" to the item name on every item\r\n"
         ";       tooltip, e.g. Long Sword (12)\r\n"
-        "item_ilvl=0\r\n";
+        "item_ilvl=0\r\n"
+        "\r\n"
+        "; Shared stash (single-player):\r\n"
+        ";   0 = off                                        (vanilla behavior)\r\n"
+        ";   1 = add a \"Shared\" tab to the stash panel. The shared stash is\r\n"
+        ";       ten extra stash pages (since R82) every character on this PC\r\n"
+        ";       shares: items and gold deposited there survive the\r\n"
+        ";       character. Stored in its own file (_d2vp_shared.sss) next to\r\n"
+        ";       the saves - character .d2s files stay retail-compatible, with\r\n"
+        ";       or without the key.\r\n"
+        "shared_stash=0\r\n"
+        "\r\n"
+        "; Static world with one panel open (wide layouts only):\r\n"
+        ";   0 = opening one panel slides the game world aside so the action\r\n"
+        ";       re-centers in the uncovered strip    (vanilla behavior)\r\n"
+        ";   1 = the world stays exactly where it is when the character\r\n"
+        ";       screen or the inventory is open; the panel just floats\r\n"
+        ";       over it. Applies at 1280x720 / 1344x700 only - at\r\n"
+        ";       640x480 / 800x600 the vanilla slide is kept.\r\n"
+        "no_panel_shift=0\r\n";
     HANDLE hFile = CreateFileA(pszPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW,
                                FILE_ATTRIBUTE_NORMAL, nullptr);
     if (hFile == INVALID_HANDLE_VALUE) {
@@ -527,6 +544,61 @@ void __stdcall ITEMILVL_AppendNameSuffix(D2UnitStrc * pItem, uint16_t * wszName)
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszName, wszSuffix);
 }
 
+// ===== [vanilla-plus no-panel-shift] ========================================
+// (issue #26 / R95) Retail slides the whole game world a quarter screen
+// sideways when exactly one panel is open (Path.cpp TypeOfUiOverlayOverWorld:
+// MouseYRelatedB = -/+ScreenSizeX/4) so the action re-centers in the strip
+// the panel leaves uncovered - exact only when that panel reaches the screen
+// edge (640x480/800x600). At the wide stops the 800-class UI floats 240 px
+// inboard, so the slide drags world out from under the visible outer margins
+// and the perspective projection (player-anchored, expanding from the screen
+// center) makes every panned channel a separate artifact source - the whole
+// R92-R94 tail of issue #26 lived on that panned path. While [features]
+// no_panel_shift=1, the world renders exactly like the both-panels-open case
+// (border 3: no slide, full unpanned view rect) on the wide stops and the
+// open panel overdraws its own rect. Implementation: Path.cpp keeps the
+// border-0 camera for border 1/2, and every world-draw call site reads its
+// border type through PANELSHIFT_BorderForWorld, so the renderers receive 0
+// and take their own field-proven full-screen no-pan path - zero renderer
+// edits, and the R92-R94 renderer guards stay live for the vanilla slide
+// (no_panel_shift=0). UI/interaction consumers (panel click rects, label
+// culls, selection guards, CUnit R92 click rejection) keep reading the real
+// border type. Retail 640x480/800x600: the gate is false, every call site
+// sees its retail value, byte-identical. Missing/garbage/0 ini = 0 = vanilla
+// slide (charter rule 1); 2 s hot-read like every gate.
+
+static int gbNoPanelShiftMode = 0;
+static DWORD dwNoPanelShiftLastCheck = 0;   // 2 s ini re-read gate (row-28 pattern)
+
+BOOL __stdcall PANELSHIFT_NoShiftWorld() {
+    DWORD dwNow = GetTickCount();
+    if (!dwNoPanelShiftLastCheck || dwNow - dwNoPanelShiftLastCheck >= 2000) {
+        char szIniPath[260];
+        dwNoPanelShiftLastCheck = dwNow;
+        if (ALTTOGGLE_BuildIniPath(szIniPath)) {
+            ALTTOGGLE_EnsureIni();
+            // Missing file/section/key or a non-numeric value = 0 = vanilla.
+            gbNoPanelShiftMode = GetPrivateProfileIntA("features", "no_panel_shift", 0, szIniPath) ? 1 : 0;
+        } else {
+            gbNoPanelShiftMode = 0;
+        }
+    }
+    // Wide stops only - the retail slide is exact because the open panel
+    // reaches the screen edge there. Same backbuffer-dims test as the
+    // R92-R94 renderer guards (no D2Client imports across that boundary;
+    // here the globals are direct).
+    return gbNoPanelShiftMode
+        && ((ScreenSizeX == 1280 && ScreenSizeY == 720)
+            || (ScreenSizeX == 1344 && ScreenSizeY == 700));
+}
+
+uint32_t __stdcall PANELSHIFT_BorderForWorld(uint32_t eBorderType) {
+    if ((eBorderType == 1 || eBorderType == 2) && PANELSHIFT_NoShiftWorld()) {
+        return 0;
+    }
+    return eBorderType;
+}
+
 // ===== [vanilla-plus options page] d2vp.ini feature toggle bridge ==========
 // The "Vanilla+ Options" page (D2Client/UI/VanillaPlusOptions.cpp) reads and
 // flips the same [features] keys the gates consume. Reads go through the
@@ -564,11 +636,14 @@ void __stdcall D2VP_SetFeatureToggle(const char* szKey, int nValue) {
 // Bust every gate's 2 s hot-read cache so the next poll re-reads d2vp.ini.
 // Called by D2VP_SetFeatureToggle after each write; exported for future
 // tooling (console commands, external reload hooks).
+static void VPSHAREDUI_FlushGateCache(); // defined in the shared-stash block below
 void __stdcall D2VP_ConfigReloaded() {
     dwAltToggleLastCheck = 0;     // next ALTTOGGLE_Active() re-reads alt_toggle
     dwAutoGoldLastCheck = 0;      // next AUTO_GOLD_Active() re-reads auto_gold
     dwGlobeTextPersistentLastCheck = 0; // next VANILLAPLUS_GlobeTextPersistent() re-reads globe_persistent
     dwItemIlvlLastCheck = 0;      // next ITEMILVL_Active() re-reads item_ilvl
+    dwNoPanelShiftLastCheck = 0;  // next PANELSHIFT_NoShiftWorld() re-reads no_panel_shift
+    VPSHAREDUI_FlushGateCache();  // next VPSHAREDUI_FeatureActive() re-reads shared_stash
     Fog::Source::SFile::PORTABLESAVE_FlushConfig(); // next save-path poll re-reads portable_save
 }
 
@@ -890,4 +965,343 @@ int __stdcall VPRES_GetWideUiOffsetX() {
 int __stdcall VPRES_GetWideUiOffsetY() {
     int nOffsetY = ScreenSizeY - 600;
     return 0 < nOffsetY ? nOffsetY : 0;
+}
+
+// ===== [vanilla-plus shared-stash] ==========================================
+// Client half of the 1-page shared stash (track N round 1; the server half
+// lives in D2Game/PLAYER/VanillaPlusStash.cpp - materialization, the .sss
+// file, the goldbank borrow, the save flush). This side is three small
+// pieces:
+//
+//   1. the config gate below (same charter as every feature: missing
+//      file/section/key or garbage = 0 = vanilla byte-for-byte, hot-re-read
+//      at most every 2 s);
+//   2. the "Shared" text tab on the stash panel (top-right, same text row
+//      as the stash gold label) - hit-tested in INV_HandleStashLeftClick via
+//      VPSHAREDUI_HandleStashClick, drawn by VPSHAREDUI_DrawTab right after
+//      the gold-button draw. Since R75 the label is an OUTLINED composite:
+//      a 1-px black halo under the glyphs (owner: "give the current stash
+//      tab label an outline") plus a pager - < and > arrows step one page at
+//      a time between the personal page and the shared pages (two since R75
+//      - owner: "add a 2nd page and buttons/arrows to navigate pages" - ten
+//      since R82 - owner: "increase the shared stash pages to 10"), the
+//      label reads Shared 1 .. Shared 10 on the shared pages. No hotkey:
+//      the tab is the only affordance (owner decision 2026-11-01);
+//   3. a per-game reset so entering a game always starts on the personal
+//      page (the server starts every game on the personal page too).
+//
+// Clicking the tab sends the C->S 0x4F Click-Button packet with the
+// out-of-retail-range button id 0x7D and the ABSOLUTE desired page in the
+// param word (0 personal / 1..10 shared-N). Everything else - the
+// grid, the item moves, the gold buttons - is untouched retail; while a
+// shared page is active the server serves page 4 from that page's block and
+// the goldbank stat carries the shared gold, so the retail deposit/withdraw
+// buttons and the gold display just work.
+//
+// Client/server agreement: in SP every click is delivered, so the client
+// flag and the server page cannot drift (the server toggle is idempotent
+// even if a packet were retried). The feature is inert outside SP on the
+// server side (the toggle is refused), so a TCP/BNet session with the key
+// on shows a tab that toggles only its own label - documented v1 scope.
+
+static int gbVpSharedStashMode = 0;   // 2 s ini gate cache
+static DWORD dwVpSharedStashGateTick = 0;
+static int gnVpSharedPage = 0;        // client mirror of the page toggle:
+                                      // 0 personal, 1..10 = shared pages 1..10
+
+// Options-page hook (D2VP_ConfigReloaded, R67): zero the gate tick so the
+// next VPSHAREDUI_FeatureActive() re-reads shared_stash - the "Shared" tab
+// follows the in-game toggle the same frame. The server half (D2Game/PLAYER/
+// VanillaPlusStash.cpp) keeps its own 2 s poll: D2Game cannot import D2Client
+// helpers (module boundary), so its gate follows within <= 2 s - same as an
+// external ini edit, still far faster than walking to a stash.
+static void VPSHAREDUI_FlushGateCache() {
+    dwVpSharedStashGateTick = 0;
+}
+
+BOOL __stdcall VPSHAREDUI_FeatureActive() {
+    DWORD dwNow = GetTickCount();
+    if (!dwVpSharedStashGateTick || dwNow - dwVpSharedStashGateTick >= 2000) {
+        char szIniPath[260];
+        dwVpSharedStashGateTick = dwNow;
+        if (ALTTOGGLE_BuildIniPath(szIniPath)) {
+            ALTTOGGLE_EnsureIni();
+            // Missing file/section/key or a non-numeric value = 0 = vanilla.
+            gbVpSharedStashMode = GetPrivateProfileIntA("features", "shared_stash", 0, szIniPath) ? 1 : 0;
+        } else {
+            gbVpSharedStashMode = 0;
+        }
+    }
+    return gbVpSharedStashMode;
+}
+
+int __stdcall VPSHAREDUI_IsSharedPage() {
+    return gnVpSharedPage; // 0 = personal; 1..10 = the shared page on screen
+}
+
+void __stdcall VPSHAREDUI_ResetForNewGame() {
+    gnVpSharedPage = 0;
+}
+
+// Tab geometry: in the stash panel's top-right corner (R77: the empty band
+// between the panel's top edge and the retail gold display row), pulled LEFT
+// of the right-panel art's rectangle. Field archaeology across four builds,
+// each step field-caught:
+//   R64  right edge +0x1f8 - misread the 2x256-px stash tiling as a
+//        "512-px panel"; the word landed deep in the right panel.
+//   R65  right edge +0x180 - "16 px inside the +0x190 art edge"; STILL
+//        invisible: the RIGHT panel's DC6 (InvChar frames 4-7) draws at
+//        ScreenSizeX - gnPanelOffsetX - 0x140, so its rectangle starts at
+//        panel-relative +0x140 (abs x=400 at 800x600) and is blitted ~30
+//        lines AFTER the tab's draw site - its opaque pixels repaint the
+//        word. Field proof on the R65 build: the word stayed invisible
+//        while clicks in the same rect toggled the page (the hit test
+//        lives in the click handler, immune to draw order), and the whole
+//        shared-page round trip worked (owner: gold + an item deposited,
+//        character switched, both came back).
+//   R66  right edge +0x130 - 16 px left of the +0x140 rect. Nothing after
+//        the tab's draw site paints panel-relative x < 0x140 on that row
+//        (the right-panel art is at >= 0x140; DRAW_UI's tail is bottom
+//        HUD, orbs, corners and body slots), so the word survives at
+//        800x600, 640x480 and the wide modes alike - the same expressions
+//        put the word at gnPanelOffsetX + 0x130 while the art rect stays
+//        at ScreenSizeX - gnPanelOffsetX - 0x140 (1280x720: word 624,
+//        rect 640).
+//   R76  right edge +0x13c - the R75 composite is wider than the R66 word
+//        and still grew LEFTWARD from the R66 anchor, so its leftmost
+//        element (the '<' tip) landed on the tail of the retail gold
+//        amount text drawn on this same row at +0x4e (owner: "the page
+//        arrows are displaying on top of the gold amount slightly").
+//        Nudged +0x0c right: the '>' halo tip ends at +0x13d, 3 px inside
+//        the +0x140 art-seam rule.
+//   R77  the ROW moves - up 0x2d (45 px) into the empty band between the
+//        panel's top edge and the retail gold display row. Owner on the R76
+//        build: "Looks good horizontally, but still drawing on top of the
+//        last gold character a bit with the arrow. can we move the stash
+//        label up, closer to the top right corner ?" - the '<' halo and the
+//        gold text's last glyph still kissed on the shared row, so vertical
+//        separation is the end of it. New baseline (VPSHAREDUI_TabBaselineY):
+//        expansion 0x19f -> 0x1cc, classic 0xdb -> 0x108. The band's right
+//        side is EMPTY retail space: the coin + amount display (draw-Y
+//        -0x1b8/-0xf4) keeps to the row's left end (amount tail ~ +0xd5 at
+//        the 6-digit cap, a full 20 px below the new baseline), the gold-max
+//        text row is 0x2d below, and the top-band hit rects (the coin rect
+//        X +0x49..+0x5d, the gold-area button rect X +0x49..+0x96 -
+//        INV_IsMouseOverStashCloseBtn) are all far left of the composite's
+//        X span. Panel-top headroom is field-bounded (the R69 float word at
+//        -0x1ef rode the world strip; the NPC-store tab strip has text at
+//        -0x1e0), so the halo top (-0x1d9) stays >= 7 px inside the edge and
+//        the click band [-0x1dc..-0x1c6] never probes the playfield - the
+//        R69 down-walk class cannot re-open.
+// R75 composite (R82: ten pages, same shape): the label is one row-built
+// strip, right-aligned at the R66 anchor as R76 nudged it (the +0x140
+// art-seam rule is untouched) - on the personal page  "Shared >"  (the >
+// invites a step into shared page 1), on the shared pages  "< Shared N >"
+// (green, the active color; N = 1..10, and the last page drops the '>').
+// The arrows step ONE page left/right; the word itself toggles
+// personal<->shared-1 - the R63-R74 click-for-the-tab muscle memory, and
+// always a way home from any shared page. Both element rects come from the
+// same per-frame layout the draw uses (widths measured in font 1), so the
+// click bands can never drift from the pixels. The bands keep 2 px of
+// margin around each element and keep the old band's Y extent (nY-16..nY+6,
+// the R66 field-proven hug). On the R77 row the band shares its Y span with
+// the retail gold display's own top-band hits (the coin rect and the
+// gold-area button rect) - but only in Y: both live at X +0x49..+0x96, left
+// of the composite's leftmost halo pixel, so no band can ever touch them.
+// The bottom-anchored hits (close X at
+// [ScreenSizeX-gnPanelOffsetX-0x12e..-0x10e] x [gnPanelOffsetY-0x60..-0x40],
+// gold buttons at INV_GetGoldButtonX/Y) stay far below, and the grid rows
+// start below the gold-max row, one pitch under this one.
+constexpr int VPSHAREDUI_TAB_RIGHT_EDGE = 0x130; // R66 0x130; R76 +0x0c off the gold amount text
+// Shared pages the pager steps through (the personal page is not one of
+// them): two since R75, TEN since R82 - the owner's "If that works we'll do
+// 10 pages. Then 100." roadmap. The composite stays right-anchored at
+// VPSHAREDUI_TAB_RIGHT_EDGE and grows leftward, so a wider word list costs
+// only leftward room on the R77 band (the gold display sits a full 0x2d
+// below the row; see the R76/R77 notes above) - "Shared 10" never outgrows
+// the R76-approved "< Shared 1 >" composite.
+constexpr int VPSHAREDUI_PAGE_COUNT = 10;
+constexpr int VPSHAREDUI_TAB_GAP = 5;     // word <-> arrow gap
+
+// The tab row: R66-R76 shared the retail "Gold Max" text row (-0x19f/-0xdb);
+// R77 lifts it 0x2d (45 px) into the empty band between the panel's top
+// edge and the retail gold display row (DRAW_UI_INVENTORY_Gold's stash row,
+// draw-Y -0x1b8/-0xf4) - the owner's "move the stash label up, closer to
+// the top right corner", which also ends the '<'-vs-gold-text kiss for
+// good (the gold-max text is now a full 0x2d below the baseline).
+static int VPSHAREDUI_TabBaselineY() {
+    BOOL bIsExpansion = D2Client::GAME::Game::CLIENT_CheckExpansion();
+    return gnPanelOffsetY - (bIsExpansion ? 0x1cc : 0x108) + ScreenSizeY;
+}
+
+// The word for the current client page (0 personal, 1..10 shared). A
+// literal table - no runtime formatting - so the D2Win text measure/draw
+// sees plain static wide strings like every other call site; the bounds
+// guard only exists to keep a bad mirror from indexing past the table.
+static const uint16_t * VPSHAREDUI_PageWord() {
+    static const uint16_t * const apWords[VPSHAREDUI_PAGE_COUNT + 1] = {
+        (const uint16_t *)L"Shared",   (const uint16_t *)L"Shared 1", (const uint16_t *)L"Shared 2",
+        (const uint16_t *)L"Shared 3", (const uint16_t *)L"Shared 4", (const uint16_t *)L"Shared 5",
+        (const uint16_t *)L"Shared 6", (const uint16_t *)L"Shared 7", (const uint16_t *)L"Shared 8",
+        (const uint16_t *)L"Shared 9", (const uint16_t *)L"Shared 10",
+    };
+    int nPage = gnVpSharedPage;
+    if (nPage < 0) {
+        nPage = 0;
+    } else if (nPage > VPSHAREDUI_PAGE_COUNT) {
+        nPage = VPSHAREDUI_PAGE_COUNT;
+    }
+    return apWords[nPage];
+}
+
+// Layout of the composite on the tab row. Callers must have font 1 set (the
+// widths are per-font). Fills the word's draw x + width, the left/right
+// arrow draw x (valid only when the matching has-flag is set) and the
+// measured arrow width. Right edge of the composite = gnPanelOffsetX +
+// VPSHAREDUI_TAB_RIGHT_EDGE - the R66 word anchor as R76 nudged it.
+static void VPSHAREDUI_TabLayout(int * pnWordX, int * pnWordW,
+                                 int * pnLeftX, int * pbHasLeft,
+                                 int * pnRightX, int * pbHasRight, int * pnArrowW) {
+    int nWordW = D2Win::Src::D2WinFont::DRAW_text0((uint16_t *)VPSHAREDUI_PageWord());
+    int nArrowW = D2Win::Src::D2WinFont::DRAW_text0((uint16_t *)L">");
+    int nRightEdge = gnPanelOffsetX + VPSHAREDUI_TAB_RIGHT_EDGE;
+    *pbHasRight = gnVpSharedPage < VPSHAREDUI_PAGE_COUNT; // '>' on personal + page 1
+    *pbHasLeft = gnVpSharedPage > 0;                      // '<' on shared pages
+    int nWordR = nRightEdge - (*pbHasRight ? nArrowW + VPSHAREDUI_TAB_GAP : 0);
+    *pnWordX = nWordR - nWordW;
+    *pnWordW = nWordW;
+    *pnLeftX = *pnWordX - VPSHAREDUI_TAB_GAP - nArrowW;   // drawn when *pbHasLeft
+    *pnRightX = nWordR + VPSHAREDUI_TAB_GAP;              // drawn when *pbHasRight
+    *pnArrowW = nArrowW;
+}
+
+// One outlined text element: a 1-px black halo under the color pass. The
+// retail shadow recipe (D2Comp title rows draw the same string once in the
+// shadow palette, then in the real color) extended to all four sides so the
+// glyphs read on any terrain. Palette 6 = light black, the tone retail's
+// own text shadows use.
+static void VPSHAREDUI_DrawOutlinedText(const uint16_t * pwszText, int nX, int nY, int nColor) {
+    static const int aOffs[4][2] = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } };
+    for (int i = 0; i < 4; ++i) {
+        D2Win::Src::D2WinFont::DRAW_text((uint16_t *)pwszText, nX + aOffs[i][0], nY + aOffs[i][1], 6, 0);
+    }
+    D2Win::Src::D2WinFont::DRAW_text((uint16_t *)pwszText, nX, nY, nColor, 0);
+}
+
+BOOL __stdcall VPSHAREDUI_HandleStashClick(int nMouseX, int nMouseY) {
+    if (!VPSHAREDUI_FeatureActive()) {
+        return FALSE;
+    }
+
+    // The exact layout the draw uses (font 1 set/restored around the
+    // measures) - the click bands hug the composite at every event, with
+    // no stored state to go stale between frames.
+    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
+    int nWordX, nWordW, nLeftX, nRightX, nArrowW;
+    int bHasLeft, bHasRight;
+    VPSHAREDUI_TabLayout(&nWordX, &nWordW, &nLeftX, &bHasLeft, &nRightX, &bHasRight, &nArrowW);
+    D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
+
+    int nY = VPSHAREDUI_TabBaselineY();
+    if (nMouseY < nY - 16 || nMouseY > nY + 6) {
+        return FALSE;
+    }
+
+    int nNewPage = -1;
+    if (nMouseX >= nWordX - 2 && nMouseX <= nWordX + nWordW + 2) {
+        // The word: personal <-> shared (enter shared page 1 from the
+        // personal page; return home from any shared page).
+        nNewPage = gnVpSharedPage ? 0 : 1;
+    } else if (bHasLeft && nMouseX >= nLeftX - 2 && nMouseX <= nLeftX + nArrowW + 2) {
+        nNewPage = gnVpSharedPage - 1; // '<': one page left (page 1 -> personal)
+    } else if (bHasRight && nMouseX >= nRightX - 2 && nMouseX <= nRightX + nArrowW + 2) {
+        nNewPage = gnVpSharedPage + 1; // '>': one page right
+    }
+
+    if (nNewPage < 0 || nNewPage > VPSHAREDUI_PAGE_COUNT || nNewPage == gnVpSharedPage) {
+        return FALSE; // Miss (or a no-op arrow) - let retail handle the click.
+    }
+
+    gnVpSharedPage = nNewPage;
+    // C->S 0x4F Click Button, VP toggle id 0x7D, the ABSOLUTE desired page
+    // in the param word (0 personal / 1..10 shared-N). The send
+    // helper packs the param word as (arg2 << 16) | (uint16)arg3, so the
+    // page rides arg3 and the server activates exactly that page
+    // (VanillaPlusStash.cpp; idempotent when the page is already active).
+    D2Client::GAME::Msg::NET_D2GS_CLIENT_Send_SHORT_SHORT_SHORT(0x4f, 0x7d, 0, (int16_t)gnVpSharedPage);
+    return TRUE;
+}
+
+void __stdcall VPSHAREDUI_DrawTab() {
+    if (!VPSHAREDUI_FeatureActive()) {
+        return;
+    }
+
+    // The composite, each element outlined: the word in white on the
+    // personal page / the green active color on shared pages (same color
+    // convention the options page uses for Off/On), the arrows in white.
+    // Font 1 = the stash panel's own text font; saved/restored around the
+    // draw like every retail site.
+    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
+    int nWordX, nWordW, nLeftX, nRightX, nArrowW;
+    int bHasLeft, bHasRight;
+    VPSHAREDUI_TabLayout(&nWordX, &nWordW, &nLeftX, &bHasLeft, &nRightX, &bHasRight, &nArrowW);
+    int nY = VPSHAREDUI_TabBaselineY();
+    if (bHasLeft) {
+        VPSHAREDUI_DrawOutlinedText((const uint16_t *)L"<", nLeftX, nY, 0);
+    }
+    VPSHAREDUI_DrawOutlinedText(VPSHAREDUI_PageWord(), nWordX, nY, gnVpSharedPage ? 2 : 0);
+    if (bHasRight) {
+        VPSHAREDUI_DrawOutlinedText((const uint16_t *)L">", nRightX, nY, 0);
+    }
+    D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
+}
+
+// ---- [vanilla-plus nointro] R86 --------------------------------------------
+// The -nointro switch: parse GetCommandLineA() once, cache, mark d2boot.log
+// on the first (detected) query. See VanillaPlusCore.h for the contract and
+// the two consumer sites in D2Launch/MainMenus.cpp.
+BOOL __stdcall VPNOINTRO_IsRequested() {
+    static int nParsed = -1; // -1 = not parsed yet, else the flag (0/1)
+    if (nParsed >= 0) {
+        return nParsed;
+    }
+    nParsed = 0;
+    const char* szCmdLine = GetCommandLineA();
+    if (szCmdLine) {
+        char szToken[32];
+        const char* pScan = szCmdLine;
+        while (*pScan) {
+            while (*pScan == ' ' || *pScan == '\t') {
+                pScan++;
+            }
+            if (!*pScan) {
+                break;
+            }
+            const char* pTokenStart = pScan;
+            while (*pScan && *pScan != ' ' && *pScan != '\t') {
+                pScan++;
+            }
+            size_t nTokenLen = (size_t)(pScan - pTokenStart);
+            if (nTokenLen < sizeof(szToken)) {
+                memcpy(szToken, pTokenStart, nTokenLen);
+                szToken[nTokenLen] = '\0';
+                // Windows launchers may quote an argument; compare inside a
+                // wrapping quote pair so "-nointro" matches too.
+                char* szCompare = szToken;
+                if (nTokenLen >= 2 && szCompare[0] == '"' && szCompare[nTokenLen - 1] == '"') {
+                    szCompare[nTokenLen - 1] = '\0';
+                    szCompare++;
+                }
+                if (!_stricmp(szCompare, "-nointro")) {
+                    nParsed = 1;
+                    break;
+                }
+            }
+        }
+    }
+    if (nParsed) {
+        D2BOOT_Mark("[vp] cmdline -nointro: boot intro videos disabled"); // [d2boot]
+    }
+    return nParsed;
 }

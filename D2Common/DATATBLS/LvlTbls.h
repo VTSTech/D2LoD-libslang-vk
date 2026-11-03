@@ -4053,11 +4053,11 @@ namespace D2Common::DATATBLS::LvlTbls {
 void __fastcall TXT_AllocTxt_levels(struct D2PoolManagerStrc * pMemory);
 struct D2LevelsTxt * __stdcall TXT_Levels_GetLine(eD2LevelId eLevel);
 uint8_t __stdcall LEVEL_CanHaveRain(eD2LevelId eLevel);
-uint8_t __stdcall LVLTBLS_GetNoPer(uint32_t nParam);
+uint8_t __stdcall LVLTBLS_GetNoPer(uint32_t nLevelId);
 uint8_t __stdcall LEVEL_CanHaveMud(eD2LevelId eLevel);
 void __stdcall LVLTBLS_FreeLevelsTxt();
 int32_t __stdcall TXT_Levels_GetMonLvlForDifficulty(eD2LevelId eLevel, eD2Difficulty nDifficulty, BOOL bIsExpansion);
-eD2LevelId * __fastcall GetPortalLevelArrayFromPortalFlags(uint32_t * pdwParam);
+eD2LevelId * __fastcall GetPortalLevelArrayFromPortalFlags(uint32_t * pnPortalLevelCount);
 // Loads and compiles the leveldefs.txt data table. Builds a stack array of D2BinFieldInputStrc field descriptors mapping each leveldefs column (QuestFlag, Layer, SizeX/Y per difficulty, Offset, Depend, DrlgType, LevelType, SubType/Theme/Waypoint/Shrine, Vis0-7, Warp0-7, light RGB/Intensity, Portal, Position, SaveMonsters, LOSDraw) to its struct offset and field type, then calls CompileTxt to parse the file into sgtDataTable.pTxtLevelDefs. Finally calls LVLTBLS_BuildPortalLevelArray to derive the portal-level lookup. Allocates from the supplied D2PoolManagerStrc; one-time table init at startup.
 void __fastcall TXT_AllocTxt_leveldefs(struct D2PoolManagerStrc * pMemory);
 // @sourcefile .\DATATBLS\LvlTbls.cpp
@@ -4068,10 +4068,10 @@ void __fastcall TXT_AllocTxt_lvltypes(struct D2PoolManagerStrc * pMemory);
 void __stdcall thunk_UnloadBin_DataTbls();
 struct D2LvlTypesTxt * __stdcall TXT_LvlTypes_GetLine(int32_t nLvlTypeId);
 BOOL __stdcall TXT_LvlTypes_CheckIfTypeIsAssignedToAct(int32_t nLvlTypeId, char nAct);
-void __stdcall LVLTBLS_GetLvlTypeFilename(int32_t nParam1, int32_t nParam2, uint8_t * pParam);
+void __stdcall LVLTBLS_GetLvlTypeFilename(int32_t nLvlType, int32_t nFileIndex, uint8_t * szFilename);
 // Loads and compiles the lvlprest.txt data table (preset-area level definitions) via CompileTxt, populating the field schema (Def, LevelId, Populate, sizes, AutoMap, Expansion flag, File1-File6 ASCII paths, Dt1Mask, etc.) into sgtDataTable.pTxtLvlPrest. When nParam!=0 also allocates pTxtLvlTbls (6 DRLG-file pointers per row) and, for each row visible in the current game mode (expansion rows skipped in classic), normalizes file path slashes and allocates a D2DrlgFileStrc for each non-empty File path. Side effects: sets global table pointers and size.
 // @sourcefile .\DATATBLS\LvlTbls.cpp
-void __fastcall TXT_AllocTxt_lvlprest(struct D2PoolManagerStrc * pMemory, int32_t nParam);
+void __fastcall TXT_AllocTxt_lvlprest(struct D2PoolManagerStrc * pMemory, int32_t bLoadDrlgFiles);
 // @sourcefile .\DATATBLS\LvlTbls.cpp
 void __stdcall TXT_LvlTbls_Free();
 struct D2LvlPrestTxt * __stdcall TXT_LvlPrest_GetLine(int32_t nLvlPrestId);
@@ -4093,7 +4093,7 @@ void __stdcall TXT_FreeTxt_LvlSub();
 struct D2LvlSubTxt * __fastcall TXT_LvlSub_GetLineFromSubType(int32_t nSubType);
 // Allocates and populates the pExpansionLvlTbls array (one D2ExpansionLvlTblsTxt per LvlTypes row, 0x1000 bytes each). For each LvlTypes row iterates up to 32 File[] entries (stride 60 bytes); skips entries whose filename starts with "0" and skips expansion-only tiles in classic mode. Calls TILEPROJECT_AllocSlot for each valid tile file.
 // @sourcefile .\DATATBLS\LvlTbls.cpp
-void __stdcall TXT_LoadExpansionLvlTbls();
+void __fastcall TXT_LoadExpansionLvlTbls(struct D2PoolManagerStrc * pMemory);
 // @sourcefile .\DATATBLS\LvlTbls.cpp
 void __stdcall TXT_FreeExpansionLvlTbls();
 // Loads and compiles automap.txt into the runtime AutoMap level tables. Initializes the data-table seed, declares the column schema (LevelName, TileName, Style, Start/EndSequence, Cel1-4), and compiles it via CompileTxt. Allocates a 32-byte-per-row AutoMapLvlTbls array, then per row resolves the automap level id and tile id, copies style/sequence and cel fields, and counts the valid (non -1) cels (halts if a row has zero cels). Then resets the gpaAutoMapRelated index table to -1 and builds, per level type, the start index + count of contiguous same-type rows. Side effects: allocates server memory, fills global automap tables; unrecoverable-halt on bad rows. Server-side D2Common DataTbls (LvlTbls).

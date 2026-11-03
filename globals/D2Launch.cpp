@@ -15,6 +15,10 @@
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
+char dwIntroFrameRate_24_36[8] = { "640x146" }; D2_GLOBAL_GUARD(dwIntroFrameRate_24_36, "dwIntroFrameRate_24_36");
+
+char dwIntroFrameRate_29_32[8] = { "640x292" }; D2_GLOBAL_GUARD(dwIntroFrameRate_29_32, "dwIntroFrameRate_29_32");
+
 uint8_t gaNewCharDefaultEquipTemplate[16] = {
     0x1,
     0x1,
@@ -142,7 +146,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x13f2,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused9,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressSinglePlayer,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -153,7 +157,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x13f3,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank02,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused11,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressSelectBattleNet,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -164,7 +168,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x0,
         /* .pDC6 = */ &DC6_FrontEnd_NarrowButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused8,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressShowGatewaySelect,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -219,7 +223,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x13f2,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused9,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressSinglePlayer,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -230,7 +234,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x13f3,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank02,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused11,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressSelectBattleNet,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -241,7 +245,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x0,
         /* .pDC6 = */ &DC6_FrontEnd_NarrowButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused8,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressShowGatewaySelect,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -615,7 +619,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x1029,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused1,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressPlayIntroCinematic,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -626,7 +630,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x102a,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused2,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressPlayAct2StartCinematic,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -637,7 +641,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x102b,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused3,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressPlayAct3StartCinematic,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -648,7 +652,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x102c,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused4,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressPlayAct4StartCinematic,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -659,7 +663,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x13f9,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused5,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressPlayAct4EndCinematic,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -736,7 +740,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x5525,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused1,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressPlayIntroCinematic,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -747,7 +751,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x5526,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused2,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressPlayAct2StartCinematic,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -758,7 +762,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x5527,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused3,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressPlayAct3StartCinematic,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -769,7 +773,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x5528,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused4,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressPlayAct4StartCinematic,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -780,7 +784,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x5529,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused5,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressPlayAct4EndCinematic,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -791,7 +795,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x552a,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused6,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressPlayExpansionIntroCinematic,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -802,7 +806,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x552b,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused7,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressPlayExpansionOutroCinematic,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -857,7 +861,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x0,
         /* .pDC6 = */ &DC6_FrontEnd_joingamescrollbars,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused12,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressRealmList,
         /* .pTypeArg1 = */ (void*)gaMenuTextBoxScrollbarGeom3,
         /* .pTypeArg2 = */ (void*)gaMenuFormFontParamsFont5,
         /* .nFlagsOrType = */ 0xd
@@ -968,7 +972,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nLabelAsLocaleStringId = */ 0x4,
         /* .pDC6 = */ nullptr,
         /* .fpOnPressCallback = */ nullptr,
-        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_Unused15,
+        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_OnSubmitCreateBattleNetAccount,
         /* .pTypeArg2 = */ (void*)gaMenuFormFontParamsFont5,
         /* .nFlagsOrType = */ 0x0
     },
@@ -979,7 +983,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nLabelAsLocaleStringId = */ 0x4,
         /* .pDC6 = */ nullptr,
         /* .fpOnPressCallback = */ nullptr,
-        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_Unused15,
+        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_OnSubmitCreateBattleNetAccount,
         /* .pTypeArg2 = */ (void*)gaMenuFormFontParamsFont5,
         /* .nFlagsOrType = */ 0x21
     },
@@ -990,7 +994,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nLabelAsLocaleStringId = */ 0x4,
         /* .pDC6 = */ nullptr,
         /* .fpOnPressCallback = */ nullptr,
-        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_Unused15,
+        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_OnSubmitCreateBattleNetAccount,
         /* .pTypeArg2 = */ (void*)gaMenuFormFontParamsFont5,
         /* .nFlagsOrType = */ 0x21
     },
@@ -1000,7 +1004,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0xd,
         /* .nLabelAsLocaleStringId = */ 0x13ee,
         /* .pDC6 = */ &DC6_FrontEnd_MediumButtonBlank,
-        /* .fpOnPressCallback = */ (OnPress)&D2Launch::MainMenus::MAINMENU_Unused15,
+        /* .fpOnPressCallback = */ (OnPress)&D2Launch::MainMenus::MAINMENU_OnSubmitCreateBattleNetAccount,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -1979,7 +1983,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0xd,
         /* .nLabelAsLocaleStringId = */ 0x13ee,
         /* .pDC6 = */ &DC6_FrontEnd_MediumSelButtonBlank,
-        /* .fpOnPressCallback = */ (OnPress)&D2Launch::MainMenus::MAINMENU_Unused16,
+        /* .fpOnPressCallback = */ (OnPress)&D2Launch::MainMenus::MAINMENU_OnPressCreateCharacterOk,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -2288,7 +2292,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nLabelAsLocaleStringId = */ 0x4,
         /* .pDC6 = */ nullptr,
         /* .fpOnPressCallback = */ nullptr,
-        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_Unused16,
+        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_OnPressCreateCharacterOk,
         /* .pTypeArg2 = */ (void*)gaMenuFormFontParamsFont5,
         /* .nFlagsOrType = */ 0x0
     },
@@ -3299,7 +3303,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0xd,
         /* .nLabelAsLocaleStringId = */ 0x2b59,
         /* .pDC6 = */ &DC6_FrontEnd_WideButtonBlank,
-        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_Unused19,
+        /* .fpOnPressCallback = */ &D2Launch::MainMenus::MAINMENU_OnPressSubmitEmailAddress,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -3343,7 +3347,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x2b36,
         /* .pDC6 = */ &DC6_FrontEnd_MediumButtonBlank,
-        /* .fpOnPressCallback = */ (OnPress)&D2Launch::MainMenus::MAINMENU_Unused21,
+        /* .fpOnPressCallback = */ (OnPress)&D2Launch::MainMenus::MAINMENU_OnSubmitResetPassword,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -3399,7 +3403,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nLabelAsLocaleStringId = */ 0x4,
         /* .pDC6 = */ nullptr,
         /* .fpOnPressCallback = */ nullptr,
-        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_Unused21,
+        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_OnSubmitResetPassword,
         /* .pTypeArg2 = */ (void*)gaMenuFormFontParamsFont5,
         /* .nFlagsOrType = */ 0x0
     },
@@ -3432,7 +3436,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nLabelAsLocaleStringId = */ 0x4,
         /* .pDC6 = */ nullptr,
         /* .fpOnPressCallback = */ nullptr,
-        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_Unused21,
+        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_OnSubmitResetPassword,
         /* .pTypeArg2 = */ (void*)gaMenuFormFontParamsFont5,
         /* .nFlagsOrType = */ 0x0
     },
@@ -3575,7 +3579,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nLabelAsLocaleStringId = */ 0x4,
         /* .pDC6 = */ nullptr,
         /* .fpOnPressCallback = */ nullptr,
-        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_Unused20,
+        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_HandleEmailChange,
         /* .pTypeArg2 = */ (void*)gaMenuFormFontParamsFont5,
         /* .nFlagsOrType = */ 0x0
     },
@@ -3608,7 +3612,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nLabelAsLocaleStringId = */ 0x4,
         /* .pDC6 = */ nullptr,
         /* .fpOnPressCallback = */ nullptr,
-        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_Unused20,
+        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_HandleEmailChange,
         /* .pTypeArg2 = */ (void*)gaMenuFormFontParamsFont5,
         /* .nFlagsOrType = */ 0x0
     },
@@ -3641,7 +3645,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nLabelAsLocaleStringId = */ 0x4,
         /* .pDC6 = */ nullptr,
         /* .fpOnPressCallback = */ nullptr,
-        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_Unused20,
+        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_HandleEmailChange,
         /* .pTypeArg2 = */ (void*)gaMenuFormFontParamsFont5,
         /* .nFlagsOrType = */ 0x0
     },
@@ -3674,7 +3678,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nLabelAsLocaleStringId = */ 0x4,
         /* .pDC6 = */ nullptr,
         /* .fpOnPressCallback = */ nullptr,
-        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_Unused20,
+        /* .pTypeArg1 = */ (void*)&D2Launch::MainMenus::MAINMENU_HandleEmailChange,
         /* .pTypeArg2 = */ (void*)gaMenuFormFontParamsFont5,
         /* .nFlagsOrType = */ 0x0
     },
@@ -3684,7 +3688,7 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nExtraParam = */ 0x0,
         /* .nLabelAsLocaleStringId = */ 0x2b36,
         /* .pDC6 = */ &DC6_FrontEnd_MediumButtonBlank,
-        /* .fpOnPressCallback = */ (OnPress)&D2Launch::MainMenus::MAINMENU_Unused20,
+        /* .fpOnPressCallback = */ (OnPress)&D2Launch::MainMenus::MAINMENU_HandleEmailChange,
         /* .pTypeArg1 = */ nullptr,
         /* .pTypeArg2 = */ nullptr,
         /* .nFlagsOrType = */ 0x0
@@ -3701,25 +3705,6 @@ FORMS_PredefinedFormStrc gaPredefinedForms[333] = {
         /* .nFlagsOrType = */ 0x0
     }
 }; D2_GLOBAL_GUARD(gaPredefinedForms, "gaPredefinedForms");
-
-uint8_t gaNewCharDefaultAppearance[16] = {
-    0x1,
-    0x1,
-    0x1,
-    0x1,
-    0x1,
-    0xff,
-    0xff,
-    0xff,
-    0x1,
-    0x1,
-    0xff,
-    0xff,
-    0xff,
-    0xff,
-    0xff,
-    0xff
-}; D2_GLOBAL_GUARD(gaNewCharDefaultAppearance, "gaNewCharDefaultAppearance");
 
 D2ControlStrc * FORMS_pListExEx[64] = {}; D2_GLOBAL_GUARD(FORMS_pListExEx, "FORMS_pListExEx");
 
@@ -3763,6 +3748,8 @@ D2ControlStrc * gaCharSelExpansionIconControls[8] = {}; D2_GLOBAL_GUARD(gaCharSe
 
 char PreferedClosedRealm2[256] = {}; D2_GLOBAL_GUARD(PreferedClosedRealm2, "PreferedClosedRealm2");
 
+uint16_t pBetaRealmNames[7][256] = {}; D2_GLOBAL_GUARD(pBetaRealmNames, "pBetaRealmNames");
+
 D2SaveFileHeaderStrc SAVEFILE = {}; D2_GLOBAL_GUARD(SAVEFILE, "SAVEFILE");
 
 // =============================================================================
@@ -3774,9 +3761,6 @@ char * gpszPaletteSkyPl2[4] = {}; D2_GLOBAL_GUARD(gpszPaletteSkyPl2, "gpszPalett
 // also labelled: gnClassDescriptionTooltipUnitId
 uint32_t gnClassDescriptionTooltipClassId = -0x1; D2_GLOBAL_GUARD(gnClassDescriptionTooltipClassId, "gnClassDescriptionTooltipClassId");
 int gnClassDescriptionTooltipState = -0x1; D2_GLOBAL_GUARD(gnClassDescriptionTooltipState, "gnClassDescriptionTooltipState");
-int gnCharSelLoadMoreEntryIndex = -0x3e7; D2_GLOBAL_GUARD(gnCharSelLoadMoreEntryIndex, "gnCharSelLoadMoreEntryIndex");
-int gnCharSelLoadingEntryIndex = -0x3e7; D2_GLOBAL_GUARD(gnCharSelLoadingEntryIndex, "gnCharSelLoadingEntryIndex");
-int gnCharSelScreenSlotCount = 0x5; D2_GLOBAL_GUARD(gnCharSelScreenSlotCount, "gnCharSelScreenSlotCount");
 uint32_t gbTermsOfServiceCancelled = 0; D2_GLOBAL_GUARD(gbTermsOfServiceCancelled, "gbTermsOfServiceCancelled");
 D2ControlStrc * bCharacterCreationInProgress = 0; D2_GLOBAL_GUARD(bCharacterCreationInProgress, "bCharacterCreationInProgress");
 // also labelled: gbPasswordChangeInProgress
@@ -4057,9 +4041,9 @@ namespace Fog::_3rdparty::crashy {
 
 } // namespace Fog::_3rdparty::crashy
 
-namespace Storm::SFile {
+namespace Storm::Source::SFile {
 
-} // namespace Storm::SFile
+} // namespace Storm::Source::SFile
 
 namespace Class::FILEREC {
 

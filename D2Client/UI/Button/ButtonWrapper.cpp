@@ -6,7 +6,7 @@
 #include "D2Client/UI/EscMenu.h"
 #include "D2Win/Src/D2WinTextBox.h"
 #include "Fog/3rdparty/crashy/Report.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Button.h"
 #include "D2Client/UI/Dialog.h"
@@ -54,32 +54,31 @@ void __thiscall Destructor(::ButtonWrapper * pThis) {
 
 ::ButtonWrapper * __thiscall ScalarDeletingDestructor(::ButtonWrapper * pThis, uint32_t nFlags) {
     ButtonWrapper::Destructor(pThis);
-    if (!(nFlags & 1 && pThis)) {
-      return pThis;
+    if (nFlags & 1 && pThis) {
+      Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     }
 
-    Storm::SMem::SMemFree(pThis, "delete", -1, 0);
     return pThis;
 }
 
 int __thiscall OnMouseWheel(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnMouseWheel(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnMouseWheel(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall OnMouseDown(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnMouseDown(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnMouseDown(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall OnMouseUp(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnMouseUp(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnMouseUp(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall OnMouseMove(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnMouseMove(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnMouseMove(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 void __thiscall Draw(::ButtonWrapper * pThis) {
@@ -87,33 +86,33 @@ void __thiscall Draw(::ButtonWrapper * pThis) {
 }
 
 int __thiscall OnChar(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnChar(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnChar(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall OnDownArrow(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnDownArrow(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnDownArrow(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall OnUpArrow(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnUpArrow(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnUpArrow(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall OnRightArrow(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnRightArrow(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnRightArrow(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall OnLeftArrow(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnLeftArrow(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnLeftArrow(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall GetValue(::ButtonWrapper * pThis) {
-    int iVar1 = pThis->pImplementation->pVtable->GetValue(pThis->pImplementation);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->GetValue(pThis->pImplementation);
+    return nResult;
 }
 
 void __thiscall SetAccelerator(::ButtonWrapper * pThis, BOOL bEnable) {
@@ -126,8 +125,8 @@ void __thiscall SetAccelerator(::ButtonWrapper * pThis, BOOL bEnable) {
     int32_t dwExcState = 0;
     ExceptionList = &pPrevExceptionList;
     pThis->pVtable = (ButtonWrapperVtable*)(void*)ButtonWrapper::vftable;
-    ::ButtonImplementation* pNewButtonImpl = (::ButtonImplementation*)Storm::SMem::SMemAlloc(0x36, "new", -1, 0);
-    dwExcState = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&dwExcState + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    ::ButtonImplementation* pNewButtonImpl = (::ButtonImplementation*)Storm::Source::SMem::SMemAlloc(0x36, "new", -1, 0);
+    dwExcState = (uint32_t)((uint32_t)((uint32_t)dwExcState >> 8 & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
     if (pNewButtonImpl) {
       pNewButtonImpl = ButtonImplementation::Constructor(pNewButtonImpl, nPosX, nPosY, nButtonKind, pfnOnActivate);
     } else {

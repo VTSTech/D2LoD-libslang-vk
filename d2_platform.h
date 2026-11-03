@@ -356,6 +356,7 @@ typedef CONTEXT* LPCONTEXT;
 // Common Win32 API function stubs
 extern "C" {
 DWORD GetTickCount();
+LPSTR GetCommandLineA(); // [vanilla-plus nointro R86] host-side decl only; real builds get it from <windows.h>
 void Sleep(DWORD dwMilliseconds);
 BOOL QueryPerformanceCounter(LARGE_INTEGER* lpPerformanceCount);
 BOOL QueryPerformanceFrequency(LARGE_INTEGER* lpFrequency);
@@ -538,10 +539,11 @@ static inline To d2_bit_cast(const From& v) {
   return r;
 }
 // Three bytes at p, little-endian: a 3-byte decompiler field, without touching a fourth.
+// Built from the bytes as the original builds it (MOVZX, SHL, ADD), not in a stack
+// temporary: the bytes are disjoint, so + is |.
 static inline uint32_t d2_load24(const void* p) {
-  uint32_t v = 0;
-  std::memcpy(&v, p, 3);
-  return v;
+  const uint8_t* b = (const uint8_t*)p;
+  return ((uint32_t)b[2] << 16) + ((uint32_t)b[1] << 8) + b[0];
 }
 // The same three bytes as a signed 24-bit value, sign-extended from bit 23.
 static inline int32_t d2_load24s(const void* p) {
@@ -549,9 +551,45 @@ static inline int32_t d2_load24s(const void* p) {
 }
 static inline void d2_store24(void* p, uint32_t v) { std::memcpy(p, &v, 3); }
 
+// TSLink<T>::NextLink, which VC8 inlined into every Storm unlink (see storm-next-link.ts).
+// The link is { prev link, next item }; a negative next is ~&terminator.
+struct D2StormLinkWords { D2StormLinkWords* m_prevlink; int m_next; };
+static inline int D2_StormNextLink(const void* pLink, int nLinkOffset) {
+  const D2StormLinkWords* pThis = (const D2StormLinkWords*)pLink;
+  if (pThis->m_next < 0) return ~pThis->m_next;
+  if (nLinkOffset < 0) nLinkOffset = (int)(intptr_t)pThis - pThis->m_prevlink->m_next;
+  return pThis->m_next + nLinkOffset;
+}
+
+// A parameter-check block (see param-check-block.ts): every D2_CHECK ANDs an all-ones or zero
+// mask into one accumulator, all checks are evaluated, and one test of it runs the failure arm.
+// VC8 compiles a check to neg/sbb and the accumulation to and; with the assumption after the block
+// it lays the block out as the original does. Other compilers need no assumption.
+#if defined(_MSC_VER)
+#define D2_CHECKS_ASSUME_(c) __assume(c)
+#else
+#define D2_CHECKS_ASSUME_(c) ((void)0)
+#endif
+#define D2_CHECKS_BEGIN do { int d2Checks_ = -1
+#define D2_CHECK(c) d2Checks_ &= (c) ? -1 : 0
+#define D2_CHECKS_END(fail, r) if (!d2Checks_) { fail; return r; } D2_CHECKS_ASSUME_(d2Checks_); } while (0)
+#define D2_CHECKS_END_VOID(fail) if (!d2Checks_) { fail; return; } D2_CHECKS_ASSUME_(d2Checks_); } while (0)
+
 // Diablo 2 PRNG — LCG with multiplier 0x6AC690C5
 #define D2_SEED_NEXT(seed) ((D2SeedStrc)((uint64_t)(uint32_t)(seed).nSeedLow * 0x6ac690c5u + (uint64_t)(uint32_t)(seed).nSeedHigh))
 #define D2_SEED_NEXT_VAL(sv) ((D2SeedStrc)((uint64_t)(uint32_t)(sv) * 0x6ac690c5u + ((uint64_t)(sv) >> 32)))
+
+// A shift count as x86 takes it: SHL/SHR/SAR by CL use its low five bits. The decompiler
+// prints such a shift as `x << (n & 0x1f)`; the source shifted by n, and VC8 compiles the
+// mask into code the original does not have (an AND, or a MOVZX of a byte count where the
+// original loads CL). The generator writes `x << D2_SHIFT_COUNT(n)` where it cannot prove
+// n < 32. MSVC gets the bare count, which its shift masks in hardware as the original's
+// did; other compilers get the mask, so a count of 32 or more stays defined.
+#ifdef _MSC_VER
+#  define D2_SHIFT_COUNT(n) (n)
+#else
+#  define D2_SHIFT_COUNT(n) ((n) & 0x1f)
+#endif
 
 // Ghidra type conversion helpers
 static inline int32_t FloatToLong(float f) { return (int32_t)f; }

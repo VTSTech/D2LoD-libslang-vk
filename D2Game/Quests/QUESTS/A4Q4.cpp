@@ -70,7 +70,7 @@ void __fastcall Q30_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
 // Q30_StatusFilter — stub, always returns false. Q30 (internal "Spoke to Malachai") contributes no
 // entry to the in-game Quest Log status panel; its dialog is driven purely via the active-filter gossip path.
-bool __fastcall Q30_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown) {
+bool __fastcall Q30_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode) {
     return false;
 }
 
@@ -81,38 +81,38 @@ bool __fastcall Q30_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
 // i.e. Tyrael keeps an active gossip line throughout Act 4 until Diablo is dead; once Diablo is slain AND forge
 // done, returns false (Q30 dialog no longer offered -> the Act4->Act5 move-on prompt takes over). Read-only.
 bool __fastcall Q30_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
-    if (nTargetClassId != 0x198) {
-      return false;
-    }
-
-    ::SGAMEDATA* pGame = pQuestData->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    D2BitBufferStrc* pBitBuffer_00 = pPlayerData->pQuestRecord[pGame->nDifficulty];
-    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer_00, QUEST_HellsForge, QUESTSTATE_Completed);
-    /* GetQuestState(HellsForge[0x1b], 1=RewardAwaits) */ /* GetQuestState(HellsForge[0x1b], 0xd=JustCompleted) — if none set, forge not
+    D2UnitDataPlayerStrc* pPlayerData;
+    BOOL bQuestState;
+    ::SGAMEDATA* pGame;
+    if (nTargetClassId == 0x198) {
+      D2BitBufferStrc* pBitBuffer_00;
+      pGame = pQuestData->pGame;
+      pPlayerData = D2Common::Units::GetPlayerData(pUnit);
+      pBitBuffer_00 = pPlayerData->pQuestRecord[pGame->nDifficulty];
+      /* GetQuestState(HellsForge[0x1b], 0=Completed) */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer_00, QUEST_HellsForge, QUESTSTATE_Completed);
+      /* GetQuestState(HellsForge[0x1b], 1=RewardAwaits) */ /* GetQuestState(HellsForge[0x1b], 0xd=JustCompleted) — if none set, forge not
                          started -> Tyrael active (return true) */ if (!bQuestState) {
-      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer_00, QUEST_HellsForge, QUESTSTATE_RewardAwaits);
-      if (!bQuestState) {
-        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer_00, QUEST_HellsForge, QUESTSTATE_JustCompleted);
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer_00, QUEST_HellsForge, QUESTSTATE_RewardAwaits);
+        if (!bQuestState) {
+          bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer_00, QUEST_HellsForge, QUESTSTATE_JustCompleted);
+          if (!bQuestState) {
+            return true;
+          }
+        }
+      }
+
+      /* GetQuestState(TerrorsEnd[0x1a], 0xd=JustCompleted) — Diablo just slain self
+                         game? */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer_00, QUEST_TerrorsEnd, QUESTSTATE_JustCompleted);
+      /* GetQuestState(TerrorsEnd[0x1a], 0=Completed) — Diablo killed in a prior
+                         game? If neither set, Diablo alive -> Tyrael active (return true) */ if (!bQuestState) {
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer_00, QUEST_TerrorsEnd, QUESTSTATE_Completed);
         if (!bQuestState) {
           return true;
         }
       }
     }
 
-    /* GetQuestState(TerrorsEnd[0x1a], 0xd=JustCompleted) — Diablo just slain self
-                         game? */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer_00, QUEST_TerrorsEnd, QUESTSTATE_JustCompleted);
-    /* GetQuestState(TerrorsEnd[0x1a], 0=Completed) — Diablo killed in a prior
-                         game? If neither set, Diablo alive -> Tyrael active (return true) */ if (bQuestState) {
-      return false;
-    }
-
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer_00, QUEST_TerrorsEnd, QUESTSTATE_Completed);
-    if (bQuestState) {
-      return false;
-    }
-
-    return true;
+    return false;
 }
 
 // Q30_InitData — registers this slot's quest-data vtable at game start. Zeros sStateFunctions (0x3c),
@@ -124,7 +124,7 @@ bool __fastcall Q30_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 void __fastcall Q30_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q30_Callback00_NpcActivate;
-    pQuestData->pNpcMessages = &A4Q4::aNpcGossipData;
+    pQuestData->pNpcMessages = A4Q4::aNpcGossipData;
     pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;

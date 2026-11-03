@@ -2,12 +2,10 @@
 
 #include "Storm/Source/SSystem.h"
 #include "Fog/3rdparty/crashy.h"
-#include "Fog/Engine/Application.h"
-#include "Storm/SMem.h"
 #include "Storm/Source/SErr.h"
-#include "Storm/Source/SSComp.h"
+#include "Storm/Source/SLog.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
-#include "Storm/Storm.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -20,18 +18,17 @@ uint32_t __stdcall SSYSTEM_Shutdown(uint32_t nShutdownCode) {
     static pfnSSystemShutdown fpSSystemShutdownCallback; D2_STATIC_GUARD_BSS(fpSSystemShutdownCallback, "Storm::Source::SSystem::SSYSTEM_Shutdown::fpSSystemShutdownCallback");
 
     SSYSTEM_SetShutdownFlag(1);
-    SSComp::SLogFlushAll();
-    if (!fpSSystemShutdownCallback) {
-      return 0;
+    SLog::SLogFlushAll();
+    if (fpSSystemShutdownCallback) {
+      (*fpSSystemShutdownCallback)(nShutdownCode);
     }
 
-    (*fpSSystemShutdownCallback)(nShutdownCode);
     return 0;
 }
 
 void __stdcall SSYSTEM_Initialize() {
     SMem::SMemInitialize();
-    SSComp::SLogInitialize();
+    SLog::SLogInitialize();
     SSTR::SSTR_InitConversionTables();
 }
 
@@ -44,11 +41,10 @@ HMODULE __stdcall StormGetInstance() {
 uint32_t __stdcall SSYSTEM_GetSystemOption(uint32_t nOptionId, uint32_t * pOutValue, uint32_t * pnBufferSize) {
     uint32_t nBufferSize;
     uint32_t nOptionValue;
-    if (!pOutValue || !pnBufferSize) {
-      SErr::SErrSetLastError(0x57);
-      return 0;
-    }
-
+    D2_CHECKS_BEGIN;
+    D2_CHECK(pOutValue);
+    D2_CHECK(pnBufferSize);
+    D2_CHECKS_END(SErr::SErrSetLastError(0x57), 0);
     SErr::SErrSetLastError(0x57);
     switch (nOptionId) {
       case 1:
@@ -93,51 +89,50 @@ uint32_t __stdcall SSYSTEM_GetSystemOption(uint32_t nOptionId, uint32_t * pOutVa
 }
 
 void __stdcall SSYSTEM_SetSystemOption(uint32_t nOptionId, uint32_t * pValue, int32_t nValueSize) {
-    if (!pValue) {
-      SErr::SErrSetLastError(0x57);
-    } else {
-      uint32_t nNewValue;
-      SErr::SErrSetLastError(0x57);
-      switch (nOptionId) {
-        case 1:
-          if (nValueSize == 4) {
-            gnSSystemOption1 = *pValue;
-            SErr::SErrSetLastError(0);
-            return;
-          }
-        break;
-        case 2:
-          if (nValueSize == 4 && (nNewValue = *pValue , nNewValue != 0) && (nNewValue - 1 ^ nNewValue) == nNewValue * 2 - 1) {
-            gnSSystemWaveBufferSize = nNewValue;
-            SErr::SErrSetLastError(0);
-            return;
-          }
-        break;
-        case 3:
-          if (nValueSize == 4) {
-            gnSSystemOption3 = *pValue;
-            SErr::SErrSetLastError(0);
-            return;
-          }
-        break;
-        case 4:
-          if (nValueSize == 4) {
-            gnSSystemAsyncReadSize = *pValue;
-            SErr::SErrSetLastError(0);
-            return;
-          }
-        break;
-        case 5:
-          if (nValueSize == 4) {
-            gbCompressionDebugOutput = *pValue;
-            SErr::SErrSetLastError(0);
-            return;
-          }
-        break;
-        default:
+    D2_CHECKS_BEGIN;
+    D2_CHECK(pValue);
+    D2_CHECKS_END_VOID(SErr::SErrSetLastError(0x57));
+    uint32_t nNewValue;
+    SErr::SErrSetLastError(0x57);
+    switch (nOptionId) {
+      case 1:
+        if (nValueSize == 4) {
+          gnSSystemOption1 = *pValue;
           SErr::SErrSetLastError(0);
-        return;
-      }
+          return;
+        }
+      break;
+      case 2:
+        if (nValueSize == 4 && (nNewValue = *pValue , nNewValue != 0) && (nNewValue - 1 ^ nNewValue) == nNewValue * 2 - 1) {
+          gnSSystemWaveBufferSize = nNewValue;
+          SErr::SErrSetLastError(0);
+          return;
+        }
+      break;
+      case 3:
+        if (nValueSize == 4) {
+          gnSSystemOption3 = *pValue;
+          SErr::SErrSetLastError(0);
+          return;
+        }
+      break;
+      case 4:
+        if (nValueSize == 4) {
+          gnSSystemAsyncReadSize = *pValue;
+          SErr::SErrSetLastError(0);
+          return;
+        }
+      break;
+      case 5:
+        if (nValueSize == 4) {
+          gbCompressionDebugOutput = *pValue;
+          SErr::SErrSetLastError(0);
+          return;
+        }
+      break;
+      default:
+        SErr::SErrSetLastError(0);
+      return;
     }
 }
 
@@ -155,494 +150,18 @@ void __stdcall __break() {
     __debugbreak();
 }
 
-void __stdcall SSYSTEM_SetShutdownFlag(uint32_t dwParam) {
-    gbSSystemShutdownInProgress = dwParam;
+void __stdcall SSYSTEM_SetShutdownFlag(uint32_t bShutdown) {
+    gbSSystemShutdownInProgress = bShutdown;
 }
 
-uint32_t __thiscall SSYSTEM_ListOffsetToPointer(int * pNode, int * pBase) {
-    uint32_t nOffset = pNode[1];
-    if ((int)nOffset < 0) {
-      return ~nOffset;
-    }
-    if ((int)pBase >= 0) {
-      return nOffset + (int)pBase;
-    }
-
-    pBase = (int*)((int)pNode - *(int*)(*pNode + 4));
-    return nOffset + (int)pBase;
-}
-
-int32_t __thiscall SSYSTEM_ListGetPointer(int32_t pList, int32_t pNode) {
-    if (pNode) {
-      return pNode;
-    }
-
-    pNode = pList + 4;
-    return pNode;
-}
-
-void __thiscall SSYSTEM_ListUnlinkAndInsert(int * * pList, int * * pNode, int32_t nInsertMode, int * * ppTarget) {
-    int* ppPrevLink;
-    int** pEffectiveNode = pNode;
-    if (!pNode) {
-      pEffectiveNode = pList + 1;
-    }
-
-    int* pLink = *pEffectiveNode;
-    if (pLink) {
-      ppPrevLink = pEffectiveNode[1];
-      if ((int)ppPrevLink < 0) {
-        ppPrevLink = (int*)~(uint32_t)ppPrevLink;
-      } else {
-        ppPrevLink = (int*)((int)ppPrevLink + ((int)pEffectiveNode - pLink[1]));
-      }
-
-      *ppPrevLink = (int)pLink;
-      (*pEffectiveNode)[1] = (int)pEffectiveNode[1];
-      *pEffectiveNode = 0;
-      pEffectiveNode[1] = 0;
-    }
-    if (!ppTarget) {
-      ppTarget = pList + 1;
-    }
-
-    switch (nInsertMode) {
-      case 1:
-        {
-          *pEffectiveNode = (int*)ppTarget;
-          pEffectiveNode[1] = ppTarget[1];
-          pLink = *pList;
-          ppPrevLink = ppTarget[1];
-          if ((int)ppPrevLink < 0) {
-            *(int***)~(uint32_t)ppPrevLink = (int**)pEffectiveNode;
-            ppTarget[1] = (int*)pNode;
-            return;
-          }
-          if ((int)pLink < 0) {
-            pLink = (int*)((int)ppTarget - (*ppTarget)[1]);
-          }
-
-          *(int***)((int)ppPrevLink + (int)pLink) = (int**)pEffectiveNode;
-          ppTarget[1] = (int*)pNode;
-          return;
-        }
-      default:
-        {
-          pLink = *ppTarget;
-          *pEffectiveNode = pLink;
-          pEffectiveNode[1] = (int*)pLink[1];
-          pLink[1] = (int)pNode;
-          *ppTarget = (int*)pEffectiveNode;
-          return;
-        }
-    }
-}
-
-uint32_t __thiscall SSYSTEM_ListGetNext(int32_t pList, int32_t pNode) {
-    if (pNode) {
-      return (int)*(uint32_t*)(pNode + 4) <= 0 ? 0 : *(uint32_t*)(pNode + 4);
-    }
-
-    pNode = pList + 4;
-    return (int)*(uint32_t*)(pNode + 4) <= 0 ? 0 : *(uint32_t*)(pNode + 4);
-}
-
-void __thiscall SSYSTEM_ListUnlink(int32_t pThis, int * pNode) {
-    int* pPrevLink;
-    if (!pNode) {
-      pNode = (int*)(pThis + 4);
-    }
-
-    int pNext = *pNode;
-    if (!pNext) {
-      return;
-    }
-
-    uint32_t nOffset = pNode[1];
-    if ((int)nOffset < 0) {
-      pPrevLink = (int*)~nOffset;
-    } else {
-      pPrevLink = (int*)((int)pNode + (nOffset - *(int*)(pNext + 4)));
-    }
-
-    *pPrevLink = pNext;
-    *(int*)(*pNode + 4) = pNode[1];
-    *pNode = 0;
-    pNode[1] = 0;
-}
-
-uint32_t __thiscall SSYSTEM_ListGetData(int32_t pList, int32_t pNode) {
-    if (pNode) {
-      return *(uint32_t*)(pNode + 4);
-    }
-
-    return *(uint32_t*)(pList + 8);
-}
-
-void __fastcall SSYSTEM_ListClearPositive(D2StormListHead * pList) {
-    int* pPrevLink;
-    uint32_t nOffset;
-    int* pNode;
-    while (true) {
-      int pNext;
-      pNode = (int*)pList->pNext;
-      if ((int)pNode <= 0) {
-        break;
-      }
-
-      pNext = *pNode;
-      if (pNext) {
-        nOffset = pNode[1];
-        if ((int)nOffset < 0) {
-          pPrevLink = (int*)~nOffset;
-        } else {
-          pPrevLink = (int*)((int)pNode + (nOffset - *(int*)(pNext + 4)));
-        }
-
-        *pPrevLink = pNext;
-        *(int*)(*pNode + 4) = pNode[1];
-        *pNode = 0;
-        pNode[1] = 0;
-      }
-    }
-}
-
-void __fastcall SSYSTEM_ListClearAll(D2StormListHead * pList) {
-    int* pPrevLink;
-    SSYSTEM_ListClearPositive(pList);
-    StormLinkStrc** pHead = &pList->pPrevLink;
-    StormLinkStrc* pNext = *pHead;
-    if (!pNext) {
-      return;
-    }
-
-    uint32_t nOffset = pList->pNext;
-    if ((int)nOffset < 0) {
-      pPrevLink = (int*)~nOffset;
-    } else {
-      pPrevLink = (int*)((int)pHead + (nOffset - pNext->pNext));
-    }
-
-    *pPrevLink = (int)pNext;
-    (*pHead)->pNext = pList->pNext;
-    *pHead = 0;
-    pList->pNext = 0;
-}
-
-int * * __thiscall SSYSTEM_ListAllocNode(int * * pList, int32_t nInsertMode, int32_t nDataSize, uint32_t nAllocFlags) {
-    int** pNode = (int**)SMem::SMemAlloc(nDataSize + 0xc, gszSSystemListAllocTag, -2, nAllocFlags | 8);
-    if (pNode) {
-      *pNode = 0;
-      pNode[1] = 0;
-    } else {
-      pNode = 0;
-    }
-    if (!nInsertMode) {
-      return pNode;
-    }
-
-    SSYSTEM_ListUnlinkAndInsert(pList, pNode, nInsertMode, nullptr);
-    return pNode;
-}
-
-int * __thiscall SSYSTEM_ListFreeNode(int * pNode, uint8_t bFreeMemory) {
-    uint32_t nOffset;
-    int pNext = *pNode;
-    if (pNext) {
-      int* pPrevLink;
-      nOffset = pNode[1];
-      if ((int)nOffset < 0) {
-        pPrevLink = (int*)~nOffset;
-      } else {
-        pPrevLink = (int*)((int)pNode + (nOffset - *(int*)(pNext + 4)));
-      }
-
-      *pPrevLink = pNext;
-      *(int*)(*pNode + 4) = pNode[1];
-      *pNode = 0;
-      pNode[1] = 0;
-    }
-    if (!(bFreeMemory & 1)) {
-      return pNode;
-    }
-
-    SMem::SMemFree(pNode, "delete", -1, 0);
-    return pNode;
-}
-
-void __fastcall SSYSTEM_ListFreeAllNodes(int32_t pList) {
-    int* pPrevLink;
-    uint32_t nOffset;
-    int* pNode;
-    while (true) {
-      int pNext;
-      pNode = *(int**)(pList + 8);
-      if ((int)pNode <= 0) {
-        break;
-      }
-
-      pNext = *pNode;
-      if (pNext) {
-        nOffset = pNode[1];
-        if ((int)nOffset < 0) {
-          pPrevLink = (int*)~nOffset;
-        } else {
-          pPrevLink = (int*)((int)pNode + (nOffset - *(int*)(pNext + 4)));
-        }
-
-        *pPrevLink = pNext;
-        *(int*)(*pNode + 4) = pNode[1];
-        *pNode = 0;
-        pNode[1] = 0;
-      }
-
-      SMem::SMemFree(pNode, gszSSystemListAllocTag, -2, 0);
-    }
-}
-
-int __stdcall SSYSTEM_MemCompare(uint8_t * pLeft, uint8_t * pRight, uint32_t nLength) {
-    int nResult;
-    for (; nLength >= 4; nLength -= 4) {
-      if (*(int*)pLeft != *(int*)pRight) {
-        goto compare_bytes;
-      }
-
-      pRight += 4;
-      pLeft += 4;
-    }
-
-    if (!nLength) {
-      equal:
-      nResult = 0;
-    } else {
-      int nDiff;
-      compare_bytes:
-      nDiff = (uint32_t)*pLeft - (uint32_t)*pRight;
-      if (!nDiff) {
-        if (nLength == 1) {
-          goto equal;
-        }
-
-        nDiff = (uint32_t)pLeft[1] - (uint32_t)pRight[1];
-        if (!nDiff) {
-          if (nLength == 2) {
-            goto equal;
-          }
-
-          nDiff = (uint32_t)pLeft[2] - (uint32_t)pRight[2];
-          if (!nDiff && (nLength == 3 || (nDiff = (uint32_t)pLeft[3] - (uint32_t)pRight[3] , !nDiff))) {
-            goto equal;
-          }
-        }
-      }
-
-      nResult = 1;
-      if (nDiff <= 0) {
-        return -1;
-      }
-    }
-
-    return nResult;
-}
-
-// @blizzard SMemCopy (Storm ordinal 491)
-void __stdcall SMemCopy(void * _Dst, void * _Src, size_t _Size) {
-    memcpy(_Dst, _Src, _Size);
-}
-
-// @blizzard SMemFill (Storm ordinal 492)
-void __stdcall SMemFill(void * pMemory, size_t nSize, uint8_t bValue) {
-    memset(pMemory, (uint32_t)bValue, nSize);
-}
-
-// @blizzard SMemMove (Storm ordinal 493)
-void __stdcall SMemMove(void * pParam1, void * pParam2, size_t nSize) {
-    memmove(pParam1, pParam2, nSize);
-}
-
-// @blizzard SMemZero (Storm ordinal 494)
-void __stdcall SMemZero(void * pMemory, size_t nSize) {
-    memset(pMemory, 0, nSize);
-}
-
-void __fastcall LINKEDLIST_GetNodeValue(void * pNode) {
+// TSFixedArray<unsigned int> constructor: zeroes the 20-byte array header.
+// Named per redivivus issue #35: SBIG_Constructor passes it with TSFixedArray_Ui_Destructor to the eh vector constructor iterator, so it is not a TSList helper.
+void __fastcall TSFixedArray_Ui_Constructor(void * pNode) {
     *(uint32_t*)pNode = 0;
     *(uint32_t*)((int)pNode + 4) = 0;
     *(uint32_t*)((int)pNode + 8) = 0;
     *(uint32_t*)((int)pNode + 0xc) = 0;
     *(uint32_t*)((int)pNode + 0x10) = 0;
-}
-
-StormLinkStrc * __thiscall LINKEDLIST_GetNodePointer(StormLinkStrc * pLink, int32_t nLinkOffset) {
-    StormLinkStrc* pResult;
-    uint32_t pNextItem = pLink->pNext;
-    if ((int)pNextItem < 0) {
-      pResult = (StormLinkStrc*)~pNextItem;
-    } else {
-      if (nLinkOffset < 0) {
-        nLinkOffset = (int)pLink - pLink->pPrevLink->pNext;
-      }
-
-      pResult = (StormLinkStrc*)(pNextItem + nLinkOffset);
-    }
-
-    return pResult;
-}
-
-void __fastcall LINKEDLIST_UnlinkNodeSelf(StormLinkStrc * pLink) {
-    StormLinkStrc* pPrevLink = pLink->pPrevLink;
-    if (!pPrevLink) {
-      return;
-    }
-
-    StormLinkStrc* pNextLink = LINKEDLIST_GetNodePointer(pLink, -1);
-    pNextLink->pPrevLink = pPrevLink;
-    pLink->pPrevLink->pNext = pLink->pNext;
-    pLink->pPrevLink = 0;
-    pLink->pNext = 0;
-}
-
-StormLinkStrc * __thiscall LINKEDLIST_GetOffset(StormLinkedListStrc * pList, void * pItem) {
-    StormLinkStrc* pOffsetResult = !pItem ? &pList->head : (StormLinkStrc*)(pList->nLinkOffset + (int)pItem);
-    return pOffsetResult;
-}
-
-void __thiscall LINKEDLIST_SetNodeValue(StormLinkedListStrc * pNode, int32_t dwValue) {
-    pNode->nLinkOffset = dwValue;
-    StormLinkStrc* pSVar1 = &pNode->head;
-    pSVar1->pPrevLink = pSVar1;
-    pNode->head.pNext = ~(uint32_t)pSVar1;
-}
-
-void __thiscall LINKEDLIST_InsertNode(StormLinkedListStrc * pList, void * pNewItem, int32_t nInsertMode, void * pRefItem) {
-    StormLinkStrc* pAnchorLink;
-    StormLinkStrc* pPrevLinkField;
-    StormLinkStrc* pNodeLink = LINKEDLIST_GetOffset(pList, pNewItem);
-    if (pNodeLink->pPrevLink) {
-      LINKEDLIST_UnlinkNodeSelf(pNodeLink);
-    }
-    if (pRefItem) {
-      pAnchorLink = LINKEDLIST_GetOffset(pList, pRefItem);
-    } else {
-      pAnchorLink = &pList->head;
-    }
-
-    switch (nInsertMode) {
-      case 1:
-        {
-          pNodeLink->pPrevLink = pAnchorLink;
-          pNodeLink->pNext = pAnchorLink->pNext;
-          pPrevLinkField = LINKEDLIST_GetNodePointer(pAnchorLink, pList->nLinkOffset);
-          pPrevLinkField->pPrevLink = pNodeLink;
-          pAnchorLink->pNext = (int)pNewItem;
-          break;
-        }
-      default:
-        {
-          pPrevLinkField = pAnchorLink->pPrevLink;
-          pNodeLink->pPrevLink = pPrevLinkField;
-          pNodeLink->pNext = pPrevLinkField->pNext;
-          pPrevLinkField->pNext = (int)pNewItem;
-          pAnchorLink->pPrevLink = pNodeLink;
-        }
-    }
-}
-
-int32_t __thiscall LINKEDLIST_GetNodeAt(int * pList, int32_t nOffset) {
-    StormLinkStrc* pListNode = LINKEDLIST_GetOffset((StormLinkedListStrc*)pList, (void*)nOffset);
-    int nNodeValue = pListNode->pNext;
-    if (nNodeValue > 0) {
-      return nNodeValue;
-    }
-
-    nNodeValue = 0;
-    return nNodeValue;
-}
-
-void __thiscall LINKEDLIST_RemoveNode(int * pnParam, int32_t nOffset) {
-    StormLinkStrc* pNodeLink = LINKEDLIST_GetOffset((StormLinkedListStrc*)pnParam, (void*)nOffset);
-    LINKEDLIST_UnlinkNodeSelf(pNodeLink);
-}
-
-// @wasnamed LINKEDLIST_GetCount - one name on two different functions.
-// @evidence Calls LINKEDLIST_GetOffset(nOffset,p) then returns node[+4].
-// It counts nothing. 00426a60 is the real count (returns max(pList[+8],0)).
-// @caveat no xrefs - an inlined Storm TS-list template instance. Name is body-derived, not recovered.
-int32_t __thiscall LINKEDLIST_GetNodeLinkAtOffset(int * pnParam, int32_t nOffset) {
-    StormLinkStrc* pListNode = LINKEDLIST_GetOffset((StormLinkedListStrc*)pnParam, (void*)nOffset);
-    return pListNode->pNext;
-}
-
-void __fastcall LINKEDLIST_FreeNode(void * pParam) {
-    while (true) {
-      int nOffset;
-      nOffset = *(int*)((int)pParam + 8);
-      if (nOffset <= 0) {
-        nOffset = 0;
-        break;
-      }
-
-      LINKEDLIST_RemoveNode((int*)pParam, nOffset);
-    }
-}
-
-void __fastcall LINKEDLIST_FreeNodeAndUnlink(void * pParam) {
-    LINKEDLIST_FreeNode(pParam);
-    LINKEDLIST_UnlinkNodeSelf((StormLinkStrc*)((int)pParam + 4));
-}
-
-void * __thiscall LINKEDLIST_AllocAndInsertNode(StormLinkedListStrc * pList, int32_t nInsertMode, int32_t nExtraSize, uint32_t dwFlags) {
-    uint32_t* pNewNode = (uint32_t*)SMem::SMemAlloc(nExtraSize + 0xc, s___AUTMESSAGESOURCE___0072f9fc, -2, dwFlags | 8);
-    if (pNewNode) {
-      *pNewNode = 0;
-      pNewNode[1] = 0;
-    } else {
-      pNewNode = 0;
-    }
-    if (!nInsertMode) {
-      return pNewNode;
-    }
-
-    LINKEDLIST_InsertNode(pList, pNewNode, nInsertMode, nullptr);
-    return pNewNode;
-}
-
-FILE * __thiscall LINKEDLIST_DetachNode(FILE * pFile, uint8_t bFree) {
-    LINKEDLIST_UnlinkNodeSelf((StormLinkStrc*)pFile);
-    if (!(bFree & 1)) {
-      return pFile;
-    }
-
-    Fog::Engine::Application::MISC_OperatorDeleteShim(pFile);
-    return pFile;
-}
-
-void __fastcall LINKEDLIST_FreeNodeSafe(void * pParam) {
-    LINKEDLIST_FreeNode(pParam);
-    LINKEDLIST_UnlinkNodeSelf((StormLinkStrc*)((int)pParam + 4));
-}
-
-void __fastcall LINKEDLIST_FreeAllNodes(void * pListHead) {
-    while (true) {
-      FILE* pObject;
-      pObject = *(FILE**)((int)pListHead + 8);
-      if ((int)pObject <= 0) {
-        pObject = 0;
-      }
-      if (!pObject) {
-        break;
-      }
-
-      LINKEDLIST_DetachNode(pObject, 0);
-      SMem::SMemFree(pObject, s___AUTMESSAGESOURCE___0072f9fc, -2, 0);
-    }
-}
-
-int32_t __thiscall LINKEDLIST_FindNode(int * pList, void * pNode) {
-    int32_t nNodeValue = LINKEDLIST_GetNodeAt(pList, (int32_t)pNode);
-    LINKEDLIST_DetachNode((FILE*)pNode, 0);
-    SMem::SMemFree(pNode, s___AUTMESSAGESOURCE___0072f9fc, -2, 0);
-    return nNodeValue;
 }
 
 void __stdcall SetCurrentThreadId() {

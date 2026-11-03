@@ -247,10 +247,7 @@ struct D2ddDebugFont {
 };
 
 struct DDCOLORKEY {
-    DDCOLORKEY() = default;
-    DDCOLORKEY(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    DDCOLORKEY(DWORD a0, DWORD a1) : dwColorSpaceLowValue(a0), dwColorSpaceHighValue(a1) {}
 
     /* 0x00 */ DWORD dwColorSpaceLowValue;
     /* 0x04 */ DWORD dwColorSpaceHighValue;
@@ -369,8 +366,7 @@ struct IDirectDrawVtbl {
     /* 0x74 */ void * EvaluateMode;
 };
 
-#pragma pack(push, 1)
-struct DDBLTFX {
+struct __attribute__((packed)) DDBLTFX {
     /* 0x00 */ DWORD dwSize;
     /* 0x04 */ DWORD dwDDFX;
     /* 0x08 */ DWORD dwROP;
@@ -395,35 +391,34 @@ struct DDBLTFX {
     /* 0x54 */ DDCOLORKEY ddckDestColorkey;
     /* 0x5C */ DDCOLORKEY ddckSrcColorkey;
 };
-#pragma pack(pop)
 
 namespace D2DDraw::Renderer::DirectDraw {
 
 // Function declarations
 BOOL __fastcall Initialize(HINSTANCE hInstance);
-void ClearCaches();
-BOOL CheckCutScene();
+void __fastcall ClearCaches();
+BOOL __fastcall CheckCutScene();
 int32_t __fastcall GetScreenSize(int * pWidth, int * pHeight);
 BOOL __fastcall SetPalette(LPPALETTEENTRY pPalette);
 void __fastcall SetPaletteTable(BYTE * * ppPaletteTable);
 void __fastcall UpdateScaleFactor(int32_t nScaleFactor);
 BOOL __fastcall SetGamma(int32_t nGamma);
-int32_t CheckGamma();
-void __fastcall SetGlobalLight(BYTE nRed, BYTE nGreen, BYTE nBlue);
+int32_t __fastcall CheckGamma();
+void __fastcall SetGlobalLight(int nRed, int nGreen, int nBlue);
 void __fastcall SetPerspectiveScale(int32_t nScaleX, int32_t nScaleY);
 void __fastcall AdjustPerspectivePosition(int32_t nPosX, int32_t nPosY, int32_t nBais, int * pXAdjust, int * pYAdjust);
 void __fastcall PerspectiveScalePosition(int32_t nPosX, int32_t nPosY, int32_t nAngle, int * pXAdjust, int * pYAdjust, BOOL bOrder);
-void SetDefaultPerspectiveFactor();
-int * GetRenderStatistics();
-BOOL ActivateWindow();
+void __fastcall SetDefaultPerspectiveFactor();
+int * __fastcall GetRenderStatistics();
+BOOL __fastcall ActivateWindow();
 BOOL __fastcall SetOption(int32_t nOption, int32_t nValue);
 void __fastcall DirectDrawErrorHandler(char * szContext, int32_t nErrorCode);
 BOOL __stdcall InternalCutsceneWindow();
 BOOL __fastcall CreateWindow(HWND hWnd, int32_t nResolutionMode);
 void __fastcall PlayCutScene(char * szFile, int32_t nResolutionMode, void * fpFrame);
 BOOL __fastcall BeginScene(BOOL bClear, BYTE nRed, BYTE nGreen, BYTE nBlue);
-BOOL EndScene1();
-BOOL EndScene2();
+BOOL __fastcall EndScene1();
+BOOL __fastcall EndScene2();
 BOOL __fastcall GetBackBuffer(BYTE * pBuffer);
 void __stdcall InternalReleaseWindow();
 BOOL __stdcall BeginCutScene();

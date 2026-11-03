@@ -2,10 +2,10 @@
 
 #include "D2Win/Src/D2WinPalette.h"
 #include "D2CMP/Draw.h"
+#include "D2Hell/D2Hell.h"
 #include "D2Win/Src/D2Comp.h"
 #include "D2Win/Src/D2WinArchive.h"
 #include "D2gfx/D2GFX.h"
-#include "Fog/Archive.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
@@ -19,6 +19,8 @@
 #define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
+
+static uint32_t gbPaletteGammaShiftEnabled = 0x1; D2_STATIC_GUARD(gbPaletteGammaShiftEnabled, "gbPaletteGammaShiftEnabled");
 
 namespace D2Win::Src::D2WinPalette {
 
@@ -54,8 +56,8 @@ void __stdcall D2WINPALETTE_LoadPalettes() {
     D2gfx::D2GFX::D2GFX_SetPaletteTable((BYTE**)aPaletteTable);
 }
 
-uint8_t * __fastcall D2WINPAL_GetActPalettePointer(int32_t nParam) {
-    return gPaletteAct1Outdoor + nParam * 0x100;
+uint8_t * __fastcall D2WINPAL_GetActPalettePointer(int32_t nPaletteIndex) {
+    return gPaletteAct1Outdoor + nPaletteIndex * 0x100;
 }
 
 void __stdcall DRAW_SetOrReloadPalleteMain() {
@@ -83,8 +85,8 @@ void __stdcall DRAW_SetOrReloadPalleteMain() {
     D2gfx::D2GFX::D2GFX_SetPalette(MostLikelyCurrentPalletePtr);
 }
 
-void __fastcall D2WINPALETTE_SetPaletteIndex(int32_t nParam) {
-    if (nParam) {
+void __fastcall D2WINPALETTE_SetPaletteIndex(int32_t bEnableGammaShift) {
+    if (bEnableGammaShift) {
       gbGammaShiftActive = 1;
       gdwPaletteShiftStartTick = GetTickCount();
       gnPaletteGammaShiftState = 2;
@@ -103,8 +105,8 @@ uint8_t __stdcall D2GFX_GetColorFromCurrentPallete(uint8_t nRed, uint8_t nGreen,
     return bVar1;
 }
 
-void __fastcall D2WINPAL_CopyPalette(void * pParam) {
-    memcpy(pParam, gPaletteDataBase, 0x3100);
+void __fastcall D2WINPAL_CopyPalette(void * pDest) {
+    memcpy(pDest, gPaletteDataBase, 0x3100);
 }
 
 // @sourcefile .\Src\D2WinPalette.cpp
@@ -118,7 +120,7 @@ BOOL __stdcall D2WINPAL_LoadPaletteFiles(char * szText1, char * szText2) {
     char* szSrcFile = ".\\Src\\D2WinPalette.cpp";
     uint32_t* pFileSize = 0;
     D2PoolManagerStrc* pDatFileData = D2WinArchive::ReturnZero();
-    void* pDatFileHandle = Fog::Archive::D2FILE_AllocAndLoadD2File(pDatFileData, szText1, pFileSize, szSrcFile, nSrcLine);
+    void* pDatFileHandle = D2Hell::D2FILE_AllocAndLoadD2File(pDatFileData, szText1, pFileSize, szSrcFile, nSrcLine);
     uint32_t nPaletteIdx = 0;
     do {
       aAlphaTable[nPaletteIdx * 4] = 0;
@@ -129,7 +131,7 @@ BOOL __stdcall D2WINPAL_LoadPaletteFiles(char * szText1, char * szText2) {
     szSrcFile = ".\\Src\\D2WinPalette.cpp";
     pFileSize = 0;
     pDatFileData = D2WinArchive::ReturnZero();
-    PALETTEENTRY* pMemoryToFree = (PALETTEENTRY*)Fog::Archive::D2FILE_AllocAndLoadD2File(pDatFileData, szText2, pFileSize, szSrcFile, nSrcLine2);
+    PALETTEENTRY* pMemoryToFree = (PALETTEENTRY*)D2Hell::D2FILE_AllocAndLoadD2File(pDatFileData, szText2, pFileSize, szSrcFile, nSrcLine2);
     PALETTEENTRY* pSrcArchive = pMemoryToFree;
     PALETTEENTRY* pDstIndexCounter = MostLikelyCurrentPalletePtr;
     for (nCount = 0x100; nCount; nCount--) {
@@ -206,11 +208,11 @@ BOOL __stdcall D2WINPAL_LoadPaletteFiles(char * szText1, char * szText2) {
       }
 
       uAlphaR = (uint32_t)*pSrcBytes * 0xaa / 100;
-      if (0xff < uAlphaR) {
+      if (0xff < (int32_t)uAlphaR) {
         uAlphaR = 0xff;
       }
 
-      bVar2 = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete(MostLikelyCurrentPalletePtr, 0x100, nText1 & 0xff, uAlphaG & 0xff, uAlphaR & 0xff);
+      bVar2 = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete(MostLikelyCurrentPalletePtr, 0x100, nText1 & 0xff, (uint8_t)uAlphaG, (uint8_t)uAlphaR);
       gPaletteMenuInGame[nPaletteIdx] = bVar2;
       bVar2 = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete(MostLikelyCurrentPalletePtr, 0x100, (uint32_t)((PALETTEENTRY*)(pSrcBytes - 2))->peRed, 0, 0);
       gPaletteDataMenuInGame[nPaletteIdx] = bVar2;
@@ -225,17 +227,17 @@ BOOL __stdcall D2WINPAL_LoadPaletteFiles(char * szText1, char * szText2) {
     return 1;
 }
 
-BOOL __fastcall D2WINPAL_LoadActPalette(uint8_t nParam) {
-    char acStack_20c[260];
+BOOL __fastcall D2WINPAL_LoadActPalette(uint8_t nAct) {
+    char szDatPath[260];
     char szPl2Path[260];
-    uint32_t nActIndex = nParam + 1;
-    if (!nActIndex || 5 < nActIndex) {
+    uint32_t nActIndex = nAct + 1;
+    if (!nActIndex || 5 < (int32_t)nActIndex) {
       nActIndex = 1;
     }
 
-    sprintf(acStack_20c, "%s\\palette\\act%d\\%s", "DATA\\GLOBAL", nActIndex, "pal.dat");
+    sprintf(szDatPath, "%s\\palette\\act%d\\%s", "DATA\\GLOBAL", nActIndex, "pal.dat");
     sprintf(szPl2Path, "%s\\palette\\act%d\\%s", "DATA\\GLOBAL", nActIndex, "pal.pl2");
-    BOOL nResult = D2WINPAL_LoadPaletteFiles(acStack_20c, szPl2Path);
+    BOOL nResult = D2WINPAL_LoadPaletteFiles(szDatPath, szPl2Path);
     D2gfx::D2GFX::D2GFX_SetPalette(MostLikelyCurrentPalletePtr);
     return nResult;
 }
@@ -256,8 +258,8 @@ int __stdcall LoadPalette(char * szDatFile, char * szPl2File) {
     return 1;
 }
 
-void __fastcall D2WINPAL_SetGammaRamp(uint32_t dwParam) {
-    gbCompactLineSpacingMode = dwParam;
+void __fastcall D2WINPAL_SetGammaRamp(uint32_t bCompactLineSpacingMode) {
+    gbCompactLineSpacingMode = bCompactLineSpacingMode;
 }
 
 } // namespace D2Win::Src::D2WinPalette

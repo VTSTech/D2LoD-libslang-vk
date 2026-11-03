@@ -15,7 +15,7 @@
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Storm/H/CCritSect.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 
@@ -86,8 +86,8 @@ template<> ::SGAMEDATA * TSExplicitList<SGAMEDATA, -572662307>::Next(::SGAMEDATA
       return (::SGAMEDATA*)((int)*(uint32_t*)(pNode->szGameName + this->m_linkoffset - 0x26) <= 0 ? 0 : *(uint32_t*)(pNode->szGameName + this->m_linkoffset - 0x26));
     }
 
-    uint32_t uVar1 = this->m_terminator.m_next;
-    return (::SGAMEDATA*)((int)uVar1 <= 0 ? 0 : uVar1);
+    uint32_t dwNext = this->m_terminator.m_next;
+    return (::SGAMEDATA*)((int)dwNext <= 0 ? 0 : dwNext);
 }
 
 template<> void TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>::Unlock(int32_t nLockedHandle) {
@@ -122,7 +122,7 @@ template<> ::SGAMEDATA * TSExplicitList<SGAMEDATA, -572662307>::DeleteNode(::SGA
     TSLink<::SGAMEDATA>* pSlotPtr = !pNode ? &this->m_terminator : (TSLink<::SGAMEDATA>*)(pNode->szGameName + this->m_linkoffset - 0x2a);
     uint32_t nSlotValue = pSlotPtr->m_next;
     pNode->Destructor();
-    Storm::SMem::SMemFree(pNode, s___AUSGAMEDATA___0070f56c, -2, 0);
+    Storm::Source::SMem::SMemFree(pNode, s___AUSGAMEDATA___0070f56c, -2, 0);
     return (::SGAMEDATA*)((int)nSlotValue <= 0 ? 0 : nSlotValue);
 }
 
@@ -185,16 +185,16 @@ template<> uint32_t TSExportTableSimple<SGAMEDATA, HSGAMEDATA__*, 0>::GenerateUn
 
 template<> ::SGAMEDATA * TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>::Lock(uint32_t nHandle, int32_t * pLockedHandle, int32_t bForWriting) {
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&this->tSync.m_critsect);
-    *pLockedHandle = (uint32_t)(bForWriting != 0) * 2 - 1;
+    *pLockedHandle = bForWriting != 0 ? 0x1U : 0xffffffff;
     ::SGAMEDATA* pGame = this->TSHashTable<::SGAMEDATA, HASHKEY_NONE>::Ptr(nHandle, &this->tKey);
-    if (pGame) {
-      return pGame;
-    }
-    if (*pLockedHandle) {
-      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&this->tSync.m_critsect);
+    if (!pGame) {
+      if (*pLockedHandle) {
+        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&this->tSync.m_critsect);
+      }
+
+      *pLockedHandle = 0;
     }
 
-    *pLockedHandle = 0;
     return pGame;
 }
 
@@ -209,7 +209,6 @@ template<> void TSHashTable<SGAMEDATA, HASHKEY_NONE>::GrowListArray() {
     int nResetBucketOffset;
     TSExplicitList<::SGAMEDATA, -572662307> pendingList;
     TSLink<::SGAMEDATA>* pNodeData;
-    uint32_t pNodeLink;
     pendingList.m_terminator.m_prevlink = &pendingList.m_terminator;
     uint32_t nNewMask = pThis->nSlotMask + 1;
     uint32_t* nNewBucketCount = (uint32_t*)(nNewMask * 2);
@@ -236,13 +235,7 @@ template<> void TSHashTable<SGAMEDATA, HASHKEY_NONE>::GrowListArray() {
           pBackLink = (TSLink<::SGAMEDATA>*)(nResetBucketOffset + 4);
           pNodeData = pBackLink->m_prevlink;
           if (pNodeData) {
-            pNodeLink = *(uint32_t*)(nResetBucketOffset + 8);
-            if ((int)pNodeLink < 0) {
-              pOldBucket2 = (int*)~pNodeLink;
-            } else {
-              pOldBucket2 = (int*)((int)pBackLink + (pNodeLink - pNodeData->m_next));
-            }
-
+            pOldBucket2 = (int*)D2_StormNextLink(pBackLink, -1);
             *pOldBucket2 = (int)pNodeData;
             pBackLink->m_prevlink->m_next = *(int*)(nResetBucketOffset + 8);
             pBackLink->m_prevlink = 0;
@@ -295,12 +288,7 @@ template<> void TSHashTable<SGAMEDATA, HASHKEY_NONE>::GrowListArray() {
       pPendingHead2 = pBackLink->m_prevlink;
       if (pPendingHead2) {
         nNewMask = pBackLink->m_next;
-        if ((int)nNewMask < 0) {
-          pOldBucket2 = (int*)~nNewMask;
-        } else {
-          pOldBucket2 = (int*)((int)pBackLink + (nNewMask - pPendingHead2->m_next));
-        }
-
+        pOldBucket2 = (int*)D2_StormNextLink(pBackLink, -1);
         *pOldBucket2 = (int)pPendingHead2;
         pBackLink->m_prevlink->m_next = pBackLink->m_next;
         pBackLink->m_prevlink = 0;
@@ -388,12 +376,7 @@ template<> ::SGAMEDATA * TSHashTable<SGAMEDATA, HASHKEY_NONE>::New(uint32_t dwHa
     if (pExistingHead) {
       char* pBackLink;
       nIdInBucket = ppActiveListLink->m_next;
-      if ((int)nIdInBucket < 0) {
-        pBackLink = (char*)~nIdInBucket;
-      } else {
-        pBackLink = (char*)((int)ppActiveListLink + (nIdInBucket - *(int*)(pExistingHead + 4)));
-      }
-
+      pBackLink = (char*)D2_StormNextLink(ppActiveListLink, -1);
       *(int*)pBackLink = pExistingHead;
       ppActiveListLink->m_prevlink->m_next = ppActiveListLink->m_next;
       ppActiveListLink->m_prevlink = 0;

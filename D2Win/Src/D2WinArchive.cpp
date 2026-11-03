@@ -4,11 +4,11 @@
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2Client/D2IniConfigStrc.h"
+#include "D2Hell/D2Hell.h"
 #include "D2Launch/MainMenus.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2gfx/D2GFX.h"
-#include "Fog/Archive.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Fog.h"
 #include "Fog/Memory.h"
@@ -25,14 +25,7 @@
 #endif
 
 
-#ifndef RECON_FPTD_fpRequiredUserAction
-#define RECON_FPTD_fpRequiredUserAction
-typedef BOOL (*fpRequiredUserAction)();
-#endif
-
 namespace D2Win::Src::D2WinArchive {
-
-static D2FogArchiveStrc * MPQ_d2kfixup_mpq = 0; D2_STATIC_GUARD(MPQ_d2kfixup_mpq, "D2Win::Src::D2WinArchive::MPQ_d2kfixup_mpq");
 
 // @sourcefile .\Src\D2WinArchive.cpp
 DC6 * __fastcall IMAGE_LoadDC6(char * szFilename, BOOL bUseDccExtension) {
@@ -41,13 +34,7 @@ DC6 * __fastcall IMAGE_LoadDC6(char * szFilename, BOOL bUseDccExtension) {
     DC6* pOutDC6;
     char cByte;
     char* pDstEnd;
-    int nNegFilenameBase = -(int)szFilename;
-    do {
-      cByte = *szFilename;
-      szFilename[(int)(szFullPath + nNegFilenameBase)] = cByte;
-      szFilename++;
-    } while (cByte != '\0');
-
+    strcpy(szFullPath, szFilename);
     char* szExtension = D2CMP::SRC::SpriteCache::IMAGE_ReturnImageExtension(bUseDccExtension);
     char* szExtensionEnd = szExtension;
     szExtensionEnd = szExtensionEnd + strlen(szExtensionEnd) + 1;
@@ -70,7 +57,7 @@ DC6 * __fastcall IMAGE_LoadDC6(char * szFilename, BOOL bUseDccExtension) {
       pDstWrite++;
     }
 
-    DC6* pRawArchiveData = (DC6*)Fog::Archive::D2FILE_AllocAndLoadD2File(nullptr, szFullPath, nullptr, ".\\Src\\D2WinArchive.cpp", 0x41);
+    DC6* pRawArchiveData = (DC6*)D2Hell::D2FILE_AllocAndLoadD2File(nullptr, szFullPath, nullptr, ".\\Src\\D2WinArchive.cpp", 0x41);
     D2CMP::SRC::CelCmp::CELCMP_FixupPointersAndPrepare(pRawArchiveData, &pOutDC6, ".\\Src\\D2WinArchive.cpp", 0x42, -1, nullptr);
     return pOutDC6;
 }
@@ -79,19 +66,13 @@ DC6 * __fastcall IMAGE_LoadDC6(char * szFilename, BOOL bUseDccExtension) {
 int * __fastcall D2WINARCHIVE_LoadImageFromArchive(char * szText, uint32_t * pnSize, DC6 * pDC6) {
     uint32_t nCopyCount;
     char* pSrcRead;
-    char local_108[260];
+    char szFilePath[260];
     char cByte;
-    int nNegFilenameBase = -(int)szText;
-    do {
-      cByte = *szText;
-      szText[(int)(local_108 + nNegFilenameBase)] = cByte;
-      szText++;
-    } while (cByte != '\0');
-
+    strcpy(szFilePath, szText);
     char* szExtension = D2CMP::SRC::SpriteCache::IMAGE_ReturnImageExtension((int32_t)pDC6);
     char* szExtensionEnd = szExtension;
     szExtensionEnd = szExtensionEnd + strlen(szExtensionEnd) + 1;
-    char* pDstWrite = (char*)((uint8_t*)&local_108 - 1);
+    char* pDstWrite = (char*)((uint8_t*)&szFilePath - 1);
     do {
       pSrcRead = pDstWrite + 1;
       pDstWrite++;
@@ -110,7 +91,7 @@ int * __fastcall D2WINARCHIVE_LoadImageFromArchive(char * szText, uint32_t * pnS
       pDstWrite++;
     }
 
-    DC6* pRawArchiveData = (DC6*)Fog::Archive::D2FILE_AllocAndLoadD2File(nullptr, local_108, pnSize, ".\\Src\\D2WinArchive.cpp", 0x52);
+    DC6* pRawArchiveData = (DC6*)D2Hell::D2FILE_AllocAndLoadD2File(nullptr, szFilePath, pnSize, ".\\Src\\D2WinArchive.cpp", 0x52);
     D2CMP::SRC::CelCmp::CELCMP_FixupPointersAndPrepare(pRawArchiveData, &pDC6, ".\\Src\\D2WinArchive.cpp", 0x53, -1, nullptr);
     return &pDC6->nVersion;
 }
@@ -144,30 +125,28 @@ BOOL __stdcall MessageBoxA_InsertPlayDisc() {
 }
 
 BOOL __stdcall MPQ_LoadAllDataMpqFiles() {
-    MPQ_d2data = Fog::Archive::ARCHIVE_LoadMPQ("d2data.mpq", 0, nullptr, 1000);
-    MPQ_d2sfx = Fog::Archive::ARCHIVE_LoadMPQ("d2sfx.mpq", 0, nullptr, 1000);
-    MPQ_d2speech = Fog::Archive::ARCHIVE_LoadMPQ("d2speech.mpq", 0, nullptr, 1000);
-    MPQ_d2delta = Fog::Archive::ARCHIVE_LoadMPQ("d2delta.mpq", 0, nullptr, 1000);
-    MPQ_d2kfixup = Fog::Archive::ARCHIVE_LoadMPQ("d2kfixup.mpq", 0, nullptr, 1000);
-    MPQ_patch_d2 = Fog::Archive::ARCHIVE_LoadMPQ("patch_d2.mpq", 0, nullptr, 5000);
-    MPQ_d2exp = Fog::Archive::ARCHIVE_LoadMPQ("d2exp.mpq", 0, nullptr, 3000);
+    MPQ_d2data = D2Hell::ARCHIVE_LoadMPQ("d2data.mpq", 0, nullptr, 1000);
+    MPQ_d2sfx = D2Hell::ARCHIVE_LoadMPQ("d2sfx.mpq", 0, nullptr, 1000);
+    MPQ_d2speech = D2Hell::ARCHIVE_LoadMPQ("d2speech.mpq", 0, nullptr, 1000);
+    MPQ_d2delta = D2Hell::ARCHIVE_LoadMPQ("d2delta.mpq", 0, nullptr, 1000);
+    MPQ_d2kfixup = D2Hell::ARCHIVE_LoadMPQ("d2kfixup.mpq", 0, nullptr, 1000);
+    MPQ_patch_d2 = D2Hell::ARCHIVE_LoadMPQ("patch_d2.mpq", 0, nullptr, 5000);
+    MPQ_d2exp = D2Hell::ARCHIVE_LoadMPQ("d2exp.mpq", 0, nullptr, 3000);
     BOOL bDirectMode = Fog::Source::SFile::GetUseDirectCommand();
     if (bDirectMode) {
       return 1;
     }
-    if (!(MPQ_d2data && MPQ_d2sfx && MPQ_d2speech)) {
-      return 0;
+    if (MPQ_d2data && MPQ_d2sfx && MPQ_d2speech) {
+      bDirectMode = Fog::D2CheckExpansionGame();
+      if (!bDirectMode) {
+        return 1;
+      }
+      if (MPQ_d2exp) {
+        return 1;
+      }
     }
 
-    bDirectMode = Fog::D2CheckExpansionGame();
-    if (!bDirectMode) {
-      return 1;
-    }
-    if (!MPQ_d2exp) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 D2PoolManagerStrc * __stdcall ReturnZero() {
@@ -199,12 +178,12 @@ BOOL __fastcall MPQ_LoadVideoMpqFiles(::fpRequiredUserAction nfpRequiredUserActi
       nfpRequiredUserAction = 0;
     }
     if (bExpansion) {
-      MPQ_d2Xvideo = Fog::Archive::ARCHIVE_LoadMPQ("d2Xvideo.mpq", nZero, (::fpRequiredUserAction)(bool (*)())nfpRequiredUserAction, 1000);
+      MPQ_d2Xvideo = D2Hell::ARCHIVE_LoadMPQ("d2Xvideo.mpq", nZero, nfpRequiredUserAction, 1000);
       if (!MPQ_d2Xvideo) {
         return 0;
       }
     } else {
-      MPQ_d2video = Fog::Archive::ARCHIVE_LoadMPQ("d2video.mpq", nZero, (::fpRequiredUserAction)(bool (*)())nfpRequiredUserAction, 1000);
+      MPQ_d2video = D2Hell::ARCHIVE_LoadMPQ("d2video.mpq", nZero, nfpRequiredUserAction, 1000);
       if (!MPQ_d2video) {
         return 0;
       }
@@ -215,64 +194,64 @@ BOOL __fastcall MPQ_LoadVideoMpqFiles(::fpRequiredUserAction nfpRequiredUserActi
 
 void __stdcall MPQ_UnloadAllMediaMpqFiles() {
     if (MPQ_d2music) {
-      Fog::Archive::ARCHIVE_FreeMpqFile(MPQ_d2music);
+      D2Hell::ARCHIVE_FreeMpqFile(MPQ_d2music);
       MPQ_d2music = 0;
     }
     if (MPQ_d2char) {
-      Fog::Archive::ARCHIVE_FreeMpqFile(MPQ_d2char);
+      D2Hell::ARCHIVE_FreeMpqFile(MPQ_d2char);
       MPQ_d2char = 0;
     }
     if (MPQ_d2video) {
-      Fog::Archive::ARCHIVE_FreeMpqFile(MPQ_d2video);
+      D2Hell::ARCHIVE_FreeMpqFile(MPQ_d2video);
       MPQ_d2video = 0;
     }
     if (MPQ_d2Xmusic) {
-      Fog::Archive::ARCHIVE_FreeMpqFile(MPQ_d2Xmusic);
+      D2Hell::ARCHIVE_FreeMpqFile(MPQ_d2Xmusic);
       MPQ_d2Xmusic = 0;
     }
     if (MPQ_d2Xtalk) {
-      Fog::Archive::ARCHIVE_FreeMpqFile(MPQ_d2Xtalk);
+      D2Hell::ARCHIVE_FreeMpqFile(MPQ_d2Xtalk);
       MPQ_d2Xtalk = 0;
     }
     if (!MPQ_d2Xvideo) {
       return;
     }
 
-    Fog::Archive::ARCHIVE_FreeMpqFile(MPQ_d2Xvideo);
+    D2Hell::ARCHIVE_FreeMpqFile(MPQ_d2Xvideo);
     MPQ_d2Xvideo = 0;
 }
 
 void __stdcall MPQ_UnloadAllDataMpqFiles() {
     if (MPQ_d2data) {
-      Fog::Archive::ARCHIVE_FreeMpqFile(MPQ_d2data);
+      D2Hell::ARCHIVE_FreeMpqFile(MPQ_d2data);
       MPQ_d2data = 0;
     }
     if (MPQ_d2speech) {
-      Fog::Archive::ARCHIVE_FreeMpqFile(MPQ_d2speech);
+      D2Hell::ARCHIVE_FreeMpqFile(MPQ_d2speech);
       MPQ_d2speech = 0;
     }
     if (MPQ_d2sfx) {
-      Fog::Archive::ARCHIVE_FreeMpqFile(MPQ_d2sfx);
+      D2Hell::ARCHIVE_FreeMpqFile(MPQ_d2sfx);
       MPQ_d2sfx = 0;
     }
     if (MPQ_d2delta) {
-      Fog::Archive::ARCHIVE_FreeMpqFile(MPQ_d2delta);
+      D2Hell::ARCHIVE_FreeMpqFile(MPQ_d2delta);
       MPQ_d2delta = 0;
     }
     if (MPQ_d2kfixup) {
-      Fog::Archive::ARCHIVE_FreeMpqFile(MPQ_d2kfixup);
+      D2Hell::ARCHIVE_FreeMpqFile(MPQ_d2kfixup);
       MPQ_d2kfixup = 0;
     }
     if (MPQ_d2exp) {
-      Fog::Archive::ARCHIVE_FreeMpqFile(MPQ_d2exp);
+      D2Hell::ARCHIVE_FreeMpqFile(MPQ_d2exp);
       MPQ_d2exp = 0;
     }
     if (MPQ_d2Xmusic) {
-      Fog::Archive::ARCHIVE_FreeMpqFile(MPQ_d2Xmusic);
+      D2Hell::ARCHIVE_FreeMpqFile(MPQ_d2Xmusic);
       MPQ_d2Xmusic = 0;
     }
     if (MPQ_patch_d2) {
-      Fog::Archive::ARCHIVE_FreeMpqFile(MPQ_patch_d2);
+      D2Hell::ARCHIVE_FreeMpqFile(MPQ_patch_d2);
       MPQ_patch_d2 = 0;
     }
 
@@ -293,18 +272,18 @@ BOOL __fastcall MPQ_LoadAllMediaMpqFiles(::fpRequiredUserAction fpInsertPlayCd, 
     MPQ_d2Xvideo = 0;
     bIsExpansion = Fog::D2CheckExpansionGame();
     if (!bIsExpansion || D2IniData && (bIsExpansion = D2IniData->pTrueFunction() , !bIsExpansion)) {
-      MPQ_d2char = Fog::Archive::ARCHIVE_LoadMPQ("d2char.mpq", nZero, fpInsertPlayCd, 1000);
-      pMPQ_d2char_or_Xvideo = Fog::Archive::ARCHIVE_LoadMPQ("d2music.mpq", nZero, fpInsertPlayCd, 1000);
+      MPQ_d2char = D2Hell::ARCHIVE_LoadMPQ("d2char.mpq", nZero, fpInsertPlayCd, 1000);
+      pMPQ_d2char_or_Xvideo = D2Hell::ARCHIVE_LoadMPQ("d2music.mpq", nZero, fpInsertPlayCd, 1000);
       MPQ_d2Xmusic = 0;
       /* Variable used as MPQ_d2music in self if */ MPQ_d2Xtalk = 0;
       pMPQ_d2char = MPQ_d2char;
       MPQ_d2music = pMPQ_d2char_or_Xvideo;
     } else {
-      MPQ_d2char = Fog::Archive::ARCHIVE_LoadMPQ("d2char.mpq", 0, fpInsertPlayCd, 1000);
-      MPQ_d2music = Fog::Archive::ARCHIVE_LoadMPQ("d2music.mpq", 0, fpInsertPlayCd, 1000);
-      MPQ_d2Xmusic = Fog::Archive::ARCHIVE_LoadMPQ("d2Xmusic.mpq", nZero, fpInsertExpansionCd, 3000);
-      MPQ_d2Xtalk = Fog::Archive::ARCHIVE_LoadMPQ("d2Xtalk.mpq", nZero, fpInsertExpansionCd, 3000);
-      pMPQ_d2char_or_Xvideo = Fog::Archive::ARCHIVE_LoadMPQ("d2Xvideo.mpq", nZero, fpInsertExpansionCd, 3000);
+      MPQ_d2char = D2Hell::ARCHIVE_LoadMPQ("d2char.mpq", 0, fpInsertPlayCd, 1000);
+      MPQ_d2music = D2Hell::ARCHIVE_LoadMPQ("d2music.mpq", 0, fpInsertPlayCd, 1000);
+      MPQ_d2Xmusic = D2Hell::ARCHIVE_LoadMPQ("d2Xmusic.mpq", nZero, fpInsertExpansionCd, 3000);
+      MPQ_d2Xtalk = D2Hell::ARCHIVE_LoadMPQ("d2Xtalk.mpq", nZero, fpInsertExpansionCd, 3000);
+      pMPQ_d2char_or_Xvideo = D2Hell::ARCHIVE_LoadMPQ("d2Xvideo.mpq", nZero, fpInsertExpansionCd, 3000);
       MPQ_d2Xvideo = pMPQ_d2char_or_Xvideo;
       /* Variable used as MPQ_d2Xvideo in self if */ if (!MPQ_d2char || !MPQ_d2music || (pMPQ_d2char = MPQ_d2Xtalk , !MPQ_d2Xmusic)) {
         goto unload_and_fail;

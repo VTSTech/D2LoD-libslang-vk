@@ -26,7 +26,7 @@ namespace D2Game::Quests::QUESTS::A1Q4 {
 // Object/anim init helper for Deckard Cain's NPC unit: sets the active flag,
 // captures the target unit's GUID into the anim-state block, and pushes the
 // update flag so the client re-renders Cain. No quest-state transitions.
-void __fastcall Q04_UpdateCainNpcAnimState(int32_t pCainUnit, struct D2UnitStrc * * pTargetUnit);
+void __fastcall Q04_UpdateCainNpcAnimState(struct D2QuestDataStrc * pCainUnit, struct D2UnitStrc * * pTargetUnit);
 // A1Q4 — Q04_NotifyQuestStateToPlayer (per-player callback).
 // Gating predicate used as the "broadcast filter" by QUEST_SetStateAndBroadcast.
 // Sends quest-update packet 4 to a player ONLY if the quest is in a
@@ -172,7 +172,7 @@ void __fastcall MakeTownPortalFromScroolTree(::SGAMEDATA * pGame, struct D2UnitS
 // yields the Scroll of Inifuss and advances the quest.
 BOOL __fastcall OBJOP_A1Q4_ActivateInifussTree(struct D2ObjectOperateFnArg * pOperation);
 // A1Q4 (Search for Cain) object init/refresh callback for the Cairn-Stones portal object (classId 0x11). If the quest is active and the portal object has not yet been armed, stores the object GUID and schedules Q04_SpawnTristramPortal via AddQuestTimer. Calls SetupUpdateFlag on the object unit to trigger a rendering update. Guards against re-entry via flag bytes on the quest-specific data struct.
-void __fastcall Objects_InitFn06(uint32_t * pdwParam);
+void __fastcall Objects_InitFn06_CairnStone(struct D2ObjectInitFnArg * pInitArg);
 // A1Q4 — Q04_HandleNpcInteraction (party-member callback).
 // For each Act I party member not yet Completed/RewardAwaits, set their quest record
 // Step0x04 (the Cairn-stones-solved sub-step) so the journal reflects the puzzle
@@ -232,15 +232,15 @@ int __fastcall Q04_GetPortalCreatedFlag(::SGAMEDATA * pGame);
 // A1Q4 — Objects_InitFn09: init callback for a quest object (the Cairn-stones /
 // Cain-gibbet area object). When quest active, sets its anim/active sub-flags and
 // pushes the update flag so the object renders in the correct state. No quest transition.
-void __fastcall Objects_InitFn09(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn09_InifussTree(struct D2ObjectInitFnArg * pInitArg);
 // A1Q4 — Objects_InitFn13: init callback that attaches the spawned object to the
 // A1Q4 quest (QUEST_AttachToUnitByQuestId) so its OperateFn/events route to this quest;
 // otherwise sets a default render flag. No quest-state transition.
-void __fastcall Objects_InitFn13(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn13_InvisibleObject(struct D2ObjectInitFnArg * pInitArg);
 // A1Q4 — Q04_InitializeCainGibbetObject: anim-init helper for the Cain cage/gibbet
 // object. Sets the active flag (0x48), captures the target unit GUID (or -1), and
 // pushes the cage's update flag. No quest-state transition.
-void __fastcall Q04_InitializeCainGibbetObject(int32_t nParam1, struct D2UnitStrc * * nParam2);
+void __fastcall Q04_InitializeCainGibbetObject(struct D2QuestDataStrc * pQuestData, struct D2ObjectInitFnArg * pInitArg);
 // A1Q4 — Q04_RemovePlayerFromList (per-player iterate callback): removes a player
 // (by GUID, or -1) from quest list1. Bookkeeping only.
 void __fastcall Q04_RemovePlayerFromList(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
@@ -248,7 +248,7 @@ void __fastcall Q04_RemovePlayerFromList(::SGAMEDATA * pGame, struct D2UnitStrc 
 // and the saved spawn coords into the quest sub-struct, sets the cage-present flag
 // (0x17), and — if the rescue flag (0x3e) is set and Cain not yet spawned — spawns
 // Deckard Cain via Q04_SpawnDeckardCainNpc. The init path that physically places Cain.
-void __fastcall Objects_InitFn54(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn54_CainStartPosition(struct D2ObjectInitFnArg * pInitArg);
 // A1Q4 — CUBE_SpecialOutput_CowPortal: Horadric-Cube recipe output that opens the
 // Secret Cow Level portal (uses A1Q4's quest record). Refuses (plays "can't" sound)
 // if cow level already used (record state 0xb) or Step0x10 set, or the final act boss
@@ -263,7 +263,7 @@ BOOL __fastcall CUBE_SpecialOutput_Quest_Unused2(::SGAMEDATA * pGame, struct D2U
 BOOL __fastcall CUBE_SpecialOutput_Quest_Unused3(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // A1Q4 — Objects_InitFn61: trivial object-init that schedules event 7 (anim/update)
 // shortly in the future for the object. No quest-state logic.
-void __fastcall Objects_InitFn61(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn61_CainPortal(struct D2ObjectInitFnArg * pInitArg);
 // NOTE: this is A5Q3 (Prison of Ice / frozen Anya), not A1Q4 — co-located in the
 // binary. Q33_UpdateFrozenAnyaNpcState: drives the frozen-Anya NPC animation state in
 // Rogue Encampment (counts arrivals, flips to thawed anim once enough players present).

@@ -110,7 +110,7 @@ void __fastcall GetTypeAndMode(struct D2UnitStrc * pUnit, struct D2QServerUnitRe
 void __fastcall SetNecroPet(struct D2UnitStrc * pUnit, uint32_t nNecroPetGUID);
 int32_t __fastcall GetNecroPet(struct D2UnitStrc * pUnit);
 // 2022.01.09 - dzik
-void __fastcall SetSparklyChestFlag(struct D2UnitStrc * pUnit, bool bIsSparklyChest);
+void __fastcall SetSparklyChestFlag(struct D2UnitStrc * pUnit, uint8_t bIsSparklyChest);
 // 2022.01.09 - dzik
 uint8_t __fastcall GetSparklyChestFlag(struct D2UnitStrc * pUnit);
 // Reads pUnit's server-side interaction state: *pnUnitGUID = dwInteractGUID (+0x64), *peUnitType = dwInteractType (+0x68); returns the byte bInteracting (+0x6c).
@@ -125,17 +125,17 @@ void __stdcall ClearInteractInfo(struct D2UnitStrc * pUnit);
 BOOL __fastcall CheckForModeZeroDeath(struct D2UnitStrc * pUnit);
 // Determines whether pAttacker may attack pUnit, resolving owner chains for monsters and reflected missiles. If both resolved units are players, delegates to PLAYERLIST_GetFlagsMasked with the hostile flag (bit 3). Otherwise calls Path::IsAllyOf; returns 0 if allied, 1 if hostile. Returns 0 for self-attack.
 uint32_t __fastcall UNITS_CheckIfCanAttackTarget(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pAttacker);
-BOOL __fastcall UNITS_CheckSkillTargetAlignment(::SGAMEDATA * pGameStrc, int * pnParam, struct D2UnitStrc * pTarget, eD2Skills eSkill);
+BOOL __fastcall UNITS_CheckSkillTargetAlignment(::SGAMEDATA * pGameStrc, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget, eD2Skills eSkill);
 // Sets the alignment stat (good/neutral/evil, values 0-2) on a unit via the STATE_alignment stat list. Allocates and attaches the stat list if absent, stores the alignment value, toggles the alignment GFX state (0x69), and calls UNITS_OnAlignmentChanged with old and new values. Skips the change for revived units with alignment 0 (neutral). Certain monster class IDs (0x15F/0x160/0x161) always bypass the revive check. The alignment argument is a single byte: callers set only DL and the prologue does MOVZX EBX, DL, so the upper 24 bits of EDX are dead.
 void __fastcall SetAlignment(struct D2UnitStrc * pUnit, uint8_t nAlignment, int32_t nOldAlignment);
 // Applies or removes STATE_uninterruptable on pUnit (nParam=1 to set, 0 to clear). When clearing: if STATE_death_delay is active, it removes that state and immediately kills the unit (via SERVER_KillMonster if no killer, or SERVER_GetHitCalculation with the KILL result flag if a killer exists). Additionally triggers AITHINK for monster units to resume AI after the uninterruptable window closes.
-void __fastcall SetUninterruptableState(struct D2UnitStrc * pUnit, int32_t nParam);
+void __fastcall SetUninterruptableState(struct D2UnitStrc * pUnit, int32_t bSet);
 void __fastcall PLAYER_CancelMapReveal(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2TimerTypeDWORD eTimerType, int32_t dwUnused2, int32_t dwUnused3);
 struct D2RoomStrc * __fastcall UNITS_GetTargetRoom(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // 2022.01.09 - dzik
 uint16_t __fastcall GetPartyId(struct D2UnitStrc * pUnit);
 // 2022.01.09 - dzik
-BOOL __fastcall SetDamageHitClass(struct D2DamageStrc * pEvent, uint32_t nParam);
+BOOL __fastcall SetDamageHitClass(struct D2DamageStrc * pEvent, uint32_t dwHitClass);
 // Server-side per-unit visibility reconciliation between two client sets (the unit's current room vs its target/destination room). Merge-walks both sorted client lists: clients only in the target room get SERVER_SendInitUnitPacket (unit becomes visible to them); clients only in the current room get SendRemoveObject (unit removed); the unit's own owning client is skipped. No-ops unless Units::NeedsRoomUpdate(pUnit). On completion clears the dynamic-path 0x02 (needs-update) flag. Halts on null client-list pointers.
 void __fastcall UNITS_UpdateRoomClientVisibility(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2RoomStrc * pRoom);
 // Places an already-created unit into a room at world coordinates (nX, nY), dispatching on unit type: allocates a dynamic path for players/monsters/missiles, sets velocity and triggers AI think for monsters (or resets if room is unoccupied), initialises static paths and collision for objects/warps/items, inserts the unit into the game hash table, links it to the room update list, and sets anim mode 1 if nInitMode==0. Halts on NULL game or unit.
@@ -170,6 +170,7 @@ void __fastcall SUNIT_SpawnPresetUnitsForRoom(::SGAMEDATA * pGame, struct D2Room
 // Server-side teardown of a unit's entire inventory when the unit is being freed. Walks each inventory node: for equipped items (grid type 3) removes equip stats and clears the body location; for active charms unequips stats and emits a debug record of their grid position/page; then detaches the item from the inventory and frees the underlying server unit (any unit type < 6). Finally frees any item held on the cursor. Halts via ErrorManager on null unit or inventory-consistency failures.
 // @sourcefile .\UNIT\SUnit.cpp
 void __fastcall UNITS_FreeInventoryItems(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
+void StaticInit_gnSeedCounter();
 // 4 internal functions (defined in .cpp)
 
 } // namespace D2Game::UNIT::SUnit

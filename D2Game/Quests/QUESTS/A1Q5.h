@@ -10,6 +10,7 @@
 
 // Forward declarations
 struct D2BitBufferStrc;
+struct D2ObjectInitFnArg;
 struct D2ObjectOperateFnArg;
 struct D2QuestArgStrc;
 struct D2QuestDataA1Q5Strc;
@@ -67,7 +68,7 @@ bool __fastcall Q05_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 bool __fastcall Q05_ActiveFilter(struct D2QuestDataStrc * pQuestData, int32_t nTargetClassId, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2UnitStrc * pUnitEx);
 BOOL __fastcall Q05_SetCannotCompleteInGame(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
 BOOL __fastcall Q05_PropagateRewardToParty(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
-void __fastcall Q05_SetCompletionForTrackedPlayers(::SGAMEDATA * pGame, struct D2QuestGUIDStrc * pQuestGUIDBase, eD2Quests param_1, int32_t nSoundId);
+void __fastcall Q05_SetCompletionForTrackedPlayers(::SGAMEDATA * pGame, struct D2QuestGUIDStrc * pQuestGUIDBase, eD2Quests eQuest, int32_t nSoundId);
 // 1.14d: 0x5954f0 | A1Q5 "The Forgotten Tower" — Countess death visual/loot effect spawner.
 // Guarded by quest-data flags (+0x118 set, +0x119 not yet fired) and a tracked-chest count (+0x88).
 // Walks the list of tracked chest object GUIDs (+0x68): for the first valid chest, spawns the death
@@ -75,7 +76,7 @@ void __fastcall Q05_SetCompletionForTrackedPlayers(::SGAMEDATA * pGame, struct D
 // (falls back to the chest's own coords). Marks the effect as fired (+0x119=1), then for each chest
 // launches a SKILL_Attack missile aimed at the chest and toggles its room portal flag — this drives
 // the gold/treasure-burst visual from the Countess's chests. No quest-state changes here (pure FX).
-void __stdcall Q05_SpawnCountessDeathEffect(struct D2QuestDataStrc * pQuestData, int32_t nParam2);
+void __stdcall Q05_SpawnCountessDeathEffect(struct D2QuestDataStrc * pQuestData, struct D2QuestDataA1Q5Strc * pA1Q5Data);
 // 1.14d: 0x5956c0 | A1Q5 "The Forgotten Tower" — death-effect trigger (timer-driven thunk).
 // Called from the monster-id timer path. Invokes Q05_SpawnCountessDeathEffect with the quest data, then
 // if the reward has been distributed (bRewardDistributed) but the death animation hasn't yet played
@@ -90,6 +91,8 @@ void __fastcall Q05_Callback13_PlayerStartedGame(struct D2QuestDataStrc * pQuest
 // A1Q5 (The Forgotten Tower) per-game quest registration. Zeroes the state-handler table then wires the per-state callbacks: [0]=Callback_00 (gossip), [3]=Callback_03 (area/tower entry), [8]=Callback_08 (Countess/clear), [0xa]=Callback_10 (player left), [0xb]=Callback_11 (Akara dialog/turn-in), [0xd]=Callback_13 (reload). Sets nQuestIdReal=QUEST_ForgottenTower, installs the NPC gossip table (aNpcGossipData), fpActiveFilter=Q05_ActiveFilter, fpSequenceFilter=Q05_SequenceFilter, nSequenceQuestId=QUEST_ToolsOfTheTrade (next quest), nInitNo=4, fpStatusFilter=null. Allocates the 0x120-byte A1Q5-specific data from the game memory pool, zeroes it, and inits its GUID player-count list (QUESTGUID_SetPlayerCountToZero). Pure registration; no quest-record state I/O.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q5.cpp
 void __fastcall Q05_InitData(struct D2QuestDataStrc * pQuestData);
+// A1Q6 (Sisters to the Slaughter) object init-fn 04. Marks the quest object (Andariel-related) as updatable while the Forgotten Tower quest is still in its intro phase (!bIsNotIntroduction). Halts if quest data missing. No quest-state transitions.
+void __fastcall Objects_InitFn04_TowerTome(struct D2ObjectInitFnArg * pInitArg);
 // 1 internal function (defined in .cpp)
 
 } // namespace D2Game::Quests::QUESTS::A1Q5

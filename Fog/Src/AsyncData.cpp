@@ -43,9 +43,18 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2AsyncDataStrc) == 0x3000, "D2_NEW
 static_assert(sizeof(void*) != 4 || sizeof(::D2AsyncData_Line0x128) == 0x54, "D2_NEW_AT(D2AsyncData_Line0x128): the 32-bit layout must be the 0x54 bytes 1.14d allocates");
 
 
+// also labelled: gpAsyncDataQueueBuffer
+static int gnAsyncDataPriorityDeferDepth = 0; D2_STATIC_GUARD(gnAsyncDataPriorityDeferDepth, "gnAsyncDataPriorityDeferDepth");
+// also labelled: gpAsyncDataLoadBuffer
+static D2AsyncData_Line0x128 * gpAsyncDataDeferredList = 0; D2_STATIC_GUARD(gpAsyncDataDeferredList, "gpAsyncDataDeferredList");
+static uint32_t gbAsyncDataInitialized = 0; D2_STATIC_GUARD(gbAsyncDataInitialized, "gbAsyncDataInitialized");
+static uint32_t gnAsyncDataHandleBufferSize = 0; D2_STATIC_GUARD(gnAsyncDataHandleBufferSize, "gnAsyncDataHandleBufferSize");
+static D2AsyncDataStrc * pD2AsyncDataStrc = 0; D2_STATIC_GUARD(pD2AsyncDataStrc, "pD2AsyncDataStrc");
+
 namespace Fog::Src::AsyncData {
 
-void __fastcall STRUCT_AllocAsyncData(int32_t nEnable) {
+// Registers: nEnable in ECX; nReserved (EDX) is 0 at the only call site and not read.
+void __fastcall STRUCT_AllocAsyncData(int32_t nEnable, int32_t nReserved) {
     void* pSlot;
     if (gbAsyncDataInitialized) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x7b);
@@ -110,7 +119,7 @@ void __stdcall STRUCT_FreeAsyncData() {
 }
 
 void __fastcall ASYNCDATA_CancelAndCleanup(D2AsyncData_Line0x128 * pAsyncData) {
-    size_t sVar2;
+    size_t nResultSize;
     if (pAsyncData->nFlags & 1) {
       return;
     }
@@ -133,9 +142,9 @@ void __fastcall ASYNCDATA_CancelAndCleanup(D2AsyncData_Line0x128 * pAsyncData) {
     }
 
     D2_FREE_POOL_AT(pAsyncData->pMemory, pAsyncData->pReadBuffer, ".\\Src\\AsyncData.cpp", 0xd7);
-    sVar2 = pAsyncData->tCallback.nResultSize;
+    nResultSize = pAsyncData->tCallback.nResultSize;
     pAsyncData->pReadBuffer = pAsyncData->tCallback.pResultBuffer;
-    pAsyncData->nReadSize = sVar2;
+    pAsyncData->nReadSize = nResultSize;
     pAsyncData->tCallback.pfnCallback = 0;
     memset(pAsyncData->tCallback.aUserData, 0, 4 * sizeof(pAsyncData->tCallback.aUserData[0]));
     pAsyncData->tCallback.pResultBuffer = 0;
@@ -166,7 +175,7 @@ D2AsyncDataSlotStrc * __stdcall ASYNCDATA_AllocSlot() {
     }
 
     nSlotIndex = 0;
-    if (gnAsyncDataHandleBufferSize) {
+    if (gnAsyncDataHandleBufferSize > 0) {
       do {
         pCandidateSlot = (D2AsyncDataSlotStrc*)((uintptr_t)&pD2AsyncDataStrc->aSlots[0].hEvent + nByteOffset);
         /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ dwWaitResult = WaitForSingleObject(*(HANDLE*)((uintptr_t)&pD2AsyncDataStrc->aSlots[0].hEvent + nByteOffset), 0);
@@ -193,7 +202,7 @@ D2AsyncDataSlotStrc * __stdcall ASYNCDATA_AllocSlot() {
     return nullptr;
 }
 
-D2AsyncData_Line0x128 * __fastcall STRUCT_AllocAsyncData_Line0x128(D2PoolManagerStrc * pMemory, char * szText1, int32_t bAsync, uint32_t nFileOffset, size_t nReadSize, void * pReadBuffer, D2AsyncDataCallbackStrc * pCallback, int nPriority, char * szText2, int32_t nParam) {
+D2AsyncData_Line0x128 * __fastcall STRUCT_AllocAsyncData_Line0x128(D2PoolManagerStrc * pMemory, char * szText1, int32_t bAsync, uint32_t nFileOffset, size_t nReadSize, void * pReadBuffer, D2AsyncDataCallbackStrc * pCallback, int nPriority, char * szText2, int32_t nLine) {
     DWORD nSeekResult;
     D2AsyncDataSlotStrc* pSlot;
     int i;
@@ -224,7 +233,7 @@ D2AsyncData_Line0x128 * __fastcall STRUCT_AllocAsyncData_Line0x128(D2PoolManager
       if (pReadBuffer) {
         pAsyncData->nFlags &= -3;
       } else {
-        pReadBuffer = Memory::Alloc(pMemory, pAsyncData->nReadSize, szText2, nParam);
+        pReadBuffer = Memory::Alloc(pMemory, pAsyncData->nReadSize, szText2, nLine);
         pAsyncData->nFlags |= 2;
       }
 
@@ -275,6 +284,7 @@ D2AsyncData_Line0x128 * __fastcall STRUCT_AllocAsyncData_Line0x128(D2PoolManager
 }
 
 uint32_t __fastcall ASYNCDATA_IsComplete(D2AsyncData_Line0x128 * pAsyncData) {
+    DWORD dwWaitResult;
     if (!pAsyncData) {
       return 0;
     }
@@ -282,16 +292,13 @@ uint32_t __fastcall ASYNCDATA_IsComplete(D2AsyncData_Line0x128 * pAsyncData) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x1c4);
       exit(-1);
     }
-    if (pAsyncData->nFlags & 1U) {
-      return pAsyncData->nFlags & 1;
+    if (!(pAsyncData->nFlags & 1U)) {
+      /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ dwWaitResult = WaitForSingleObject(pAsyncData->pSlot->hEvent, 0);
+      if (!dwWaitResult) {
+        ASYNCDATA_CancelAndCleanup(pAsyncData);
+      }
     }
 
-    DWORD dwWaitResult = WaitForSingleObject(pAsyncData->pSlot->hEvent, 0);
-    if (dwWaitResult) {
-      return pAsyncData->nFlags & 1;
-    }
-
-    ASYNCDATA_CancelAndCleanup(pAsyncData);
     return pAsyncData->nFlags & 1;
 }
 
@@ -350,7 +357,7 @@ void __fastcall ASYNCDATA_DeferPriorityUpdates(BOOL bDefer) {
       gnAsyncDataPriorityDeferDepth++;
       return;
     }
-    if (!(0 < gnAsyncDataPriorityDeferDepth)) {
+    if (!(gnAsyncDataPriorityDeferDepth > 0)) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x211);
       exit(-1);
     }

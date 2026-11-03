@@ -10,6 +10,7 @@
 
 // Forward declarations
 struct D2GSPacketClt0x5D;
+struct D2GSPacketSrv0x50;
 struct D2UIMouseMsgStrc;
 struct DC6;
 
@@ -75,7 +76,7 @@ struct __attribute__((packed)) D2QuestLogStrc {
     /* 0x111 */ D2QuestLogEntryStrc aQuestLogEntries[6];
     /* 0xF8D */ int aQuestLogIconFrame[6];
     /* 0xFA5 */ int aQuestLogIconLastTick[6];
-    /* 0xFBD */ uint32_t nQuestLogActiveAct_b;
+    /* 0xFBD */ int32_t nQuestLogActiveAct_b;
     /* 0xFC1 */ uint32_t bQuestLogScreenOpen; // read and written as a dword tick count (QUESTLOG_ToggleQuestScreen compares it against 250 ms)
     /* 0xFC5 */ uint8_t bQuestLogLevelUpCinematicPlayed;
     /* 0xFC6 */ uint8_t bQuestLogBossCinematicPlayed;
@@ -94,11 +95,11 @@ void __stdcall QUESTLOG_ResetState();
 void __stdcall LoadQuestimages();
 void __stdcall FreeQuestImages();
 void __stdcall QUESTLOG_FreeQuestImages_Thunk();
-int __stdcall CloseQuestLogWeird(DWORD dwParam);
+int __stdcall CloseQuestLogWeird(DWORD bAdjustMouse);
 void __stdcall QUESTLOG_AcknowledgeNewQuests();
 int __fastcall QUESTLOG_ScrollCompleteCallback_ClearButton(void * pUserParam, uint32_t nReason, void * pDismissCallback);
 void __stdcall QUESTLOG_OnCloseClick(struct D2UIMouseMsgStrc * pMsg);
-void __fastcall QUESTLOG_HandleSpecialPacket(int32_t nParam);
+void __fastcall QUESTLOG_HandleSpecialPacket(struct D2GSPacketSrv0x50 * pPacket);
 void __stdcall QUESTLOG_CloseAndFreeImages();
 int __stdcall QUESTLOG_IsPointInQuestLog(int32_t nX, int32_t nY);
 void __stdcall QUESTLOG_OnQuestLogMouseDown(struct D2UIMouseMsgStrc * pMsg);
@@ -107,13 +108,13 @@ void __fastcall QUESTLOG_SelectQuestByIndex(int32_t nQuestId);
 void __fastcall QUESTLOG_ClearMissileFlagCb_Missile146(void * pUnit);
 void __fastcall QUESTLOG_ClearMissileFlagCb_Missile527(void * pUnit);
 // QuestLog.cpp - Client handler for 0x5D quest state packets, plays sounds and updates UI
-void __fastcall QUESTLOG_HandleQuestStatePacket(uint32_t dwParam, struct D2GSPacketClt0x5D * pPacket);
+void __fastcall QUESTLOG_HandleQuestStatePacket(uint32_t dwUnused, struct D2GSPacketClt0x5D * pPacket);
 void __stdcall QUESTLOG_ResetNpcDialogState();
 void __stdcall QUESTLOG_ResetQuestFilterArrays();
 void __stdcall QUESTLOG_ResetQuestSelections();
 void __stdcall QUESTLOG_PlayLevelUpCinematic();
 void __stdcall QUESTLOG_PlayActBossCinematic();
-void __fastcall QUESTLOG_SetZooSpawnFlag(uint32_t dwParam);
+void __fastcall QUESTLOG_SetZooSpawnFlag(uint32_t nZooSpawnCounter);
 uint8_t __stdcall QUESTLOG_GetZooSpawnFlag();
 bool QUESTLOG_FindZooDummyMonster();
 void __fastcall QUESTLOG_SpawnZooDummyMonsters(int32_t nSpawnX, int32_t nSpawnY);
@@ -123,13 +124,16 @@ void __stdcall GameOverWtf();
 // Draws quest log UI. Uses gQuestIconsPerActTable to map act to quest icon ranges, draws quest list with completion status, highlights selected quest. Main rendering loop for quest UI panel.
 void __stdcall DRAW_UI_Quest();
 // QuestLog.cpp - Main mouse down handler for quest screen: act tabs, quest icons, buttons
+// QUESTLOG_HitTestCloseButton returns a bool; only AL is tested after the call (004a3f9d).
 void __stdcall QUESTLOG_OnMouseDown(struct D2UIMouseMsgStrc * pMsg);
-void __fastcall QUESTLOG_ToggleQuestScreen(DWORD dwParam);
+void __fastcall QUESTLOG_ToggleQuestScreen(DWORD bAdjustMouse);
 void __fastcall NET_D2GS_CLIENT_Incoming0x52_QUESTSTATUS(char * pBytes);
 void __stdcall QUESTLOG_OnButtonMouseUp(struct D2UIMouseMsgStrc * pMsg);
 // Checks quest availability by index. Scans gQuestIconsPerActTable to map index to quest ID, validates quest state (not just completed, reward awaits, can complete). Returns 1 if quest is available for interaction.
 BOOL __fastcall QUESTLOG_IsQuestAvailableForInteraction(int32_t nQuestIconIndex);
 void __stdcall QUESTLOG_OnMouseUp(struct D2UIMouseMsgStrc * pMsg);
+void StaticInit_gaQuestLogPanelRects();
+void StaticInit_gQuestLog();
 // 9 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::QuestLog

@@ -106,6 +106,9 @@ struct __attribute__((packed)) D2ControlMsg {
 namespace D2Launch::MainMenus {
 
 // Function declarations
+void __fastcall CRYPTO_ByteSwap16Array(uint16_t * pArray, uint32_t nCount);
+void __thiscall CRYPTO_ByteSwap32Array(uint16_t * pwOut, uint16_t wValue);
+void __thiscall CRYPTO_ByteSwap64Array(uint16_t * pwIn, uint16_t * pwOut);
 void __fastcall MAINMENU_SetGlobalValue1(pfnUIMenuInstance pfnMenuInstance);
 void __stdcall MAINMENU_SetGlobalFlag();
 // Loads all predefined DC6 image resources for main menus and UI elements. Constructs file paths using wsprintfA into a stack buffer, then loads 40+ DC6 images (buttons, backgrounds, popups) via IMAGE_LoadDC6. Expansion detection switches between classic and expansion asset paths for 8 conditional images.
@@ -115,10 +118,10 @@ void __stdcall IMAGE_FreePredefinedImages();
 int __fastcall D2GFX_SetPaletteForDraw(char * szPaletteDat, char * szPalettePl2);
 struct D2ControlStrc * __fastcall FORMS_CreateAnyFormFromList(int32_t nFormIndex);
 void __stdcall FORMS_DestroyList();
-struct D2ControlStrc * __fastcall FORMS_CreateAnyFormFromListExEx(int32_t nParam);
+struct D2ControlStrc * __fastcall FORMS_CreateAnyFormFromListExEx(int32_t nFormIndex);
 void __stdcall FORMS_DestroyLists();
 void __fastcall STRING_ZeroOneWCHAR(void * pBuffer);
-void __fastcall MAINMENU_CreateMessageBox(uint16_t * wszText1, uint16_t * wszText2, int32_t nButton1LabelId, int32_t nButton2LabelId, OnPress pfnOnPress1, OnPress pfnOnPress2, int32_t nParam1, int32_t nParam2);
+void __fastcall MAINMENU_CreateMessageBox(uint16_t * wszText1, uint16_t * wszText2, int32_t nButton1LabelId, int32_t nButton2LabelId, OnPress pfnOnPress1, OnPress pfnOnPress2, int32_t bEnableHotkeys, int32_t bSingleButtonEscape);
 // @abi __stdcall(void) -> void. Body is MOV [0x00779974],1 / RET - zero arguments, zero purge, so
 // __stdcall and __cdecl are indistinguishable from the RET alone. It is stored into
 // gpCurrentUIMenuInstance, whose funcdef pfnUIMenuInstance is void __stdcall(void), and every other
@@ -152,16 +155,16 @@ int __stdcall MAINMENU_ValidateGameNameChar(::D2WinEditBox * pEditBox, int nText
 int __stdcall MAINMENUS_EditBoxFilter_ValidateCharName_ForBnetDisconnect(::D2WinEditBox * pEditBox, int nTextLen, char * pKeyChar);
 // Edit-box key filter installed via D2WINEDITBOX_SetMaxLength @004fdad0 into D2WinEditBox+0x268 (fpFilterCallback, fpD2WinEditBoxFilter). Body is MOV EAX,1 / RET 0xc - accepts every character. Signature proven by RET 0xc (3 stack args, callee cleans).
 int __stdcall MAINMENUS_EditBoxFilter_ReturnTrue_ForBnetAccountForms(::D2WinEditBox * pEditBox, int nTextLen, char * pKeyChar);
-void __fastcall MAINMENU_SetGlobalValue3(uint32_t dwParam);
+void __fastcall MAINMENU_SetGlobalValue3(uint32_t bShowBNetRealmPanel);
 void __stdcall MAINMENU_UpdateIPAddressDisplay();
 BOOL __stdcall MAINMENU_OnPressUpdateIpAddressDisplay(struct D2ControlMsg * pControlMsg);
 void __stdcall UIMENU_TCPIPOptions();
-void __stdcall MAINMENU_DisableControlIfDataNonZero(int32_t pControlData);
-void __stdcall MAINMENU_DisableControlIfDataNonZero2(int32_t nParam);
+BOOL __stdcall MAINMENU_DisableControlIfDataNonZero(int32_t pControlData);
+BOOL __stdcall MAINMENU_DisableControlIfDataNonZero2(int32_t pControlData);
 // Shows BNet account creation UI. Clears gbPasswordChangeInProgress, creates form with username/password/confirmation fields. Entry point for new account flow from main menu.
 void __stdcall UIMENU_CreateBattleNetAccount();
 void __stdcall UIMENU_BackgroundAndExpansionText();
-int16_t __stdcall MAINMENU_FilterNewlineKey(int16_t nParam);
+int16_t __stdcall MAINMENU_FilterNewlineKey(int16_t wChar);
 int __stdcall MAINMENU_PollRevisionCheckPump(int nFrameIndex);
 BOOL __stdcall MAINMENU_OnPressCreateBattleNetAccount(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall MAINMENU_ScrollListExUp(struct D2ControlMsg * pControlMsg);
@@ -202,7 +205,7 @@ BOOL __stdcall MAINMENU_SetBarbarianDescription(struct D2WinAnimImageNotifyStrc 
 // Provenance: asm 00430980 (PUSH 0x140c; PUSH 0xfa8; EDX=3; RET 4).
 BOOL __stdcall MAINMENU_SetPaladinDescription(struct D2WinAnimImageNotifyStrc * pNotify);
 void __stdcall LAUNCHER_SetExitAppModeResult();
-void __stdcall MAINMENU_AddRealmToList(struct D2BNetRealmEntryStrc * pRealmEntry);
+BOOL __stdcall MAINMENU_AddRealmToList(struct D2BNetRealmEntryStrc * pRealmEntry);
 // @sourcefile .\Src\MainMenus.cpp
 BOOL __stdcall MAINMENU_FreeRealmList();
 // qsort comparator for the realm list (g_pBNetRealmList elements): strcmp of the two entries' szName.
@@ -222,7 +225,8 @@ void __stdcall MAINMENU_AppendCreditsEnd();
 uint16_t * __stdcall MAINMENU_LoadCreditsFile(uint32_t * pnCharCount);
 void __stdcall MAINMENU_SyncCreditsColumns();
 // @sourcefile .\Src\MainMenus.cpp
-int __stdcall MAINMENU_DisplayCredits();
+// Registers: nReserved (ECX) is 0 at the only call site and not read.
+int __fastcall MAINMENU_DisplayCredits(int32_t nReserved);
 BOOL __stdcall MAINMENU_InitCreditsScreen(struct D2ControlMsg * pControlMsg);
 void __stdcall UIMENU_SelectCinematics(int32_t nCineLevel);
 void __fastcall UIMENU_PleaseInsertExpansionCdWithNotWorkingCancelButton(int32_t nMode);
@@ -272,7 +276,7 @@ void __stdcall UIMENU_MainMenu();
 // @sourcefile .\Src\MainMenus.cpp
 BOOL __stdcall UIMENU_ShowTermsOfService();
 // Edit-box change callback installed via D2WINEDITBOX_SetInputMode @004fdb00 into D2WinEditBox+0x26c (fpChangeCallback, fpD2WinEditBoxChange). Signature proven by RET 0x4 (1 stack arg, callee cleans) and MOV EAX,1.
-int __stdcall EDITBOX_Cb_MAINMENU_ValidateCharacterNameCallback(void * pUnknown);
+int __stdcall EDITBOX_Cb_MAINMENU_ValidateCharacterNameCallback(void * pUnused);
 // Edit-box change callback installed via D2WINEDITBOX_SetInputMode @004fdb00 into D2WinEditBox+0x26c (fpChangeCallback). Signature proven by RET 0x4 (1 stack arg, callee cleans) and MOV EAX,1.
 int __stdcall EDITBOX_Cb_MAINMENU_ValidatePasswordChangeForm(void * pUnknown);
 int __stdcall ClickOnClassCreate(struct D2ControlMsg * pControlMsg);
@@ -281,21 +285,21 @@ void __stdcall MAINMENU_QueryAndBuildRealmList();
 BOOL __stdcall MAINMENU_OnPressCreditsEndCheck(struct D2ControlMsg * pControlMsg);
 BOOL fpInsertPlayCd();
 BOOL fpInsertExpansionCd();
-BOOL __stdcall MAINMENU_Unused1(struct D2ControlMsg * pControlMsg);
-BOOL __stdcall MAINMENU_Unused2(struct D2ControlMsg * pControlMsg);
-BOOL __stdcall MAINMENU_Unused3(struct D2ControlMsg * pControlMsg);
-BOOL __stdcall MAINMENU_Unused4(struct D2ControlMsg * pControlMsg);
-BOOL __stdcall MAINMENU_Unused5(struct D2ControlMsg * pControlMsg);
-BOOL __stdcall MAINMENU_Unused6(struct D2ControlMsg * pControlMsg);
-BOOL __stdcall MAINMENU_Unused7(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall MAINMENU_OnPressPlayIntroCinematic(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall MAINMENU_OnPressPlayAct2StartCinematic(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall MAINMENU_OnPressPlayAct3StartCinematic(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall MAINMENU_OnPressPlayAct4StartCinematic(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall MAINMENU_OnPressPlayAct4EndCinematic(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall MAINMENU_OnPressPlayExpansionIntroCinematic(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall MAINMENU_OnPressPlayExpansionOutroCinematic(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall MAINMENU_OnPressReloadMediaMpqAndReturnToMainMenu(struct D2ControlMsg * pControlMsg);
-BOOL __stdcall MAINMENU_Unused8(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall MAINMENU_OnPressShowGatewaySelect(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall StorePreferedRealmAgain(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall MAINMENU_OnPressDestroyListsAndReturnToMainMenu(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall UIMENU_ConnectToServerCallback(struct D2ControlStrc * pUnusedArg);
 BOOL __fastcall MAINMENU_DeleteCharacterOnRealm(struct D2CharSelStrc * pCharSel, uint8_t * pszRealm);
 uint32_t __fastcall MAINMENU_UpgradeCharacterToExpansion(struct D2CharSelStrc * pCharSel, uint8_t * pszRealm);
-int __fastcall SelectedCharBnetSingleTcpIp(struct D2CharSelStrc * charName, eD2PlayerStatus pPlayerStatus, int32_t nClassId, char * pRealm);
+int __fastcall SelectedCharBnetSingleTcpIp(struct D2CharSelStrc * charName, eD2PlayerStatus pPlayerStatus, eD2PlayerClassID nClassId, char * pRealm);
 BOOL __stdcall UIMENU_PlayIntroAndReturnToMainScreen(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall thunk_UIMENU_MainMenu(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall MAINMENU_OnPressReturnToMainMenu(struct D2ControlMsg * pControlMsg);
@@ -303,7 +307,7 @@ BOOL __stdcall MAINMENU_OnPressReturnToMainMenu(struct D2ControlMsg * pControlMs
 BOOL __stdcall UIMENU_AndOneMorePleaseWait(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall MAINMENUS_OnPressReturnToMainMenu_ForCreditsAndMainMenuAgain(struct D2ControlMsg * pControlMsg);
 // Password change confirmation handler. Reads text inputs, compares new password fields, validates length (2-20 chars). Checks gbPasswordChangeInProgress state, calls launcher EnterEmailMessagePumper on success.
-BOOL __stdcall MAINMENU_HandlePasswordChange(struct D2ControlStrc * nParam);
+BOOL __stdcall MAINMENU_HandlePasswordChange(struct D2ControlStrc * pControl);
 void __fastcall UIMENU_AnotherSmallPopupWithContentAndSomeKindofTypeSelection(uint16_t * wszContent, pfnUIMenuInstance pfnMenuInstance, int32_t bTwoButtons);
 BOOL __stdcall MAINMENU_OnPressCancelTermsOfServiceDownload(struct D2ControlMsg * pControlMsg);
 void __stdcall PlaysBlizzardNorthCutScene();
@@ -311,14 +315,14 @@ void __stdcall PlaysBlizzardNorthCutScene();
 void __stdcall UIMENU_MainMenuAgain();
 void __stdcall UIMENU_CreateHeroSinglePlayer();
 int32_t __fastcall fAPPMODE_launcher_ReturnAppMode_Caller(struct D2IniConfigStrc * pD2IniData);
-BOOL __stdcall MAINMENU_Unused9(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall MAINMENU_OnPressSinglePlayer(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall MAINMENU_Unused10(struct D2ControlMsg * pControlMsg);
-BOOL __stdcall MAINMENU_Unused11(struct D2ControlMsg * pControlMsg);
-BOOL __stdcall MAINMENU_Unused12(struct D2ControlMsg * pMsg);
+BOOL __stdcall MAINMENU_OnPressSelectBattleNet(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall MAINMENU_OnPressRealmList(struct D2ControlMsg * pMsg);
 uint32_t __stdcall thunk_UIMENU_CreateHeroSinglePlayer(struct D2ControlMsg * pControlMsg);
 void __stdcall NET_MCP_CLIENT_HandleCharCreation();
 // BNet login submit handler. Reads account/password from gbPasswordChangeInProgress-related inputs, calls launcher authentication. On success, transitions to char select or creates hero.
-BOOL __stdcall MAINMENU_Unused13(struct D2ControlStrc * nParam);
+BOOL __stdcall MAINMENU_Unused13(struct D2ControlStrc * pControl);
 BOOL __stdcall MAINMENU_OnPressReturnToMainMenuAgain(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall MAINMENU_Unused14(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall MAINMENU_OnPressDestroyListAndReturnToMainMenuAgain(struct D2ControlMsg * pControlMsg);
@@ -326,8 +330,8 @@ BOOL __stdcall MAINMENU_OnPressCommitNewCharacterAndStartGame(struct D2ControlMs
 BOOL __stdcall MAINMENU_OnPressCreateHeroSinglePlayer(struct D2ControlMsg * pControlMsg);
 void __stdcall UIMENU_ConfirmCreateCharacter();
 // BNet account creation handler. Validates username/password from gbPasswordChangeInProgress inputs (2-15 chars, matching confirmation), shows please-read dialog on success or error popup on validation failure.
-BOOL __stdcall MAINMENU_Unused15(struct D2ControlStrc * nParam);
-BOOL __stdcall MAINMENU_Unused16(struct D2ControlStrc * nParam);
+BOOL __stdcall MAINMENU_OnSubmitCreateBattleNetAccount(struct D2ControlStrc * pControl);
+BOOL __stdcall MAINMENU_OnPressCreateCharacterOk(struct D2ControlStrc * pControl);
 void __stdcall MAINMENU_BnetConnectionProgress();
 BOOL __stdcall MAINMENU_OnPressConfirmSkipEmailPopup(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall MAINMENU_OnPressAcceptEmailAddress(struct D2ControlMsg * pControlMsg);
@@ -357,11 +361,11 @@ void __stdcall UIMENU_ConnectinToBattleNetWitProgressDots();
 // so the slot has one and only one stored value and that value is an OnPress. Without a
 // declared variable the slot surfaces as an untyped pointer and renders as code *, which no
 // OnPress parameter will accept. Do not delete it to silence the warning.
-BOOL __stdcall MAINMENU_Unused19(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall MAINMENU_OnPressSubmitEmailAddress(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall MAINMENU_OnPressShowDisconnectedFromBattleNet2Alt2(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall thunk_UIMENU_YouWereDisconnectedFromBattleNet3(struct D2ControlMsg * pControlMsg);
-BOOL __stdcall MAINMENU_Unused20(int32_t bSubmit);
-BOOL __stdcall MAINMENU_Unused21(int32_t bSubmit);
+BOOL __stdcall MAINMENU_HandleEmailChange(int32_t bSubmit);
+BOOL __stdcall MAINMENU_OnSubmitResetPassword(int32_t bSubmit);
 // Returns __time32(pTime) with pTime passed in EAX.
 // Provenance: asm 004379c0..004379c9; unreferenced in 1.14d.
 __time32_t __stdcall MAINMENU_GetTime32(__time32_t * pTime);

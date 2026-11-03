@@ -99,8 +99,6 @@ struct __attribute__((packed)) D2GSPacketClt0x0A_LeftSkillOnEntityEx3 {
 };
 
 struct D2GSPacketClt0x0B_Keepalive {
-    D2GSPacketClt0x0B_Keepalive() = default;
-    D2GSPacketClt0x0B_Keepalive(uint8_t v) { *reinterpret_cast<uint8_t*>(this) = v; }
     operator uint8_t() const { return *reinterpret_cast<const uint8_t*>(this); }
 
     /* 0x00 */ uint8_t nCmd; // 0x0B opcode
@@ -143,8 +141,6 @@ struct __attribute__((packed)) D2GSPacketClt0x11_RightSkillOnEntityEx3 {
 };
 
 struct D2GSPacketClt0x12_CancelChanneledSkill {
-    D2GSPacketClt0x12_CancelChanneledSkill() = default;
-    D2GSPacketClt0x12_CancelChanneledSkill(uint8_t v) { *reinterpret_cast<uint8_t*>(this) = v; }
     operator uint8_t() const { return *reinterpret_cast<const uint8_t*>(this); }
 
     /* 0x00 */ uint8_t nCmd; // 0x12 opcode
@@ -300,24 +296,18 @@ struct __attribute__((packed)) D2GSPacketClt0x2A_ItemToCube {
 };
 
 struct D2GSPacketClt0x2C_DeadStub {
-    D2GSPacketClt0x2C_DeadStub() = default;
-    D2GSPacketClt0x2C_DeadStub(uint8_t v) { *reinterpret_cast<uint8_t*>(this) = v; }
     operator uint8_t() const { return *reinterpret_cast<const uint8_t*>(this); }
 
     /* 0x00 */ uint8_t nCmd; // opcode 0x2C - STUB always returns BAD_PARAMS in 1.14d
 };
 
 struct D2GSPacketClt0x2D_DeadStub {
-    D2GSPacketClt0x2D_DeadStub() = default;
-    D2GSPacketClt0x2D_DeadStub(uint8_t v) { *reinterpret_cast<uint8_t*>(this) = v; }
     operator uint8_t() const { return *reinterpret_cast<const uint8_t*>(this); }
 
     /* 0x00 */ uint8_t nCmd; // opcode 0x2D - STUB always returns BAD_PARAMS in 1.14d
 };
 
 struct D2GSPacketClt0x2E_DeadStub {
-    D2GSPacketClt0x2E_DeadStub() = default;
-    D2GSPacketClt0x2E_DeadStub(uint8_t v) { *reinterpret_cast<uint8_t*>(this) = v; }
     operator uint8_t() const { return *reinterpret_cast<const uint8_t*>(this); }
 
     /* 0x00 */ uint8_t nCmd; // opcode 0x2E - STUB always returns OK in 1.14d
@@ -425,16 +415,12 @@ struct __attribute__((packed)) D2GSPacketClt0x3F_PlayEmote {
 };
 
 struct D2GSPacketClt0x40_RefreshQuestData {
-    D2GSPacketClt0x40_RefreshQuestData() = default;
-    D2GSPacketClt0x40_RefreshQuestData(uint8_t v) { *reinterpret_cast<uint8_t*>(this) = v; }
     operator uint8_t() const { return *reinterpret_cast<const uint8_t*>(this); }
 
     /* 0x00 */ uint8_t nCmd; // opcode 0x40; op-only packet (nSize==1)
 };
 
 struct D2GSPacketClt0x41_Resurrect {
-    D2GSPacketClt0x41_Resurrect() = default;
-    D2GSPacketClt0x41_Resurrect(uint8_t v) { *reinterpret_cast<uint8_t*>(this) = v; }
     operator uint8_t() const { return *reinterpret_cast<const uint8_t*>(this); }
 
     /* 0x00 */ uint8_t nCmd; // opcode 0x41; op-only packet (nSize==1); restores HP/mana/stamina and teleports to town
@@ -466,8 +452,6 @@ struct __attribute__((packed)) D2GSPacketClt0x47_CommandMercenary {
 };
 
 struct D2GSPacketClt0x48_TransmogrifyItem {
-    D2GSPacketClt0x48_TransmogrifyItem() = default;
-    D2GSPacketClt0x48_TransmogrifyItem(uint8_t v) { *reinterpret_cast<uint8_t*>(this) = v; }
     operator uint8_t() const { return *reinterpret_cast<const uint8_t*>(this); }
 
     /* 0x00 */ uint8_t nCmd;
@@ -515,24 +499,18 @@ struct __attribute__((packed)) D2GSPacketClt0x51_SetHotkey {
 };
 
 struct D2GSPacketClt0x52_Unused {
-    D2GSPacketClt0x52_Unused() = default;
-    D2GSPacketClt0x52_Unused(uint8_t v) { *reinterpret_cast<uint8_t*>(this) = v; }
     operator uint8_t() const { return *reinterpret_cast<const uint8_t*>(this); }
 
     /* 0x00 */ uint8_t nCmd; // opcode 0x52 — always returns BAD_PARAMS (stub)
 };
 
 struct D2GSPacketClt0x53_GamepadInput {
-    D2GSPacketClt0x53_GamepadInput() = default;
-    D2GSPacketClt0x53_GamepadInput(uint8_t v) { *reinterpret_cast<uint8_t*>(this) = v; }
     operator uint8_t() const { return *reinterpret_cast<const uint8_t*>(this); }
 
     /* 0x00 */ uint8_t nCmd; // opcode 0x53 — gamepad run toggle; 1B op-only, no payload
 };
 
 struct D2GSPacketClt0x54_StackMerge {
-    D2GSPacketClt0x54_StackMerge() = default;
-    D2GSPacketClt0x54_StackMerge(uint8_t v) { *reinterpret_cast<uint8_t*>(this) = v; }
     operator uint8_t() const { return *reinterpret_cast<const uint8_t*>(this); }
 
     /* 0x00 */ uint8_t nCmd;
@@ -553,20 +531,18 @@ struct __attribute__((packed)) D2GSPacketClt0x59_CommandNPC {
 
 struct __attribute__((packed)) D2GSPacketClt0x5D_CubeRecipeCheck {
     /* 0x00 */ uint8_t nCmd;
-    /* 0x01 */ uint8_t nParam0;
+    /* 0x01 */ uint8_t nActionIndex;
     /* 0x02 */ uint8_t nParam1;
-    /* 0x03 */ uint32_t dwParam2;
+    /* 0x03 */ uint32_t dwPlayerGUID;
 };
 
 struct __attribute__((packed)) D2GSPacketClt0x5E_CubeApply {
     /* 0x00 */ uint8_t nCmd;
-    /* 0x01 */ uint8_t nParam0;
-    /* 0x02 */ uint32_t dwParam1;
+    /* 0x01 */ uint8_t nActionIndex;
+    /* 0x02 */ uint32_t dwPlayerGUID;
 };
 
 struct D2GSPacketClt0x60_WeaponSwap {
-    D2GSPacketClt0x60_WeaponSwap() = default;
-    D2GSPacketClt0x60_WeaponSwap(uint8_t v) { *reinterpret_cast<uint8_t*>(this) = v; }
     operator uint8_t() const { return *reinterpret_cast<const uint8_t*>(this); }
 
     /* 0x00 */ uint8_t nCmd; // opcode 0x60 — weapon swap; 1B op-only, expansion-only
@@ -588,8 +564,6 @@ struct __attribute__((packed)) D2GSPacketClt0x63_ItemToBeltAuto {
 };
 
 struct D2GSPacketClt0x66_WardenStub {
-    D2GSPacketClt0x66_WardenStub() = default;
-    D2GSPacketClt0x66_WardenStub(uint8_t v) { *reinterpret_cast<uint8_t*>(this) = v; }
     operator uint8_t() const { return *reinterpret_cast<const uint8_t*>(this); }
 
     /* 0x00 */ uint8_t nCmd; // opcode 0x66 — Warden stub; always returns OK, no processing
@@ -608,10 +582,7 @@ struct __attribute__((packed)) D2GSPacketSrv0x26 {
 };
 
 struct D2WarpChanceStrc {
-    D2WarpChanceStrc() = default;
-    D2WarpChanceStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2WarpChanceStrc(int a0, int a1) : nChancePct(a0), nOffset(a1) {}
 
     /* 0x00 */ int nChancePct;
     /* 0x04 */ int nOffset;
@@ -622,14 +593,14 @@ namespace D2Game::PLAYER::PlayerMsg {
 // Function declarations
 struct D2WaypointStrc * __fastcall GetWaypointsForCurrentDifficulty(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __fastcall UpgradeLifeAndHitClass(struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient);
-void __fastcall SendReassignPlayer(struct D2UnitStrc * pUnitStrc, struct D2ClientStrc * pClient, uint8_t bParam);
+void __fastcall SendReassignPlayer(struct D2UnitStrc * pUnitStrc, struct D2ClientStrc * pClient, uint8_t bWarpFade);
 // Broadcasts the player's current skill cast to nearby clients. If the skill has a valid target unit visible to the client, sends packet 0x4C (target-entity cast). Otherwise sends packet 0x4D (XY cast) using the caster's SP1 path coordinates. Skips if the skill has flag bit 2 set and the caster is the client's own player unit.
 // @sourcefile .\PLAYER\PlrMsg.cpp
 void __fastcall SendUnitCast0x4d(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient, ::SGAMEDATA * pGameParam);
 // Sends the appropriate movement packet to pClient for pUnit's current move-mode (index nModeIndex into gaPlayerModeNetMsgTable). If pUnit has a target entity visible to the client, sends 0x10 (CharToObj); otherwise sends 0x0F (PlayerMove) with the unit's current tile position and path sub-step target coordinates. Skips self-movement (pUnit == client's own player).
 void __fastcall SendPlayerMoveOrObject(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient, int32_t nModeIndex);
 void __fastcall SendPlayerMove(::SGAMEDATA * pGame, struct D2UnitStrc * pUnitRaw, struct D2ClientStrc * pClient, int32_t nModeIndex);
-void __fastcall SendPlayerStop(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient, eD2MonsterAnimMode param_1);
+void __fastcall SendPlayerStop(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient, eD2MonsterAnimMode eAnimMode);
 void __fastcall PLRMSG_SendPlayerStopToOtherClient(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient, int32_t nModeIndex);
 // Reads pUnit->eAnimMode.ePlayerMode and indexes gaPlayerModeNetMsgTable @0x007319e8 (D2PlayerModeNetMsgStrc, stride 12, 20 entries - one per eD2PlayerAnimMode value), then calls that mode's pfnSend to push the matching network message to nearby clients when a player's animation state changes.
 void __fastcall DispatchPlayerModeNetMsg(::SGAMEDATA * pGameStrc, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient);
@@ -643,10 +614,10 @@ uint32_t __fastcall PLAYER_AreInDifferentActs(struct D2UnitStrc * pUnit, struct 
 // Server-side interact/pickup dispatcher: given a source player pUnit, a target eUnitType and its uuid, resolves the target via FindUnitFromTable and acts based on type and distance. PLAYER: pickup corpse if dead+not-trading else open trade (or walk if >8). MONSTER: trigger NPC AI think/interact if interact+npc, begin NPC interaction when close, else walk. OBJECT: validate range/LOS then Interact(mode 2) or walk. ITEM: SERVER_PickToCursor/SERVER_PickToInventory (per bSetting) when adjacent and unobstructed, else walk. WARP: TakeStairs when adjacent. Beyond ~0x33 tiles it bails. Returns eD2ServerIncomingStatus (OK / BAD_PARAMS / BAD_TARGET).
 eD2ServerIncomingStatus __fastcall SERVER_InteractOrPick(struct D2UnitStrc * pUnit, eD2UnitType eUnitType, uint32_t uuid, BOOL bSetting, ::SGAMEDATA * pGame);
 int32_t __stdcall PLAYERMSG_GetMessagePriority(uint32_t nParam);
-eD2ServerIncomingStatus __thiscall SERVER_IsItemOnCursor(void * pThis, struct D2UnitStrc * pUnit, uint32_t dwParam);
+eD2ServerIncomingStatus __thiscall SERVER_IsItemOnCursor(void * pThis, struct D2UnitStrc * pUnit, uint32_t dwItemGUID);
 eD2ServerIncomingStatus __thiscall IsPlayerTheOwner(void * pThis, struct D2UnitStrc * pOwner, uint32_t nItemGid);
 eD2ServerIncomingStatus __thiscall ItemBelongsToUnit(void * pThis, struct D2UnitStrc * pOwner, uint32_t nItemGid);
-uint8_t __stdcall MONSTER_SetAlignmentCallback(int32_t nParam1, int32_t nParam2);
+uint8_t __stdcall PLRMSG_CheckWeaponSlotEmpty(struct D2UnitStrc * pUnit, int32_t nBodyLoc);
 eD2ServerIncomingStatus __thiscall ItemBelongsToInventoryOf(void * pThis, struct D2UnitStrc * pPlayer, uint32_t nItemGid);
 int32_t __stdcall MONSTER_FindNearbyAllyUnit(::SGAMEDATA * pGame, int32_t bCheckRange, struct D2UnitStrc * * ppUnit, struct D2UnitStrc * pUnit, DWORD nUnitId);
 // C->S Packet 0x01 - Walk to XY (5 bytes)
@@ -665,8 +636,6 @@ eD2ServerIncomingStatus __fastcall SCMD_0x03_RunToLocation(::SGAMEDATA * pGame, 
 eD2ServerIncomingStatus __fastcall SCMD_0x04_RunToEntity(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x04_RunToEntity * pPacket, uint32_t nSize);
 // @sourcefile .\PLAYER\PlrMsg.cpp
 void __fastcall PLAYER_SendInventoryFullMessage(struct D2UnitStrc * pUnit);
-// Validates player is alive, resolves dual-swing skill alternation via GetDualSwingSkill, checks skill usability (falling back to SKILL_Attack if skill has flag4 bit4 set and CanUseSkill returns 1-2 or 4). On success calls PLRMODES_MoveToLocation with the resolved skill mode; on mana-full sends inventory-full message. Returns SERVERSTATUS_OK or SERVERSTATUS_BAD_DATA.
-eD2ServerIncomingStatus __stdcall CastSkillOnLocation(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame, int32_t nTargetX, int32_t nTargetY, struct D2SkillStrc * pSkill);
 // C->S Packet 0x05 - Left Skill on Location (5 bytes)
 // [op:1][x:u16][y:u16]
 // Gets left skill, increments pierce_idx, CastSkillOnLocation.
@@ -744,9 +713,9 @@ void __fastcall NET_D2GS_SERVER_Send_0x26_Chat(struct D2ClientStrc * pClient, st
 // @sourcefile .\PLAYER\PlrMsg.cpp
 eD2ServerIncomingStatus __fastcall SCMD_0x15_ChatMessage(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x15_ChatMessage * pPacket, uint32_t nSize);
 // Builds a 0x26 chat packet inline on the stack using a D2UnitStrc as raw packet buffer, then broadcasts to all clients via ForEachClient. dwParam is packed into the locale/color byte of the 0x26 header.
-void __fastcall PrepareClientMessage(::SGAMEDATA * pGame, char * szMessage, uint32_t dwParam);
+void __fastcall PrepareClientMessage(::SGAMEDATA * pGame, char * szMessage, uint8_t nColor);
 // Broadcasts a pre-built 0x26 chat packet (pointed to by pdwParam as uint32_t array) to all clients in the game. dwParam is packed into the packet color/locale byte. Wraps ForEachClient with NET_D2GS_SERVER_Send_0x26_Chat callback.
-void __fastcall CHAT_BroadcastMessageToAllClients(::SGAMEDATA * pGame, uint32_t * pdwParam, uint32_t dwParam);
+void __fastcall CHAT_BroadcastMessageToAllClients(::SGAMEDATA * pGame, uint32_t * pdwMessage, uint32_t nColor);
 // Iterates all clients in pGame via ForEachClient, broadcasting a 0x5A EventMessages packet built from nParam (pointer to message data). First measures the embedded character name string (capped at 16 chars); skips broadcast if name exceeds that limit. Side-effect: sends to every player in the game session.
 void __fastcall BroadcastEventMessage(::SGAMEDATA * pGame, struct D2Packet0x5aEventStructure * pEventData);
 // C->S 0x13 Entity Interact (9 bytes)
@@ -884,8 +853,8 @@ eD2ServerIncomingStatus __fastcall SCMD_0x45_Unused(::SGAMEDATA * pGame, struct 
 eD2ServerIncomingStatus __fastcall SCMD_0x46_NpcInteractMerc(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x46_NpcInteractMerc * pPacket, uint32_t nSize);
 // C2S packet 0x47 handler (13 bytes): [opcode:1][mercGUID:u32][targetX:u16][pad:2][targetY:u16][pad:2]. Issues an AI command to the player's mercenary. Validates the unit is the player's hired merc (PETTYPE_hireable), player is within 50 units of target coords, then resets AI state and injects a new command with the target coordinates. Sent when player directs their merc to a location.
 eD2ServerIncomingStatus __fastcall SCMD_0x47_CommandMercenary(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x47_CommandMercenary * pPacket, uint32_t nSize);
-// C2S packet 0x48 handler (1 byte): [opcode:1]. Clears the dwTradeTick lock on D2UnitDataPlayerStrc+0x4C. Acts as a client acknowledgment that trade state has been processed. Validates dwTradeTick is non-zero before clearing. Prevents trade state corruption by requiring explicit client confirmation before unlocking player actions.
-eD2ServerIncomingStatus __fastcall SCMD_0x48_ConfirmTradeTick(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x48_TransmogrifyItem * pPacket, uint32_t nSize);
+// C2S 0x48 (1 byte), sent by the client's ExitGamePlayCutScene 0x00482ef0 when an act cutscene ends; clears the cutscene-pending flag at player data +0x4c that the server set before S2C 0x61.
+eD2ServerIncomingStatus __fastcall SCMD_0x48_CutsceneOver(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x48_TransmogrifyItem * pPacket, uint32_t nSize);
 eD2ServerIncomingStatus __fastcall SCMD_0x49_TakeWaypoint(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x49_TakeWaypoint * pPacket, uint32_t nSize);
 eD2ServerIncomingStatus __fastcall SCMD_0x4D_ResetNpcIntroFlag(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x4D_ResetNpcIntroFlag * pPacket, uint32_t nSize);
 eD2ServerIncomingStatus __fastcall SCMD_0x4B_ForceUnitUpdate(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x4B_ForceUnitUpdate * pPacket, uint32_t nSize);
@@ -935,6 +904,9 @@ eD2ServerIncomingStatus __fastcall NET_D2GS_SERVER_HandleIncomingPacketAfterClie
 // @sourcefile .\PLAYER\PlrMsg.cpp
 void __fastcall PLAYERMSG_BroadcastPlayerSlain(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pVictim);
 void __fastcall SendPlayerStopAndAtributeUpdate(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient, int32_t nStopReason);
-// 23 internal functions (defined in .cpp)
+// 24 internal functions (defined in .cpp)
+
+// Extern entries for hand-written callers (each forwards to the function of its name)
+eD2ServerIncomingStatus __stdcall CastSkillOnLocation_Extern(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame, int32_t nTargetX, int32_t nTargetY, struct D2SkillStrc * pSkill);
 
 } // namespace D2Game::PLAYER::PlayerMsg

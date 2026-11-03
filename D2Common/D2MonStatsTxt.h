@@ -10,10 +10,7 @@
 
 // Data types
 struct D2MonStatsTxtTC {
-    D2MonStatsTxtTC() = default;
-    D2MonStatsTxtTC(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2MonStatsTxtTC(short a0, short a1, short a2, short a3) : TreasureClass1(a0), TreasureClass2(a1), TreasureClass3(a2), TreasureClass4(a3) {}
 
     /* 0x00 */ short TreasureClass1;
     /* 0x02 */ short TreasureClass2;
@@ -21,8 +18,7 @@ struct D2MonStatsTxtTC {
     /* 0x06 */ short TreasureClass4;
 };
 
-#pragma pack(push, 1)
-struct D2MonStatsTxt {
+struct __attribute__((packed)) D2MonStatsTxt {
     /* 0x000 */ uint16_t Id;
     /* 0x002 */ short BaseId;
     /* 0x004 */ short NextInClass;
@@ -98,7 +94,7 @@ struct D2MonStatsTxt {
     /* 0x04A */ uint8_t nMaxChainId; // 0x4A max chain id for monster summon chains (read by GetMonsterChainInfo); not a monstats.txt column
     /* 0x04B */ uint8_t nChainId; // 0x4B chain id for monster summon chains (read by GetMonsterChainInfo); not a monstats.txt column
     /* 0x04C */ uint8_t Align;
-    /* 0x04D */ char TransLvl;
+    /* 0x04D */ uint8_t TransLvl;
     /* 0x04E */ uint8_t threat;
     /* 0x04F */ uint8_t aidel[3]; // monstats.txt aidel / aidel(N) / aidel(H), indexed by difficulty. 2-D access proved in 1.14d by MOVZX reg,byte ptr [base + idx*0x1 + 0x4f] at 0057b1e8, 005a745c, 005f0793, 005f8b7e, 005f8c3d, 005f8eb7, 005f8f3b. Every load is MOVZX (never MOVSX), so the element is unsigned; it was declared signed char.
     /* 0x052 */ char aidist[3]; // monstats.txt aidist / aidist(N) / aidist(H), indexed by difficulty. 2-D access proved by MOV AL,byte ptr [base + idx*0x1 + 0x52] at 005dd8b0 (MONSTERAI_FindBestTarget). Signedness unproven (plain MOV, no MOVSX/MOVZX), so char was kept.
@@ -158,4 +154,3 @@ struct D2MonStatsTxt {
     /* 0x1A6 */ char SplEndGeneric;
     /* 0x1A7 */ char SplClientEnd;
 };
-#pragma pack(pop)

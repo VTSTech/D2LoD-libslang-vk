@@ -5,7 +5,6 @@
 #include "Storm/D2MPQFileStrc.h"
 #include "Storm/Source/SEVT.h"
 #include "Storm/Source/SFile.h"
-#include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -15,17 +14,8 @@ namespace Storm {
 
 // @blizzard SMsgBreakHandlerChain (SMSG.CPP)
 int __stdcall SMsgBreakHandlerChain(void * pUnderMouse) {
-    int iVar1 = Source::SEVT::SEvtBreakHandlerChain(pUnderMouse);
-    return iVar1;
-}
-
-void StaticFini_Empty_6cb400() {
-
-}
-
-void StaticFini_gFaultHandlerList() {
-    Source::SSystem::LINKEDLIST_FreeNode(&gFaultHandlerList);
-    Source::SSystem::LINKEDLIST_UnlinkNodeSelf(&gFaultHandlerList.head);
+    int nResult = Source::SEVT::SEvtBreakHandlerChain(pUnderMouse);
+    return nResult;
 }
 
 } // namespace Storm

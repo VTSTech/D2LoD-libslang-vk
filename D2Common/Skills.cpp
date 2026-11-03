@@ -41,6 +41,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Seed.h"
 #include "D2Common/Stats/StatsEx.h"
@@ -61,7 +62,6 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Common/D2DynamicPathStrc.h"
 #include "D2Common/D2SeedStrc.h"
-#include "D2Common/D2UnitDataItemStrc.h"
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
@@ -91,20 +91,76 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2SkillStrc) == 0x40, "D2_NEW_AT(D2
 typedef int (__fastcall *fnSkillCalcMethod)(int32_t nCalcCode, void * pContext);
 #endif
 
+static int INT_ARRAY_006eb308[16] = {
+    0x0,
+    0x1,
+    0x2,
+    0x4,
+    0x7,
+    0x8,
+    0x9,
+    0xa,
+    0xd,
+    0xe,
+    0xf,
+    0x10,
+    0x11,
+    0x13,
+    0x12,
+    0x3
+}; D2_STATIC_GUARD(INT_ARRAY_006eb308, "INT_ARRAY_006eb308");
+static D2ItemsEventMethodStrc gaSkillCalcMethods[7] = {
+    {
+        /* .pfnMethod = */ (pfnSkillCalcOp)&D2Common::Skills::SKILLS_Min,
+        /* .nArgCount = */ 0x2
+    },
+    {
+        /* .pfnMethod = */ (pfnSkillCalcOp)&D2Common::Skills::SKILLS_Max,
+        /* .nArgCount = */ 0x2
+    },
+    {
+        /* .pfnMethod = */ (pfnSkillCalcOp)&D2Common::Skills::SKILLS_RandomRange,
+        /* .nArgCount = */ 0x2
+    },
+    {
+        /* .pfnMethod = */ (pfnSkillCalcOp)&D2Common::Skills::SKILLS_EvalSkillDescCalc_CurrentLevel,
+        /* .nArgCount = */ 0x2
+    },
+    {
+        /* .pfnMethod = */ (pfnSkillCalcOp)&D2Common::Skills::SKILLS_GetMissileSpecialParam,
+        /* .nArgCount = */ 0x2
+    },
+    {
+        /* .pfnMethod = */ (pfnSkillCalcOp)&D2Common::Skills::SKILLS_GetUnitStatValue,
+        /* .nArgCount = */ 0x2
+    },
+    {
+        /* .pfnMethod = */ (pfnSkillCalcOp)&D2Common::Skills::SKILLS_EvalSkillDescCalc_Chained,
+        /* .nArgCount = */ 0x3
+    }
+}; D2_STATIC_GUARD(gaSkillCalcMethods, "gaSkillCalcMethods");
+static int32_t gnSkillCalcMethodCount = 0x7; D2_STATIC_GUARD(gnSkillCalcMethodCount, "gnSkillCalcMethodCount");
+
 namespace D2Common::Skills {
 
 // Calculates a skill parameter value using Param[6] and Param[7] from SkillsTxt. Formula: (level - 1) * Param[7] + Param[6]. Returns 0 if skill ID or level is invalid.
-int32_t __fastcall SKILLS_CalcSkillParam(eD2Skills eSkill, int32_t nParam) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
+int32_t __fastcall SKILLS_CalcSkillParam(eD2Skills eSkill, int32_t nSkillLevel) {
+    if ((int)eSkill < 0) {
+      return 0;
+    }
+    if (!((int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
 
     D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillsTxt && nParam > 0)) {
+    if (!pSkillsTxt) {
+      return 0;
+    }
+    if (nSkillLevel <= 0) {
       return 0;
     }
 
-    return (nParam - 1) * pSkillsTxt->Param[7] + pSkillsTxt->Param[6];
+    return (nSkillLevel - 1) * pSkillsTxt->Param[7] + pSkillsTxt->Param[6];
 }
 
 // Gets or allocates a stat list associated with a given state on a unit. If arg1 is nonzero and no stat list exists for the state, allocates one and attaches it. If arg1 is zero, frees the existing stat list for that state.
@@ -114,30 +170,29 @@ static D2StatListExStrc * __stdcall SKILLS_GetOrAllocStateStatList(int32_t bAllo
     D2StatListExStrc* pStateStatList = Stats::StatsEx::GetStatsByState(pUnit, eState);
     if (bAlloc) {
       D2PoolManagerStrc* pMemory;
-      if (pStateStatList) {
-        return pStateStatList;
-      }
-      if (!pUnit) {
-        nUnitGUID = -1;
-        eUnitType = UNIT_COUNT;
-        pMemory = 0;
-      } else {
-        nUnitGUID = pUnit->nUnitGUID;
-        eUnitType = pUnit->eUnitType;
-        pMemory = pUnit->pMemory;
+      if (!pStateStatList) {
+        if (!pUnit) {
+          nUnitGUID = -1;
+          eUnitType = UNIT_COUNT;
+          pMemory = 0;
+        } else {
+          nUnitGUID = pUnit->nUnitGUID;
+          eUnitType = pUnit->eUnitType;
+          pMemory = pUnit->pMemory;
+        }
+
+        pStateStatList = (D2StatListExStrc*)Stats::StatsEx::AllocStatList(pMemory, 0, 0, eUnitType, nUnitGUID);
+        Stats::StatsEx::SetState(pStateStatList, eState);
+        Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit, pStateStatList, 1);
       }
 
-      pStateStatList = (D2StatListExStrc*)Stats::StatsEx::AllocStatList(pMemory, 0, 0, eUnitType, nUnitGUID);
-      Stats::StatsEx::SetState(pStateStatList, eState);
-      Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit, pStateStatList, 1);
       return pStateStatList;
     }
-    if (!pStateStatList) {
-      return nullptr;
+    if (pStateStatList) {
+      Stats::StatsEx::STATLIST_RemoveAndRecalc(pUnit, pStateStatList);
+      Stats::StatsEx::FreeStatList(&pStateStatList->sStatList);
     }
 
-    Stats::StatsEx::STATLIST_RemoveAndRecalc(pUnit, pStateStatList);
-    Stats::StatsEx::FreeStatList(&pStateStatList->sStatList);
     return nullptr;
 }
 
@@ -156,22 +211,22 @@ int __stdcall TXT_Skills_GetPassiveState(int nSkillId) {
     return (int)nPassiveState;
 }
 
-int __fastcall SKILLS_Min(int nParam1, int nParam2, uint32_t dwParam3, uint32_t dwParam4) {
-    if (nParam1 < nParam2) {
-      return nParam1;
+int __fastcall SKILLS_Min(int nLeft, int nRight, uint32_t dwParam3, uint32_t dwParam4) {
+    if (nLeft < nRight) {
+      return nLeft;
     }
 
-    nParam1 = nParam2;
-    return nParam1;
+    nLeft = nRight;
+    return nLeft;
 }
 
-int __fastcall SKILLS_Max(int nParam1, int nParam2, uint32_t dwParam3, uint32_t dwParam4) {
-    if (nParam1 > nParam2) {
-      return nParam1;
+int __fastcall SKILLS_Max(int nLeft, int nRight, uint32_t nOperand3, uint32_t pContext) {
+    if (nLeft > nRight) {
+      return nLeft;
     }
 
-    nParam1 = nParam2;
-    return nParam1;
+    nLeft = nRight;
+    return nLeft;
 }
 
 int * __fastcall SKILLS_RandomRange(int * pnMinVal, int32_t nRange, uint32_t nUnused, int * pnSeed) {
@@ -191,8 +246,8 @@ int __fastcall SKILLS_GetMissileSpecialParam(int32_t nParamIndex, uint8_t bParam
       return 0;
     }
 
-    int32_t iVar1 = Units::Missile::GetSpecialParamValue(nullptr, *ppContext, bParamType, nParamIndex, (int32_t)ppContext[2]);
-    return iVar1;
+    int32_t nSpecialParam = Units::Missile::GetSpecialParamValue(nullptr, *ppContext, bParamType, nParamIndex, (int32_t)ppContext[2]);
+    return nSpecialParam;
 }
 
 int32_t __fastcall SKILLS_GetUnitStatValue(eD2UnitStat eUnitStat, int32_t nShiftCount, uint32_t nUnused, D2UnitStrc * * ppContext) {
@@ -256,15 +311,15 @@ int __stdcall GetSkillMode(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
     return 0;
 }
 
-int32_t __stdcall SKILLS_GetSkillsTxtField0x14(int * pnParam) {
-    if (!pnParam) {
+int32_t __stdcall SKILLS_GetSkillsTxtField0x14(int * pSkill) {
+    if (!pSkill) {
       return 0;
     }
-    if (!*pnParam) {
+    if (!*pSkill) {
       return 0;
     }
 
-    return (int)*(char*)(*pnParam + 0x14);
+    return (int)*(char*)(*pSkill + 0x14);
 }
 
 // @sourcefile .\SKILLS\Skills.cpp
@@ -302,7 +357,6 @@ D2SkillStrc * __fastcall GetLeftSkill(D2SkillListStrc * pSkillsList) {
     }
 
     return pSkillsList->pLeftSkill;
-    return pSkillsList->pLeftSkill;
 }
 
 D2SkillStrc * __fastcall GetRightSkill(D2SkillListStrc * pSkillsList) {
@@ -311,7 +365,6 @@ D2SkillStrc * __fastcall GetRightSkill(D2SkillListStrc * pSkillsList) {
       exit(-1);
     }
 
-    return pSkillsList->pRightSkill;
     return pSkillsList->pRightSkill;
 }
 
@@ -372,21 +425,20 @@ D2LightMapStrc * __stdcall SwapLightMap(D2UnitStrc * pUnit, D2LightMapStrc * pLi
     return pOldLight;
 }
 
-uint32_t __stdcall SKILLS_GetUnitField0xa8_0x14(D2UnitStrc * pUnit) {
+D2LightMapStrc * __stdcall SKILLS_GetUnitField0xa8_0x14(D2UnitStrc * pUnit) {
     if (!pUnit) {
-      return 0;
+      return nullptr;
     }
     if (!pUnit->pSkillsList) {
-      return 0;
+      return nullptr;
     }
 
-    return (uint32_t)(uintptr_t)pUnit->pSkillsList->pLight;
+    return pUnit->pSkillsList->pLight;
 }
 
 // Frees the entire skill list on a unit. Iterates through pFirstSkill linked list, freeing each D2SkillStrc, then frees the D2SkillListStrc itself. Sets pUnit->pSkillsList to NULL. Called by FreeUnit.
 // @sourcefile .\SKILLS\Skills.cpp
 void __stdcall SKILLS_FreeSkillList(D2UnitStrc * pUnit) {
-    D2PoolManagerStrc* pMemory;
     int32_t nLine;
     D2SkillStrc* pNextSkill;
     char* szFile;
@@ -406,8 +458,7 @@ void __stdcall SKILLS_FreeSkillList(D2UnitStrc * pUnit) {
       nFlags = 0;
       nLine = 0x505;
       szFile = ".\\SKILLS\\Skills.cpp";
-      pMemory = D2Client::UNIT::CUnitEvent::GetMemPool(pUnit);
-      Fog::Memory::FreeServerMemory(pMemory, pMemoryToFree_00, szFile, nLine, nFlags);
+      Fog::Memory::FreeServerMemory(D2Client::UNIT::CUnitEvent::GetMemPool(pUnit), pMemoryToFree_00, szFile, nLine, nFlags);
       pMemoryToFree_00 = pNextSkill;
     }
 
@@ -421,7 +472,6 @@ int32_t __stdcall GetOwnerGUID(D2SkillStrc * pSkill) {
       exit(-1);
     }
 
-    return pSkill->nOwnerGUID;
     return pSkill->nOwnerGUID;
 }
 
@@ -443,11 +493,10 @@ BOOL __stdcall SKILLS_GetSkillData(D2SkillStrc * pSkill, int32_t * pOwnerGUID, e
     if (pLevel) {
       *pLevel = pSkill->nLevel;
     }
-    if (!pCharges) {
-      return 1;
+    if (pCharges) {
+      *pCharges = pSkill->nCharges;
     }
 
-    *pCharges = pSkill->nCharges;
     return 1;
 }
 
@@ -549,7 +598,7 @@ uint32_t __fastcall GetSequenceId(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
       return (uint32_t)(uint8_t)pSkill->pRecord->seqnum;
     }
 
-    short int eSkillId = pSkill->pRecord->skill;
+    int32_t eSkillId = pSkill->pRecord->skill;
     if (eSkillId == SKILL_DiabPrison) {
       return 0;
     }
@@ -570,9 +619,9 @@ uint32_t __fastcall GetSequenceId(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
 }
 
 // Returns the item equipped in either the right arm (BODYLOC_R_ARM) or left arm (BODYLOC_L_ARM) slot from inventory, based on the hand parameter (5 = right, else left).
-static D2UnitStrc * __stdcall SKILLS_GetWeaponByHand(int32_t nParam, D2InventoryStrc * pInventory) {
+static D2UnitStrc * __stdcall SKILLS_GetWeaponByHand(int32_t nBodyLoc, D2InventoryStrc * pInventory) {
     D2UnitStrc* pWeapon;
-    if (nParam == 5) {
+    if (nBodyLoc == 5) {
       pWeapon = INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 4);
       return pWeapon;
     }
@@ -585,7 +634,7 @@ static D2UnitStrc * __stdcall SKILLS_GetWeaponByHand(int32_t nParam, D2Inventory
 // @sourcefile .\SKILLS\Skills.cpp
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
 static int32_t __stdcall SKILLS_CheckItemTypeRequirement(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, short * psSkillFields, int32_t nHandIdx) {
-    bool _bItemFlagSet;
+    BOOL _bItemFlagSet;
     bool bItemFlagSet;
     uint32_t bIsOfType2;
     int32_t nShootsType;
@@ -665,42 +714,39 @@ static int32_t __stdcall SKILLS_CheckItemTypeRequirement(D2UnitStrc * pUnit, D2U
       _bItemFlagSet = ITEMS::Items::CheckItemFlag(pUnit, ITEMFLAG_BROKEN, 0x811, ".\\SKILLS\\Skills.cpp");
       if (!_bItemFlagSet) {
         nShootsType = ITEMS::Items::ITEM_GetTxtItemTypes_shoots(pUnit);
-        if (!(nShootsType && !(*(uint8_t*)(psSkillFields + 3) & (uint8_t)gadwBitMasks[0]))) {
-          return 1;
-        }
-        if (!*psSkillFields) {
-          nMagicArrowStat = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_magicarrow, 0);
-          if (nMagicArrowStat) {
-            return 1;
+        if (nShootsType && !(*(uint8_t*)(psSkillFields + 3) & (uint8_t)gadwBitMasks[0])) {
+          if (!*psSkillFields) {
+            nMagicArrowStat = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_magicarrow, 0);
+            if (nMagicArrowStat) {
+              return 1;
+            }
+          }
+          if (!pUnit2) {
+            return 0;
+          }
+
+          eItemType = ITEMS::Items::ITEM_GetTxtItemTypes_shoots(pUnit);
+          bIsOfType2 = ITEMS::Items::ITEMS_IsA(pUnit2, eItemType);
+          if (!bIsOfType2) {
+            return 0;
+          }
+          if (!*psSkillFields) {
+            nMagicArrowStat = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit2, UNITSTAT_item_magicarrow, 0);
+            if (nMagicArrowStat) {
+              return 1;
+            }
+          }
+
+          nMatchedTypeCount = ITEMS::Items::ITEM_GetMaxStack(pUnit2);
+          if (nMatchedTypeCount) {
+            nMatchedTypeCount = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_quantity, 0);
+            if (nMatchedTypeCount <= 0) {
+              return 0;
+            }
           }
         }
-        if (!pUnit2) {
-          return 0;
-        }
 
-        eItemType = ITEMS::Items::ITEM_GetTxtItemTypes_shoots(pUnit);
-        bIsOfType2 = ITEMS::Items::ITEMS_IsA(pUnit2, eItemType);
-        if (!bIsOfType2) {
-          return 0;
-        }
-        if (!*psSkillFields) {
-          nMagicArrowStat = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit2, UNITSTAT_item_magicarrow, 0);
-          if (nMagicArrowStat) {
-            return 1;
-          }
-        }
-
-        nMatchedTypeCount = ITEMS::Items::ITEM_GetMaxStack(pUnit2);
-        if (!nMatchedTypeCount) {
-          return 1;
-        }
-
-        nMatchedTypeCount = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_quantity, 0);
-        if (nMatchedTypeCount > 0) {
-          return 1;
-        }
-
-        return 0;
+        return 1;
       }
     }
 
@@ -754,70 +800,70 @@ static BOOL __stdcall SKILLS_CheckWeaponRequirements(D2UnitStrc * pUnit, D2Skill
 }
 
 // Checks whether a skill's use-restriction condition is satisfied for the caster. Reads the restrict field from the skill record: 0 = requires no active poison state (returns true if not poisoned); 1 = always allowed; 2 = requires a poison state AND at least one of the skill's three state[] entries active on the unit. Returns 1 if the restriction passes, 0 otherwise. Returns 0 immediately if unit or skill pointer is null.
-static int SKILLS_CheckRestriction(int * pSkillTxt, D2UnitStrc * pUnitStrc) {
+static int SKILLS_CheckRestriction(D2SkillStrc * pSkillTxt, D2UnitStrc * pUnitStrc) {
+    eD2States eActiveState;
     int32_t nHasPoisonState2;
+    int32_t nStateIdx;
+    short int* psReqState;
+    char cRestrictionType;
     if (!pUnitStrc || !pSkillTxt) {
       return 0;
     }
 
-    D2SkillsTxt* pSkillRecord = (D2SkillsTxt*)*pSkillTxt;
-    if (!pSkillRecord) {
-      return 0;
-    }
-
-    char cRestrictionType = pSkillRecord->restrict;
-    if (cRestrictionType != '\0') {
+    D2SkillsTxt* pSkillRecord = pSkillTxt->pRecord;
+    if (pSkillRecord) {
+      int32_t nHasPoisonState;
+      cRestrictionType = pSkillRecord->restrict;
+      if (cRestrictionType == '\0') {
+        nHasPoisonState2 = DATATBLS::ItemStats::STATES_HasPoisonState(pUnitStrc);
+        return (uint32_t)!nHasPoisonState2;
+      }
       if (cRestrictionType == '\x01' || cRestrictionType != '\x02') {
         return 1;
       }
 
-      int32_t nHasPoisonState = DATATBLS::ItemStats::STATES_HasPoisonState(pUnitStrc);
-      if (!nHasPoisonState) {
-        return 0;
+      nHasPoisonState = DATATBLS::ItemStats::STATES_HasPoisonState(pUnitStrc);
+      if (nHasPoisonState) {
+        nStateIdx = 0;
+        psReqState = pSkillRecord->state;
+        while (true) {
+          if (*psReqState < 0) {
+            return 0;
+          }
+
+          eActiveState = DATATBLS::ItemStats::UNIT_GetUnitState(pUnitStrc, (int)*psReqState);
+          if (eActiveState != STATE_none) {
+            break;
+          }
+
+          nStateIdx++;
+          psReqState++;
+          if (nStateIdx >= 3) {
+            return 0;
+          }
+        }
+
+        return 1;
       }
-
-      int32_t nStateIdx = 0;
-      short int* psReqState = pSkillRecord->state;
-      while (true) {
-        eD2States eActiveState;
-        if (*psReqState < 0) {
-          return 0;
-        }
-
-        eActiveState = DATATBLS::ItemStats::UNIT_GetUnitState(pUnitStrc, (int)*psReqState);
-        if (eActiveState != STATE_none) {
-          break;
-        }
-
-        nStateIdx++;
-        psReqState++;
-        if (nStateIdx >= 3) {
-          return 0;
-        }
-      }
-
-      return 1;
     }
 
-    nHasPoisonState2 = DATATBLS::ItemStats::STATES_HasPoisonState(pUnitStrc);
-    return (uint32_t)!nHasPoisonState2;
+    return 0;
 }
 
 // NOTE: Callee-saved register params inferred (medium confidence): pint (ESI): int*, pint (EDI): int*
 static BOOL SKILLS_CheckStartMana(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_PLAYER && pSkill->pRecord->startmana > 0)) {
-      return 1;
-    }
-
-    int32_t nCurrentMana = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mana, 0);
-    int32_t nManaCost = pSkill->pRecord->startmana * 0x100;
-    if (nCurrentMana >= nManaCost) {
-      return 1;
-    }
-
-    eD2States eInfernoState = DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_inferno);
-    if (eInfernoState == STATE_none) {
-      return 0;
+    eD2States eInfernoState;
+    int32_t nManaCost;
+    if (pUnit && pUnit->eUnitType == UNIT_PLAYER && pSkill->pRecord->startmana > 0) {
+      int32_t nCurrentMana;
+      nCurrentMana = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mana, 0);
+      nManaCost = pSkill->pRecord->startmana * 0x100;
+      if (nCurrentMana < nManaCost) {
+        eInfernoState = DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_inferno);
+        if (eInfernoState == STATE_none) {
+          return 0;
+        }
+      }
     }
 
     return 1;
@@ -903,7 +949,7 @@ static int32_t __stdcall SKILL_GetLevelBonus(D2SkillStrc * pSkill, D2UnitStrc * 
 
     nSkillStatVal += nStatBonus;
     add_elem_and_single_bonus:
-    if (pSkillsTxt->EType != ELEMENTAL_NONE) {
+    if ((uint8_t)pSkillsTxt->EType > ELEMENTAL_NONE) {
       nStatBonus = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_item_elemskill, (uint16_t)pSkillsTxt->EType);
       nSkillStatVal += nStatBonus;
     }
@@ -972,16 +1018,15 @@ int __stdcall SKILLS_GetField0x10(D2SkillStrc * pSkill) {
     }
 
     return pSkill->dwTargetInfo;
-    return pSkill->dwTargetInfo;
 }
 
-void __stdcall SKILLS_SetField0x10(D2SkillStrc * pSkill, int32_t dwParam) {
+void __stdcall SKILLS_SetField0x10(D2SkillStrc * pSkill, int32_t nTargetInfo) {
     if (!pSkill) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa2c);
       exit(-1);
     }
 
-    pSkill->dwTargetInfo = dwParam;
+    pSkill->dwTargetInfo = nTargetInfo;
 }
 
 int __stdcall SKILLS_GetField0x14(D2SkillStrc * pSkill) {
@@ -991,16 +1036,15 @@ int __stdcall SKILLS_GetField0x14(D2SkillStrc * pSkill) {
     }
 
     return pSkill->dwTargetType;
-    return pSkill->dwTargetType;
 }
 
-void __stdcall SKILLS_SetField0x14(D2SkillStrc * pSkill, int32_t dwParam) {
+void __stdcall SKILLS_SetField0x14(D2SkillStrc * pSkill, int32_t nTargetType) {
     if (!pSkill) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa3e);
       exit(-1);
     }
 
-    pSkill->dwTargetType = dwParam;
+    pSkill->dwTargetType = nTargetType;
 }
 
 void __stdcall SKILLS_ClearFields0x10_0x14(D2SkillStrc * pSkill) {
@@ -1020,7 +1064,6 @@ int32_t __stdcall SKILL_GetParam1(D2SkillStrc * pSkill) {
     }
 
     return pSkill->nPar1;
-    return pSkill->nPar1;
 }
 
 int32_t __stdcall SKILL_GetParam2(D2SkillStrc * pSkill) {
@@ -1029,7 +1072,6 @@ int32_t __stdcall SKILL_GetParam2(D2SkillStrc * pSkill) {
       exit(-1);
     }
 
-    return pSkill->nPar2;
     return pSkill->nPar2;
 }
 
@@ -1040,7 +1082,6 @@ int32_t __stdcall SKILL_GetParam3(D2SkillStrc * pSkill) {
     }
 
     return pSkill->nPar3;
-    return pSkill->nPar3;
 }
 
 int32_t __stdcall SKILL_GetParam4(D2SkillStrc * pSkill) {
@@ -1050,43 +1091,42 @@ int32_t __stdcall SKILL_GetParam4(D2SkillStrc * pSkill) {
     }
 
     return pSkill->nPar4;
-    return pSkill->nPar4;
 }
 
-void __stdcall SKILL_SetParam1(D2SkillStrc * pSkill, int32_t nParam1) {
+void __stdcall SKILL_SetParam1(D2SkillStrc * pSkill, int32_t nPar1) {
     if (!pSkill) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa76);
       exit(-1);
     }
 
-    pSkill->nPar1 = nParam1;
+    pSkill->nPar1 = nPar1;
 }
 
-void __stdcall SKILL_SetParam2(D2SkillStrc * pSkill, int32_t nParam2) {
+void __stdcall SKILL_SetParam2(D2SkillStrc * pSkill, int32_t nPar2) {
     if (!pSkill) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa7f);
       exit(-1);
     }
 
-    pSkill->nPar2 = nParam2;
+    pSkill->nPar2 = nPar2;
 }
 
-void __stdcall SKILL_SetParam3(D2SkillStrc * pSkill, int32_t nParam3) {
+void __stdcall SKILL_SetParam3(D2SkillStrc * pSkill, int32_t nPar3) {
     if (!pSkill) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa88);
       exit(-1);
     }
 
-    pSkill->nPar3 = nParam3;
+    pSkill->nPar3 = nPar3;
 }
 
-void __stdcall SKILL_SetParam4(D2SkillStrc * pSkill, int32_t nParam4) {
+void __stdcall SKILL_SetParam4(D2SkillStrc * pSkill, int32_t nPar4) {
     if (!pSkill) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa91);
       exit(-1);
     }
 
-    pSkill->nPar4 = nParam4;
+    pSkill->nPar4 = nPar4;
 }
 
 void __stdcall SKILL_SetFlags(D2SkillStrc * pSkill, int32_t nFlags) {
@@ -1141,11 +1181,10 @@ int32_t __stdcall SKILL_GetRequiredLevel(D2UnitStrc * pUnit, eD2Skills eSkill) {
 
     int32_t nReqLevel = (int32_t)pSkillsTxt->reqlevel;
     D2SkillStrc* pSkill = GetSkillByIdAndOwner(pUnit, eSkill, -1);
-    if (!pSkill) {
-      return nReqLevel;
+    if (pSkill) {
+      nReqLevel += pSkill->nLevel;
     }
 
-    nReqLevel += pSkill->nLevel;
     return nReqLevel;
 }
 
@@ -1166,14 +1205,7 @@ int32_t __fastcall GetSkillLevelById(D2UnitStrc * pUnit, eD2Skills eSkill) {
 BOOL __stdcall SkillCalculateIfWeCanSkillThisSkill(D2UnitStrc * pUnit, eD2Skills eSkill) {
     bool bHasSkill;
     D2SkillsTxt* pReqSkillTxt;
-    if ((int)eSkill < 0) {
-      return 0;
-    }
-    if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
-      return 0;
-    }
-
-    D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
+    D2SkillsTxt* pSkillTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (!pSkillTxt) {
       return 0;
     }
@@ -1292,14 +1324,7 @@ uint32_t __stdcall SpendSkillPointOnSkill(D2UnitStrc * pUnit, eD2Skills eSkill) 
 
 uint32_t __stdcall SKILLS_CalcToHit(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel) {
     D2SkillCalcContextStrc sCalcCtx;
-    if ((int)eSkill < 0) {
-      return 0;
-    }
-    if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
-      return 0;
-    }
-
-    D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
+    D2SkillsTxt* pSkillTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (!pSkillTxt) {
       return 0;
     }
@@ -1363,16 +1388,12 @@ int32_t __stdcall SKILLS_GetTotalSkillLevel(D2UnitStrc * pUnit, eD2Skills eSkill
 // Output feeds into missile spawn and damage calculation.
 // Heart of skill scaling system.
 int32_t __stdcall SKILLS_CalculateManaCost(eD2Skills eSkillId, int32_t nSkillLevel) {
-    if (!((int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount)) {
-      return 0;
-    }
-
-    D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills + eSkillId;
+    D2SkillsTxt* pSkillsTxt = (int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkillId : nullptr;
     if (!pSkillsTxt) {
       return 0;
     }
 
-    return (int)pSkillsTxt->lvlmana * (nSkillLevel - 1) + (int)pSkillsTxt->mana << ((uint8_t)pSkillsTxt->manashift & 0x1f);
+    return (int)pSkillsTxt->lvlmana * (nSkillLevel - 1) + (int)pSkillsTxt->mana << D2_SHIFT_COUNT(pSkillsTxt->manashift);
 }
 
 int32_t __fastcall SKILLS_GetValueByLevelBreakpoints(int32_t nLevel, int * pLevelArray) {
@@ -1462,18 +1483,24 @@ static int32_t SKILLS_ApplyElementalMasteryBonus(eD2ElementalDamageTypeDWORD eEl
 int32_t __stdcall SERVER_MinDamage(D2UnitStrc * pUnit, int32_t eSkillId, int32_t nSkillLevel, BOOL bApplyMastery) {
     int32_t nElemMasteryBonus;
     D2DataTableTxtStrc* pDataTable = sgptDataTable;
-    if (!(eSkillId >= 0 && eSkillId < sgptDataTable->nTxtSkillsCount)) {
+    if (eSkillId < 0) {
+      return 0;
+    }
+    if (!(eSkillId < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
 
     D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkillId;
-    if (!(pSkillTxt && nSkillLevel > 0)) {
+    if (!pSkillTxt) {
+      return 0;
+    }
+    if (nSkillLevel <= 0) {
       return 0;
     }
 
     int32_t nDamage = SKILLS_GetValueByLevelBreakpoints(nSkillLevel, pSkillTxt->EMinLev);
     uint32_t uCalcResult = pSkillTxt->EDmgSymPerCalc;
-    nDamage = nDamage + pSkillTxt->EMin << (pSkillTxt->HitShift & 0x1fU);
+    nDamage = nDamage + pSkillTxt->EMin << D2_SHIFT_COUNT(pSkillTxt->HitShift);
     if (uCalcResult != -1 && (nDamage > 0x100 || pSkillTxt->EMinLev[0]) && pDataTable->pSkillsCode && uCalcResult < (uint32_t)pDataTable->nSkillsCodeSize) {
       D2SkillCalcContextStrc sCalcCtx;
       sCalcCtx.pUnit = pUnit;
@@ -1485,30 +1512,35 @@ int32_t __stdcall SERVER_MinDamage(D2UnitStrc * pUnit, int32_t eSkillId, int32_t
         nDamage += nElemMasteryBonus;
       }
     }
-    if (!(bApplyMastery && pUnit)) {
-      return nDamage;
+    if (bApplyMastery && pUnit) {
+      nElemMasteryBonus = SKILLS_ApplyElementalMasteryBonus((eD2ElementalDamageTypeDWORD)pSkillTxt->EType, nDamage, pUnit);
+      nDamage += nElemMasteryBonus;
     }
 
-    nElemMasteryBonus = SKILLS_ApplyElementalMasteryBonus((eD2ElementalDamageTypeDWORD)pSkillTxt->EType, nDamage, pUnit);
-    nDamage += nElemMasteryBonus;
     return nDamage;
 }
 
 int32_t __stdcall SERVER_MaxDamage(D2UnitStrc * pUnit, int32_t eSkillId, int32_t nSkillLevel, int32_t bApplyElemBonus) {
     int32_t nElemMasteryBonus;
     D2DataTableTxtStrc* pDataTable = sgptDataTable;
-    if (!(eSkillId >= 0 && eSkillId < sgptDataTable->nTxtSkillsCount)) {
+    if (eSkillId < 0) {
+      return 0;
+    }
+    if (!(eSkillId < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
 
     D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkillId;
-    if (!(pSkillTxt && nSkillLevel > 0)) {
+    if (!pSkillTxt) {
+      return 0;
+    }
+    if (nSkillLevel <= 0) {
       return 0;
     }
 
     int32_t nDamage = SKILLS_GetValueByLevelBreakpoints(nSkillLevel, pSkillTxt->EMaxLev);
     uint32_t uCalcResult = pSkillTxt->EDmgSymPerCalc;
-    nDamage = nDamage + pSkillTxt->EMax << (pSkillTxt->HitShift & 0x1fU);
+    nDamage = nDamage + pSkillTxt->EMax << D2_SHIFT_COUNT(pSkillTxt->HitShift);
     if (uCalcResult != -1 && pDataTable->pSkillsCode && uCalcResult < (uint32_t)pDataTable->nSkillsCodeSize) {
       D2SkillCalcContextStrc sCalcCtx;
       sCalcCtx.pUnit = pUnit;
@@ -1520,25 +1552,30 @@ int32_t __stdcall SERVER_MaxDamage(D2UnitStrc * pUnit, int32_t eSkillId, int32_t
         nDamage += nElemMasteryBonus;
       }
     }
-    if (!(bApplyElemBonus && pUnit)) {
-      return nDamage;
+    if (bApplyElemBonus && pUnit) {
+      nElemMasteryBonus = SKILLS_ApplyElementalMasteryBonus((eD2ElementalDamageTypeDWORD)pSkillTxt->EType, nDamage, pUnit);
+      nDamage += nElemMasteryBonus;
     }
 
-    nElemMasteryBonus = SKILLS_ApplyElementalMasteryBonus((eD2ElementalDamageTypeDWORD)pSkillTxt->EType, nDamage, pUnit);
-    nDamage += nElemMasteryBonus;
     return nDamage;
 }
 
 // Computes the synergy duration/length bonus for a skill at a given level. Uses the ELevLen breakpoint array (three tiers: levels 1-8, 9-16, 17+) to compute a scaled length offset added to ELen, then optionally evaluates ELenSymPerCalc formula for a percent modifier. Used to calculate e.g. cold duration granted by a synergy skill. Returns 0 if skill or level is invalid.
-int32_t __stdcall SERVER_Synergy1(D2UnitStrc * pUnit, int32_t eSkillId, int32_t nSkillLevel, int32_t nUnused) {
+int32_t __stdcall SKILLS_GetElementalLength(D2UnitStrc * pUnit, int32_t eSkillId, int32_t nSkillLevel, int32_t nUnused) {
     int nLevelLenOffset;
     D2SkillCalcContextStrc sCalcCtx;
-    if (!(eSkillId >= 0 && eSkillId < sgptDataTable->nTxtSkillsCount)) {
+    if (eSkillId < 0) {
+      return 0;
+    }
+    if (!(eSkillId < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
 
     D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkillId;
-    if (!(pSkillTxt && nSkillLevel > 0)) {
+    if (!pSkillTxt) {
+      return 0;
+    }
+    if (nSkillLevel <= 0) {
       return 0;
     }
     if (nSkillLevel > 0x10) {
@@ -1553,20 +1590,18 @@ int32_t __stdcall SERVER_Synergy1(D2UnitStrc * pUnit, int32_t eSkillId, int32_t 
 
     uint32_t uCalcResult = pSkillTxt->ELenSymPerCalc;
     int32_t nSynergyLen = pSkillTxt->ELen + nLevelLenOffset;
-    if (!(uCalcResult != -1 && sgptDataTable->pSkillsCode && uCalcResult < (uint32_t)sgptDataTable->nSkillsCodeSize)) {
-      return nSynergyLen;
+    if (uCalcResult != -1 && sgptDataTable->pSkillsCode && uCalcResult < (uint32_t)sgptDataTable->nSkillsCodeSize) {
+      int32_t nPercentBonus;
+      sCalcCtx.nSkillLevel = nSkillLevel;
+      sCalcCtx.pUnit = pUnit;
+      sCalcCtx.nSkillId = eSkillId;
+      uCalcResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)((uint8_t*)sgptDataTable->pSkillsCode + uCalcResult), sgptDataTable->nSkillsCodeSize - uCalcResult, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &sCalcCtx);
+      if (uCalcResult) {
+        nPercentBonus = D2Client::Stats::D2ApplyPercent(nSynergyLen, uCalcResult, 100);
+        nSynergyLen += nPercentBonus;
+      }
     }
 
-    sCalcCtx.nSkillLevel = nSkillLevel;
-    sCalcCtx.pUnit = pUnit;
-    sCalcCtx.nSkillId = eSkillId;
-    uCalcResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)((uint8_t*)sgptDataTable->pSkillsCode + uCalcResult), sgptDataTable->nSkillsCodeSize - uCalcResult, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &sCalcCtx);
-    if (!uCalcResult) {
-      return nSynergyLen;
-    }
-
-    int32_t nPercentBonus = D2Client::Stats::D2ApplyPercent(nSynergyLen, uCalcResult, 100);
-    nSynergyLen += nPercentBonus;
     return nSynergyLen;
 }
 
@@ -1603,7 +1638,6 @@ int32_t __stdcall SKILL_GetQuantity(D2SkillStrc * pSkill) {
     }
 
     return pSkill->nQuantity;
-    return pSkill->nQuantity;
 }
 
 void __stdcall SKILL_SetQuantity(D2SkillStrc * pSkill, int32_t nQuantity) {
@@ -1615,12 +1649,12 @@ void __stdcall SKILL_SetQuantity(D2SkillStrc * pSkill, int32_t nQuantity) {
     pSkill->nQuantity = nQuantity;
 }
 
-uint32_t __stdcall SKILLS_GetAnimModeIndex(int32_t nParam1, int32_t nParam2) {
-    if (nParam1 == 6 && nParam2 == 4) {
+uint32_t __stdcall SKILLS_GetAnimModeIndex(int32_t nPlayerClass, int32_t nMonMode) {
+    if (nPlayerClass == 6 && nMonMode == 4) {
       return 0xc;
     }
 
-    return INT_ARRAY_006eb308[nParam2];
+    return INT_ARRAY_006eb308[nMonMode];
 }
 
 // Validates that a monster supports a given animation mode, falling back to a supported substitute if not. Checks the monster's MonStats2 byModeFlags bitfield; if the requested mode is unsupported, maps it to a nearby fallback (e.g. modes 5/7→4, 6→3, 9-11→8, 15→2, default→1). Used before playing a skill animation on a monster to avoid unsupported mode crashes.
@@ -1683,15 +1717,12 @@ int __stdcall SKILLS_ValidateAnimModeForMonster(int32_t eAnimMode, int32_t nMonI
 
 // Resolves the visual transform imposed on a unit by its active transformation state (flag 0x08 on eUnitFlagsEx). Iterates the global transform-state list; for each active state with gfxtype==1 (monster form) or gfxtype==2 (player form), writes the target unit type and gfx class to the out-params, and remaps *pAnimMode for cross-type animation compatibility. Returns without writing if no transform state is active or the unit lacks the transform flag.
 void __stdcall SKILLS_GetStateTransformGfx(D2UnitStrc * pUnit, eD2UnitType * pUnitType, int * pGfxClass, int * pAnimMode, char * szFile, int32_t nLine) {
-    D2StatesTxt* pDVar1;
-    short int sVar2;
+    eD2States eUnitState;
     int nValidatedAnimMode;
     eD2States eTransformState;
-    short int sGfxClass;
-    if (!pUnit) {
-      return;
-    }
-    if (!(pUnit->eUnitFlagsEx >> 3 & 1)) {
+    int32_t sGfxClass;
+    short int nGfxClass;
+    if (!pUnit || !(pUnit->eUnitFlagsEx >> 3 & 1)) {
       return;
     }
 
@@ -1701,43 +1732,41 @@ void __stdcall SKILLS_GetStateTransformGfx(D2UnitStrc * pUnit, eD2UnitType * pUn
     }
 
     do {
-      eD2States eUnitState;
-      eTransformState = (eD2States)sgptDataTable->pAllStatesDataTblFlag0x10[nStateIdx].nStateId;
+      D2StatesTxt* pDVar1;
+      eTransformState = (eD2States)(short int)sgptDataTable->pAllStatesDataTblFlag0x10[nStateIdx];
       eUnitState = DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, eTransformState);
-      if (eUnitState != STATE_none && (int)eTransformState >= 0 && (int)eTransformState < sgptDataTable->nTxtStatesSize) {
-        pDVar1 = sgptDataTable->pTxtStates + eTransformState;
-        if (pDVar1) {
-          switch (pDVar1->gfxtype) {
-            case '\x01':
-              {
-                *pUnitType = UNIT_MONSTER;
-                sVar2 = pDVar1->gfxclass;
-                *pGfxClass = (int)sVar2;
-                if (pUnit->eUnitType != UNIT_PLAYER) {
-                  return;
-                }
-
-                nValidatedAnimMode = SKILLS_ValidateAnimModeForMonster(*pAnimMode, (int)sVar2);
-                *pAnimMode = nValidatedAnimMode;
+      pDVar1 = eUnitState != STATE_none && (int)eTransformState >= 0 && (int)eTransformState < sgptDataTable->nTxtStatesSize ? sgptDataTable->pTxtStates + eTransformState : nullptr;
+      if (pDVar1) {
+        switch (pDVar1->gfxtype) {
+          case '\x01':
+            {
+              *pUnitType = UNIT_MONSTER;
+              nGfxClass = pDVar1->gfxclass;
+              *pGfxClass = (int)nGfxClass;
+              if (pUnit->eUnitType != UNIT_PLAYER) {
                 return;
               }
-            case '\x02':
-              {
-                *pUnitType = UNIT_PLAYER;
-                sGfxClass = pDVar1->gfxclass;
-                *pGfxClass = (int)sGfxClass;
-                if (pUnit->eUnitType != UNIT_MONSTER) {
-                  return;
-                }
-                if (sGfxClass == 6 && *pAnimMode == 4) {
-                  *pAnimMode = 0xc;
-                  return;
-                }
 
-                *pAnimMode = INT_ARRAY_006eb308[*pAnimMode];
+              nValidatedAnimMode = SKILLS_ValidateAnimModeForMonster(*pAnimMode, (int)nGfxClass);
+              *pAnimMode = nValidatedAnimMode;
+              return;
+            }
+          case '\x02':
+            {
+              *pUnitType = UNIT_PLAYER;
+              sGfxClass = pDVar1->gfxclass;
+              *pGfxClass = (int)sGfxClass;
+              if (pUnit->eUnitType != UNIT_MONSTER) {
                 return;
               }
-          }
+              if (sGfxClass == 6 && *pAnimMode == 4) {
+                *pAnimMode = 0xc;
+                return;
+              }
+
+              *pAnimMode = INT_ARRAY_006eb308[*pAnimMode];
+              return;
+            }
         }
       }
 
@@ -1749,15 +1778,15 @@ void __stdcall SKILLS_GetStateTransformGfx(D2UnitStrc * pUnit, eD2UnitType * pUn
 }
 
 // Initialises or advances a skill sequence entry for a unit. Searches the unit's sequence list for the entry matching nSeqId that has not yet been committed (pSeqEntry[0xd] == -1). Derives a position seed from the unit's dynamic path sub-positions (or player-specific fields). If the seed matches the stored seed, advances the sequence frame by 7; otherwise resets both seed and frame to the new value. Writes the resulting frame and constant 0x29A into the unit param array. Halts fatally if no matching sequence entry is found.
-void __stdcall SKILLS_InitSkillSequence(int * pnParam, int32_t bIsPlayerUnit, int32_t nSeqId) {
+void __stdcall SKILLS_InitSkillSequence(D2UnitStrc * pUnit, int32_t bIsPlayerUnit, int32_t nSeqId) {
     uint32_t uXSP1;
     uint32_t uYSP1;
+    int nInitSeed;
     int nPosSeed;
-    uint32_t* pSeqEntry;
-    int nPrevSeqFrame;
-    if (pnParam[0x2a]) {
-      for (pSeqEntry = *(uint32_t**)(pnParam[0x2a] + 4); pSeqEntry; pSeqEntry = (uint32_t*)pSeqEntry[1]) {
-        if (*(short int*)*pSeqEntry == nSeqId && pSeqEntry[0xd] == -1) {
+    D2SkillStrc* pSeqEntry;
+    if (pUnit->pSkillsList) {
+      for (pSeqEntry = pUnit->pSkillsList->pFirstSkill; pSeqEntry; pSeqEntry = pSeqEntry->pNext) {
+        if (pSeqEntry->pRecord->skill == nSeqId && pSeqEntry->nOwnerGUID == -1) {
           goto update_seq_entry;
         }
       }
@@ -1766,29 +1795,29 @@ void __stdcall SKILLS_InitSkillSequence(int * pnParam, int32_t bIsPlayerUnit, in
     pSeqEntry = 0;
     update_seq_entry:
     if (!bIsPlayerUnit) {
-      uXSP1 = PATH::DynamicPath::GetXSP1((D2DynamicPathStrc*)pnParam[0xb]);
-      uYSP1 = PATH::DynamicPath::GetYSP1((D2DynamicPathStrc*)pnParam[0xb]);
+      uXSP1 = PATH::DynamicPath::GetXSP1(pUnit->pPath.pDynamicPath);
+      uYSP1 = PATH::DynamicPath::GetYSP1(pUnit->pPath.pDynamicPath);
       nPosSeed = uXSP1 + uYSP1 * 2;
     } else {
-      uYSP1 = pnParam[3];
-      nPosSeed = *pnParam << 0x10;
+      uYSP1 = pUnit->nUnitGUID;
+      nPosSeed = pUnit->eUnitType << 0x10;
     }
     nPosSeed += uYSP1;
     if (!pSeqEntry) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa52);
       exit(-1);
     }
-    if (pSeqEntry[6] == nPosSeed) {
-      nPrevSeqFrame = pSeqEntry[7];
-      pSeqEntry[6] = nPosSeed;
-      pSeqEntry[7] = nPrevSeqFrame + 7;
-      Seed::InitSeed_Param_666((D2SeedStrc*)(pnParam + 8), nPrevSeqFrame + 7);
+    if (pSeqEntry->nPar1 == nPosSeed) {
+      nInitSeed = pSeqEntry->nPar2 + 7;
+      pSeqEntry->nPar1 = nPosSeed;
+      pSeqEntry->nPar2 = nInitSeed;
+      Seed::InitSeed_Param_666(&pUnit->sSeed, nInitSeed);
       return;
     }
 
-    pSeqEntry[7] = nPosSeed;
-    pSeqEntry[6] = nPosSeed;
-    Seed::InitSeed_Param_666((D2SeedStrc*)(pnParam + 8), pSeqEntry[7]);
+    pSeqEntry->nPar2 = nPosSeed;
+    pSeqEntry->nPar1 = nPosSeed;
+    Seed::InitSeed_Param_666(&pUnit->sSeed, pSeqEntry->nPar2);
 }
 
 int32_t __stdcall SKILLS_GetSkillWeaponClass(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
@@ -1805,7 +1834,7 @@ int32_t __stdcall SKILLS_GetSkillWeaponClass(D2UnitStrc * pUnit, D2SkillStrc * p
     }
 
     BOOL bHasWeaponDrawn = COMPOSIT::Composit::COMPOSIT_HasWeaponDrawn(pUnit);
-    nRange = (bHasWeaponDrawn != 0) + 1;
+    nRange = bHasWeaponDrawn != 0 ? 2 : 1;
     if (!(pUnit && pUnit->eUnitType == UNIT_PLAYER && nRange != 1)) {
       return nRange;
     }
@@ -1880,21 +1909,19 @@ uint32_t __stdcall SKILLS_IsCorpseValidForRevive(D2UnitStrc * pUnit) {
 }
 
 int __stdcall SKILLS_IsSelectableCorpse(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->eAnimMode.ePlayerMode == Kick)) {
-      return 0;
+    BOOL bCorpseSelFlag;
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && pUnit->eAnimMode.ePlayerMode == Kick) {
+      int bHasPassiveState;
+      bHasPassiveState = DATATBLS::ItemStats::STATES_HasPassiveState(pUnit);
+      if (!bHasPassiveState) {
+        bCorpseSelFlag = D2Client::UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(pUnit->nClassId, corpseSel);
+        if (bCorpseSelFlag) {
+          return 1;
+        }
+      }
     }
 
-    int bHasPassiveState = DATATBLS::ItemStats::STATES_HasPassiveState(pUnit);
-    if (bHasPassiveState) {
-      return 0;
-    }
-
-    BOOL bCorpseSelFlag = D2Client::UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(pUnit->nClassId, corpseSel);
-    if (!bCorpseSelFlag) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 uint32_t __stdcall SKILL_CanReviveMonster(D2UnitStrc * pUnit) {
@@ -1917,45 +1944,42 @@ uint32_t __stdcall SKILL_CanReviveMonster(D2UnitStrc * pUnit) {
 }
 
 int __stdcall SKILLS_IsSelectableCorpse2(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->eAnimMode.ePlayerMode == Kick)) {
-      return 0;
+    BOOL bCorpseSelFlag;
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && pUnit->eAnimMode.ePlayerMode == Kick) {
+      int bHasPassiveState;
+      bHasPassiveState = DATATBLS::ItemStats::STATES_HasPassiveState(pUnit);
+      if (!bHasPassiveState) {
+        bCorpseSelFlag = D2Client::UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(pUnit->nClassId, corpseSel);
+        if (bCorpseSelFlag) {
+          return 1;
+        }
+      }
     }
 
-    int bHasPassiveState = DATATBLS::ItemStats::STATES_HasPassiveState(pUnit);
-    if (bHasPassiveState) {
-      return 0;
-    }
-
-    BOOL bCorpseSelFlag = D2Client::UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(pUnit->nClassId, corpseSel);
-    if (!bCorpseSelFlag) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 int __stdcall SKILLS_IsSelectableCorpse3(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->eAnimMode.ePlayerMode == Kick)) {
-      return 0;
+    BOOL bCorpseSelFlag;
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && pUnit->eAnimMode.ePlayerMode == Kick) {
+      int bHasPassiveState;
+      bHasPassiveState = DATATBLS::ItemStats::STATES_HasPassiveState(pUnit);
+      if (!bHasPassiveState) {
+        bCorpseSelFlag = D2Client::UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(pUnit->nClassId, corpseSel);
+        if (bCorpseSelFlag) {
+          return 1;
+        }
+      }
     }
 
-    int bHasPassiveState = DATATBLS::ItemStats::STATES_HasPassiveState(pUnit);
-    if (bHasPassiveState) {
-      return 0;
-    }
-
-    BOOL bCorpseSelFlag = D2Client::UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(pUnit->nClassId, corpseSel);
-    if (!bCorpseSelFlag) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 // Returns the best matching thrown-weapon bonus value for a unit's equipped throwable item and the given skill. Queries stats 0x159/0x15A/0x15B (min/max/bonus depending on nParam 0/1/2) via STATLIST_GetItemStatBonusValues, then iterates entries to find the highest value whose item type matches pUnit1. Returns 0 if the item is not throwable, the skill has no applicable range-2 throwable type, or nParam is out of range.
-int32_t __stdcall SKILL_GetThrownWeaponBonus(D2UnitStrc * pUnit, D2UnitStrc * pUnit1, D2SkillStrc * pSkill, int32_t nParam, D2UnitStrc * pUnit2) {
-    bool _bIsThrowable;
+int32_t __stdcall SKILL_GetThrownWeaponBonus(D2UnitStrc * pUnit, D2UnitStrc * pUnit1, D2SkillStrc * pSkill, int32_t nThrowBonusType, D2UnitStrc * pUnit2) {
+    int32_t _bIsThrowable;
     bool bIsThrowable;
+    int nIdx;
     D2StatStrc aBonusEntries[32];
     if (pUnit2) {
       pUnit2->eUnitType = UNIT_PLAYER;
@@ -1982,7 +2006,7 @@ int32_t __stdcall SKILL_GetThrownWeaponBonus(D2UnitStrc * pUnit, D2UnitStrc * pU
       return 0;
     }
 
-    switch (nParam) {
+    switch (nThrowBonusType) {
       case 0:
         {
           uStatOrResult = 0x159;
@@ -2006,28 +2030,24 @@ int32_t __stdcall SKILL_GetThrownWeaponBonus(D2UnitStrc * pUnit, D2UnitStrc * pU
 
     _bIsThrowable = Stats::StatsEx::STATLIST_GetItemStatBonusValues(pUnit, uStatOrResult, aBonusEntries, 0x20);
     int nBestThrowBonus = 0;
-    if (0 < _bIsThrowable) {
-      int nIdx = 0;
-      do {
-        uStatOrResult = ITEMS::Items::ITEMS_IsA(pUnit1, (eD2ItemTypes)(uint16_t)aBonusEntries[nIdx].wSubIndex);
-        if (uStatOrResult && aBonusEntries[nIdx].nStatValue > nBestThrowBonus) {
-          nBestThrowBonus = aBonusEntries[nIdx].nStatValue;
-        }
-
-        nIdx++;
-      } while (nIdx < _bIsThrowable);
-    }
-    if (!pUnit2) {
-      return nBestThrowBonus;
+    for (nIdx = 0; nIdx < _bIsThrowable; nIdx++) {
+      uStatOrResult = ITEMS::Items::ITEMS_IsA(pUnit1, (eD2ItemTypes)(uint16_t)aBonusEntries[nIdx].wSubIndex);
+      if (uStatOrResult && aBonusEntries[nIdx].nStatValue > nBestThrowBonus) {
+        nBestThrowBonus = aBonusEntries[nIdx].nStatValue;
+      }
     }
 
-    pUnit2->eUnitType = UNIT_MONSTER;
+    if (pUnit2) {
+      pUnit2->eUnitType = UNIT_MONSTER;
+    }
+
     return nBestThrowBonus;
 }
 
 // Returns the highest item-type-specific bonus damage for the caster's active skill against a target item. Checks for a thrown weapon bonus first via SKILL_GetThrownWeaponBonus; if none, queries stat 0x156/0x157/0x158 (min/max/elemental bonus per item type) from the caster's stat list and finds the best matching entry where the item passes IsOfType. nDamageType selects min(0)/max(1)/elemental(2).
 int32_t __stdcall SKILLS_GetItemBonusDamage(D2UnitStrc * pUnit, D2UnitStrc * pItem, D2SkillStrc * pSkill, int32_t nDamageType) {
     uint32_t uStatId;
+    int nIdx;
     D2StatStrc aBonusEntries[32];
     D2UnitStrc* pThrownWeaponTypeUnit = pItem;
     D2UnitStrc* pCaster = pUnit;
@@ -2071,37 +2091,30 @@ int32_t __stdcall SKILLS_GetItemBonusDamage(D2UnitStrc * pUnit, D2UnitStrc * pIt
 
     nBonusCount = Stats::StatsEx::STATLIST_GetItemStatBonusValues(pCaster, uStatId, aBonusEntries, 0x20);
     int nBestBonus = 0;
-    int nIdx = 0;
-    if (nBonusCount <= 0) {
-      return nBestBonus;
-    }
-
-    do {
+    for (nIdx = 0; nIdx < nBonusCount; nIdx++) {
       uStatId = ITEMS::Items::ITEMS_IsA(pItem, (eD2ItemTypes)(uint16_t)aBonusEntries[nIdx].wSubIndex);
       if (uStatId && aBonusEntries[nIdx].nStatValue > nBestBonus) {
         nBestBonus = aBonusEntries[nIdx].nStatValue;
       }
-
-      nIdx++;
-    } while (nIdx < nBonusCount);
+    }
 
     return nBestBonus;
 }
 
 // SKILLS_HasLineOfSight - Tests line-of-sight between two coordinate pairs by calling Collision::TestCollision. Returns 1 if the path is clear (no collision), 0 if blocked. Used by skill targeting and missile pathing.
-uint32_t __stdcall SKILLS_HasLineOfSight(LONG lParam1, LONG lParam2, LONG lParam3, LONG lParam4, D2RoomStrc * pRoom, int32_t eCollisionFlag) {
+uint32_t __stdcall SKILLS_HasLineOfSight(LONG nSrcX, LONG nSrcY, LONG nDestX, LONG nDestY, D2RoomStrc * pRoom, int32_t eCollisionFlag) {
     POINT ptSrc;
     POINT ptDest;
-    ptSrc.y = lParam2;
-    ptSrc.x = lParam1;
-    ptDest.x = lParam3;
-    ptDest.y = lParam4;
+    ptSrc.y = nSrcY;
+    ptSrc.x = nSrcX;
+    ptDest.x = nDestX;
+    ptDest.y = nDestY;
     BOOL bCollisionResult = Collision::TestCollision(pRoom, &ptSrc, &ptDest, eCollisionFlag);
     return (uint32_t)!bCollisionResult;
 }
 
 // SKILLS_HasLineOfSightToUnit - Tests line-of-sight from a coordinate pair to a unit's current position. Gets the unit's position from its path structure and calls Collision::TestCollision. Returns 1 if clear, 0 if blocked.
-uint32_t __stdcall SKILLS_HasLineOfSightToUnit(LONG lParam1, LONG lParam2, D2UnitStrc * pUnit, int32_t eCollisionFlag) {
+uint32_t __stdcall SKILLS_HasLineOfSightToUnit(LONG nSrcX, LONG nSrcY, D2UnitStrc * pUnit, int32_t eCollisionFlag) {
     int32_t nUnitY;
     POINT ptSrc;
     POINT ptUnitPos;
@@ -2115,40 +2128,40 @@ uint32_t __stdcall SKILLS_HasLineOfSightToUnit(LONG lParam1, LONG lParam2, D2Uni
     }
 
     eUnitType = pUnit->eUnitType;
+    long xValue;
     if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-      ptUnitPos.x = pUnit->pPath.pStaticPath->nPosX;
+      xValue = pUnit->pPath.pStaticPath->nPosX;
     } else if (pUnit->pPath.pDynamicPath) {
-      ptUnitPos.x = PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+      xValue = PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
     } else {
-      ptUnitPos.x = 0;
+      xValue = 0;
     }
 
+    ptUnitPos.x = xValue;
     D2RoomStrc* pUnitRoom = Units::UNITS_GetRoom(pUnit);
-    ptSrc.x = lParam1;
-    ptSrc.y = lParam2;
+    ptSrc.x = nSrcX;
+    ptSrc.y = nSrcY;
     ptUnitPos.y = nUnitY;
     BOOL bCollisionResult = Collision::TestCollision(pUnitRoom, &ptSrc, &ptUnitPos, eCollisionFlag);
     return (uint32_t)!bCollisionResult;
 }
 
 int32_t __stdcall SKILLS_CalculateManaCostShifted(int32_t eSkillId, int32_t nSkillLevel) {
+    D2SkillsTxt* pSkillsTxt;
     int32_t nLine;
-    if (eSkillId >= 0 && eSkillId < sgptDataTable->nTxtSkillsCount) {
-      D2SkillsTxt* pSkillsTxt;
-      pSkillsTxt = sgptDataTable->pTxtSkills + eSkillId;
-      if (pSkillsTxt) {
-        nLine = (int)pSkillsTxt->lvlmana * (nSkillLevel - 1) + (int)pSkillsTxt->mana << ((uint8_t)pSkillsTxt->manashift & 0x1f) >> 8;
-        if (nLine >= 0) {
-          return nLine;
-        }
-
-        nLine = 0;
-        return nLine;
-      }
+    pSkillsTxt = eSkillId >= 0 && eSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkillId : nullptr;
+    if (!pSkillsTxt) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x100c);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x100c);
-    exit(-1);
+    nLine = (int)pSkillsTxt->lvlmana * (nSkillLevel - 1) + (int)pSkillsTxt->mana << D2_SHIFT_COUNT(pSkillsTxt->manashift) >> 8;
+    if (nLine >= 0) {
+      return nLine;
+    }
+
+    nLine = 0;
+    return nLine;
 }
 
 int32_t __stdcall SKILLS_CalculateDamageReduction(int32_t nParam) {
@@ -2162,11 +2175,10 @@ int32_t __fastcall SKILLS_CalculateSynergyValue_Recursive(int32_t nLevel, int32_
       nResult = SKILLS_CalculateSynergyValue_Recursive(nLevel - 1, nMinVal, nMaxVal);
       return nResult + 1;
     }
-    if (nCurrentVal <= nMaxVal) {
-      return nCurrentVal;
+    if (nCurrentVal > nMaxVal) {
+      nCurrentVal = nMaxVal;
     }
 
-    nCurrentVal = nMaxVal;
     return nCurrentVal;
 }
 
@@ -2181,12 +2193,18 @@ int32_t __stdcall SKILLS_CalcDiminishingReturns(int32_t nLevel, int32_t nMinVal,
 }
 
 int32_t __stdcall SKILLS_GetParam01WithDiminishing(int32_t nLevel, int32_t nSkillId) {
-    if (!(nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount)) {
+    if (nSkillId < 0) {
+      return 0;
+    }
+    if (!(nSkillId < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
 
     D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills + nSkillId;
-    if (!(pSkillsTxt && nLevel > 0)) {
+    if (!pSkillsTxt) {
+      return 0;
+    }
+    if (nLevel <= 0) {
       return 0;
     }
 
@@ -2195,12 +2213,18 @@ int32_t __stdcall SKILLS_GetParam01WithDiminishing(int32_t nLevel, int32_t nSkil
 }
 
 int32_t __stdcall SKILLS_GetParam23WithDiminishing(int32_t nLevel, int32_t nSkillId) {
-    if (!(nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount)) {
+    if (nSkillId < 0) {
+      return 0;
+    }
+    if (!(nSkillId < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
 
     D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills + nSkillId;
-    if (!(pSkillsTxt && nLevel > 0)) {
+    if (!pSkillsTxt) {
+      return 0;
+    }
+    if (nLevel <= 0) {
       return 0;
     }
 
@@ -2209,12 +2233,18 @@ int32_t __stdcall SKILLS_GetParam23WithDiminishing(int32_t nLevel, int32_t nSkil
 }
 
 int32_t __stdcall SKILLS_GetParam45WithDiminishing(int32_t nLevel, int32_t nSkillId) {
-    if (!(nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount)) {
+    if (nSkillId < 0) {
+      return 0;
+    }
+    if (!(nSkillId < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
 
     D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills + nSkillId;
-    if (!(pSkillsTxt && nLevel > 0)) {
+    if (!pSkillsTxt) {
+      return 0;
+    }
+    if (nLevel <= 0) {
       return 0;
     }
 
@@ -2239,7 +2269,7 @@ static BOOL __stdcall SKILLS_IsCoordInTown(int32_t nX, int32_t nY, D2UnitStrc * 
 
 // Computes a valid teleport/leap destination for pUnit. Returns 0 immediately if pUnit2 is given and already in melee range. Otherwise derives a target point (pUnit2's position, or the caster's SP1 target if pUnit2 is null), extends 2 tiles past it along the caster->target vector, and validates it: if the cell blocks players (CheckCollision_BlockPlayer_Type) it searches for free coordinates in the room/neighbors (GetFreeCoordinates_WithNeighboorRooms), failing with 0 if none. Then requires line of sight (SKILLS_HasLineOfSight, COLLISION_LOS_WALL) from caster to the point. On success writes the chosen tile to *pnDestX/*pnDestY and returns whether that coordinate is inside town (SKILLS_IsCoordInTown). Returns 0 on any failure. Halts via ErrorManager if the caster has no room.
 uint32_t __stdcall SKILL_FindTeleportPosition(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, uint32_t * pnDestX, uint32_t * pnDestY) {
-    bool _bInMeleeRange;
+    BOOL _bInMeleeRange;
     bool bInMeleeRange;
     uint32_t nDestX;
     uint32_t nRawTargetY;
@@ -2315,8 +2345,7 @@ uint32_t __stdcall SKILL_FindTeleportPosition(D2UnitStrc * pUnit, D2UnitStrc * p
       eCollisionFlag = 0x1c09;
       ptFreeCoord.x = ptFreeCoord.y;
       ptFreeCoord.y = nRawTargetY;
-      iVar1 = Units::GetUnitSizeX(pCaster);
-      pUnit = (D2UnitStrc*)Collision::GetFreeCoordinates_WithNeighboorRooms((D2RoomStrc*)pUnit, &ptFreeCoord, iVar1, eCollisionFlag, _bInMeleeRange);
+      pUnit = (D2UnitStrc*)Collision::GetFreeCoordinates_WithNeighboorRooms((D2RoomStrc*)pUnit, &ptFreeCoord, Units::GetUnitSizeX(pCaster), eCollisionFlag, _bInMeleeRange);
       nDestY = ptFreeCoord.y;
       nX = ptFreeCoord.x;
       if (!pUnit) {
@@ -2354,9 +2383,9 @@ uint32_t __stdcall SKILL_FindTeleportPosition(D2UnitStrc * pUnit, D2UnitStrc * p
 }
 
 // Returns the arrow-modifier skill ID active on pUnit (player or monster with bow/xbow): checks UNITSTAT_item_magicarrow and UNITSTAT_item_explosivearrow stats; writes the stat level to *pnParam if provided. Returns 0x1b (Magic Arrow), 0x29 (Explosive Arrow), 0x1f (default), or 0/–1 if no bow or not applicable.
-int __stdcall SKILL_GetArrowModifierSkill(D2UnitStrc * pUnit, int * pnParam) {
+int __stdcall SKILL_GetArrowModifierSkill(D2UnitStrc * pUnit, int * pnStatLevel) {
     int32_t nStatLevel;
-    int32_t iVar1;
+    int32_t nExplosiveArrowLevel;
     if (!pUnit) {
       return 0;
     }
@@ -2367,22 +2396,22 @@ int __stdcall SKILL_GetArrowModifierSkill(D2UnitStrc * pUnit, int * pnParam) {
         if (nWeaponClass == 7) {
           nStatLevel = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_magicarrow, 0);
           if (nStatLevel <= 0) {
-            iVar1 = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_explosivearrow, 0);
-            if (iVar1 <= 0) {
+            nExplosiveArrowLevel = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_explosivearrow, 0);
+            if (nExplosiveArrowLevel <= 0) {
               return 0x1f;
             }
-            if (!pnParam) {
+            if (!pnStatLevel) {
               return 0x29;
             }
 
-            *pnParam = iVar1;
+            *pnStatLevel = nExplosiveArrowLevel;
             return 0x29;
           }
-          if (!pnParam) {
+          if (!pnStatLevel) {
             return 0x1b;
           }
 
-          *pnParam = nStatLevel;
+          *pnStatLevel = nStatLevel;
           return 0x1b;
         }
 
@@ -2392,23 +2421,23 @@ int __stdcall SKILL_GetArrowModifierSkill(D2UnitStrc * pUnit, int * pnParam) {
 
     nStatLevel = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_magicarrow, 0);
     if (nStatLevel > 0) {
-      if (!pnParam) {
+      if (!pnStatLevel) {
         return 0x1b;
       }
 
-      *pnParam = nStatLevel;
+      *pnStatLevel = nStatLevel;
       return 0x1b;
     }
 
-    iVar1 = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_explosivearrow, 0);
-    if (iVar1 <= 0) {
+    nExplosiveArrowLevel = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_explosivearrow, 0);
+    if (nExplosiveArrowLevel <= 0) {
       return 0;
     }
-    if (!pnParam) {
+    if (!pnStatLevel) {
       return 0x29;
     }
 
-    *pnParam = iVar1;
+    *pnStatLevel = nExplosiveArrowLevel;
     return 0x29;
 }
 
@@ -2438,7 +2467,7 @@ BOOL __stdcall STATES_RemoveAllProgressiveStates(D2UnitStrc * pUnit) {
 
     do {
       eD2States eStateId;
-      eState = (eD2States)sgptDataTable->pAllStatesDataTblFlag0x10[(int)pUnit].nStateId;
+      eState = (eD2States)(short int)sgptDataTable->pAllStatesDataTblFlag0x10[(int)pUnit];
       eStateId = DATATBLS::ItemStats::UNIT_GetUnitState(i, eState);
       if (eStateId != STATE_none) {
         pStatList = Stats::StatsEx::GetStatsByState(i, eState);
@@ -2523,9 +2552,9 @@ int32_t __stdcall SKILL_GetConcentrationDamageBonus(D2UnitStrc * pUnit, int32_t 
 }
 
 // Computes the kick (Assassin Dragon Talon etc.) damage range and bonus and accumulates it into the three out-params (min/max/bonus). Reads item_kickdamage stat, temporarily marks the equipped weapon and off-hand weapon item-stats active, then derives base min/max from the equipped boots' ItemsTxt nMinDam/nMaxDam plus strength/dexterity %-bonuses (D2ApplyPercent) and the damagepercent/maxdamage_percent stats. Clamps damage% to >= -90. Server-side; no return value, results written through pnParam1/2/3.
-void __stdcall SKILL_CalcKickDamage(D2UnitStrc * pUnit, int * pnParam1, int * pnParam2, int * pnParam3) {
+void __stdcall SKILL_CalcKickDamage(D2UnitStrc * pUnit, int * pnMinDamage, int * pnMaxDamage, int * pnDamagePercent) {
     int16_t nDexBonus;
-    eD2BodyLoc eBodyLoc;
+    int32_t eBodyLoc;
     uint32_t bIsWeapon;
     bool bWeaponEnabled;
     D2UnitStrc* pWeaponOwner;
@@ -2546,8 +2575,8 @@ void __stdcall SKILL_CalcKickDamage(D2UnitStrc * pUnit, int * pnParam1, int * pn
     }
 
     int32_t nKickDamageStat = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_kickdamage, 0);
-    *pnParam1 += nKickDamageStat;
-    *pnParam2 += nKickDamageStat;
+    *pnMinDamage += nKickDamageStat;
+    *pnMaxDamage += nKickDamageStat;
     pInventory = pUnit->pInventory;
     if (!pInventory) {
       return;
@@ -2557,7 +2586,7 @@ void __stdcall SKILL_CalcKickDamage(D2UnitStrc * pUnit, int * pnParam1, int * pn
     pOffHandWeapon = 0;
     if (pBootItem) {
       eBodyLoc = ITEMS::Items::GetBodyLocation(pBootItem);
-      pOffHandWeapon = INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, (eBodyLoc == BODYLOC_R_ARM) + 4);
+      pOffHandWeapon = INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, eBodyLoc == BODYLOC_R_ARM ? 5 : 4);
     }
 
     bIsWeapon = ITEMS::Items::ITEMS_IsA(pBootItem, ITEMTYPE_Weapon);
@@ -2589,9 +2618,7 @@ void __stdcall SKILL_CalcKickDamage(D2UnitStrc * pUnit, int * pnParam1, int * pn
         nTotalDamageBonus = 0;
         nStrBonus = ITEMS::Items::ITEM_GetItemsTxt_wStrBonus(pOffHandWeapon);
         if (nStrBonus) {
-          bIsWeaponType = 100;
-          nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_strength, 0);
-          nTotalDamageBonus = D2Client::Stats::D2ApplyPercent(nStatValue, (int)nStrBonus, bIsWeaponType);
+          nTotalDamageBonus = D2Client::Stats::D2ApplyPercent(Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_strength, 0), (int)nStrBonus, 100);
         }
 
         nDexBonus = ITEMS::Items::ITEM_GetItemsTxt_wDexBonus(pOffHandWeapon);
@@ -2611,9 +2638,9 @@ void __stdcall SKILL_CalcKickDamage(D2UnitStrc * pUnit, int * pnParam1, int * pn
           nMaxDam = nMinDam;
         }
 
-        *pnParam3 = *pnParam3 + nDexContrib + nStatValue;
-        *pnParam1 += nMinDam;
-        *pnParam2 += nMaxDam;
+        *pnDamagePercent = *pnDamagePercent + nDexContrib + nStatValue;
+        *pnMinDamage += nMinDam;
+        *pnMaxDamage += nMaxDam;
       }
     }
     if (!pBootItem) {
@@ -2624,7 +2651,7 @@ void __stdcall SKILL_CalcKickDamage(D2UnitStrc * pUnit, int * pnParam1, int * pn
 }
 
 // Evaluates one skill-description calc code (bParam selects which, 0..0x48) for skill eSkill at level/param nParam, optionally for unit pUnit; returns the computed value. Dispatches a large switch over the calc selector to skill range, mana cost (and shifted variants), to-hit, min/max/synergy damage (>>8 for display scaling), per-element min/max damage and length from the skill's descmissile entries, missile range, unit level/skill-level, aura/passive radii, and the raw skills.txt calc-column fields (auralencalc, calc[0..3], aurarangecalc, aurastatcalc[0..5], passivecalc[0..4], petmax, skpoints). For the raw-field cases it then runs the value through SKILLS_CompileSkillFormula against the skills calc-code blob. Bounds-checks eSkill; returns 0 on invalid skill/missile or out-of-range selector.
-uint32_t __stdcall SKILLDESC_EvalDescCalcValue(D2UnitStrc * pUnit, uint8_t bParam, eD2Skills eSkill, uint32_t nParam) {
+uint32_t __stdcall SKILLDESC_EvalDescCalcValue(D2UnitStrc * pUnit, uint8_t byCalcType, eD2Skills eSkill, uint32_t nSkillLevel) {
     int32_t nRawDamage;
     D2SkillStrc* pSkillInst;
     D2SkillDescTxt* pSkillDescTxt;
@@ -2635,43 +2662,36 @@ uint32_t __stdcall SKILLDESC_EvalDescCalcValue(D2UnitStrc * pUnit, uint8_t bPara
     int32_t bApplyMastery;
     short int nMissileId;
     short int sMissileId;
-    if ((int)eSkill < 0) {
-      return 0;
-    }
-    if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
-      return 0;
-    }
-
-    D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
+    D2SkillsTxt* pSkillTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (!pSkillTxt) {
       return 0;
     }
 
-    uint32_t nCalcIndex = (uint32_t)bParam;
+    uint32_t nCalcIndex = (uint32_t)byCalcType;
     switch (nCalcIndex) {
       case 0:
-        uResult = D2Client::DataTbls::TXT_Skills_GetSkillRange(eSkill, nParam);
+        uResult = D2Client::DataTbls::TXT_Skills_GetSkillRange(eSkill, nSkillLevel);
       return uResult;
       case 1:
-        uResult = SKILLS_GetParam01WithDiminishing(nParam, eSkill);
+        uResult = SKILLS_GetParam01WithDiminishing(nSkillLevel, eSkill);
       return uResult;
       case 2:
-        uResult = D2Client::UNIT::Missile::MISSILE_GetBoltSpeed(eSkill, nParam);
+        uResult = D2Client::UNIT::Missile::MISSILE_GetBoltSpeed(eSkill, nSkillLevel);
       return uResult;
       case 3:
-        uResult = SKILLS_GetParam23WithDiminishing(nParam, eSkill);
+        uResult = SKILLS_GetParam23WithDiminishing(nSkillLevel, eSkill);
       return uResult;
       case 4:
-        uResult = D2Client::SKILLS::GetSkillParam4(eSkill, nParam);
+        uResult = D2Client::SKILLS::GetSkillParam4(eSkill, nSkillLevel);
       return uResult;
       case 5:
-        uResult = SKILLS_GetParam45WithDiminishing(nParam, eSkill);
+        uResult = SKILLS_GetParam45WithDiminishing(nSkillLevel, eSkill);
       return uResult;
       case 6:
-        uResult = SKILLS_CalcSkillParam(eSkill, nParam);
+        uResult = SKILLS_CalcSkillParam(eSkill, nSkillLevel);
       return uResult;
       case 7:
-        uResult = SKILLS_CalcDiminishingReturns(nParam, pSkillTxt->Param[6], pSkillTxt->Param[7]);
+        uResult = SKILLS_CalcDiminishingReturns(nSkillLevel, pSkillTxt->Param[6], pSkillTxt->Param[7]);
       return uResult;
       case 8:
         uResult = D2Client::SKILLS::SkillsPal::SKILLS_GetManaCostMultiplier(eSkill);
@@ -2696,45 +2716,45 @@ uint32_t __stdcall SKILLDESC_EvalDescCalcValue(D2UnitStrc * pUnit, uint8_t bPara
       case 0xf:
         return pSkillTxt->Param[7];
       case 0x10:
-        return nParam;
+        return nSkillLevel;
       case 0x11:
-        nRawDamage = SERVER_MinDamage(pUnit, eSkill, nParam, 0);
+        nRawDamage = SERVER_MinDamage(pUnit, eSkill, nSkillLevel, 0);
       return nRawDamage >> 8;
       case 0x12:
         bApplyMastery = 0;
-      nRawDamage = SERVER_MaxDamage(pUnit, eSkill, nParam, bApplyMastery);
+      nRawDamage = SERVER_MaxDamage(pUnit, eSkill, nSkillLevel, bApplyMastery);
       return nRawDamage >> 8;
       case 0x13:
-        uResult = SERVER_Synergy1(pUnit, eSkill, nParam, 0);
+        uResult = SKILLS_GetElementalLength(pUnit, eSkill, nSkillLevel, 0);
       return uResult;
       case 0x14:
-        uResult = SKILLS_CalcToHit(pUnit, eSkill, nParam);
+        uResult = SKILLS_CalcToHit(pUnit, eSkill, nSkillLevel);
       return uResult;
       case 0x15:
-        if ((int)nParam <= 0) {
+        if ((int)nSkillLevel <= 0) {
           return 0;
         }
-      return (int)((int)pSkillTxt->lvlmana * (nParam - 1) + (int)pSkillTxt->mana << ((uint8_t)pSkillTxt->manashift & 0x1f)) >> 8;
+      return (int)((int)pSkillTxt->lvlmana * (nSkillLevel - 1) + (int)pSkillTxt->mana << D2_SHIFT_COUNT(pSkillTxt->manashift)) >> 8;
       case 0x16:
-        if ((int)nParam <= 0) {
+        if ((int)nSkillLevel <= 0) {
           return 0;
         }
-      return (int)(((int)pSkillTxt->lvlmana * (nParam - 1) + (int)pSkillTxt->mana) * 0x19) / 2 << ((uint8_t)pSkillTxt->manashift & 0x1f) >> 8;
+      return (int)(((int)pSkillTxt->lvlmana * (nSkillLevel - 1) + (int)pSkillTxt->mana) * 0x19) / 2 << D2_SHIFT_COUNT(pSkillTxt->manashift) >> 8;
       case 0x17:
-        uResult = SKILL_GetPassiveElementCalc(pUnit, eSkill, nParam, 0);
+        uResult = SKILL_GetPassiveElementCalc(pUnit, eSkill, nSkillLevel, 0);
       return uResult;
       case 0x18:
-        uResult = SKILL_GetPassiveElementCalc(pUnit, eSkill, nParam, 1);
+        uResult = SKILL_GetPassiveElementCalc(pUnit, eSkill, nSkillLevel, 1);
       return uResult;
       case 0x19:
-        uResult = SKILL_GetPassiveElementCalc(pUnit, eSkill, nParam, 2);
+        uResult = SKILL_GetPassiveElementCalc(pUnit, eSkill, nSkillLevel, 2);
       return uResult;
       case 0x1a:
 
       case 0x1d:
 
       case 0x20:
-        if ((int)nParam <= 0) {
+        if ((int)nSkillLevel <= 0) {
           return 0;
         }
       pSkillDescTxt = D2Client::DataTbls::GetSkillDescription(eSkill);
@@ -2748,14 +2768,14 @@ uint32_t __stdcall SKILLDESC_EvalDescCalcValue(D2UnitStrc * pUnit, uint8_t bPara
         return 0;
       }
 
-      nRawDamage = Units::Missile::GetMinElemDamage(nullptr, pUnit, (int)sMissileId, nParam);
+      nRawDamage = Units::Missile::GetMinElemDamage(nullptr, pUnit, (int)sMissileId, nSkillLevel);
       return nRawDamage >> 8;
       case 0x1b:
 
       case 0x1e:
 
       case 0x21:
-        if ((int)nParam <= 0) {
+        if ((int)nSkillLevel <= 0) {
           return 0;
         }
       pSkillDescTxt = D2Client::DataTbls::GetSkillDescription(eSkill);
@@ -2769,14 +2789,14 @@ uint32_t __stdcall SKILLDESC_EvalDescCalcValue(D2UnitStrc * pUnit, uint8_t bPara
         return 0;
       }
 
-      nRawDamage = Units::Missile::GetMaxElemDamage(nullptr, pUnit, (int)sMissileId, nParam);
+      nRawDamage = Units::Missile::GetMaxElemDamage(nullptr, pUnit, (int)sMissileId, nSkillLevel);
       return nRawDamage >> 8;
       case 0x1c:
 
       case 0x1f:
 
       case 0x22:
-        if ((int)nParam <= 0) {
+        if ((int)nSkillLevel <= 0) {
           return 0;
         }
       pSkillDescTxt = D2Client::DataTbls::GetSkillDescription(eSkill);
@@ -2790,7 +2810,7 @@ uint32_t __stdcall SKILLDESC_EvalDescCalcValue(D2UnitStrc * pUnit, uint8_t bPara
         return 0;
       }
 
-      uResult = Units::Missile::GetElementalLength(0, pUnit, (int)sMissileId, nParam);
+      uResult = Units::Missile::GetElementalLength(0, pUnit, (int)sMissileId, nSkillLevel);
       return uResult;
       case 0x23:
 
@@ -2807,12 +2827,12 @@ uint32_t __stdcall SKILLDESC_EvalDescCalcValue(D2UnitStrc * pUnit, uint8_t bPara
         return 0;
       }
 
-      return (int)pMissileTxt->LevRange * nParam + (int)pMissileTxt->Range;
+      return (int)pMissileTxt->LevRange * nSkillLevel + (int)pMissileTxt->Range;
       case 0x26:
-        uResult = SERVER_MinDamage(pUnit, eSkill, nParam, 0);
+        uResult = SERVER_MinDamage(pUnit, eSkill, nSkillLevel, 0);
       return uResult;
       case 0x27:
-        uResult = SERVER_MaxDamage(pUnit, eSkill, nParam, 0);
+        uResult = SERVER_MaxDamage(pUnit, eSkill, nSkillLevel, 0);
       return uResult;
       case 0x28:
         if (!pUnit) {
@@ -2832,16 +2852,16 @@ uint32_t __stdcall SKILLDESC_EvalDescCalcValue(D2UnitStrc * pUnit, uint8_t bPara
       uResult = D2Common::Skills::GetSkillLevel(pUnit, pSkillInst, 0);
       return uResult;
       case 0x2a:
-        if ((int)nParam <= 0) {
+        if ((int)nSkillLevel <= 0) {
           return 0;
         }
-      return (int)pSkillTxt->lvlmana * (nParam - 1) + (int)pSkillTxt->mana << ((uint8_t)pSkillTxt->manashift & 0x1f);
+      return (int)pSkillTxt->lvlmana * (nSkillLevel - 1) + (int)pSkillTxt->mana << D2_SHIFT_COUNT(pSkillTxt->manashift);
       case 0x2b:
 
       case 0x2d:
 
       case 0x2f:
-        if ((int)nParam <= 0) {
+        if ((int)nSkillLevel <= 0) {
           return 0;
         }
       pSkillDescTxt = D2Client::DataTbls::GetSkillDescription(eSkill);
@@ -2855,14 +2875,14 @@ uint32_t __stdcall SKILLDESC_EvalDescCalcValue(D2UnitStrc * pUnit, uint8_t bPara
         return 0;
       }
 
-      uResult = Units::Missile::GetMinElemDamage(nullptr, pUnit, (int)sMissileId, nParam);
+      uResult = Units::Missile::GetMinElemDamage(nullptr, pUnit, (int)sMissileId, nSkillLevel);
       return uResult;
       case 0x2c:
 
       case 0x2e:
 
       case 0x30:
-        if ((int)nParam <= 0) {
+        if ((int)nSkillLevel <= 0) {
           return 0;
         }
       pSkillDescTxt = D2Client::DataTbls::GetSkillDescription(eSkill);
@@ -2876,23 +2896,23 @@ uint32_t __stdcall SKILLDESC_EvalDescCalcValue(D2UnitStrc * pUnit, uint8_t bPara
         return 0;
       }
 
-      uResult = Units::Missile::GetMaxElemDamage(nullptr, pUnit, (int)nMissileId, nParam);
+      uResult = Units::Missile::GetMaxElemDamage(nullptr, pUnit, (int)nMissileId, nSkillLevel);
       return uResult;
       case 0x31:
-        nRawDamage = SERVER_MinDamage(pUnit, eSkill, nParam, 1);
+        nRawDamage = SERVER_MinDamage(pUnit, eSkill, nSkillLevel, 1);
       return nRawDamage >> 8;
       case 0x32:
         bApplyMastery = 1;
-      nRawDamage = SERVER_MaxDamage(pUnit, eSkill, nParam, bApplyMastery);
+      nRawDamage = SERVER_MaxDamage(pUnit, eSkill, nSkillLevel, bApplyMastery);
       return nRawDamage >> 8;
       case 0x33:
-        uResult = SERVER_Synergy1(pUnit, eSkill, nParam, 1);
+        uResult = SKILLS_GetElementalLength(pUnit, eSkill, nSkillLevel, 1);
       return uResult;
       case 0x34:
-        uResult = SERVER_MinDamage(pUnit, eSkill, nParam, 1);
+        uResult = SERVER_MinDamage(pUnit, eSkill, nSkillLevel, 1);
       return uResult;
       case 0x35:
-        uResult = SERVER_MaxDamage(pUnit, eSkill, nParam, 1);
+        uResult = SERVER_MaxDamage(pUnit, eSkill, nSkillLevel, 1);
       return uResult;
       case 0x36:
         nCalcOffset = pSkillTxt->auralencalc;
@@ -2961,7 +2981,7 @@ uint32_t __stdcall SKILLDESC_EvalDescCalcValue(D2UnitStrc * pUnit, uint8_t bPara
 
     sCalcCtx.nSkillId = eSkill;
     sCalcCtx.pUnit = pUnit;
-    sCalcCtx.nSkillLevel = nParam;
+    sCalcCtx.nSkillLevel = nSkillLevel;
     nCalcOffset = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)((uint8_t*)sgptDataTable->pSkillsCode + nCalcOffset), sgptDataTable->nSkillsCodeSize - nCalcOffset, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &sCalcCtx);
     return nCalcOffset;
 }
@@ -2975,7 +2995,7 @@ uint32_t __fastcall SKILLS_DescCalcCallback_Eval(uint8_t nCalcCode, D2SkillCalcC
     return uResult;
 }
 
-int __fastcall SKILLS_EvalSkillDescCalc_CurrentLevel(eD2Skills eSkill, uint8_t bParam, uint32_t nUnused, D2UnitStrc * * ppUnit) {
+int __fastcall SKILLS_EvalSkillDescCalc_CurrentLevel(eD2Skills eSkill, uint8_t byCalcType, uint32_t nUnused, D2UnitStrc * * ppUnit) {
     if (!ppUnit) {
       return 0;
     }
@@ -2990,16 +3010,16 @@ int __fastcall SKILLS_EvalSkillDescCalc_CurrentLevel(eD2Skills eSkill, uint8_t b
       }
     }
 
-    nSkillLevel = SKILLDESC_EvalDescCalcValue(*ppUnit, bParam, eSkill, nSkillLevel);
+    nSkillLevel = SKILLDESC_EvalDescCalcValue(*ppUnit, byCalcType, eSkill, nSkillLevel);
     return nSkillLevel;
 }
 
-uint32_t __fastcall SKILLS_EvalSkillDescCalc_Chained(eD2Skills eSkill, uint8_t bParam, uint8_t bCalcIndex, D2UnitStrc * * ppUnit) {
+uint32_t __fastcall SKILLS_EvalSkillDescCalc_Chained(eD2Skills eSkill, uint8_t byInnerCalcType, uint8_t bCalcIndex, D2UnitStrc * * ppUnit) {
     if (!ppUnit) {
       return 0;
     }
 
-    uint32_t uChainedResult = SKILLDESC_EvalDescCalcValue(*ppUnit, bParam, (eD2Skills)ppUnit[1], (uint32_t)ppUnit[2]);
+    uint32_t uChainedResult = SKILLDESC_EvalDescCalcValue(*ppUnit, byInnerCalcType, (eD2Skills)ppUnit[1], (uint32_t)ppUnit[2]);
     uChainedResult = SKILLDESC_EvalDescCalcValue(*ppUnit, bCalcIndex, eSkill, uChainedResult);
     return uChainedResult;
 }
@@ -3047,11 +3067,7 @@ void __stdcall SKILLS_UpdatePassiveSkillStats(D2UnitStrc * pUnit, eD2Skills eSki
     short int nStatId;
     int* pUnit2;
     D2UnitStrc* pCaster = pUnit;
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
-      return;
-    }
-
-    D2SkillsTxt* pPassiveCalcPtr = sgptDataTable->pTxtSkills + eSkill;
+    D2SkillsTxt* pPassiveCalcPtr = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (!(pPassiveCalcPtr && pPassiveCalcPtr->passivestate > 0)) {
       return;
     }
@@ -3121,14 +3137,10 @@ void __stdcall SKILLS_UpdateAllPassiveSkills(D2UnitStrc * pUnit) {
     D2SkillStrc* pSkillInst;
     eD2States ePassiveState;
     eD2Skills eSkill;
+    int32_t nPassiveSkillCount;
     int i = sgptDataTable->nPassiveSkillsCount;
-    int32_t nPassiveSkillCount = 0;
     D2DataTableTxtStrc* pDataTable = sgptDataTable;
-    if (i <= 0) {
-      return;
-    }
-
-    do {
+    for (nPassiveSkillCount = 0; nPassiveSkillCount < i; nPassiveSkillCount++) {
       short int nSkillId = nPassiveSkillCount < 0 || nPassiveSkillCount >= pDataTable->nPassiveSkillsCount ? -1 : pDataTable->pPassiveSkillsPerClassStrc[nPassiveSkillCount].nSkillId;
       eSkill = (eD2Skills)nSkillId;
       D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < pDataTable->nTxtSkillsCount ? pDataTable->pTxtSkills + eSkill : nullptr;
@@ -3146,14 +3158,12 @@ void __stdcall SKILLS_UpdateAllPassiveSkills(D2UnitStrc * pUnit) {
           }
         }
       }
-
-      nPassiveSkillCount++;
-    } while (nPassiveSkillCount < i);
+    }
 }
 
 // Removes a permanent skill entry from pUnit's skill list. Clears the associated passive state if any, deselects the skill from left/right/current slots if it was active, and either decrements the skill's level (when decrement flag is set and level remains >= 1) or fully unlinks and frees the D2SkillStrc node. Finishes by updating passive skill stats.
 // @sourcefile .\SKILLS\Skills.cpp
-static void __stdcall SKILLS_RemoveSkill(D2UnitStrc * pUnitStrc, eD2Skills dwParam2, int dwParam3) {
+static void __stdcall SKILLS_RemoveSkill(D2UnitStrc * pUnitStrc, eD2Skills eSkill, int bDecrementLevel) {
     if (!pUnitStrc) {
       return;
     }
@@ -3168,39 +3178,39 @@ static void __stdcall SKILLS_RemoveSkill(D2UnitStrc * pUnitStrc, eD2Skills dwPar
       return;
     }
 
-    eD2States ePassiveState = TXT_Skills_GetPassiveState(dwParam2);
+    eD2States ePassiveState = TXT_Skills_GetPassiveState(eSkill);
     if (ePassiveState != STATE_none) {
       DATATBLS::ItemStats::SetState(pUnitStrc, ePassiveState, 0);
     }
 
     D2SkillStrc* pSlotSkill = pSkillList->pLeftSkill;
-    if (pSlotSkill && dwParam2 == (int)pSlotSkill->pRecord->skill && pSlotSkill->nOwnerGUID == -1) {
+    if (pSlotSkill && eSkill == (int)pSlotSkill->pRecord->skill && pSlotSkill->nOwnerGUID == -1) {
       SelectSkillLeft(pUnitStrc, SKILL_Attack, -1);
     }
 
     pSlotSkill = pSkillList->pRightSkill;
-    if (pSlotSkill && dwParam2 == (int)pSlotSkill->pRecord->skill && pSlotSkill->nOwnerGUID == -1) {
+    if (pSlotSkill && eSkill == (int)pSlotSkill->pRecord->skill && pSlotSkill->nOwnerGUID == -1) {
       SelectSkillRight(pUnitStrc, 0, -1);
     }
 
     pSlotSkill = pSkillList->pCurrentSkill;
-    if (pSlotSkill && dwParam2 == (int)pSlotSkill->pRecord->skill && pSlotSkill->nOwnerGUID == -1) {
+    if (pSlotSkill && eSkill == (int)pSlotSkill->pRecord->skill && pSlotSkill->nOwnerGUID == -1) {
       pSkillList->pCurrentSkill = 0;
     }
 
     pSlotSkill = 0;
-    while ((int)pSkillToRemove->pRecord->skill != dwParam2 || pSkillToRemove->nOwnerGUID != -1) {
+    while ((int)pSkillToRemove->pRecord->skill != eSkill || pSkillToRemove->nOwnerGUID != -1) {
       D2SkillStrc** ppDVar1;
       ppDVar1 = &pSkillToRemove->pNext;
       pSlotSkill = pSkillToRemove;
       pSkillToRemove = *ppDVar1;
       if (!*ppDVar1) {
-        SKILLS_UpdatePassiveSkillStats(pUnitStrc, dwParam2);
+        SKILLS_UpdatePassiveSkillStats(pUnitStrc, eSkill);
         return;
       }
     }
 
-    if (!dwParam3 || (pSkillToRemove->nLevel-- , pSkillToRemove->nLevel <= 0)) {
+    if (!bDecrementLevel || (pSkillToRemove->nLevel-- , pSkillToRemove->nLevel <= 0)) {
       if (pSlotSkill) {
         pSlotSkill->pNext = pSkillToRemove->pNext;
       } else {
@@ -3210,10 +3220,10 @@ static void __stdcall SKILLS_RemoveSkill(D2UnitStrc * pUnitStrc, eD2Skills dwPar
       D2_FREE_POOL_AT(pUnitStrc->pMemory, pSkillToRemove, ".\\SKILLS\\Skills.cpp", 0x4ac);
     }
 
-    SKILLS_UpdatePassiveSkillStats(pUnitStrc, dwParam2);
+    SKILLS_UpdatePassiveSkillStats(pUnitStrc, eSkill);
 }
 
-void __stdcall SKILL_RemoveSkillCallback(D2UnitStrc * pUnit, eD2Skills eSkill, char * szSourceFile, int32_t nParam2) {
+void __stdcall SKILL_RemoveSkillCallback(D2UnitStrc * pUnit, eD2Skills eSkill, char * szSourceFile, int32_t nLine) {
     SKILLS_RemoveSkill(pUnit, eSkill, 1);
 }
 
@@ -3226,11 +3236,8 @@ D2SkillStrc * __stdcall AllocSkill(D2UnitStrc * pUnit, eD2Skills eSkill) {
     if (!pUnit) {
       return nullptr;
     }
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
-      return nullptr;
-    }
 
-    D2SkillsTxt* pSkillListStrc = sgptDataTable->pTxtSkills + eSkill;
+    D2SkillsTxt* pSkillListStrc = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (!pSkillListStrc) {
       return nullptr;
     }
@@ -3261,47 +3268,46 @@ D2SkillStrc * __stdcall AllocSkill(D2UnitStrc * pUnit, eD2Skills eSkill) {
     D2SkillStrc* pNewSkill = D2_NEW_POOL_AT(pSkillsList->pMemory, D2SkillStrc, ".\\SKILLS\\Skills.cpp", 0x539);
     memset(pNewSkill, 0, 0x40);
     pNewSkill->pRecord = pSkillListStrc;
+    int nModeValue;
     if (pUnit->eUnitType == UNIT_MONSTER) {
-      pNewSkill->nMode = (int)pSkillListStrc->monanim;
+      nModeValue = (int)pSkillListStrc->monanim;
     } else if (pUnit->eUnitType == UNIT_PLAYER && pUnit->nClassId == 6 && eSkill == SKILL_LeftHandSwing) {
-      pNewSkill->nMode = 0x10;
+      nModeValue = 0x10;
     } else {
-      pNewSkill->nMode = (int)pSkillListStrc->anim;
+      nModeValue = (int)pSkillListStrc->anim;
     }
 
+    pNewSkill->nMode = nModeValue;
     pNewSkill->nLevel = 1;
     pNewSkill->nOwnerGUID = -1;
     pNewSkill->pNext = 0;
     D2SkillStrc* pLastSkill = pSkillsList->pFirstSkill;
-    if (!pLastSkill) {
-      pSkillsList->pFirstSkill = pNewSkill;
+    if (pLastSkill) {
+      D2SkillStrc* pNextSkill = pLastSkill->pNext;
+      while (pNextSkill) {
+        pLastSkill = pLastSkill->pNext;
+        pNextSkill = pLastSkill->pNext;
+      }
+
+      pLastSkill->pNext = pNewSkill;
       SKILLS_UpdatePassiveSkillStats(pUnit, eSkill);
       return pNewSkill;
     }
 
-    D2SkillStrc* pNextSkill = pLastSkill->pNext;
-    while (pNextSkill) {
-      pLastSkill = pLastSkill->pNext;
-      pNextSkill = pLastSkill->pNext;
-    }
-
-    pLastSkill->pNext = pNewSkill;
+    pSkillsList->pFirstSkill = pNewSkill;
     SKILLS_UpdatePassiveSkillStats(pUnit, eSkill);
     return pNewSkill;
 }
 
-void __stdcall AddSkill(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, int32_t nParam, char * szFile, int32_t nLine) {
+void __stdcall AddSkill(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, int32_t bRemoveAtZero, char * szFile, int32_t nLine) {
     D2SkillStrc* pSkill;
-    if (nSkillLevel) {
-      pSkill = GetSkillByIdAndOwner(pUnit, eSkill, -1);
-      if (pSkill || (pSkill = AllocSkill(pUnit, eSkill) , pSkill != 0)) {
-        pSkill->nLevel = nSkillLevel;
+    if (!nSkillLevel) {
+      if (bRemoveAtZero) {
+        SKILLS_RemoveSkill(pUnit, eSkill, 0);
+        SKILLS_UpdatePassiveSkillStats(pUnit, eSkill);
+        return;
       }
 
-      SKILLS_UpdatePassiveSkillStats(pUnit, eSkill);
-      return;
-    }
-    if (!nParam) {
       D2SkillStrc* pZeroedSkill;
       pZeroedSkill = GetSkillByIdAndOwner(pUnit, eSkill, -1);
       if (!pZeroedSkill) {
@@ -3317,8 +3323,13 @@ void __stdcall AddSkill(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLeve
       return;
     }
 
-    SKILLS_RemoveSkill(pUnit, eSkill, 0);
+    pSkill = GetSkillByIdAndOwner(pUnit, eSkill, -1);
+    if (pSkill || (pSkill = AllocSkill(pUnit, eSkill) , pSkill != 0)) {
+      pSkill->nLevel = nSkillLevel;
+    }
+
     SKILLS_UpdatePassiveSkillStats(pUnit, eSkill);
+    return;
 }
 
 // Adds or removes an item-granted skill on a player unit's skill list, keyed by (nOwnerGUID, skill record). bRemove!=0: deselects the skill if it is the current left/right/active skill, then unlinks and frees the matching D2SkillStrc node from the player's skill list. bRemove==0: if a matching item-skill node already exists it just updates its level/charges; otherwise allocates a new 0x40-byte D2SkillStrc, sets its anim-derived mode (defaults 10), level, charges, bItemSkill=1, owner GUID, and appends it to the list. No-op for non-player units, level<1, or out-of-range eSkill.
@@ -3337,15 +3348,9 @@ void __stdcall SKILLS_AddOrRemoveItemSkill(D2UnitStrc * pUnit, int32_t nOwnerGUI
     if (nLevel <= 0) {
       return;
     }
-    if ((int)eSkill < 0) {
-      return;
-    }
-    if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
-      return;
-    }
 
     D2SkillsTxt* pSkillTxt;
-    pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
+    pSkillTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (!pSkillTxt) {
       return;
     }
@@ -3437,16 +3442,17 @@ void __stdcall SKILLS_AddOrRemoveItemSkill(D2UnitStrc * pUnit, int32_t nOwnerGUI
     pNewSkill->nCharges = nCharges;
     pNewSkill->nOwnerGUID = nOwnerGUID;
     pNewSkill->pNext = 0;
-    if (!pUnit) {
-      pSkillsList->pFirstSkill = pNewSkill;
+    if (pUnit) {
+      pUnit->nClassId = (int)pNewSkill;
       return;
     }
 
-    pUnit->nClassId = (int)pNewSkill;
+    pSkillsList->pFirstSkill = pNewSkill;
+    return;
 }
 
-void __stdcall thunk_SKILLS_AddOrRemoveItemSkill(D2UnitStrc * pUnit, int32_t nParam1, int32_t nParam2, int32_t nParam3, int32_t nParam4, int32_t nParam5) {
-    SKILLS_AddOrRemoveItemSkill(pUnit, nParam1, nParam2, nParam3, nParam4, nParam5);
+void __stdcall thunk_SKILLS_AddOrRemoveItemSkill(D2UnitStrc * pUnit, int32_t nOwnerGUID, int32_t eSkill, int32_t nLevel, int32_t nCharges, int32_t bRemove) {
+    SKILLS_AddOrRemoveItemSkill(pUnit, nOwnerGUID, eSkill, nLevel, nCharges, bRemove);
 }
 
 // Returns nonzero if pUnit has sufficient mana (or HP under Blood Mana state) to cast pSkillStrc. Computes effective skill level, applies lvlmana+mana formula with manashift, checks STATE_blood_mana; special-cases charged skills (nCharges) and Berserk (stat cost flag 0x200 bit 3). Returns 0 or 1.
@@ -3491,7 +3497,7 @@ static BOOL SKILLS_HasEnoughManaForSkill(D2SkillStrc * pSkillStrc, D2UnitStrc * 
         nClampedLevel = 0;
       }
 
-      nManaCost = pSkillTxt2->lvlmana * nClampedLevel + (int)pSkillTxt2->mana << ((uint8_t)pSkillTxt2->manashift & 0x1f);
+      nManaCost = pSkillTxt2->lvlmana * nClampedLevel + (int)pSkillTxt2->mana << D2_SHIFT_COUNT(pSkillTxt2->manashift);
       eVenomState = DATATBLS::ItemStats::UNIT_GetUnitState(pUnitStrc, STATE_blood_mana);
       if (eVenomState != STATE_none) {
         nCurrentStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnitStrc, UNITSTAT_hitpoints, 0);
@@ -3660,7 +3666,7 @@ static uint32_t SKILLS_CheckItemChargesRemaining(D2UnitStrc * pUnit, D2SkillStrc
 }
 
 static uint32_t __stdcall SKILL_IsDelayExpired(D2SkillStrc * pSkill, D2UnitStrc * pUnit) {
-    if ((pUnit ? pUnit->eUnitType : ~UNIT_PLAYER) != UNIT_PLAYER) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_PLAYER) {
       return 1;
     }
 
@@ -3698,11 +3704,11 @@ int32_t __stdcall SKILLS_CanUseSkill(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
       return 7;
     }
 
-    uint32_t uVar1 = (uint32_t)(uint8_t)*((uint8_t*)pSkill->pRecord + 0x4);
-    if (gadwBitMasks[5] & uVar1) {
+    uint32_t dwSkillFlags = (uint32_t)(uint8_t)*((uint8_t*)pSkill->pRecord + 0x4);
+    if (gadwBitMasks[5] & dwSkillFlags) {
       return 6;
     }
-    if (gadwBitMasks[4] & uVar1) {
+    if (gadwBitMasks[4] & dwSkillFlags) {
       return 5;
     }
 
@@ -3721,8 +3727,8 @@ int32_t __stdcall SKILLS_CanUseSkill(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
       return 1;
     }
 
-    int iVar2 = SKILLS_CheckRestriction((int*)pSkill, pUnit);
-    if (!iVar2) {
+    int iVar1 = SKILLS_CheckRestriction(pSkill, pUnit);
+    if (!iVar1) {
       return 4;
     }
 
@@ -3750,7 +3756,7 @@ void __stdcall SKILLS_SetSkillLevelBonus(D2UnitStrc * pUnit, eD2Skills eSkill, i
     pFoundSkill = GetSkillByIdAndOwner(pUnit, eSkill, -1);
     if (!pFoundSkill) {
       D2SkillStrc* pVerifySkill;
-      if (nLevelBonus < 1) {
+      if (nLevelBonus <= 0) {
         return;
       }
 
@@ -3795,7 +3801,7 @@ void __stdcall SKILL_AdjustSkillLevelBonus(D2UnitStrc * pUnit, eD2Skills eSkill,
     pFoundSkill = 0;
     ensure_skill:
     if (!pFoundSkill) {
-      if (nDelta < 1) {
+      if (nDelta <= 0) {
         return;
       }
 
@@ -3830,14 +3836,7 @@ void __stdcall SKILL_AdjustSkillLevelBonus(D2UnitStrc * pUnit, eD2Skills eSkill,
 int32_t __stdcall SKILL_CalcMinDamage(D2UnitStrc * pUnit, int32_t nSkillId, int32_t nSkillLevel, int32_t bUseWeaponDamage) {
     int nMinDmg;
     D2UnitStrc* pWeapon;
-    if (nSkillId < 0) {
-      return 1;
-    }
-    if (nSkillId >= sgptDataTable->nTxtSkillsCount) {
-      return 1;
-    }
-
-    D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + nSkillId;
+    D2SkillsTxt* pSkillTxt = nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nSkillId : nullptr;
     if (!pSkillTxt) {
       return 1;
     }
@@ -3851,11 +3850,10 @@ int32_t __stdcall SKILL_CalcMinDamage(D2UnitStrc * pUnit, int32_t nSkillId, int3
         nMinDmg = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_strength, 0);
         nMinDmg = nMinDmg + nDexterity - 0x14;
       }
-      if (nMinDmg >= 1) {
-        return nMinDmg / 4 << 8;
+      if (nMinDmg < 1) {
+        nMinDmg = 1;
       }
 
-      nMinDmg = 1;
       return nMinDmg / 4 << 8;
     }
 
@@ -3874,31 +3872,21 @@ int32_t __stdcall SKILL_CalcMinDamage(D2UnitStrc * pUnit, int32_t nSkillId, int3
 
     int32_t nLevDamBonus = SKILLS_GetValueByLevelBreakpoints(nSkillLevel, pSkillTxt->MinLevDam);
     nMinDmg = nMinDmg + nLevDamBonus + pSkillTxt->MinDam;
-    if (pSkillTxt->DmgSymPerCalc == -1) {
-      return nMinDmg << (pSkillTxt->HitShift & 0x1fU);
+    if (pSkillTxt->DmgSymPerCalc != -1) {
+      nLevDamBonus = D2GetSkillCalc(pUnit, pSkillTxt->DmgSymPerCalc, nSkillId, nSkillLevel);
+      if (nLevDamBonus) {
+        nLevDamBonus = D2Client::Stats::D2ApplyPercent(nMinDmg, nLevDamBonus, 100);
+        nMinDmg += nLevDamBonus;
+      }
     }
 
-    nLevDamBonus = D2GetSkillCalc(pUnit, pSkillTxt->DmgSymPerCalc, nSkillId, nSkillLevel);
-    if (!nLevDamBonus) {
-      return nMinDmg << (pSkillTxt->HitShift & 0x1fU);
-    }
-
-    nLevDamBonus = D2Client::Stats::D2ApplyPercent(nMinDmg, nLevDamBonus, 100);
-    nMinDmg += nLevDamBonus;
-    return nMinDmg << (pSkillTxt->HitShift & 0x1fU);
+    return nMinDmg << D2_SHIFT_COUNT(pSkillTxt->HitShift);
 }
 
 // Calculates the maximum damage for a skill at a given level. If the skill's flags2 bit 1 is set, delegates to SKILLS_CalculateBaseDamageFromStats. Otherwise, optionally scales weapon max damage by SrcDam (handling two-handed weapons), adds MaxLev breakpoint bonus and MaxDam base, optionally applies DmgSymPerCalc formula percent modifier, and finally left-shifts by HitShift. bUseWeaponDamage controls whether weapon damage contributes.
 int32_t __stdcall SKILL_CalcMaxDamage(D2UnitStrc * pUnit, int32_t nSkillId, int32_t nSkillLevel, int32_t bUseWeaponDamage) {
     int32_t nLevDamBonus;
-    if (nSkillId < 0) {
-      return 2;
-    }
-    if (nSkillId >= sgptDataTable->nTxtSkillsCount) {
-      return 2;
-    }
-
-    D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + nSkillId;
+    D2SkillsTxt* pSkillTxt = nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nSkillId : nullptr;
     if (!pSkillTxt) {
       return 2;
     }
@@ -3923,27 +3911,21 @@ int32_t __stdcall SKILL_CalcMaxDamage(D2UnitStrc * pUnit, int32_t nSkillId, int3
 
     nLevDamBonus = SKILLS_GetValueByLevelBreakpoints(nSkillLevel, pSkillTxt->MaxLevDam);
     nMaxDmg = nMaxDmg + nLevDamBonus + pSkillTxt->MaxDam;
-    if (pSkillTxt->DmgSymPerCalc == -1) {
-      return nMaxDmg << (pSkillTxt->HitShift & 0x1fU);
+    if (pSkillTxt->DmgSymPerCalc != -1) {
+      nLevDamBonus = D2GetSkillCalc(pUnit, pSkillTxt->DmgSymPerCalc, nSkillId, nSkillLevel);
+      if (nLevDamBonus) {
+        nLevDamBonus = D2Client::Stats::D2ApplyPercent(nMaxDmg, nLevDamBonus, 100);
+        nMaxDmg += nLevDamBonus;
+      }
     }
 
-    nLevDamBonus = D2GetSkillCalc(pUnit, pSkillTxt->DmgSymPerCalc, nSkillId, nSkillLevel);
-    if (!nLevDamBonus) {
-      return nMaxDmg << (pSkillTxt->HitShift & 0x1fU);
-    }
-
-    nLevDamBonus = D2Client::Stats::D2ApplyPercent(nMaxDmg, nLevDamBonus, 100);
-    nMaxDmg += nLevDamBonus;
-    return nMaxDmg << (pSkillTxt->HitShift & 0x1fU);
+    return nMaxDmg << D2_SHIFT_COUNT(pSkillTxt->HitShift);
 }
 
 // Evaluates a passive skill's elemental calc value for a specific element type (0=min fire/0x156, 1=min cold/0x157, 2=min lightning/0x158). Searches the skill's passivestat array for the matching stat ID, then calls D2GetSkillCalc on the corresponding passivecalc slot. Returns 0 if the skill/level is invalid or the element type is not found in passivestat.
 uint32_t __stdcall SKILL_GetPassiveElementCalc(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, int32_t nElementType) {
     int nMinStatId;
-    if ((int)eSkill < 0) {
-      return 0;
-    }
-    if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
+    if ((int)eSkill < 0 || (int)eSkill >= sgptDataTable->nTxtSkillsCount) {
       return 0;
     }
 

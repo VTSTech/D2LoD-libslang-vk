@@ -7,7 +7,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/QServer/QServer.h"
 #include "Storm/Source/SSTR.h"
-#include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2Client/UI/MiniPanel.h"
 #include "Fog/D2QServerStrc.h"
@@ -55,7 +54,7 @@ int32_t __fastcall HandleIncomingPacketBuffer(D2QServerStrc * pQServer, char * p
 }
 
 // Validates an incoming client packet before dispatch. Returns 3 if buffer empty or size indeterminate, 4 if opcode is out-of-range or packet too large (> 0x204). On success, fills pnPacketSize, pnPacketClass (0=game-phase, 1=pre-game, 2=QServer-token-gated opcodes >= 0x71), and pnTimeoutMs (100 ms). QServer-gated packets additionally checked against the game token via QServer::MatchesGameTokenFilter.
-int32_t __fastcall NET_D2GS_CLIENT_CheckIfPacketSizeIsCorrect(uint8_t * pbPacket, size_t nSize, uint32_t * pnPacketSize, int * pnUnknown, int * pnPacketClass, int * pnTimeoutMs, uint32_t dwArg1, uint32_t dwArg2, uint32_t nParam) {
+int32_t __fastcall NET_D2GS_CLIENT_CheckIfPacketSizeIsCorrect(uint8_t * pbPacket, size_t nSize, uint32_t * pnPacketSize, int * pnUnknown, int * pnPacketClass, int * pnTimeoutMs, uint32_t dwArg1, uint32_t dwArg2, uint32_t dwClientIpAddress) {
     if (nSize < 1) {
       return 3;
     }
@@ -69,16 +68,16 @@ int32_t __fastcall NET_D2GS_CLIENT_CheckIfPacketSizeIsCorrect(uint8_t * pbPacket
     if (byOpcode >= 0x71 && byOpcode != 0xff || (uint16_t)(uintptr_t)pPacketEnd > 0x204) {
       return 4;
     }
-    if ((int)((uint32_t)pPacketEnd & 0xffff) <= (int)nSize) {
+    if ((int)(uint16_t)(uint32_t)pPacketEnd <= (int)nSize) {
       int nTokenMatch;
       *pnUnknown = 0;
-      *pnPacketSize = (uint32_t)pPacketEnd & 0xffff;
+      *pnPacketSize = (uint16_t)(uint32_t)pPacketEnd;
       if (byOpcode < 0x67) {
         *pnPacketClass = 1;
       } else if (byOpcode < 0x71) {
         *pnPacketClass = 0;
       } else {
-        nTokenMatch = Fog::Src::MatchesGameTokenFilter_Thunk(pQServer, nParam);
+        nTokenMatch = Fog::Src::MatchesGameTokenFilter_Thunk(pQServer, dwClientIpAddress);
         if (!nTokenMatch) {
           return 4;
         }
@@ -95,14 +94,14 @@ int32_t __fastcall NET_D2GS_CLIENT_CheckIfPacketSizeIsCorrect(uint8_t * pbPacket
         return 1;
       }
 
-      return (nTokenMatch != 2) + 1;
+      return nTokenMatch != 2 ? 2 : 1;
     }
 
     return 3;
 }
 
-void __stdcall WaitForEmptyEvent(DWORD dwParam) {
-    Fog::Src::WaitForEmptyEvent(pQServer, dwParam);
+void __stdcall WaitForEmptyEvent(DWORD dwTimeout) {
+    Fog::Src::WaitForEmptyEvent(pQServer, dwTimeout);
 }
 
 void __stdcall NET_Thunk_QServerSwapWorkerSlotValue(int nWorkerIndex, int nNewSlotValueOrZero) {
@@ -130,8 +129,8 @@ void NET_QServer_FreeAndSend0xB0ToEveryone() {
 }
 
 int __stdcall NET_D2GS_SERVER_DequeueModePacket_Mode1(char * pBytes, size_t nSize) {
-    int iVar1 = Fog::Src::DequeueModePacket(pQServer, 1, pBytes, nSize);
-    return iVar1;
+    int nResult = Fog::Src::DequeueModePacket(pQServer, 1, pBytes, nSize);
+    return nResult;
 }
 
 int32_t __stdcall NET_D2GS_SERVER_DequeueModePacket_Mode0(char * pBytes, size_t nSize) {
@@ -140,12 +139,12 @@ int32_t __stdcall NET_D2GS_SERVER_DequeueModePacket_Mode0(char * pBytes, size_t 
 }
 
 int __stdcall NET_D2GS_SERVER_DequeueModePacket_Mode2(char * pBytes, size_t nSize) {
-    int iVar1 = Fog::Src::DequeueModePacket(pQServer, 2, pBytes, nSize);
-    return iVar1;
+    int nResult = Fog::Src::DequeueModePacket(pQServer, 2, pBytes, nSize);
+    return nResult;
 }
 
 // Low-level server-to-client packet send. In single-player mode, loops the packet back via NET_D2GS_CLIENT_HandleIncomingBufferAndCreatePacket. In multiplayer: skips logging/compression for opcode 0xAF (handshake) or nMode==2; otherwise compresses the packet (up to 1032 bytes) and sends via QServer::SendPacketByClientId with a 1- or 2-byte length prefix. Halts if raw packet exceeds 0x204 bytes.
-int32_t __stdcall NET_D2GS_SERVER_SendPacketToClient(int32_t nMode, int32_t nClientId, char * pBytes, size_t nSize) {
+int32_t __stdcall NET_D2GS_SERVER_SendPacketToClient(uint8_t nMode, int32_t nClientId, char * pBytes, size_t nSize) {
     int nSendResult;
     size_t pbCompressedSize;
     uint32_t nSize_00;
@@ -160,10 +159,10 @@ int32_t __stdcall NET_D2GS_SERVER_SendPacketToClient(int32_t nMode, int32_t nCli
       SRC::Client::NET_D2GS_CLIENT_HandleIncomingBufferAndCreatePacket(pBytes, nSize);
       return nSize;
     }
-    if ((char)nMode != '\0' || *pBytes != -0x51) {
+    if (nMode != '\0' || *pBytes != -0x51) {
       size_t pbCompressedEnd;
       Fog::Src::D2Net::NET_D2GS_SERVER_LogSentPacket(pBytes, nSize);
-      if ((char)nMode != '\x02') {
+      if (nMode != '\x02') {
         pbCompressedEnd = Fog::Src::D2Net::NET_D2GS_SERVER_CompressPacket(pBuffer + 2, 1032, pBytes, nSize);
         if (!pbCompressedEnd) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x178);
@@ -253,22 +252,22 @@ uint32_t __stdcall QSERVER_GetClientGameToken(uint32_t nClientId) {
     return gnDefaultClientGameToken;
 }
 
-void __fastcall NET_SendPacketWithFlags(char * szText, uint16_t nParam, int32_t nFlags) {
-    if (nParam > 0x204) {
+void __fastcall NET_SendPacketWithFlags(char * szText, uint16_t nSize, int32_t nFlags) {
+    if (nSize > 0x204) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x209);
       exit(-1);
     }
 
-    Fog::Src::SendPacketToClient(pQServer, szText, (uint32_t)nParam, nFlags);
+    Fog::Src::SendPacketToClient(pQServer, szText, (uint32_t)nSize, nFlags);
 }
 
-uint32_t __fastcall NET_SendPacketToClient(char * szText, uint16_t nParam) {
-    if (nParam > 0x204) {
+uint32_t __fastcall NET_SendPacketToClient(char * szText, uint16_t nSize) {
+    if (nSize > 0x204) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x217);
       exit(-1);
     }
 
-    int nSendResult = Fog::Src::SendPacketToClient(pQServer, szText, (uint32_t)nParam, 0);
+    int nSendResult = Fog::Src::SendPacketToClient(pQServer, szText, (uint32_t)nSize, 0);
     return (uint32_t)(nSendResult != 0);
 }
 
@@ -292,7 +291,7 @@ int32_t __fastcall NET_D2GS_SERVER_Send_0xAF01(D2QServerStrc * pQServer, uint32_
     *(uint16_t*)((char*)&aPacketFrame + 2) = (uint16_t)((uint32_t)pQServer >> 0x10);
     aPacketFrame[0] = 0xaf;
     aPacketFrame[1] = 1;
-    NET_D2GS_SERVER_SendPacketToClient(0, nClientId, (char*)aPacketFrame, 2);
+    NET_D2GS_SERVER_SendPacketToClient('\0', nClientId, (char*)aPacketFrame, 2);
     return 1;
 }
 
@@ -309,7 +308,7 @@ void __stdcall NET_D2GS_SERVER_Send_0xAF00() {
     *(uint16_t*)((char*)&aPacket + 2) = (uint16_t)((uint32_t)0 >> 0x10);
     aPacket[0] = 0xaf;
     aPacket[1] = 0;
-    NET_D2GS_SERVER_SendPacketToClient(0, 0, (char*)aPacket, 2);
+    NET_D2GS_SERVER_SendPacketToClient('\0', 0, (char*)aPacket, 2);
 }
 
 // Wrapper that creates and stores the global QServer instance. Calls NET_QServer_Init with port 4000, three packet modes (setup/in-game/system), and registers four callbacks: packet size classifier, client accepted (0xAF01), client freed (0x70), and single-player packet handler. Stores result in global pQServer variable.
@@ -596,10 +595,10 @@ int32_t __fastcall NET_D2GS_CLIENT_GetOutgoingPacketSizeFromTableAndVariableSize
     0x1
 }; D2_STATIC_GUARD(NET_D2GS_CLIENT_OUTGOING_SIZE, "D2Net::Game::Server::NET_D2GS_CLIENT_GetOutgoingPacketSizeFromTableAndVariableSize::NET_D2GS_CLIENT_OUTGOING_SIZE");
 
-    char* pcVar1;
     uint16_t wRawLen;
     uint32_t nStrLen1;
     uint32_t nStrLen2;
+    char* pszStr;
     if (nSize < 1) {
       return 0;
     }
@@ -629,16 +628,16 @@ int32_t __fastcall NET_D2GS_CLIENT_GetOutgoingPacketSizeFromTableAndVariableSize
 
       case 0x15:
         if ((int)nSize >= 3) {
-          pcVar1 = pBytes + 3;
-          nStrLen1 = Storm::Source::SSTR::SStrLen(pcVar1);
+          pszStr = pBytes + 3;
+          nStrLen1 = Storm::Source::SSTR::SStrLen(pszStr);
           if ((int)nSize >= (int)(nStrLen1 + 4)) {
-            nStrLen2 = Storm::Source::SSTR::SStrLen(pcVar1);
-            pcVar1 = pcVar1 + nStrLen2 + 1;
-            nStrLen2 = Storm::Source::SSTR::SStrLen(pcVar1);
+            nStrLen2 = Storm::Source::SSTR::SStrLen(pszStr);
+            pszStr = pszStr + nStrLen2 + 1;
+            nStrLen2 = Storm::Source::SSTR::SStrLen(pszStr);
             nTableSize = nStrLen1 + 5 + nStrLen2;
             if ((int)nSize >= nTableSize) {
-              nStrLen1 = Storm::Source::SSTR::SStrLen(pcVar1);
-              nTableSize = nTableSize + 1 + (int)pcVar1[nStrLen1 + 1];
+              nStrLen1 = Storm::Source::SSTR::SStrLen(pszStr);
+              nTableSize = nTableSize + 1 + (int)pszStr[nStrLen1 + 1];
               if ((int)nSize >= nTableSize) {
                 *pSize = nTableSize;
                 return *pSize;

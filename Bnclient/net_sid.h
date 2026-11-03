@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "Storm/D2SHA1.h"
+#include "Bnclient/BnSend.h"
 
 // Data types
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
@@ -24,9 +24,25 @@ struct D2CDKeyHashStrc {
     /* 0x10 */ uint8_t abHash[20]; // SHA-1 hash of token data
 };
 
-struct D2SHA1ContextStrc {
-    /* 0x00 */ D2SHA1 state;
+struct D2SrpSaltVerifierStrc {
+    /* 0x00 */ uint8_t aSalt[32]; // new-password SRP salt s
+    /* 0x20 */ uint8_t aVerifier[32]; // new-password SRP verifier v
+};
+
+struct D2XSHA1ContextStrc {
+    /* 0x00 */ D2XSHA1Strc state;
     /* 0x14 */ uint32_t aBlock[16];
+};
+
+struct SID_C2S_AuthAccountCreate {
+    /* 0x00 */ uint8_t aSalt[32];
+    /* 0x20 */ uint8_t aVerifier[32];
+    /* 0x40 */ char szUsername[256];
+};
+
+struct SID_C2S_AuthAccountLogon {
+    /* 0x00 */ uint8_t aClientPublicKeyA[32];
+    /* 0x20 */ char szUsername[256];
 };
 
 struct SID_C2S_AuthInfo {
@@ -68,6 +84,11 @@ struct __attribute__((packed)) D2SidAuthCheckPacketStrc {
     /* 0x5C */ char szTail[512]; // exe-info string then CD-key owner name, both NUL terminated
 };
 
+struct __attribute__((packed)) SID_C2S_AuthAccountChangeProof {
+    /* 0x00 */ uint8_t aClientProofM1[20];
+    /* 0x14 */ D2SrpSaltVerifierStrc sNewSaltVerifier;
+};
+
 namespace Bnclient::_net_sid {
 
 // Function declarations
@@ -78,15 +99,19 @@ void * __stdcall NET_SID_CLIENT_GetChannelNamePtr();
 // BATTLE.NET SID_CHATEVENT (0x0F) HANDLER
 // Receives chat event notifications from the Battle.net server with event type, flags, ping, username, and message text. Event types include: 0x01=show_user, 0x02=join, 0x03=leave, 0x04=whisper_recv, 0x05=talk, 0x06=broadcast, 0x07=channel, etc. Enqueues the raw packet bytes to the message queue (type 0) for asynchronous processing by the chat UI system.
 BOOL __fastcall NET_SID_CLIENT_Incoming_ChatEvent(char * pBytes, size_t nSize);
-void __fastcall SHA1_Hashing(struct D2SHA1ContextStrc * pnParam);
-void __fastcall SHA1(struct D2SHA1 * pOutput, char * szInput, size_t nInputSize);
-void __stdcall SID_SetReadyFlag();
+// Battle.net "broken SHA-1" (XSHA1) block transform: schedule W[i] = ROL(1, (W[i-3]^W[i-8]^W[i-14]^W[i-16]) & 31), block copied without byte swap.
+// Name per redivivus issue #36 (asm-verified hash variant).
+void __fastcall XSHA1_Transform(struct D2XSHA1ContextStrc * pShaCtx);
+// XSHA1 one-shot hash: SHA-1 IV, zero-padded final block with no 0x80 and no bit length, XSHA1_Transform per block.
+// Name per redivivus issue #36 (asm-verified hash variant).
+void __fastcall XSHA1(struct D2XSHA1Strc * pOutput, char * szInput, size_t nInputSize);
+BOOL __stdcall SID_SetReadyFlag();
 BOOL __stdcall SID_GetReadyFlag();
 uint32_t __stdcall NET_SID_CLIENT_GetResponseCount2();
 uint32_t __stdcall NET_SID_CLIENT_GetResponseCount1();
 int __stdcall SID_InitializeProtocolState();
 BOOL __fastcall NET_SID_CLIENT_WaitForPacketId(uint8_t nPacketId);
-BOOL __fastcall NET_SID_CLIENT_GetRequiredAnswer(uint8_t bParam);
+BOOL __fastcall NET_SID_CLIENT_GetRequiredAnswer(uint8_t nPacketId);
 void __fastcall NET_SID_CLIENT_ResetRequireResponse(uint8_t nPacketId);
 uint32_t __fastcall SID_GetPacketResponseFlag(uint8_t nPacketId);
 BOOL __fastcall NET_SID_CLIENT_IncomingReturn(char * pBytes, size_t nSize);
@@ -304,27 +329,29 @@ uint32_t __fastcall NET_SID_CLIENT_ExtractCDKeyNibble(int32_t pCdKeyData, uint32
 void __fastcall NET_SID_CLIENT_SetCDKeyNibble(int32_t pCdKeyData, uint32_t nNibbleIndex, uint8_t nNibbleValue);
 void __fastcall NET_SID_CLIENT_SetCDKeyBit(int32_t pCdKeyData, uint32_t nBitIndex, uint8_t nBitValue);
 void __fastcall NET_SID_CLIENT_BigNumMultiplyAccumulate(int32_t nWords, uint32_t multiplier, uint32_t * pSrc, uint32_t * pDst, uint32_t carryIn);
-void __fastcall NET_SID_CLIENT_ExpandCdKeyToBase5(int32_t pCdKeyString, int32_t pOutBase5);
+void __fastcall NET_SID_CLIENT_ExpandCdKeyToBase5(char * pCdKeyString, int32_t pOutBase5);
 void __stdcall NET_SID_CLIENT_SubstitutionBoxShuffle(int32_t pToken);
-void __fastcall NET_SID_CLIENT_TransformCdKeyToken(int32_t nCdKeyValue, uint32_t * pOutPublic, uint32_t * pOutProduct, uint16_t * pOutHash);
+void __fastcall NET_SID_CLIENT_TransformCdKeyToken(char * nCdKeyValue, uint32_t * pOutPublic, uint32_t * pOutProduct, uint16_t * pOutHash);
 // Returns _time32(pTime) with pTime passed in EAX (CRT inline time() copy).
 // Provenance: asm 00522bb0..00522bb9; unreferenced in 1.14d.
 __time32_t __stdcall NET_SID_GetTime32_00522bb0(__time32_t * pTime);
 void __fastcall NET_SID_CLIENT_GenerateRandomString(int32_t szOutBuf, int32_t nLength);
 void __thiscall NET_SID_CLIENT_EncodeCDKeyHash(int32_t pThis, int32_t nSeed);
-int32_t __fastcall NET_SID_CLIENT_DecodeCDKeyHash(int * pnParam, uint32_t nParam, int32_t szCDKey);
-int32_t __fastcall NET_SID_CLIENT_CalculateAlignedBufferSize(uint32_t nParam);
-void __fastcall NET_SID_CLIENT_EncodeBuffer(uint32_t * pdwParam, uint32_t nParam, int32_t nBufferAlignment, int32_t szCDKey);
+int32_t __fastcall NET_SID_CLIENT_DecodeCDKeyHash(int * pnData, uint32_t nDataSize, int32_t szCDKey);
+int32_t __fastcall NET_SID_CLIENT_CalculateAlignedBufferSize(uint32_t nDataSize);
+void __fastcall NET_SID_CLIENT_EncodeBuffer(uint32_t * pdwData, uint32_t nDataSize, int32_t nBufferAlignment, int32_t szCDKey);
 void __stdcall DecodeAndLoadKeys();
 void __stdcall FreeKeys();
 uint32_t __stdcall NET_SID_CLIENT_GetProductId();
 char * __stdcall NET_SID_CLIENT_GetCdKeyOwner();
 char * __fastcall NET_SID_CLIENT_GetCdKeyByType(int32_t nProductType);
-void __stdcall NET_SID_CLIENT_SHA1Transform(uint32_t * pnParam);
+// SHA-0 block transform (plain XOR schedule, no rotate). Every state rotate is SHL|SAR on a signed word, so for negative words it differs from both SHA-0 and SHA-1.
+// Name per redivivus issue #36 (asm-verified hash variant, 00523ba0..00523be3).
+void __stdcall SHA0_Transform(uint32_t * pShaCtx);
 void __stdcall NET_SID_CLIENT_ClearSHAContexts();
-void __fastcall NET_SID_CLIENT_GetSHAState(int32_t nParam, uint32_t * pdwParam);
-void __fastcall NET_SID_CLIENT_SHA1Compress(int32_t nParam, uint32_t * pdwParam, uint32_t * pdwOutHash);
-void __fastcall NET_SID_CLIENT_InitSHAContext(int32_t nParam);
+void __fastcall NET_SID_CLIENT_GetSHAState(int32_t nCtxIndex, uint32_t * pdwStateOut);
+void __fastcall NET_SID_CLIENT_SHA1Compress(int32_t nCtxIndex, uint32_t * pdwBlock, uint32_t * pdwOutHash);
+void __fastcall NET_SID_CLIENT_InitSHAContext(int32_t nCtxIndex);
 void __fastcall NET_SID_CLIENT_IDEAExpandKey(uint16_t * pUserKey, uint16_t * pExpandedSubkeys);
 void __fastcall NET_SID_CLIENT_IDEAInvertKey(uint16_t * pEncryptKey, uint16_t * pDecryptKey);
 void __fastcall NET_SID_CLIENT_IDEACrypt(uint16_t * pPlaintext, short * pCiphertext, uint16_t * pSubkeys);

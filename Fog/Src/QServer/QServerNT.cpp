@@ -10,7 +10,7 @@
 #include "Fog/Src/LogManager.h"
 #include "Fog/Src/QServer/QServer.h"
 #include "Fog/Src/Safesock.h"
-#include "Storm/Source/SSystem.h"
+#include "Storm/Source/SMem.h"
 #include "globals/globals.h"
 #include "D2Net/in_addr.h"
 #include "Fog/QServer.h"
@@ -108,12 +108,12 @@ void __fastcall AwaitAndClose(D2QServerStrc * pQserver) {
 }
 
 static BOOL __stdcall BeginAsyncReadForClient(D2QServerStrc * pQServer, D2QServerClientConnectionStrc * pClient) {
-    BOOL fReadResult;
+    HANDLE hReadEvent;
     CRITICAL_SECTION* lpCriticalSection = &pClient->clientLock;
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(lpCriticalSection);
     int nBytesRead = pClient->nBytesRead;
-    DWORD DVar2 = 0x5b4 - nBytesRead;
-    if (!DVar2) {
+    DWORD DVar1 = 0x5b4 - nBytesRead;
+    if (!DVar1) {
       CloseRemoteConnection(pQServer, pClient->nClientToken, ".\\Src\\QServer\\QServerNT.cpp", 0x3ed);
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
       return 0;
@@ -123,10 +123,10 @@ static BOOL __stdcall BeginAsyncReadForClient(D2QServerStrc * pQServer, D2QServe
       exit(-1);
     }
 
-    HANDLE pvVar1;
-    pvVar1 = pClient->ovRead.hEvent;
+    BOOL fReadResult;
+    hReadEvent = pClient->ovRead.hEvent;
     pClient->dwReadFlags |= QSRV_READFLAG_PENDING_IO;
-    if (pvVar1) {
+    if (hReadEvent) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x3f8);
       exit(-1);
     }
@@ -139,10 +139,10 @@ static BOOL __stdcall BeginAsyncReadForClient(D2QServerStrc * pQServer, D2QServe
     }
 
     IncrementClientRefCount(pQServer, pClient);
-    /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ fReadResult = ReadFile((HANDLE)pClient->socket, pClient->aRecvBuffer + nBytesRead, DVar2, (LPDWORD)&pClient->dwReadTransferSize, &pClient->ovRead);
+    /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ fReadResult = ReadFile((HANDLE)pClient->socket, pClient->aRecvBuffer + nBytesRead, DVar1, (LPDWORD)&pClient->dwReadTransferSize, &pClient->ovRead);
     if (!fReadResult) {
-      DVar2 = GetLastError();
-      if (DVar2 != 0x3e5) {
+      DVar1 = GetLastError();
+      if (DVar1 != 0x3e5) {
         RemoveClientAndClearLog(pQServer, pClient);
         CloseRemoteConnection(pQServer, pClient->nClientToken, ".\\Src\\QServer\\QServerNT.cpp", 0x430);
         return 0;
@@ -259,10 +259,10 @@ static int32_t __stdcall AcceptConnection(D2QServerStrc * pQServer, sockaddr * p
     ioctlsocket((SOCKET)FileHandle, -0x7ffb9982, &ulNonBlocking);
     /* int * namelen for getpeername */ /* sockaddr * name for getpeername */ /* SOCKET s for getpeername */ nRejectReason = 0x10;
     getpeername((SOCKET)FileHandle, (sockaddr*)&pClient->peerSockaddr, &nRejectReason);
-    Storm::Source::SSystem::SMemZero(pClient->peerSockaddr.sin_zero, 8);
+    Storm::Source::SMem::SMemZero(pClient->peerSockaddr.sin_zero, 8);
     /* int * namelen for getsockname */ /* sockaddr * name for getsockname */ /* SOCKET s for getsockname */ nRejectReason = 0x10;
     getsockname((SOCKET)FileHandle, (sockaddr*)&pClient->localSockaddr, &nRejectReason);
-    Storm::Source::SSystem::SMemZero(pClient->localSockaddr.sin_zero, 8);
+    Storm::Source::SMem::SMemZero(pClient->localSockaddr.sin_zero, 8);
     if ((HANDLE)pClient->socket != FileHandle) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x4e4);
       exit(-1);
@@ -331,11 +331,10 @@ int __stdcall PopAndFreeCompletedSendPacket(D2QServerClientConnectionStrc * pCli
 
     pClient->dwWriteFlags &= ~QSRV_WRITEFLAG_PENDING_IO;
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pClient->clientLock);
-    if (!pMemoryToFree) {
-      return 1;
+    if (pMemoryToFree) {
+      D2_FREE_AT(pMemoryToFree, ".\\Src\\QServer\\QServerNT.cpp", 0x578);
     }
 
-    D2_FREE_AT(pMemoryToFree, ".\\Src\\QServer\\QServerNT.cpp", 0x578);
     return 1;
 }
 
@@ -449,7 +448,7 @@ DWORD __stdcall AcceptThreadMain(void * lpThreadParam) {
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ pQServer->aAcceptThreadStopFlags[nWorkerIndex] = 0;
     LeaveCriticalSection(&pQServer->csClientLifecycle);
     exit_thread:
-    ErrorManager::StubHook2();
+    ErrorManager::StubHook2(0);
     return 1;
 }
 
@@ -644,17 +643,17 @@ DWORD __stdcall IoWorkerThreadMain(void * lpThreadParam) {
     }
 
     {
-      int iVar1;
-      iVar1 = pQServer->aIoWorkerStopFlags[nWorkerIndex];
-      while (!iVar1) {
+      int bStopRequested;
+      bStopRequested = pQServer->aIoWorkerStopFlags[nWorkerIndex];
+      while (!bStopRequested) {
         PumpIoCompletionQueueForWorker(pQServer, nWorkerIndex, 0x32);
-        iVar1 = pQServer->aIoWorkerStopFlags[nWorkerIndex];
+        bStopRequested = pQServer->aIoWorkerStopFlags[nWorkerIndex];
       }
 
       /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&pQServer->csClientLifecycle);
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ pQServer->aIoWorkerStopFlags[nWorkerIndex] = 0;
       LeaveCriticalSection(&pQServer->csClientLifecycle);
-      ErrorManager::StubHook2();
+      ErrorManager::StubHook2(0);
       return 1;
     }
 }
@@ -683,9 +682,7 @@ SOCKET __fastcall StartListening(D2QServerStrc * pQServer, uint32_t nPort) {
     uint32_t* pThreadArgs;
     HANDLE hThread;
     char optTcpNoDelay[4];
-    char optKeepAlive[8];
     sockaddr bindAddr;
-    char* pszErrFmt;
     uint32_t nPortLocal = nPort;
     int32_t pIocp = (int32_t)CreateIoCompletionPort((HANDLE)-1, (HANDLE)0x0, 0, 0);
     if (!(HANDLE)pIocp) {
@@ -705,16 +702,10 @@ SOCKET __fastcall StartListening(D2QServerStrc * pQServer, uint32_t nPort) {
     optTcpNoDelay[2] = '\0';
     optTcpNoDelay[3] = '\0';
     /* char * optval for setsockopt */ /* int optname for setsockopt */ /* int level for setsockopt */ /* SOCKET s for setsockopt */ setsockopt(hListenSocket, 6, 1, optTcpNoDelay, 4);
-    /* int optlen for setsockopt */ optKeepAlive[0] = '\x01';
-    optKeepAlive[1] = '\0';
-    optKeepAlive[2] = '\0';
-    optKeepAlive[3] = '\0';
-    /* char * optval for setsockopt */ /* int optname for setsockopt */ /* int level for setsockopt */ /* SOCKET s for setsockopt */ setsockopt(hListenSocket, 0xffff, 8, optKeepAlive, 4);
-    /* int optlen for setsockopt */ optKeepAlive[4] = '\x01';
-    optKeepAlive[5] = '\0';
-    optKeepAlive[6] = '\0';
-    optKeepAlive[7] = '\0';
-    /* char * optval for setsockopt */ /* int optname for setsockopt */ /* int level for setsockopt */ /* SOCKET s for setsockopt */ setsockopt(hListenSocket, 0xffff, 4, optKeepAlive + 4, 4);
+    int optKeepAlive = 1;
+    setsockopt(hListenSocket, 0xffff, 8, (char*)&optKeepAlive, 4);
+    int bReuseAddr = 1;
+    setsockopt(hListenSocket, 0xffff, 4, (char*)&bReuseAddr, 4);
     u_long ulNonBlocking = 1;
     ioctlsocket(hListenSocket, -0x7ffb9982, &ulNonBlocking);
     memset(bindAddr.sa_data + 2, 0, 12 * sizeof(bindAddr.sa_data[0]));
@@ -727,7 +718,7 @@ SOCKET __fastcall StartListening(D2QServerStrc * pQServer, uint32_t nPort) {
     nResult = _Wrappers::bind(hListenSocket, &bindAddr, 0x10);
     if (nResult == -1) {
       nResult = WSAGetLastError();
-      pszErrFmt = "[SERVER]  QSNTInit failed on bind() - err=%d";
+      LogManager::LOGFILE_WriteStringToFile("[SERVER]  QSNTInit failed on bind() - err=%d", nResult);
     } else {
       /* int backlog for listen */ /* SOCKET s for listen */ nResult = _Wrappers::listen(hListenSocket, 0xfa);
       if (nResult != -1) {
@@ -742,7 +733,7 @@ SOCKET __fastcall StartListening(D2QServerStrc * pQServer, uint32_t nPort) {
         pThreadArgs[1] = nResult;
         hThread = CreateThread((LPSECURITY_ATTRIBUTES)0x0, 0, (LPTHREAD_START_ROUTINE)AcceptThreadMain, pThreadArgs, 0, (LPDWORD)(pQServer->aAcceptThreadIds + nResult));
         pQServer->aAcceptThreadHandles[nResult] = hThread;
-        ErrorManager::StubHook1();
+        ErrorManager::StubHook1(pQServer->aAcceptThreadIds[nResult], hThread);
         if (pQServer->bUseDedicatedIoWorkers) {
           pThreadArgs = (uint32_t*)D2_ALLOC_AT(8, ".\\Src\\QServer\\QServerNT.cpp", 0xb5);
           pIocp = (int32_t)(pQServer->aIoWorkerThreadIds + nResult);
@@ -750,17 +741,16 @@ SOCKET __fastcall StartListening(D2QServerStrc * pQServer, uint32_t nPort) {
           pThreadArgs[1] = nResult;
           hThread = CreateThread((LPSECURITY_ATTRIBUTES)0x0, 0, (LPTHREAD_START_ROUTINE)IoWorkerThreadMain, pThreadArgs, 0, (LPDWORD)pIocp);
           pQServer->aIoWorkerThreadHandles[nResult] = hThread;
-          ErrorManager::StubHook1();
+          ErrorManager::StubHook1(*(uint32_t*)pIocp, hThread);
         }
 
         return hListenSocket;
       }
 
       nResult = WSAGetLastError();
-      pszErrFmt = "[SERVER]  QSNTInit failed on listen() - err=%d";
+      LogManager::LOGFILE_WriteStringToFile("[SERVER]  QSNTInit failed on listen() - err=%d", nResult);
     }
 
-    LogManager::LOGFILE_WriteStringToFile(pszErrFmt, nResult);
     Safesock::closeSocket(hListenSocket);
     return 0;
 }

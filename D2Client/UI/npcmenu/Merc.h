@@ -11,14 +11,12 @@
 // Forward declarations
 struct D2BitBufferStrc;
 struct D2GSPacketSrv0x4E;
+struct D2GSPacketSrv0x8A;
 struct D2UnitStrc;
 
 // Data types
 struct D2MercBaseStrc {
-    D2MercBaseStrc() = default;
-    D2MercBaseStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2MercBaseStrc(uint32_t a0, uint32_t a1) : nBaseAttackRating(a0), nBaseDefense(a1) {}
 
     /* 0x00 */ uint32_t nBaseAttackRating;
     /* 0x04 */ uint32_t nBaseDefense;
@@ -75,10 +73,7 @@ struct D2MercTertiaryStrc {
 };
 
 struct D2MercWeaponAnimMapStrc {
-    D2MercWeaponAnimMapStrc() = default;
-    D2MercWeaponAnimMapStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2MercWeaponAnimMapStrc(int32_t a0, int32_t a1) : nAnimIndex(a0), nWeaponClass(a1) {}
 
     /* 0x00 */ int32_t nAnimIndex;
     /* 0x04 */ int32_t nWeaponClass;
@@ -90,9 +85,9 @@ namespace D2Client::UI::npcmenu::Merc {
 void __fastcall AddMercForHireToGlobalList(struct D2GSPacketSrv0x4E * pPacket);
 void __fastcall NET_D2GS_CLIENT_Incoming0x4F_INITMERCENARYLIST(char * pBytes);
 struct D2BitBufferStrc * __stdcall NPCMENU_GetMercHireCost();
-void __fastcall NPCMENU_SetSelectedMercIndex(int16_t nParam);
+void __fastcall NPCMENU_SetSelectedMercIndex(int16_t wMercNameId);
 void __fastcall NPCMENU_MercItemFoundCb(void * pUnit);
-void __fastcall NPCMENU_HandleMercListPacket(int32_t nParam);
+void __fastcall NPCMENU_HandleMercListPacket(struct D2GSPacketSrv0x8A * pPacket);
 void __stdcall NPCMENU_ResurrectMerc();
 int __stdcall NPCMENU_ShowMercResurrectDialog();
 void __fastcall MERC_ClearHireInventory(struct D2UnitStrc * pUnit);

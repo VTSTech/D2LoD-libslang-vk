@@ -33,7 +33,7 @@
 namespace D2Game::GAME::CCmd {
 
 // Checks if the given server token represents the first game in a session. Returns status code (0=success, 6=error).
-static int __stdcall IsTokenFirstGame(int nMode, int nParam, char * szCharName) {
+static int __stdcall IsTokenFirstGame(int nMode, int nClientVersion, char * szCharName) {
     D2ClientStrc* pClient;
     int32_t nStrCmpResult;
     char* pGameNameCursor;
@@ -55,7 +55,7 @@ static int __stdcall IsTokenFirstGame(int nMode, int nParam, char * szCharName) 
     if (!pGame) {
       return 6;
     }
-    if (nParam != 0xe) {
+    if (nClientVersion != 0xe) {
       Server::Unlock(pGame);
       return 0x10;
     }
@@ -109,7 +109,8 @@ static int __stdcall IsTokenFirstGame(int nMode, int nParam, char * szCharName) 
 
 // D2GS server-side dispatcher for the game-setup / session control packet family (opcodes 0x67..0x70, indexed by pPacket[1]-0x67). Reads the client id from pPacket[0] and routes: 0=GAMELOGON_SP (single-player create via GAME_CreateSingleplayerGame), 1=GAMELOGON_MULTI (token-first-game anti-cheat check, NET_D2GS_SERVER_IsValidChecks then NET_D2GS_SERVER_SrvJoinGame), 2=LEAVEGAME, 3=REQUESTHOSTEDGAMES, 4=JOINGAME (SrvJoinAct), 5=UPLOADSAVE (halts unrecoverably if save size >0x1fff), 6=PING (NET_SendPong), 7=FINDME_6E, 9=force-disconnect (sets QServer nForceTimeoutDisconnect). Most branches gate the action behind a per-command validity/allowed check. Returns via Fog::Debug::GuardStack. pCritSec is the clients-list critical section (released on the force-disconnect path). NOTE: several gate booleans (bSetupCheckResult, bServerValidRequest, bFindMeCheckResult) read as uninitialized in decompile due to lost register-param/inlined-return storage.
 // @sourcefile .\GAME\CCmd.cpp
-void __fastcall NET_D2GS_SERVER_ProcessClientMessage_GameSetup(D2GSClientMsgEnvelopeStrc * pPacket) {
+// Registers: pPacket in ECX; nPacketSize in EDX (the received length) is passed but not read.
+void __fastcall NET_D2GS_SERVER_ProcessClientMessage_GameSetup(D2GSClientMsgEnvelopeStrc * pPacket, int32_t nPacketSize) {
     // Frame slots -80..-60 are ONE object: &dwJoinParam3 is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -136,7 +137,7 @@ void __fastcall NET_D2GS_SERVER_ProcessClientMessage_GameSetup(D2GSClientMsgEnve
         /* D2GS_GAMELOGON_SP */ D2BOOT_MarkFmt("c2s 0x67 GAMELOGON_SP recv (clientid %u)", (unsigned)nClientId); // [d2boot]
         bFindMeCheckResult = Server::SetupGameChecks(nClientId, &pPacket->uMsg.sGameLogonSP);
       if (bFindMeCheckResult) {
-        Server::GAME_CreateSingleplayerGame(nClientId, pPacket->uMsg.sGameLogonSP.szGameName, pPacket->uMsg.sGameLogonSP.eHostGameType, pPacket->uMsg.sGameLogonSP.ePlayerClass, pPacket->uMsg.sGameLogonSP.szCharName, pPacket->uMsg.sGameLogonSP.field_0x25, pPacket->uMsg.sGameLogonSP.eArenaFlags, pPacket->uMsg.sGameLogonSP.nTemplate, pPacket->uMsg.sGameLogonSP.field_0x2b, pPacket->uMsg.sGameLogonSP.field_0x2c, pPacket->uMsg.sGameLogonSP.nDifficulty, pPacket->uMsg.sGameLogonSP.nLanguageCode, 0, 0);
+        Server::GAME_CreateSingleplayerGame(nClientId, pPacket->uMsg.sGameLogonSP.szGameName, pPacket->uMsg.sGameLogonSP.eHostGameType, pPacket->uMsg.sGameLogonSP.ePlayerClass, pPacket->uMsg.sGameLogonSP.szCharName, (uint32_t)(uint16_t)pPacket->uMsg.sGameLogonSP.nArena, pPacket->uMsg.sGameLogonSP.eArenaFlags, pPacket->uMsg.sGameLogonSP.nTemplate, pPacket->uMsg.sGameLogonSP.field_0x2b, pPacket->uMsg.sGameLogonSP.field_0x2c, pPacket->uMsg.sGameLogonSP.nDifficulty, pPacket->uMsg.sGameLogonSP.nLanguageCode, 0, 0);
         return;
       }
 
@@ -153,7 +154,7 @@ void __fastcall NET_D2GS_SERVER_ProcessClientMessage_GameSetup(D2GSClientMsgEnve
       __frame0.dwJoinParam1 = 0;
       Server::SRVLog(6, "[JOIN 1] %d clientid - Begin", nClientId);
       if (!BattleNetServerService) {
-        nReason = IsTokenFirstGame((uint32_t)pPacket->uMsg.sGameLogonMulti.nGameToken, pPacket->uMsg.sGameLogonMulti.field_0x8, pPacket->uMsg.sGameLogonMulti.szCharName);
+        nReason = IsTokenFirstGame((uint32_t)pPacket->uMsg.sGameLogonMulti.nGameToken, pPacket->uMsg.sGameLogonMulti.dwClientVersion, pPacket->uMsg.sGameLogonMulti.szCharName);
         if (nReason) {
           Server::ServerCmd::NET_D2GS_SERVER_Send_0xB4_ConnectionRefused(nClientId, nReason);
           D2Net::Game::Server::NET_HACK_AddClientToHackList(nClientId, ".\\GAME\\CCmd.cpp", 0x14b);
@@ -162,9 +163,9 @@ void __fastcall NET_D2GS_SERVER_ProcessClientMessage_GameSetup(D2GSClientMsgEnve
 
       pPlayerName = pPacket->uMsg.sGameLogonMulti.szCharName;
       szCharName[0] = '\0';
-      bServerValidRequest = Server::NET_D2GS_SERVER_IsValidChecks(nClientId, pPacket->uMsg.sGameLogonMulti.nGameToken, pPacket->uMsg.sGameLogonMulti.nCharClass, pPlayerName, pPacket->uMsg.sGameLogonMulti.dwGameHash, (uint32_t)szCharName, (uint32_t)&__frame0.nValidCheckResult, pPacket->uMsg.sGameLogonMulti.nLanguage, (uint32_t)&__frame0.dwJoinParam3, (uint32_t)&__frame0.dwJoinParam2, (uint32_t)&__frame0.dwJoinParam0, (uint32_t)&__frame0.dwJoinParam1, pPacket->uMsg.sGameLogonMulti.field_0x8);
+      bServerValidRequest = Server::NET_D2GS_SERVER_IsValidChecks(nClientId, pPacket->uMsg.sGameLogonMulti.nGameToken, pPacket->uMsg.sGameLogonMulti.nCharClass, pPlayerName, pPacket->uMsg.sGameLogonMulti.dwGameHash, (uint32_t)szCharName, (uint32_t)&__frame0.nValidCheckResult, pPacket->uMsg.sGameLogonMulti.nLanguage, (uint32_t)&__frame0.dwJoinParam3, (uint32_t)&__frame0.dwJoinParam2, (uint32_t)&__frame0.dwJoinParam0, (uint32_t)&__frame0.dwJoinParam1, pPacket->uMsg.sGameLogonMulti.dwClientVersion);
       if (bServerValidRequest) {
-        Server::NET_D2GS_SERVER_SrvJoinGame(nClientId, pPacket->uMsg.sGameLogonMulti.nGameToken, pPacket->uMsg.sGameLogonMulti.nCharClass, pPlayerName, pPacket->uMsg.sGameLogonMulti.dwGameHash, szCharName, __frame0.nValidCheckResult, pPacket->uMsg.sGameLogonMulti.nLanguage, __frame0.dwJoinParam3, __frame0.dwJoinParam2, __frame0.dwJoinParam0, __frame0.dwJoinParam1, pPacket->uMsg.sGameLogonMulti.field_0x8);
+        Server::NET_D2GS_SERVER_SrvJoinGame(nClientId, pPacket->uMsg.sGameLogonMulti.nGameToken, pPacket->uMsg.sGameLogonMulti.nCharClass, pPlayerName, pPacket->uMsg.sGameLogonMulti.dwGameHash, szCharName, __frame0.nValidCheckResult, pPacket->uMsg.sGameLogonMulti.nLanguage, __frame0.dwJoinParam3, __frame0.dwJoinParam2, __frame0.dwJoinParam0, __frame0.dwJoinParam1, pPacket->uMsg.sGameLogonMulti.dwClientVersion);
       }
 
       break;
@@ -177,7 +178,7 @@ void __fastcall NET_D2GS_SERVER_ProcessClientMessage_GameSetup(D2GSClientMsgEnve
 
       break;
       case 'j':
-        /* D2GS_REQUESTHOSTEDGAMES */ bFindMeCheckResult = Server::Return1_GameSetup_0();
+        /* D2GS_REQUESTHOSTEDGAMES */ bFindMeCheckResult = Server::SERVER_IsHostedGamesRequestAllowed();
       if (bFindMeCheckResult) {
         Server::NET_RequestHostedGames(nClientId);
         return;

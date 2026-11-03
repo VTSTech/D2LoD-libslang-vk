@@ -15,6 +15,7 @@
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/GAME/Roster.h"
+#include "D2Client/GAME/SCmd.h"
 #include "D2Client/GAME/Select.h"
 #include "D2Client/GAME/Sound.h"
 #include "D2Client/GAME/View.h"
@@ -31,6 +32,7 @@
 #include "D2Client/UI/npcmenu.h"
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT/CUnit.h"
+#include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/UNIT/PlayerList.h"
 #include "D2Client/UNIT/UnitSnd.h"
@@ -50,7 +52,6 @@
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/D2DrlgStrc.h"
 #include "D2Common/Environment.h"
-#include "D2Common/Game.h"
 #include "D2Common/Text.h"
 #include "D2Common/Units.h"
 #include "D2Game/GAME/Event.h"
@@ -74,7 +75,7 @@
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/MessageStrc.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Storm.h"
@@ -123,11 +124,46 @@ typedef _EXCEPTION_DISPOSITION (*pfnEHHandlerRoutine)(EHExceptionRecord * pExcep
 typedef void (__fastcall *fnUnitIterCallback)(void * pUnit);
 #endif
 
-namespace D2Client::UI::Text {
+static unsigned int gnScrollingTextBoxTopY = 0xc; D2_STATIC_GUARD(gnScrollingTextBoxTopY, "gnScrollingTextBoxTopY");
+static D2UIFlagInitStrc gsUITextFlagInit[7] = {
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x205,
+        /* .pfHandler = */ &D2Client::UI::Text::TEXT_OnClickCloseNpcDialog
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x204,
+        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextClickHandler
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x201,
+        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextClickHandler
+    },
+    {
+        /* .eEventType = */ 0x3,
+        /* .nMessageOrKeyCode = */ 0x1b,
+        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextDismiss
+    },
+    {
+        /* .eEventType = */ 0x3,
+        /* .nMessageOrKeyCode = */ 0x20,
+        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextDismiss
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x102,
+        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextKeyHandler
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x104,
+        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextKeyFilter
+    }
+}; D2_STATIC_GUARD(gsUITextFlagInit, "gsUITextFlagInit");
 
-static RECT gnTextBoxExclusionTop[16] = { 0 }; D2_STATIC_GUARD(gnTextBoxExclusionTop, "D2Client::UI::Text::gnTextBoxExclusionTop");
-static RECT gnTextBoxExclusionRight[16] = { 0 }; D2_STATIC_GUARD(gnTextBoxExclusionRight, "D2Client::UI::Text::gnTextBoxExclusionRight");
-static RECT gnTextBoxExclusionBottom[16] = { 0 }; D2_STATIC_GUARD(gnTextBoxExclusionBottom, "D2Client::UI::Text::gnTextBoxExclusionBottom");
+namespace D2Client::UI::Text {
 
 // JMP thunk
 void __stdcall thunk_TEXT_ClearChatMessages() {
@@ -269,9 +305,9 @@ void __stdcall TEXT_FreeAllScreenMessages(D2ScreenMessageListStrc * pList) {
     return;
 }
 
-void __fastcall TEXT_SetTextDisplayMode(int32_t nParam) {
-    gnTextDisplayMode = nParam;
-    Storm::Source::SReg::SRegSaveValue("Diablo II", "Text Display Beta", 0, nParam);
+void __fastcall TEXT_SetTextDisplayMode(int32_t nDisplayMode) {
+    gnTextDisplayMode = nDisplayMode;
+    Storm::Source::SReg::SRegSaveValue("Diablo II", "Text Display Beta", 0, nDisplayMode);
 }
 
 static BOOL TEXT_DrawScrollingTextBox(uint16_t * * ppwszText) {
@@ -281,9 +317,11 @@ static BOOL TEXT_DrawScrollingTextBox(uint16_t * * ppwszText) {
     uint16_t* pTmpLine;
     int nYTop;
     uint32_t nFontHeight;
-    int iVar1;
     RECT rcFrame;
     uint16_t* pLastVisibleLine;
+    int nBottomCropOffset;
+    int nSingleLineY;
+    int nTopCropHeight;
     if (!ppwszText) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x70d);
       exit(-1);
@@ -372,12 +410,12 @@ static BOOL TEXT_DrawScrollingTextBox(uint16_t * * ppwszText) {
 
           if (pTmpLine) {
             nYTop = 0x5e - ((uint32_t)nFirstVisibleYOffset >> 10);
-            iVar1 = nYTop;
+            nTopCropHeight = nYTop;
             if (nYTop >= 0x12) {
-              iVar1 = 0x12;
+              nTopCropHeight = 0x12;
             }
             if (gnTextDisplayMode || gbTextScrollBoxVisible) {
-              D2Win::Src::D2WinFont::D2WINFONT_DrawVerticalCroppedText(*(uint16_t**)pTmpLine, gnTextBoxExclusionX + 0x10, gnScrollingTextBoxTopY + nYTop, 3, 0, iVar1);
+              D2Win::Src::D2WinFont::D2WINFONT_DrawVerticalCroppedText(*(uint16_t**)pTmpLine, gnTextBoxExclusionX + 0x10, gnScrollingTextBoxTopY + nYTop, 3, 0, nTopCropHeight);
             }
           }
         }
@@ -386,10 +424,10 @@ static BOOL TEXT_DrawScrollingTextBox(uint16_t * * ppwszText) {
         nFirstVisibleYOffset = *(uint32_t**)(pLastVisibleLine + 2);
         if (nFirstVisibleYOffset) {
           nYTop = -(nLastVisibleYOffset + 0x400 >> 10);
-          iVar1 = nYTop + 0x12;
+          nBottomCropOffset = nYTop + 0x12;
           nFontHeight = D2Win::Src::D2WinFont::D2WINFONT_GetCurrentFontHeight();
-          if (iVar1 < (int)nFontHeight && (gnTextDisplayMode || gbTextScrollBoxVisible)) {
-            D2Win::Src::D2WinFont::D2WINFONT_DrawVerticalCroppedText((uint16_t*)*nFirstVisibleYOffset, gnTextBoxExclusionX + 0x10, gnScrollingTextBoxTopY + nYTop + 0x83, 0, iVar1, nFontHeight - iVar1);
+          if (nBottomCropOffset < (int)nFontHeight && (gnTextDisplayMode || gbTextScrollBoxVisible)) {
+            D2Win::Src::D2WinFont::D2WINFONT_DrawVerticalCroppedText((uint16_t*)*nFirstVisibleYOffset, gnTextBoxExclusionX + 0x10, gnScrollingTextBoxTopY + nYTop + 0x83, 0, nBottomCropOffset, nFontHeight - nBottomCropOffset);
           }
         }
       }
@@ -406,32 +444,31 @@ static BOOL TEXT_DrawScrollingTextBox(uint16_t * * ppwszText) {
     }
 
     if (pLine < (uint16_t*)0x1c000) {
-      iVar1 = 0x70 - ((uint32_t)(pLine + 0x200) >> 10);
-      if (iVar1 < 0x12) {
-        nYTop = iVar1;
-        if (!iVar1) {
+      nSingleLineY = 0x70 - ((uint32_t)(pLine + 0x200) >> 10);
+      if (nSingleLineY < 0x12) {
+        nYTop = nSingleLineY;
+        if (!nSingleLineY) {
           goto restore_font_check_scrolled;
         }
       } else {
         nYTop = 0x12;
       }
       if (gnTextDisplayMode || gbTextScrollBoxVisible) {
-        D2Win::Src::D2WinFont::D2WINFONT_DrawVerticalCroppedText(*(uint16_t**)pFirstVisibleLine, gnTextBoxExclusionX + 0x10, iVar1 + gnScrollingTextBoxTopY, 3, 0, nYTop);
+        D2Win::Src::D2WinFont::D2WINFONT_DrawVerticalCroppedText(*(uint16_t**)pFirstVisibleLine, gnTextBoxExclusionX + 0x10, nSingleLineY + gnScrollingTextBoxTopY, 3, 0, nYTop);
       }
     }
 
     restore_font_check_scrolled:
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
-    iVar1 = (int)ppwszText[1] - 1;
-    if (iVar1 <= 0) {
-      iVar1 = 1;
+    int nMaxLineIndex = (int)ppwszText[1] - 1;
+    if (nMaxLineIndex <= 0) {
+      nMaxLineIndex = 1;
     }
-    if ((uint32_t)ppwszText[2] >> 10 > iVar1 * 0x12 + 0x70U) {
-      if (gnTextScrollBoxLineHeight != 1) {
-        return 1;
+    if ((uint32_t)ppwszText[2] >> 10 > nMaxLineIndex * 0x12 + 0x70U) {
+      if (gnTextScrollBoxLineHeight == 1) {
+        gnTextScrollBoxLineHeight = 0;
       }
 
-      gnTextScrollBoxLineHeight = 0;
       return 1;
     }
 
@@ -467,7 +504,7 @@ void __fastcall TEXT_DrawTextBoxAtPosition(D2TextBoxStrc * pTextBox, int32_t nSc
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nSavedFont);
 }
 
-static int TEXT_DrawTextBoxWithBorderCheck(D2TextBoxStrc * pTextBox, int * pnParam) {
+static int TEXT_DrawTextBoxWithBorderCheck(D2TextBoxStrc * pTextBox, int * pnPosition) {
     if (!pTextBox->nState) {
       pTextBox->nState = 1;
     } else if (pTextBox->nState == 3) {
@@ -478,7 +515,7 @@ static int TEXT_DrawTextBoxWithBorderCheck(D2TextBoxStrc * pTextBox, int * pnPar
     switch (nBorderType) {
       case 1:
         {
-          if (*pnParam > ScreenSizeX / 2 - 10) {
+          if (*pnPosition > ScreenSizeX / 2 - 10) {
             return 1;
           }
 
@@ -486,7 +523,7 @@ static int TEXT_DrawTextBoxWithBorderCheck(D2TextBoxStrc * pTextBox, int * pnPar
         }
       case 2:
         {
-          if (*pnParam < ScreenSizeX / 2 + 10) {
+          if (*pnPosition < ScreenSizeX / 2 + 10) {
             return 1;
           }
 
@@ -498,7 +535,7 @@ static int TEXT_DrawTextBoxWithBorderCheck(D2TextBoxStrc * pTextBox, int * pnPar
         }
     }
 
-    TEXT_DrawTextBoxAtPosition(pTextBox, *pnParam, pnParam[1]);
+    TEXT_DrawTextBoxAtPosition(pTextBox, *pnPosition, pnPosition[1]);
     return 1;
 }
 
@@ -508,9 +545,9 @@ void __stdcall TEXT_OnClickCloseNpcDialog(D2UIMouseMsgStrc * pMsg) {
     Storm::SMsgBreakHandlerChain(pMsg);
 }
 
-void __fastcall TEXT_SetNpcMenuSelection(int32_t nParam) {
-    if (nParam) {
-      gnTextNpcMenuIndex = *(uint32_t*)(nParam + 0xc);
+void __fastcall TEXT_SetNpcMenuSelection(D2UnitStrc * pUnit) {
+    if (pUnit) {
+      gnTextNpcMenuIndex = pUnit->nUnitGUID;
       gbTextNpcMenuSelection = 1;
       return;
     }
@@ -832,42 +869,37 @@ static uint8_t __stdcall TEXT_FindNonOverlappingRect(int32_t nExistingRectCount,
           do {
             pExistingRect = (RECT*)0x23;
             do {
-              nDirIdx = 0;
-              if (gnTextNonOverlapRectCount > 0) {
-                do {
-                  rcCandidate.left = pRect->left + gaTextNonOverlapRects[nDirIdx] * nDistX;
-                  rcCandidate.top = pRect->top + gaTextNonOverlapRects[nDirIdx] * (int)pExistingRect;
-                  rcCandidate.right = rcCandidate.left + 400;
-                  rcCandidate.bottom = rcCandidate.top + 0x118;
-                  if (rcCandidate.left >= 0 && rcCandidate.right <= ScreenSizeX && rcCandidate.top >= 0 && rcCandidate.bottom <= ScreenSizeY) {
-                    bOverlaps = '\0';
-                    pCheckRect = gnTextBoxExclusionLeft;
-                    nRemaining = nExistingRectCount;
-                    do {
-                      /* RECT * lprcSrc2 for IntersectRect */ /* RECT * lprcSrc1 for IntersectRect */ /* LPRECT lprcDst for IntersectRect */ bIntersects = IntersectRect(&rcIntersect2, pCheckRect, &rcCandidate);
-                      if (bIntersects) {
-                        bOverlaps = '\x01';
-                      }
-
-                      pCheckRect++;
-                      nRemaining--;
-                    } while (nRemaining);
-
-                    if (bOverlaps == '\0') {
-                      gnTextBoxExclusionLeft[nExistingRectCount].left = rcCandidate.left;
-                      gnTextBoxExclusionLeft[nExistingRectCount].top = rcCandidate.top;
-                      gnTextBoxExclusionLeft[nExistingRectCount].right = rcCandidate.right;
-                      gnTextBoxExclusionLeft[nExistingRectCount].bottom = rcCandidate.bottom;
-                      pRect->left = rcCandidate.left;
-                      pRect->top = rcCandidate.top;
-                      pRect->right = rcCandidate.right;
-                      pRect->bottom = rcCandidate.bottom;
-                      return 1;
+              for (nDirIdx = 0; nDirIdx < gnTextNonOverlapRectCount; nDirIdx++) {
+                rcCandidate.left = pRect->left + gaTextNonOverlapRects[nDirIdx] * nDistX;
+                rcCandidate.top = pRect->top + gaTextNonOverlapRects[nDirIdx] * (int)pExistingRect;
+                rcCandidate.right = rcCandidate.left + 400;
+                rcCandidate.bottom = rcCandidate.top + 0x118;
+                if (rcCandidate.left >= 0 && rcCandidate.right <= ScreenSizeX && rcCandidate.top >= 0 && rcCandidate.bottom <= ScreenSizeY) {
+                  bOverlaps = '\0';
+                  pCheckRect = gnTextBoxExclusionLeft;
+                  nRemaining = nExistingRectCount;
+                  do {
+                    /* RECT * lprcSrc2 for IntersectRect */ /* RECT * lprcSrc1 for IntersectRect */ /* LPRECT lprcDst for IntersectRect */ bIntersects = IntersectRect(&rcIntersect2, pCheckRect, &rcCandidate);
+                    if (bIntersects) {
+                      bOverlaps = '\x01';
                     }
-                  }
 
-                  nDirIdx++;
-                } while (nDirIdx < gnTextNonOverlapRectCount);
+                    pCheckRect++;
+                    nRemaining--;
+                  } while (nRemaining);
+
+                  if (bOverlaps == '\0') {
+                    gnTextBoxExclusionLeft[nExistingRectCount].left = rcCandidate.left;
+                    gnTextBoxExclusionLeft[nExistingRectCount].top = rcCandidate.top;
+                    gnTextBoxExclusionLeft[nExistingRectCount].right = rcCandidate.right;
+                    gnTextBoxExclusionLeft[nExistingRectCount].bottom = rcCandidate.bottom;
+                    pRect->left = rcCandidate.left;
+                    pRect->top = rcCandidate.top;
+                    pRect->right = rcCandidate.right;
+                    pRect->bottom = rcCandidate.bottom;
+                    return 1;
+                  }
+                }
               }
 
               pExistingRect = (RECT*)((int)pExistingRect + 0x23);
@@ -892,7 +924,7 @@ static uint8_t __stdcall TEXT_FindNonOverlappingRect(int32_t nExistingRectCount,
     return 1;
 }
 
-static uint8_t TEXT_ConvertCharToWideWithLanguage(uint32_t dwParam, char * szText, uint32_t nLanguage, uint16_t * pwszDest) {
+static uint8_t TEXT_ConvertCharToWideWithLanguage(uint32_t dwUnused, char * szText, uint32_t nLanguage, uint16_t * pwszDest) {
     uint32_t nCurLanguage;
     if (nLanguage == 7 || nLanguage == 0xc || nLanguage == 6 || nLanguage == 9) {
       uint16_t uVar1;
@@ -947,23 +979,14 @@ void __stdcall TEXT_DrawAllMessageLog() {
 }
 
 void __fastcall TEXT_PrintGameString(uint16_t * wMessage, uint8_t nColor) {
-    // Frame slots -276..-4 are ONE object: &szUtf8 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      char szUtf8;
-      uint8_t szUtf8Rest[255];
-      int32_t nPrevFont;
-      D2TextLineStrc* pNextWrapNode;
-      uint32_t nWrapCount;
-      uint8_t byColor;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 272, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    D2TextLineStrc* pDVar2;
     ::IgnoreList* ppIgnoreList;
+    char szUtf8[256];
+    uint32_t nWrapCount;
     ScreenMessage_t** ppNextLink;
     ScreenMessage_t* pTailMsg;
     int nLineIdx = 0;
-    __frame0.byColor = nColor;
+    uint8_t byColor = nColor;
     ScreenMessage_t* pNewMsg = D2_NEW_AT(ScreenMessage_t, ".\\UI\\text.cpp", 0xd46);
     memset(pNewMsg->apwszLines, 0, 6 * sizeof(pNewMsg->apwszLines[0]));
     *(uint32_t*)&pNewMsg->nLineCount = 0;
@@ -972,15 +995,15 @@ void __fastcall TEXT_PrintGameString(uint16_t * wMessage, uint8_t nColor) {
     pNewMsg->pNext = 0;
     DWORD dwNow = GetTickCount();
     pNewMsg->dwMessageExpiration = dwNow + 10000;
-    __frame0.nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(0xd);
-    D2TextLineStrc* pNewMessage = D2Win::Src::D2WinFont::D2WINFONT_WordWrapString(wMessage, (int*)&__frame0.nWrapCount, ScreenSizeX - 0x46);
-    uint32_t nLineCount = __frame0.nWrapCount;
-    if (__frame0.nWrapCount > 6) {
+    int32_t nLine = D2Win::Src::D2WinFont::SetAndReturnLastFont(0xd);
+    D2TextLineStrc* pNewMessage = D2Win::Src::D2WinFont::D2WINFONT_WordWrapString(wMessage, (int*)&nWrapCount, ScreenSizeX - 0x46);
+    uint32_t nLineCount = nWrapCount;
+    if (nWrapCount > 6) {
       nLineCount = 6;
     }
 
     pNewMsg->nLineCount = (uint16_t)nLineCount;
-    if (0 < (int)__frame0.nWrapCount) {
+    if ((int)nWrapCount > 0) {
       do {
         if (nLineIdx < (int)(uint32_t)pNewMsg->nLineCount) {
           pNewMsg->apwszLines[nLineIdx] = pNewMessage->wszLine;
@@ -988,14 +1011,14 @@ void __fastcall TEXT_PrintGameString(uint16_t * wMessage, uint8_t nColor) {
           D2_FREE_AT(pNewMessage->wszLine, ".\\UI\\text.cpp", 0xd5a);
         }
 
-        __frame0.pNextWrapNode = pNewMessage->pNext;
+        pDVar2 = pNewMessage->pNext;
         D2_FREE_AT(pNewMessage, ".\\UI\\text.cpp", 0xd5d);
         nLineIdx++;
-        pNewMessage = __frame0.pNextWrapNode;
-      } while (nLineIdx < (int)__frame0.nWrapCount);
+        pNewMessage = pDVar2;
+      } while (nLineIdx < (int)nWrapCount);
     }
 
-    pNewMsg->color = (uint32_t)__frame0.byColor;
+    pNewMsg->color = (uint32_t)byColor;
     ScreenMessage_t* pIterMsg = pNewMsg;
     if (ScreenMessagesMaybe.pHead) {
       nLineCount = 0;
@@ -1009,7 +1032,7 @@ void __fastcall TEXT_PrintGameString(uint16_t * wMessage, uint8_t nColor) {
         pIterMsg = *ppNextLink;
       }
 
-      if ((nLineCount & 0xffff) != ScreenMessagesMaybe.nCount - 1) {
+      if ((uint16_t)nLineCount != ScreenMessagesMaybe.nCount - 1) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd6c);
         exit(-1);
       }
@@ -1020,11 +1043,11 @@ void __fastcall TEXT_PrintGameString(uint16_t * wMessage, uint8_t nColor) {
 
     ScreenMessagesMaybe.pHead = pIterMsg;
     if (pNewMsg->color == 4 && pNewMsg->nLineCount == 1) {
-      __frame0.szUtf8 = '\0';
-      memset(__frame0.szUtf8Rest, 0, 0xff);
-      D2Lang::WideCharToUTF8(&__frame0.szUtf8, pNewMsg->apwszLines[0], 0x100);
+      szUtf8[0] = '\0';
+      memset(szUtf8 + 1, 0, 0xff);
+      D2Lang::WideCharToUTF8(szUtf8, pNewMsg->apwszLines[0], 0x100);
       ppIgnoreList = D2Common::Chat::Ignorelist::MISC_GetIgnorelist();
-      ppIgnoreList->_vfptr->AddAccountMapping(ppIgnoreList, &__frame0.szUtf8, 0x100);
+      ppIgnoreList->_vfptr->AddAccountMapping(ppIgnoreList, szUtf8, 0x100);
     }
 
     TEXT_InsertScreenMessage(pNewMsg->apwszLines);
@@ -1055,7 +1078,7 @@ void __fastcall TEXT_PrintGameString(uint16_t * wMessage, uint8_t nColor) {
       TEXT_DrawAllMessageLog();
     }
 
-    D2Win::Src::D2WinFont::SetAndReturnLastFont(__frame0.nPrevFont);
+    D2Win::Src::D2WinFont::SetAndReturnLastFont(nLine);
 }
 
 void __fastcall TEXT_PrintPartyMessage(uint16_t * wszText, uint8_t byColor) {
@@ -1099,7 +1122,7 @@ void __fastcall TEXT_PrintPartyMessage(uint16_t * wszText, uint8_t byColor) {
             break;
           }
 
-          bIsLineBreak = D2Lang::Unicode::UNISYS::UNICODE_CheckLineBreakPosition((int32_t)(pwszText + nOffset), nLineLen + 1);
+          bIsLineBreak = D2Lang::Unicode::UNISYS::UNICODE_CheckLineBreakPosition(pwszText + nOffset, nLineLen + 1);
           if (bIsLineBreak) {
             break;
           }
@@ -1141,7 +1164,7 @@ void __fastcall TEXT_PrintPartyMessage(uint16_t * wszText, uint8_t byColor) {
         pSVar1 = *ppNextMsg;
       }
 
-      if ((nMsgCount & 0xffff) != ScreenPartyMessages.nCount - 1) {
+      if ((uint16_t)nMsgCount != ScreenPartyMessages.nCount - 1) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdf1);
         exit(-1);
       }
@@ -1206,10 +1229,10 @@ D2UnitStrc * __stdcall TEXT_GetOverheadSpeakerUnit() {
 static BOOL TEXT_FormatEventMessage(int32_t pEventData, uint16_t * wszText) {
     uint16_t* pwszLocale;
     uint16_t nStrId;
-    char* pszDst;
     uint16_t awszPlayerName[16];
     char szRosterName[16];
-    char cNameCh;
+    uint32_t nIgnoreFlag;
+    int32_t nPlayerGUID;
     uint16_t* pwszArg;
     D2RosterStrc* pRoster;
     pRoster = GAME::Roster::GetRosterByGUID(*(int32_t*)(pEventData + 3));
@@ -1219,13 +1242,7 @@ static BOOL TEXT_FormatEventMessage(int32_t pEventData, uint16_t * wszText) {
     if (pRoster) {
       char* pszSrc;
       pszSrc = GAME::Roster::GetRosterName(pRoster);
-      pszDst = szRosterName;
-      do {
-        cNameCh = *pszSrc;
-        *pszDst = cNameCh;
-        pszSrc++;
-        pszDst++;
-      } while (cNameCh != '\0');
+      strcpy(szRosterName, pszSrc);
     } else {
       szRosterName[0] = '\0';
     }
@@ -1285,25 +1302,22 @@ static BOOL TEXT_FormatEventMessage(int32_t pEventData, uint16_t * wszText) {
       D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, wszText, pwszLocale, pwszArg);
     }
 
-    if (!pPlayerUnit_lcl) {
-      return 1;
+    if (pPlayerUnit_lcl) {
+      nPlayerGUID = pPlayerUnit_lcl->nUnitGUID;
+      nIgnoreFlag = 4;
+      nIgnoreFlag = UNIT::PlayerList::GetFlag(nPlayerGUID, GAME::Roster::GetRosterGUID(pRoster), nIgnoreFlag);
+      if (nIgnoreFlag) {
+        return 0;
+      }
     }
 
-    int32_t nPlayerGUID = pPlayerUnit_lcl->nUnitGUID;
-    uint32_t nIgnoreFlag = 4;
-    nIgnoreFlag = UNIT::PlayerList::GetFlag(nPlayerGUID, GAME::Roster::GetRosterGUID(pRoster), nIgnoreFlag);
-    if (!nIgnoreFlag) {
-      return 1;
-    }
-
-    return 0;
+    return 1;
 }
 
 // Handles the 0x5a event message packet: switches on pMessageCtx->nMessageType, formats the localized message from the packet's names and argument, and prints it in pMessageCtx->nColor. pEventData is the format argument for message type 0x12, which also shakes the view and plays sound 0x1220.
 void __fastcall TEXT_HandleEventMessagePacket(D2Packet0x5aEventStructure * pMessageCtx) {
     D2UnitStrc* pPlayerUnit_lcl;
     uint8_t* pszMyName;
-    uint16_t* pWVar1;
     D2ObjectsTxt* pObjectTxt;
     D2MonStatsTxt* pMonStatsTxt;
     D2SuperUniquesTxt* pSuperUniqueTxt;
@@ -1422,17 +1436,12 @@ void __fastcall TEXT_HandleEventMessagePacket(D2Packet0x5aEventStructure * pMess
         if (pszName != pMessageCtx->szName2 + 1) {
           Fog::File::CONTAINER_InitializeBuffer(awszName2, 2, 0x10, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
           D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszName2, pMessageCtx->szName2, 0x10);
-          pwszLocale = awszName2;
-          pwszArg = awszName;
-          pWVar1 = D2Lang::StrTable::strtable::GetLocaleString(0xe3b);
-          D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, pWVar1, pwszArg, pwszLocale);
+          D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, D2Lang::StrTable::strtable::GetLocaleString(0xe3b), awszName, awszName2);
           TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
           return;
         }
 
-        pwszLocale = awszName;
-        pwszArg = D2Lang::StrTable::strtable::GetLocaleString(0xe39);
-        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, pwszArg, pwszLocale);
+        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, D2Lang::StrTable::strtable::GetLocaleString(0xe39), awszName);
         TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
         return;
       }
@@ -1449,17 +1458,12 @@ void __fastcall TEXT_HandleEventMessagePacket(D2Packet0x5aEventStructure * pMess
         if (pszName != pMessageCtx->szName2 + 1) {
           Fog::File::CONTAINER_InitializeBuffer(awszName2, 2, 0x10, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
           D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszName2, pMessageCtx->szName2, 0x10);
-          pwszLocale = awszName2;
-          pwszArg = awszName;
-          pWVar1 = D2Lang::StrTable::strtable::GetLocaleString(0xe3c);
-          D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, pWVar1, pwszArg, pwszLocale);
+          D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, D2Lang::StrTable::strtable::GetLocaleString(0xe3c), awszName, awszName2);
           TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
           return;
         }
 
-        pwszLocale = awszName;
-        pwszArg = D2Lang::StrTable::strtable::GetLocaleString(0xe3a);
-        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, pwszArg, pwszLocale);
+        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, D2Lang::StrTable::strtable::GetLocaleString(0xe3a), awszName);
         TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
         return;
       }
@@ -1586,33 +1590,26 @@ void __fastcall TEXT_HandleEventMessagePacket(D2Packet0x5aEventStructure * pMess
       return;
       case '\v':
         D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszName, pszName, 0x10);
-      pwszLocale = awszName;
-      pwszArg = D2Lang::StrTable::strtable::GetLocaleString(0x69b);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, pwszArg, pwszLocale);
+      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, D2Lang::StrTable::strtable::GetLocaleString(0x69b), awszName);
       TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
       return;
       default:
         return;
       case '\x0f':
         pnFmtArg = pMessageCtx->nArg;
-      pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0xe43);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, pwszLocale, pnFmtArg);
+      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, D2Lang::StrTable::strtable::GetLocaleString(0xe43), pnFmtArg);
       TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
       return;
       case '\x11':
         pnFmtArg = pMessageCtx->nArg;
-      pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x2afc);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, pwszLocale, pnFmtArg);
+      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, D2Lang::StrTable::strtable::GetLocaleString(0x2afc), pnFmtArg);
       TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
       return;
       case '\x12':
         pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x2afd);
       D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, pwszLocale);
       if (sgpDrlgAct) {
-        bEclipseEvent = 1;
-        nMonNameLen = 0;
-        nLine = 5;
-        D2Common::Environment::DRLGENV_InitializeEnvironment(sgpDrlgAct, UNIT::CUnit::GetCurrentRoom(), nLine, nMonNameLen, bEclipseEvent);
+        D2Common::Environment::DRLGENV_InitializeEnvironment(sgpDrlgAct, UNIT::CUnit::GetCurrentRoom(), 5, 0, 1);
       }
 
       GAME::View::SetShake(6, 4000, 10000, 4000);
@@ -1630,7 +1627,7 @@ void __fastcall TEXT_FreeHoverText(D2HoverTextStrc * pHover) {
     if (pMemoryToFree) {
       TEXT_FreeTextLineList((D2TextLineStrc*)*pMemoryToFree);
       D2_FREE_AT(pMemoryToFree, ".\\UI\\text.cpp", 0x68e);
-      D2Common::Chat::HOVERTEXT_SetTextLineList(pHover, 0);
+      D2Common::Chat::HOVERTEXT_SetTextLineList(pHover, nullptr);
     }
 
     D2Common::Chat::Free(nullptr, pHover);
@@ -1664,14 +1661,11 @@ static void __stdcall TEXT_SetUnitHoverText(uint32_t dwUnused, char * szText, ui
 
 // Converts and displays game message - handles player names, ignore lists, colored text formatting
 void __fastcall TEXT_ProcessChatMessage(MessageStrc * pMessage) {
-    char cVar1;
     uint32_t nCheckResult;
     char* pszName;
-    uint16_t* pszLocaleStr;
     char* pbNameScan;
     int i;
     uint16_t* pszWideOut;
-    uint16_t* pWVar2;
     uint16_t wszMsgBuf[612];
     uint16_t wcWideStart[256];
     uint16_t wszFormatBuf[612];
@@ -1679,6 +1673,7 @@ void __fastcall TEXT_ProcessChatMessage(MessageStrc * pMessage) {
     uint16_t wszNameBuf2[16];
     uint16_t wszShortName[16];
     char szNameBuf[20];
+    char byChar;
     int32_t nMaxName;
     if (!pMessage->entityType) {
       nCheckResult = GAME::Roster::ROSTER_CheckPlayerNotHostile(pMessage->id);
@@ -1735,10 +1730,7 @@ void __fastcall TEXT_ProcessChatMessage(MessageStrc * pMessage) {
     if (byMsgType == 6) {
       D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszMsgBuf, pszName, 0x100);
       D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszShortName, pMessage->name, 0x10);
-      pWVar2 = wszMsgBuf;
-      pszWideOut = wszShortName;
-      pszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0xe4a);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x264, wszFormatBuf, pszLocaleStr, pszWideOut, pWVar2);
+      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x264, wszFormatBuf, D2Lang::StrTable::strtable::GetLocaleString(0xe4a), wszShortName, wszMsgBuf);
       ui::UI_RemoveColorCodesFromString(wszFormatBuf);
       TEXT_PrintGameString(wszFormatBuf, 2);
       return;
@@ -1844,2114 +1836,2114 @@ D2GSPacketSrv0x27_TextStrc * __stdcall TEXT_GetOverheadGlobalPointer() {
 uint16_t * __fastcall TEXT_LookupSoundStringIndex(uint16_t nSoundId) {
     // Static local variables (originally global data)
     static D2SoundStringKeyStrc gaSoundStringKeys[527] = {
-    D2SoundStringKeyStrc(
+    {
         /* .nSoundId = */ 0x40,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x41,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x42,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x43,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x44,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x45,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x46,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x47,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x48,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x49,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4a,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4b,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4c,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4d,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4f,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x50,
         /* .nStringKey = */ 0xe82
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x51,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x52,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x53,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x54,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x55,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x56,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x57,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x58,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x59,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x5a,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x5b,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x5c,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x5d,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x5e,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x5f,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x60,
         /* .nStringKey = */ 0xe83
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x61,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x62,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x63,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x64,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x65,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x66,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x67,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x68,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x69,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x6a,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x6b,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x6c,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x6d,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x6e,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x6f,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x70,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x71,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x72,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x73,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x74,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x75,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x76,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x77,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x78,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x79,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x7a,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x7b,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x7e,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x7c,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x7d,
         /* .nStringKey = */ 0xe85
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x7f,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x80,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x81,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x82,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x83,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x84,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x85,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x86,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x87,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x88,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x89,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x8a,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x8b,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x8c,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x8d,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x8e,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x8f,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x90,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x91,
         /* .nStringKey = */ 0xe86
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x92,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x93,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x94,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x95,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x96,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x97,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x98,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x99,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x9a,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x9b,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x9c,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x9d,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x9e,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x9f,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xa0,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xa1,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xa2,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xa3,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xa4,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xa5,
         /* .nStringKey = */ 0xe84
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xa6,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xa7,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xa8,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xa9,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xaa,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xab,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xac,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xad,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xae,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xaf,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xb0,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xb1,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xb2,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xb3,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xb4,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xb5,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xb6,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xb7,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0xb8,
         /* .nStringKey = */ 0xe87
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x130,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x131,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x132,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x133,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x134,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x135,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x136,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x137,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x138,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x139,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x13a,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x13b,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x13c,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x13d,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x13e,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x13f,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x140,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x141,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x142,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x143,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x144,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x145,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x146,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x147,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x148,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x149,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x14a,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x14b,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x14c,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x14d,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x14e,
         /* .nStringKey = */ 0x39b
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x14f,
         /* .nStringKey = */ 0x39c
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x150,
         /* .nStringKey = */ 0x39c
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x151,
         /* .nStringKey = */ 0x39c
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x152,
         /* .nStringKey = */ 0x39c
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x153,
         /* .nStringKey = */ 0x39c
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x154,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x155,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x156,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x157,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x158,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x159,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x15a,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x15b,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x15c,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x15d,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x15e,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x15f,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x160,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x161,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x162,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x163,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x164,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x165,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x166,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x167,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x168,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x169,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x16a,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x16b,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x16c,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x16d,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x16e,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x16f,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x170,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x171,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x172,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x173,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x174,
         /* .nStringKey = */ 0x39d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x175,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x176,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x177,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x178,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x179,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x17a,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x17b,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x17c,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x17d,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x17e,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x17f,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x180,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x181,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x182,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x183,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x184,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x185,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x186,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x187,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x188,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x189,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x18a,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x18b,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x18d,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x18e,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x18f,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x190,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x191,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x192,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x193,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x194,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x195,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x196,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x197,
         /* .nStringKey = */ 0x39e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x198,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x199,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x19a,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x19b,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x19c,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x19d,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x19e,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x19f,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1a0,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1a1,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1a2,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1a3,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1a4,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1a5,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1a6,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1a7,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1a8,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1a9,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1aa,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1ab,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1ac,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1ad,
         /* .nStringKey = */ 0x39f
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1ae,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1b0,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1b1,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1b2,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1b3,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1af,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1b4,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1b5,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1b6,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1b7,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1b8,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1b9,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1ba,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1bb,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1bc,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1bd,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1be,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1bf,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1c0,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1c1,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1c2,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1c3,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x1c4,
         /* .nStringKey = */ 0x3a0
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x225,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x226,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x227,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x228,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x229,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x22a,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x22b,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x22c,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x22d,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x22e,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x22f,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x230,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x231,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x232,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x233,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x234,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x235,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x236,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x237,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x238,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x239,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x23a,
         /* .nStringKey = */ 0x3a2
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x21f,
         /* .nStringKey = */ 0x3a3
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x221,
         /* .nStringKey = */ 0x3a3
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x220,
         /* .nStringKey = */ 0x3a3
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x222,
         /* .nStringKey = */ 0x3a3
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x223,
         /* .nStringKey = */ 0x3a3
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x224,
         /* .nStringKey = */ 0x3a3
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x23b,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x23c,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x23d,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x23e,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x23f,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x240,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x241,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x242,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x243,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x244,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x245,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x246,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x247,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x248,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x249,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x24a,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x24b,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x251,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x24c,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x24d,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x24e,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x24f,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x250,
         /* .nStringKey = */ 0x3a4
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x20f,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x210,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x211,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x212,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x213,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x214,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x215,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x216,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x217,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x218,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x219,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x21a,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x21b,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x21c,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x21d,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x21e,
         /* .nStringKey = */ 0x3a5
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x252,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x253,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x254,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x255,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x256,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x257,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x258,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x259,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x25a,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x25b,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x25c,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x25d,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x25e,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x25f,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x260,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x261,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x262,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x263,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x264,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x265,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x266,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x267,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x268,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x269,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x26a,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x26b,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x26c,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x26d,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x26e,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x26f,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x270,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x271,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x272,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x273,
         /* .nStringKey = */ 0x3a6
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x274,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x275,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x276,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x277,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x278,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x279,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x27a,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x27b,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x27d,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x27e,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x27f,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x280,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x281,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x282,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x283,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x284,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x285,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x286,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x287,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x288,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x289,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x28a,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x28b,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x28c,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x28d,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x28e,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x28f,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x290,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x291,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x292,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x293,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x294,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x295,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x296,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x297,
         /* .nStringKey = */ 0x3a7
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x29e,
         /* .nStringKey = */ 0x3a9
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x29f,
         /* .nStringKey = */ 0x3a9
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x2a0,
         /* .nStringKey = */ 0x3a9
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x2a1,
         /* .nStringKey = */ 0x3a9
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x2a2,
         /* .nStringKey = */ 0x3a9
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x2a3,
         /* .nStringKey = */ 0x3a9
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x2a4,
         /* .nStringKey = */ 0x3a9
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x2a5,
         /* .nStringKey = */ 0x3a9
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x2a9,
         /* .nStringKey = */ 0x3aa
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x2aa,
         /* .nStringKey = */ 0x3aa
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x2ab,
         /* .nStringKey = */ 0x3aa
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x2ac,
         /* .nStringKey = */ 0x3aa
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x2ad,
         /* .nStringKey = */ 0x3aa
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x2a6,
         /* .nStringKey = */ 0x3ab
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x2a7,
         /* .nStringKey = */ 0x3ab
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x2a8,
         /* .nStringKey = */ 0x3ab
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e20,
         /* .nStringKey = */ 0x3aa
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e21,
         /* .nStringKey = */ 0x3aa
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e6d,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e6e,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e6f,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e70,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e71,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e72,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e73,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e74,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e75,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e76,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e77,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e78,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e79,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e7a,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e7b,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e7c,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e7d,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e7e,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e7f,
         /* .nStringKey = */ 0x585a
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e80,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e81,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e82,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e83,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e84,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e85,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e86,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e87,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e88,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e89,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e8a,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e8b,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e8c,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e8d,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e8e,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e8f,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e90,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e91,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e92,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e93,
         /* .nStringKey = */ 0x585e
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e94,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e95,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e96,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e97,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e98,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e99,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e9a,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e9b,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e9c,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e9d,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e9e,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e9f,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ea0,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ea1,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ea2,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ea3,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ea8,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ea4,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ea5,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ea6,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ea7,
         /* .nStringKey = */ 0x5863
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ea9,
         /* .nStringKey = */ 0x5869
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eac,
         /* .nStringKey = */ 0x5869
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eab,
         /* .nStringKey = */ 0x5869
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ead,
         /* .nStringKey = */ 0x5869
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eae,
         /* .nStringKey = */ 0x5869
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eaf,
         /* .nStringKey = */ 0x5869
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eb0,
         /* .nStringKey = */ 0x5869
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eb1,
         /* .nStringKey = */ 0x5869
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eb2,
         /* .nStringKey = */ 0x5869
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eb3,
         /* .nStringKey = */ 0x5869
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eb4,
         /* .nStringKey = */ 0x5869
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eb5,
         /* .nStringKey = */ 0x5869
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eb6,
         /* .nStringKey = */ 0x5869
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eb7,
         /* .nStringKey = */ 0x5869
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eb8,
         /* .nStringKey = */ 0x5869
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eb9,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eba,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ebb,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ebc,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ebd,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ebe,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ebf,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ec0,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ec1,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ec2,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ec3,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4e22,
         /* .nStringKey = */ 0x5871
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ec6,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ec5,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ec7,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ec8,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ec4,
         /* .nStringKey = */ 0x586d
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ec9,
         /* .nStringKey = */ 0x5871
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4eca,
         /* .nStringKey = */ 0x5871
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ecb,
         /* .nStringKey = */ 0x5871
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ecc,
         /* .nStringKey = */ 0x5871
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ecd,
         /* .nStringKey = */ 0x5871
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ece,
         /* .nStringKey = */ 0x5871
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ecf,
         /* .nStringKey = */ 0x5871
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ed0,
         /* .nStringKey = */ 0x5871
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ed1,
         /* .nStringKey = */ 0x5871
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ed2,
         /* .nStringKey = */ 0x5871
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ed3,
         /* .nStringKey = */ 0x5871
-    ),
-    D2SoundStringKeyStrc(
+    },
+    {
         /* .nSoundId = */ 0x4ed4,
         /* .nStringKey = */ 0x5871
-    )
+    }
 }; D2_STATIC_GUARD(gaSoundStringKeys, "D2Client::UI::Text::TEXT_LookupSoundStringIndex::gaSoundStringKeys");
     static int gSoundStringLookupPrevIdx = 0x20f; D2_STATIC_GUARD(gSoundStringLookupPrevIdx, "D2Client::UI::Text::TEXT_LookupSoundStringIndex::gSoundStringLookupPrevIdx");
 
@@ -4071,19 +4063,12 @@ void __stdcall TEXT_DrawQuestScrollAnimation(int32_t bDraw) {
     static uint32_t gnQuestScrollAnimFrame; D2_STATIC_GUARD_BSS(gnQuestScrollAnimFrame, "D2Client::UI::Text::TEXT_DrawQuestScrollAnimation::gnQuestScrollAnimFrame");
     static uint32_t gnQuestScrollAnimMaxFrame; D2_STATIC_GUARD_BSS(gnQuestScrollAnimMaxFrame, "D2Client::UI::Text::TEXT_DrawQuestScrollAnimation::gnQuestScrollAnimMaxFrame");
 
-    // Frame slots -408..-4 are ONE object: &byPathPad is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      char byPathPad;
-      uint8_t szImagePath[259];
-      D2GfxDataStrc sGfxData2;
-      D2GfxDataStrc sGfxData;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 404, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     DRAWMODE eDrawMode;
     uint32_t nLineIdx;
     uint32_t nElapsed;
+    char szImagePath[260];
+    D2GfxDataStrc sGfxData2;
+    D2GfxDataStrc sGfxData;
     uint16_t nLineValue;
     D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
     if (!pPlayer) {
@@ -4091,26 +4076,26 @@ void __stdcall TEXT_DrawQuestScrollAnimation(int32_t bDraw) {
     }
 
     int nFrameIdx = 0;
-    memset(&__frame0.sGfxData2, 0, 0x48);
+    memset(&sGfxData2, 0, 0x48);
     TEXT_DrawScrollBackground();
     if (!gpQuestScrollImageBottom) {
-      __frame0.byPathPad = '\0';
-      memset(__frame0.szImagePath, 0, 0x103);
-      sprintf(&__frame0.byPathPad, "%s\\%s", "DATA\\GLOBAL", "UI\\menu\\scroin2");
-      gpQuestScrollImageBottom = Core::Archive::IMAGE_LoadDC6Ex(&__frame0.byPathPad, 0);
+      szImagePath[0] = '\0';
+      memset(szImagePath + 1, 0, 0x103);
+      sprintf(szImagePath, "%s\\%s", "DATA\\GLOBAL", "UI\\menu\\scroin2");
+      gpQuestScrollImageBottom = Core::Archive::IMAGE_LoadDC6Ex(szImagePath, 0);
     }
     if (!gpQuestScrollImageTop) {
-      __frame0.byPathPad = '\0';
-      memset(__frame0.szImagePath, 0, 0x103);
-      sprintf(&__frame0.byPathPad, "%s\\%s", "DATA\\GLOBAL", "UI\\menu\\scroin3");
-      gpQuestScrollImageTop = Core::Archive::IMAGE_LoadDC6Ex(&__frame0.byPathPad, 0);
+      szImagePath[0] = '\0';
+      memset(szImagePath + 1, 0, 0x103);
+      sprintf(szImagePath, "%s\\%s", "DATA\\GLOBAL", "UI\\menu\\scroin3");
+      gpQuestScrollImageTop = Core::Archive::IMAGE_LoadDC6Ex(szImagePath, 0);
     }
     if (!bDraw) {
       return;
     }
 
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(5);
-    __frame0.sGfxData2.pDC6 = gpQuestScrollImageBottom;
+    sGfxData2.pDC6 = gpQuestScrollImageBottom;
     if (!gnQuestScrollAnimFrame) {
       gnQuestScrollAnimFrame = GetTickCount();
       gnQuestScrollAnimMaxFrame = 0;
@@ -4129,7 +4114,7 @@ void __stdcall TEXT_DrawQuestScrollAnimation(int32_t bDraw) {
       if (gnQuestScrollAnimMaxFrame > gaQuestScrollFrameDelay[nFrameIdx]) {
         nElapsed = gnQuestScrollAnimMaxFrame - gaQuestScrollFrameDelay[nFrameIdx];
         eDrawMode = DRAW_SOLID;
-        __frame0.sGfxData2.nFrameNumber = nFrameIdx;
+        sGfxData2.nFrameNumber = nFrameIdx;
         if (nElapsed == 1) {
           Sound::SOUND_PlaySound(SOUND_AKARA_ACT1_Q4_EARLY_SCROLL, nullptr, 0, 0, 0);
           eDrawMode = DRAW_VERYTRANSPARENT;
@@ -4149,11 +4134,11 @@ void __stdcall TEXT_DrawQuestScrollAnimation(int32_t bDraw) {
           }
 
           nLineIdx = (uint32_t)nLineValue;
-          D2gfx::D2GFX::D2GFX_DrawImage(&__frame0.sGfxData2, gaTextDrawAnimPos[nLineIdx * 2] + gnPanelOffsetX, gaTextDrawAnimPos[nLineIdx * 2 + 1] - gnPanelOffsetY, -1, eDrawMode, nullptr);
-          memset(&__frame0.sGfxData, 0, 0x48);
-          __frame0.sGfxData.pDC6 = gpQuestScrollImageTop;
-          __frame0.sGfxData.nFrameNumber = (int)nElapsed >= 0x15 ? 0 : nElapsed;
-          D2gfx::D2GFX::D2GFX_DrawImage(&__frame0.sGfxData, gaTextAnimBounds[nLineIdx * 2] + gnPanelOffsetX, gaTextAnimBounds[nLineIdx * 2 + 1] - gnPanelOffsetY, -1, DRAW_LIGHTTRANSPARENT, nullptr);
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData2, gaTextDrawAnimPos[nLineIdx * 2] + gnPanelOffsetX, gaTextDrawAnimPos[nLineIdx * 2 + 1] - gnPanelOffsetY, -1, eDrawMode, nullptr);
+          memset(&sGfxData, 0, 0x48);
+          sGfxData.pDC6 = gpQuestScrollImageTop;
+          sGfxData.nFrameNumber = (int)nElapsed >= 0x15 ? 0 : nElapsed;
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gaTextAnimBounds[nLineIdx * 2] + gnPanelOffsetX, gaTextAnimBounds[nLineIdx * 2 + 1] - gnPanelOffsetY, -1, DRAW_LIGHTTRANSPARENT, nullptr);
         }
       }
 
@@ -4211,48 +4196,48 @@ void __stdcall TEXT_DrawQuestScrollUI() {
     }
 
     int nBlockTag = *(int*)((int)gpQuestScrollTextBlock + 0x80);
-    if (nBlockTag != 0x20736b62) {
-      if (nBlockTag == 0x20646b62) {
-        if (!gpQuestScrollUI) {
-          TEXT_DrawQuestScrollAnimation(1);
-          return;
-        }
-      } else if (nBlockTag != 0x20317274) {
+    if (nBlockTag == 0x20736b62) {
+      TEXT_DrawQuestScrollAnimation(0);
+      return;
+    }
+    if (nBlockTag == 0x20646b62) {
+      if (!gpQuestScrollUI) {
+        TEXT_DrawQuestScrollAnimation(1);
         return;
       }
-
-      TEXT_DrawScrollBackground();
+    } else if (nBlockTag != 0x20317274) {
       return;
     }
 
-    TEXT_DrawQuestScrollAnimation(0);
+    TEXT_DrawScrollBackground();
+    return;
 }
 
-void __fastcall TEXT_HandleScrollLinePacket(uint8_t * pPacket) {
-    if (*(short int*)(pPacket + 1) != 4) {
+void __fastcall TEXT_HandleScrollLinePacket(D2GSPacketSrv0x50 * pPacket) {
+    if (pPacket->nMessageType != 4) {
       return;
     }
 
-    *(uint32_t*)(char*)&gnQuestScrollLine = *(uint32_t*)(pPacket + 3);
-    *(uint32_t*)((char*)&gnQuestScrollLine + 4) = *(uint32_t*)(pPacket + 7);
-    *(uint32_t*)((char*)&gnQuestScrollLine + 8) = *(uint32_t*)(pPacket + 0xb);
+    *(uint32_t*)(char*)&gnQuestScrollLine = *(uint32_t*)pPacket->aPayload;
+    *(uint32_t*)((char*)&gnQuestScrollLine + 4) = *(uint32_t*)(pPacket->aPayload + 2);
+    *(uint32_t*)((char*)&gnQuestScrollLine + 8) = *(uint32_t*)(pPacket->aPayload + 4);
     gpQuestScrollUI = 0;
 }
 
-void __fastcall TEXT_OpenQuestScroll(int32_t pUnit, int32_t pTextBlock) {
+void __fastcall TEXT_OpenQuestScroll(D2UnitStrc * pUnit, D2ItemsTxt * pTextBlock) {
     // Static local variables (originally global data)
     static int gaQuestScrollRect; D2_STATIC_GUARD_BSS(gaQuestScrollRect, "D2Client::UI::Text::TEXT_OpenQuestScroll::gaQuestScrollRect");
 
-    gpQuestScrollTextBlock = (void*)pTextBlock;
+    gpQuestScrollTextBlock = pTextBlock;
     ui::SetUIFlag(UI_QUESTSCROLL, UI_TOGGLE, 0);
     GAME::Game::UI_ResetInputState();
     if (*(int*)((int)gpQuestScrollTextBlock + 0x80) == 0x20646b62) {
-      int32_t nUnitId;
+      int nUnitId;
       gpQuestScrollUI = 1;
       if (!pUnit) {
         nUnitId = -1;
       } else {
-        nUnitId = *(int32_t*)(pUnit + 0xc);
+        nUnitId = pUnit->nUnitGUID;
       }
 
       GAME::Msg::NET_D2GS_CLIENT_Send_INT(0x3e, nUnitId);
@@ -4301,7 +4286,7 @@ void __stdcall TEXT_OpenMessageLogDialog() {
       nPosY = 0;
       nPosX = ScreenSizeY - 0xa5;
       Dialog::AddStringData(Dialog::DialogHandle, D2Lang::StrTable::strtable::GetLocaleString(0x1030), nPosX, nPosY, nField, nEnabled, pfnCloseCallback, nEntryIdx);
-      pLogListAlloc = (::ListBoxWrapper*)Storm::SMem::SMemAlloc(0xc, "new", -1, 0);
+      pLogListAlloc = (::ListBoxWrapper*)Storm::Source::SMem::SMemAlloc(0xc, "new", -1, 0);
       nSehTryLevel = 0;
       if (pLogListAlloc) {
         gpTextMessageLogHead = ListBox::ListBoxWrapper::Constructor(pLogListAlloc, 5, 0x41, ScreenSizeX - 0x14, ScreenSizeY - 200, 2, 0, 0xd, nullptr, true);
@@ -5174,10 +5159,10 @@ void __stdcall TEXT_FreeEverything() {
     gpTextScrollBoxBuffer = 0;
 }
 
-static int __stdcall TEXT_UpdateScrollingText(int32_t bClose, void * pParam) {
+static int __stdcall TEXT_UpdateScrollingText(int32_t bClose, void * pTextBox) {
     int32_t nCount;
     if (bClose) {
-      *(uint32_t*)((int)pParam + 0x16) = 2;
+      *(uint32_t*)((int)pTextBox + 0x16) = 2;
       return 0;
     }
 
@@ -5191,7 +5176,7 @@ static int __stdcall TEXT_UpdateScrollingText(int32_t bClose, void * pParam) {
     }
 
     gpTextScrollBoxBuffer = 0;
-    BOOL BVar1 = TEXT_DrawScrollingTextBox((uint16_t**)pParam);
+    BOOL BVar1 = TEXT_DrawScrollingTextBox((uint16_t**)pTextBox);
     if (!BVar1) {
       return 1;
     }
@@ -5217,13 +5202,12 @@ static int __stdcall TEXT_UpdateScrollingText(int32_t bClose, void * pParam) {
     ui::UI_UpdateCursorAnimationTimer();
     gnTextNpcInteractGuid = 0;
     GAME::Select::SELECT_SetExclusionRect(nullptr);
-    if (gbTextEventHandlersRegistered != 1) {
-      return 0;
+    if (gbTextEventHandlersRegistered == 1) {
+      nCount = 7;
+      gbTextEventHandlersRegistered = 0;
+      _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUITextFlagInit, nCount);
     }
 
-    nCount = 7;
-    gbTextEventHandlersRegistered = 0;
-    _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUITextFlagInit, nCount);
     return 0;
 }
 
@@ -5241,15 +5225,15 @@ void __stdcall TEXT_CloseNpcInteraction() {
 }
 
 int __stdcall TEXT_HandleEscapeKey() {
-    int iVar1;
+    int nResult;
     int32_t nLine;
     gbTextScrollBoxAnimating = 1;
     if (gnTextNpcInteractGuid || gbTextScrollBoxActive == 1) {
       if (gpTextScrollCompleteCallback) {
         TEXT_CloseScrollingText();
         ui::UI_UpdateCursorAnimationTimer();
-        iVar1 = (*gpTextScrollCompleteCallback)(gpTextScrollCompleteParam, 1, (void*)gpTextDismissCallback);
-        if (iVar1) {
+        nResult = (*gpTextScrollCompleteCallback)(gpTextScrollCompleteParam, 1, (void*)gpTextDismissCallback);
+        if (nResult) {
           gpTextDismissCallback = 0;
           return 1;
         }
@@ -5276,36 +5260,37 @@ int __stdcall TEXT_HandleEscapeKey() {
       gpTextDismissCallback = 0;
       return 1;
     }
-    if (gbTextStaticPopupActive != 1) {
-      gbTextScrollBoxAnimating = 1;
+    if (gbTextStaticPopupActive == 1) {
+      if (gpTextStaticPopupBox == 1) {
+        gpTextDismissCallback = 0;
+        return 0;
+      }
+      if (!gpStaticTextPopup) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x947);
+        exit(-1);
+      }
+
+      TEXT_FreeTextBox(gpStaticTextPopup);
+      D2_FREE_AT(gpStaticTextPopup, ".\\UI\\text.cpp", 0x949);
+      gpStaticTextPopup = 0;
+      gbTextStaticPopupActive = 0;
+      gpTextStaticPopupBox = 0;
       gpTextDismissCallback = 0;
-      return 0;
-    }
-    if (gpTextStaticPopupBox == 1) {
-      gpTextDismissCallback = 0;
-      return 0;
-    }
-    if (!gpStaticTextPopup) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x947);
-      exit(-1);
+      return 1;
     }
 
-    TEXT_FreeTextBox(gpStaticTextPopup);
-    D2_FREE_AT(gpStaticTextPopup, ".\\UI\\text.cpp", 0x949);
-    gpStaticTextPopup = 0;
-    gbTextStaticPopupActive = 0;
-    gpTextStaticPopupBox = 0;
+    gbTextScrollBoxAnimating = 1;
     gpTextDismissCallback = 0;
-    return 1;
+    return 0;
 }
 
-static void __stdcall TEXT_DrawUnitOverheadText(D2HoverTextStrc * pHoverText, int32_t pUnit, uint16_t * wszText, int * pScreenPos) {
+static void __stdcall TEXT_DrawUnitOverheadText(D2HoverTextStrc * pHoverText, D2UnitStrc * pUnit, uint16_t * wszText, int * pScreenPos) {
     RECT rcBox;
     uint32_t nExpireFrame = D2Common::Chat::GetExpireFrame(pHoverText);
     if (gnTextOverheadCounter > nExpireFrame) {
       D2Common::Chat::Free(nullptr, pHoverText);
       if (pUnit) {
-        *(uint32_t*)(pUnit + 0xa4) = 0;
+        pUnit->pHoverText = 0;
       }
     }
 
@@ -5340,7 +5325,6 @@ static void __stdcall TEXT_DrawUnitOverheadText(D2HoverTextStrc * pHoverText, in
 }
 
 void __fastcall TEXT_DrawMonsterHoverText(D2UnitStrc * pUnit) {
-    uint8_t bVar1;
     uint32_t nBorderType;
     int nXOffset;
     long int nStringId;
@@ -5351,6 +5335,8 @@ void __fastcall TEXT_DrawMonsterHoverText(D2UnitStrc * pUnit) {
     uint16_t wszLocaleString[200];
     char szMessage[260];
     POINT ptScreenPos2;
+    uint8_t bConverted;
+    uint8_t byLanguageCode;
     if (!pUnit) {
       return;
     }
@@ -5364,7 +5350,7 @@ void __fastcall TEXT_DrawMonsterHoverText(D2UnitStrc * pUnit) {
     D2Common::Units::GetTargetCoords(pUnit, &ptScreenPos2);
     ptScreenPos2.x -= lprcTextOverheadRect.left;
     ptScreenPos2.y += -0x1e - lprcTextOverheadRect.top;
-    nBorderType = Path::DRAW_GetTypeOfBorder();
+    nBorderType = PANELSHIFT_BorderForWorld(Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit sprite path rides the border-0 camera
     switch (nBorderType) {
       case 1:
         {
@@ -5389,7 +5375,7 @@ void __fastcall TEXT_DrawMonsterHoverText(D2UnitStrc * pUnit) {
     ptScreenPos2.x += nXOffset;
     draw_if_on_screen:
     if (ptScreenPos2.y > 0 && ptScreenPos2.y < ScreenSizeY && ptScreenPos2.x > -100 && ptScreenPos2.x < ScreenSizeX + 100) {
-      D2Common::Chat::TEXT_CopyHoverMessageString(pHover, (int32_t)szMessage);
+      D2Common::Chat::TEXT_CopyHoverMessageString(pHover, szMessage);
       if (szMessage[0] == -1 && szMessage[1] == -1 && ((nStringId = atoi(szMessage + 2) , nStringId >= 0x42d && nStringId <= 0x50f) || nStringId >= 0x5587 && nStringId <= 0x5615 || nStringId == 0x2aa4 || nStringId == 0x5586)) {
         wszString = D2Lang::StrTable::strtable::GetLocaleString((uint16_t)nStringId);
         if (wszString) {
@@ -5401,17 +5387,17 @@ void __fastcall TEXT_DrawMonsterHoverText(D2UnitStrc * pUnit) {
           }
 
           D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(wszLocaleString, wszString, nSizeMaybe);
-          TEXT_DrawUnitOverheadText(pHover, (int32_t)pUnit, wszLocaleString, (int*)&ptScreenPos2.x);
+          TEXT_DrawUnitOverheadText(pHover, pUnit, wszLocaleString, (int*)&ptScreenPos2.x);
           return;
         }
       }
 
       Fog::File::CONTAINER_InitializeBuffer(wszConverted, 2, 0x100, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
-      bVar1 = D2Common::Chat::GetLanguageCode(pHover);
-      bVar1 = TEXT_ConvertCharToWideWithLanguage(nConvertedLen, szMessage, (uint32_t)bVar1, (uint16_t*)wszConverted);
-      if (bVar1) {
+      byLanguageCode = D2Common::Chat::GetLanguageCode(pHover);
+      bConverted = TEXT_ConvertCharToWideWithLanguage(nConvertedLen, szMessage, (uint32_t)byLanguageCode, (uint16_t*)wszConverted);
+      if (bConverted) {
         wszConverted[0xff] = L'\0';
-        TEXT_DrawUnitOverheadText(pHover, (int32_t)pUnit, wszConverted, (int*)&ptScreenPos2.x);
+        TEXT_DrawUnitOverheadText(pHover, pUnit, wszConverted, (int*)&ptScreenPos2.x);
       }
     }
 }
@@ -5438,7 +5424,7 @@ void __fastcall TEXT_DrawObjectHoverText(D2UnitStrc * pUnit) {
     D2Common::Units::GetTargetCoords(pUnit, &ptScreenPos);
     ptScreenPos.x -= lprcTextOverheadRect.left;
     ptScreenPos.y += -10 - lprcTextOverheadRect.top;
-    nBorderType = Path::DRAW_GetTypeOfBorder();
+    nBorderType = PANELSHIFT_BorderForWorld(Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit sprite path rides the border-0 camera
     switch (nBorderType) {
       case 1:
         {
@@ -5463,9 +5449,9 @@ void __fastcall TEXT_DrawObjectHoverText(D2UnitStrc * pUnit) {
     ptScreenPos.x += nXOffset;
     draw_if_on_screen:
     if (ptScreenPos.y > 0 && ptScreenPos.y < ScreenSizeY && ptScreenPos.x > -100 && ptScreenPos.x < ScreenSizeX + 100) {
-      D2Common::Chat::TEXT_CopyHoverMessageString(pHoverText, (int32_t)szMessage);
+      D2Common::Chat::TEXT_CopyHoverMessageString(pHoverText, szMessage);
       nStringId = atoi(szMessage);
-      if (nStringId - 1U <= 0xfffd) {
+      if (nStringId >= 0x1 && nStringId <= 0xfffe) {
         wszString = D2Lang::StrTable::strtable::GetLocaleString((uint16_t)nStringId);
         if (wszString) {
           Fog::File::CONTAINER_InitializeBuffer(wszLocaleString, 2, 200, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
@@ -5476,7 +5462,7 @@ void __fastcall TEXT_DrawObjectHoverText(D2UnitStrc * pUnit) {
           }
 
           D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(wszLocaleString, wszString, nSizeMaybe);
-          TEXT_DrawUnitOverheadText(pHoverText, (int32_t)pUnit, wszLocaleString, (int*)&ptScreenPos.x);
+          TEXT_DrawUnitOverheadText(pHoverText, pUnit, wszLocaleString, (int*)&ptScreenPos.x);
         }
       }
     }
@@ -5506,7 +5492,7 @@ void __fastcall TEXT_DrawMessageLogAndOverhead(D2GameViewStrc * pGameView) {
     }
 
     gbTextOverheadActive = (uint32_t)(gbTextScrollBoxActive == 1);
-    UNIT::CUnit::CUNIT_IterateServerUnitsWithCallback((int32_t)(uintptr_t)TEXT_DrawMonsterHoverText);
+    UNIT::CUnit::CUNIT_IterateServerUnitsWithCallback((fnUnitIterCallback)TEXT_DrawMonsterHoverText);
     UNIT::CUnit::CUNIT_IterateMissilesWithCallback((fnUnitIterCallback)TEXT_DrawObjectHoverText);
     UNIT::CUnit::CUNIT_IterateItemsWithCallback((fnUnitIterCallback)TEXT_DrawObjectHoverText);
     if (gbTextScrollBoxActive == 1 && gpTextScrollingBox && (gpTextScrollingBox->nState == 1 || !gpTextScrollingBox->nState)) {
@@ -5575,11 +5561,9 @@ void __fastcall TEXT_DrawMessageLogAndOverhead(D2GameViewStrc * pGameView) {
     Dialog::DIALOG_DrawBackground(Dialog::DialogHandle);
 }
 
-void __fastcall TEXT_ShowNpcDialog(D2UnitStrc * pUnit, uint16_t nParam, uint32_t dwUnused) {
+void __fastcall TEXT_ShowNpcDialog(D2UnitStrc * pUnit, uint16_t wDialogStringId, uint32_t dwUnused) {
     D2UnitStrc* pNpcUnit;
-    int32_t nVolume;
     RECT nExclusionXOff;
-    int32_t nHandlers;
     gnTextScrollBoxHeight = 0;
     gnScrollingTextBoxTopY = 0xc;
     gnTextBoxExclusionX = (ScreenSizeX - 0x145) / 2;
@@ -5633,14 +5617,14 @@ void __fastcall TEXT_ShowNpcDialog(D2UnitStrc * pUnit, uint16_t nParam, uint32_t
     nExclusionXOff.right = gnTextBoxExclusionX + 0x14f;
     GAME::Select::SELECT_SetExclusionRect(&nExclusionXOff);
     GAME::Select::ClearSelectedUnit();
-    gnTextScrollBoxWidth = nParam;
+    gnTextScrollBoxWidth = wDialogStringId;
     if (gpTextScrollingBox) {
       return;
     }
 
     gbTextScrollBoxAnimating = 0;
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(8);
-    uint16_t* pwszDialogText = D2Lang::StrTable::strtable::GetLocaleString(nParam);
+    uint16_t* pwszDialogText = D2Lang::StrTable::strtable::GetLocaleString(wDialogStringId);
     gpTextScrollingBox = TEXT_AllocTextBox(pwszDialogText, 2);
     if (!gpTextScrollingBox) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1024);
@@ -5650,14 +5634,10 @@ void __fastcall TEXT_ShowNpcDialog(D2UnitStrc * pUnit, uint16_t nParam, uint32_t
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
     Sound::SOUND_DebugPrintChannels();
     gpTextScrollBoxBuffer = 0;
-    eD2Sounds nSoundId = UI_GetDialogLineCount(nParam);
+    eD2Sounds nSoundId = UI_GetDialogLineCount(wDialogStringId);
     if (nSoundId != SOUND_NONE) {
       UNIT::UnitSnd::UNITSND_StopAllSkillSounds(pUnit);
-      nHandlers = 0;
-      nVolume = 0;
-      nPrevFont = 5;
-      pNpcUnit = UNIT::Player::GetPlayerUnit_UI();
-      gpTextScrollBoxBuffer = Sound::SOUND_PlaySound(nSoundId, pNpcUnit, nPrevFont, nVolume, nHandlers);
+      gpTextScrollBoxBuffer = Sound::SOUND_PlaySound(nSoundId, UNIT::Player::GetPlayerUnit_UI(), 5, 0, 0);
       gpTextScrollBoxDC6 = nSoundId;
     }
 
@@ -5673,12 +5653,9 @@ void __fastcall TEXT_ShowNpcDialog(D2UnitStrc * pUnit, uint16_t nParam, uint32_t
     _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUITextFlagInit, 7);
 }
 
-void __fastcall TEXT_ShowScrollingText(uint16_t nParam, int32_t nParam2, int32_t bShowImage) {
-    D2UnitStrc* pUnit;
-    int32_t nVolume;
+void __fastcall TEXT_ShowScrollingText(uint16_t wDialogStringId, int32_t bAlignToPanel, int32_t bShowImage) {
     RECT nExclusionLeft;
-    int32_t nHandlers;
-    if (!nParam2) {
+    if (!bAlignToPanel) {
       gnTextBoxExclusionX = (ScreenSizeX - 0x145) / 2;
       gnScrollingTextBoxTopY = 0xc;
     } else {
@@ -5686,7 +5663,7 @@ void __fastcall TEXT_ShowScrollingText(uint16_t nParam, int32_t nParam2, int32_t
       gnTextBoxExclusionX = gnPanelOffsetX;
     }
 
-    gnTextScrollBoxHeight = (uint32_t)(nParam2 != 0);
+    gnTextScrollBoxHeight = (uint32_t)(bAlignToPanel != 0);
     GAME::Game::UI_ResetInputState();
     if (gpTextScrollBoxDC6 != SOUND_NONE) {
       int nStopResult;
@@ -5710,14 +5687,14 @@ void __fastcall TEXT_ShowScrollingText(uint16_t nParam, int32_t nParam2, int32_t
     nExclusionLeft.right = gnTextBoxExclusionX + 0x14f;
     GAME::Select::SELECT_SetExclusionRect(&nExclusionLeft);
     GAME::Select::ClearSelectedUnit();
-    gnTextScrollBoxWidth = nParam;
+    gnTextScrollBoxWidth = wDialogStringId;
     if (gpTextScrollingBox) {
       return;
     }
 
     gbTextScrollBoxAnimating = 0;
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(8);
-    uint16_t* pwszDialogText = D2Lang::StrTable::strtable::GetLocaleString(nParam);
+    uint16_t* pwszDialogText = D2Lang::StrTable::strtable::GetLocaleString(wDialogStringId);
     gpTextScrollingBox = TEXT_AllocTextBox(pwszDialogText, 2);
     if (!gpTextScrollingBox) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1063);
@@ -5732,27 +5709,22 @@ void __fastcall TEXT_ShowScrollingText(uint16_t nParam, int32_t nParam2, int32_t
     if (bNeedRegister) {
       gbTextEventHandlersRegistered = 1;
       gbTextNpcMenuActive = GetTickCount();
-      nPrevFont = 7;
-      _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUITextFlagInit, nPrevFont);
+      _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUITextFlagInit, 7);
     }
 
-    eD2Sounds nSoundId = UI_GetDialogLineCount(nParam);
+    eD2Sounds nSoundId = UI_GetDialogLineCount(wDialogStringId);
     if (nSoundId != SOUND_NONE) {
-      nHandlers = 0;
-      nVolume = 0;
-      nPrevFont = 5;
-      pUnit = UNIT::Player::GetPlayerUnit_UI();
-      gpTextScrollBoxBuffer = Sound::SOUND_PlaySound(nSoundId, pUnit, nPrevFont, nVolume, nHandlers);
+      gpTextScrollBoxBuffer = Sound::SOUND_PlaySound(nSoundId, UNIT::Player::GetPlayerUnit_UI(), 5, 0, 0);
       gpTextScrollBoxDC6 = nSoundId;
     }
-    if (!((nParam == 0x7f || nParam == 0x4e22 || nParam == 0x4ec9 || nParam == 0x4ea3 || nParam == 0x18c) && bShowImage)) {
+    if (!((wDialogStringId == 0x7f || wDialogStringId == 0x4e22 || wDialogStringId == 0x4ec9 || wDialogStringId == 0x4ea3 || wDialogStringId == 0x18c) && bShowImage)) {
       return;
     }
 
     gpTextScrollBoxImage = 1;
 }
 
-void __fastcall TEXT_ShowStaticTextPopup(uint16_t nParam) {
+void __fastcall TEXT_ShowStaticTextPopup(uint16_t wStringId) {
     // Static local variables (originally global data)
     static unsigned int gnTextStaticPopupHeight; D2_STATIC_GUARD_BSS(gnTextStaticPopupHeight, "D2Client::UI::Text::TEXT_ShowStaticTextPopup::gnTextStaticPopupHeight");
 
@@ -5763,7 +5735,7 @@ void __fastcall TEXT_ShowStaticTextPopup(uint16_t nParam) {
       gpStaticTextPopup = 0;
     }
 
-    uint16_t* wszString = D2Lang::StrTable::strtable::GetLocaleString(nParam);
+    uint16_t* wszString = D2Lang::StrTable::strtable::GetLocaleString(wStringId);
     int32_t nSavedFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(0xd);
     ppTextBox = D2_NEW_AT(D2TextBoxStrc, ".\\UI\\text.cpp", 0x65d);
     D2TextLineStrc* pWrappedText = D2Win::Src::D2WinFont::D2WINFONT_WordWrapString(wszString, &ppTextBox->nLineCount, 0xb4);
@@ -5812,7 +5784,7 @@ void __fastcall TEXT_HandleOverheadTextPacket(D2GSPacketSrv0x27 * pPacket) {
         D2Common::Text::STRUCT_FreeTxtMessageForPacket0x27(gpOverHeadStrc);
       }
 
-      gpOverHeadStrc = D2Common::Game::STRUCT_AllocTxtMessageForPacket0x27(nullptr);
+      gpOverHeadStrc = D2Common::Text::STRUCT_AllocTxtMessageForPacket0x27(nullptr);
       D2Common::Text::StoreMessages(gpOverHeadStrc, &pPacket->nMessageCount);
       D2Common::Text::TEXT_SortMessageList(gpOverHeadStrc);
       // VP-BEGIN [quest-gossip-mark]: the value UI_HandleNpcInteractionPacket will
@@ -5822,25 +5794,26 @@ void __fastcall TEXT_HandleOverheadTextPacket(D2GSPacketSrv0x27 * pPacket) {
       // VP-END [quest-gossip-mark]
       return;
     }
-    if (pPacket->eUnitType != 2) {
-      D2Common::Text::STRUCT_FreeTxtMessageForPacket0x27(gpOverHeadStrc);
-      gpOverHeadStrc = 0;
+    if (pPacket->eUnitType == 2) {
+      pUnit = UNIT::Player::UNITS_FindClientSideUnit(pPacket->nUnitGUID, UNIT_OBJECT);
+      if (pPacket->aMessages[0].bShow == '\x03') {
+        TEXT_ShowStaticTextPopup(pPacket->aMessages[0].nMessage);
+        return;
+      }
+
+      gpOverHeadUnitClassId = 0;
+      gpOverHeadUnitGUID = pPacket->nUnitGUID;
+      if (pUnit) {
+        gpOverHeadUnitClassId = (short int)pUnit->nClassId;
+      }
+
+      TEXT_ShowScrollingText(pPacket->aMessages[0].nMessage, 0, 1);
       return;
     }
 
-    pUnit = UNIT::Player::UNITS_FindClientSideUnit(pPacket->nUnitGUID, UNIT_OBJECT);
-    if (pPacket->aMessages[0].bShow == '\x03') {
-      TEXT_ShowStaticTextPopup(pPacket->aMessages[0].nMessage);
-      return;
-    }
-
-    gpOverHeadUnitClassId = 0;
-    gpOverHeadUnitGUID = pPacket->nUnitGUID;
-    if (pUnit) {
-      gpOverHeadUnitClassId = (short int)pUnit->nClassId;
-    }
-
-    TEXT_ShowScrollingText(pPacket->aMessages[0].nMessage, 0, 1);
+    D2Common::Text::STRUCT_FreeTxtMessageForPacket0x27(gpOverHeadStrc);
+    gpOverHeadStrc = 0;
+    return;
 }
 
 void __stdcall TEXT_CloseNpcDialog() {
@@ -5918,9 +5891,9 @@ void __stdcall INPUT_TextClickHandler(D2UIMouseMsgStrc * pMsg) {
 void __stdcall INPUT_TextKeyHandler(D2UIMouseMsgStrc * pMsg) {
     uint32_t bIsBound = CmdTbl::CMD_IsCommandBound(7, 1);
     if (bIsBound) {
-      uint16_t uVar1;
-      uVar1 = CmdTbl::CMD_GetKeyForCommand(7, 1);
-      if (uVar1 != 0xffff && uVar1 <= 0xdf && pMsg->nWParam == (uint32_t)uVar1) {
+      uint16_t wBoundKey;
+      wBoundKey = CmdTbl::CMD_GetKeyForCommand(7, 1);
+      if (wBoundKey != 0xffff && wBoundKey <= 0xdf && pMsg->nWParam == (uint32_t)wBoundKey) {
         return;
       }
     }
@@ -5939,6 +5912,10 @@ void __stdcall INPUT_TextKeyFilter(D2UIMouseMsgStrc * pMsg) {
 // compiler-generated C++ EH handler; its frame is never registered with the OS
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca07b(EHExceptionRecord * pExceptionRecord, EHRegistrationNode * pRegistrationNode, _CONTEXT * pContext, void * pDispatcherContext) {
     return ExceptionContinueSearch;
+}
+
+void StaticInit_gnTextBoxExclusionX() {
+    gnTextBoxExclusionX = (ScreenSizeX - 0x145) / 2;
 }
 
 } // namespace D2Client::UI::Text

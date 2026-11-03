@@ -3,7 +3,7 @@
 #include "D2CMP/SRC/CelCmp/TCELENTRY.h"
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Storm/H/stpl.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -12,27 +12,19 @@
 namespace D2CMP::SRC::CelCmp::TCELENTRY {
 
 ::TCELENTRY * __thiscall ScalarDeletingDestructor(::TCELENTRY * pThis, uint32_t dwFlags) {
-    uint32_t uLinkOffset;
     TSLink<::TCELENTRY>* nNext = pThis->m_link.m_prevlink;
     if (nNext) {
       int* pBackLink;
-      uLinkOffset = pThis->m_link.m_next;
-      if ((int)uLinkOffset < 0) {
-        pBackLink = (int*)~uLinkOffset;
-      } else {
-        pBackLink = (int*)((int)pThis + (uLinkOffset - nNext->m_next));
-      }
-
+      pBackLink = (int*)D2_StormNextLink(pThis, -1);
       *pBackLink = (int)nNext;
       pThis->m_link.m_prevlink->m_next = pThis->m_link.m_next;
       pThis->m_link.m_prevlink = 0;
       pThis->m_link.m_next = 0;
     }
-    if (!(dwFlags & 1)) {
-      return pThis;
+    if (dwFlags & 1) {
+      Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     }
 
-    Storm::SMem::SMemFree(pThis, "delete", -1, 0);
     return pThis;
 }
 

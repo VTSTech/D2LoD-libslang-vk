@@ -21,16 +21,18 @@ struct D2LightMapStrc;
 struct D2MissileStreamStrc;
 struct D2MonStatsTxt;
 struct D2PartyDataStrc;
+struct D2PoolManagerStrc;
 struct D2RoomStrc;
 struct D2SUnitEventStrc;
 struct D2ShrinesTxt;
+struct D2TradeRecordStrc;
 struct D2UnitDataPlayerArenaStrc;
 struct D2UnitDataPlayerInteractedNPCStrc;
 struct D2UnitDataPlayerPetsStrc;
+struct D2UnitFindArgStrc;
 struct D2UnitPlayerListStrc;
 struct D2UnitQuestDataListStrc;
 struct D2UnitStrc;
-struct D2UnknownStructure0x18;
 struct D2WaypointStrc;
 struct SGAMEDATA;
 typedef int eD2ItemFlag;
@@ -41,6 +43,12 @@ typedef uint32_t eD2UnitStat;
 typedef uint32_t eD2UnitType;
 typedef uint32_t eSkillEType;
 typedef uint8_t eInventoryPage;
+#ifndef RECON_FPTD_UNITFINDTEST
+#define RECON_FPTD_UNITFINDTEST
+typedef int (__fastcall *UNITFINDTEST)(struct D2UnitStrc * pUnit, struct D2UnitFindArgStrc * pUnitFindArg);
+#endif
+
+struct D2UnitFindsStrc;
 
 // Data types
 struct D2StaticPathStrc {
@@ -105,7 +113,7 @@ struct D2UnitDataItemStrc {
     /* 0x46 */ uint8_t eExchangePage; // Exchange/trade page
     /* 0x47 */ uint8_t ePreviousPage; // Previous page before move
     /* 0x48 */ uint8_t nEarLevel; // Ear level (for player ears)
-    /* 0x49 */ bool bVariant; // Item variant flag
+    /* 0x49 */ BYTE bVariant; // Item variant flag
     /* 0x4A */ char szPlayerName[16]; // Player name (for ears/personalized items)
     /* 0x5A */ int16_t wRuneWordIndex; // Runeword ID
     /* 0x5C */ D2ItemInventoryNodeStrc sInvNode; // Socketed items inventory
@@ -128,7 +136,7 @@ struct __attribute__((packed)) D2UnitDataMissileStrc {
     /* 0x24 */ int32_t nTargetGUID; // GUID of the target unit
     /* 0x28 */ int nHomeStatus; // Homing status
     /* 0x2C */ int sCoords; // Target/origin coordinates (packed short x,y)
-    /* 0x30 */ struct D2MissileStreamStrc * unk0x30; // Unknown last field
+    /* 0x30 */ struct D2MissileStreamStrc * pStream; // Unknown last field
 };
 
 struct __attribute__((packed)) D2UnitDataMonsterStrc {
@@ -196,11 +204,11 @@ struct D2UnitDataPlayerStrc {
     /* 0x040 */ uint32_t nNecroPet;
     /* 0x044 */ struct D2UnitDataPlayerPetsStrc * pPets; // struct D2UnitDataPlayerPetsStrc*
     /* 0x048 */ uint32_t dwUniqueId; // Unique player id
-    /* 0x04C */ int32_t dwTradeTick; // Trade tick counter, set to 0 in AllocPlayerData
+    /* 0x04C */ int32_t bCutscenePending; // Cutscene-pending flag: set to 1 before S2C 0x61 (and on Q27 game entry), cleared by C2S 0x48 via PLAYER_ClearCutsceneFlag; 0 in AllocPlayerData
     /* 0x050 */ int dwTradeState; // Trade state/action flags
     /* 0x054 */ uint32_t nAiState;
     /* 0x058 */ uint32_t nAcceptTradeTick; // Trade-accept timestamp/tick
-    /* 0x05C */ struct D2UnknownStructure0x18 * pTradeCopyInventory; // Trade snapshot copy
+    /* 0x05C */ struct D2TradeRecordStrc * pTradeCopyInventory; // Trade snapshot copy
     /* 0x060 */ struct D2UnitDataPlayerInteractedNPCStrc * pInteractedNPCs[3]; // struct D2UnitDataPlayerInteractedNPCStrc* per difficulty
     /* 0x06C */ int nInteractedNPCsRelated;
     /* 0x070 */ eD2Skills eRightSkillId; // Current right skill id
@@ -269,6 +277,24 @@ union D2UnitEvent {
 
     /* 0x00 */ struct D2CUnitEventStrc * pClientEvent;
     /* 0x00 */ struct D2SUnitEventStrc * pServerEvent;
+};
+
+struct D2UnitFindDataStrc {
+    /* 0x00 */ struct D2PoolManagerStrc * pMemory;
+    /* 0x04 */ struct D2UnitFindsStrc * pUnitsArray;
+    /* 0x08 */ struct D2RoomStrc * pRoom;
+    /* 0x0C */ int (__fastcall *fpUnitTest)(struct D2UnitStrc *, struct D2UnitFindArgStrc *);
+    /* 0x10 */ struct D2UnitFindArgStrc * pUnitFindArg;
+    /* 0x14 */ int nFlags;
+    /* 0x18 */ int nCountedUnits;
+    /* 0x1C */ int nUnitFindsSize;
+    /* 0x20 */ int nX;
+    /* 0x24 */ int nY;
+    /* 0x28 */ int nDistance;
+};
+
+struct D2UnitFindsStrc {
+    /* 0x00 */ struct D2UnitStrc * aFoundUnitsList[15];
 };
 
 struct __attribute__((packed)) D2UnitStatDiminishedEntryStrc {

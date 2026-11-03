@@ -11,6 +11,7 @@
 // Forward declarations
 struct CMDPARAMS;
 struct D2EscMenuItemStrc;
+struct D2GSPacketSrv0x50;
 struct D2MissilesTxt;
 struct D2RC4StateStrc;
 struct D2SeedStrc;
@@ -22,6 +23,7 @@ struct EHRegistrationNode;
 struct SGAMEDATA;
 typedef int _EXCEPTION_DISPOSITION;
 typedef uint32_t eD2ArenaFlags;
+typedef uint32_t eD2PlayerClassIDDWORD;
 typedef uint32_t eD2States;
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
 struct _CONTEXT;
@@ -30,13 +32,6 @@ struct _CONTEXT;
 #define RECON_FPTD_fnBinkFrameCallback
 typedef void (__stdcall *fnBinkFrameCallback)();
 #endif
-
-// Data types
-struct __attribute__((packed)) D2GSPacketSrv0x50 {
-    /* 0x00 */ uint8_t nPacketId; // 0x50
-    /* 0x01 */ uint16_t nMessageType; // 1/2/4/0xd/0x17 or quest id (Q36)
-    /* 0x03 */ uint16_t aPayload[6]; // word stores at +3,+5,+7; stone-order word loop from +3
-};
 
 namespace D2Client {
 
@@ -129,7 +124,7 @@ void __stdcall INPUT_HandleIMEEndComposition(struct D2UIMouseMsgStrc * pMsg);
 // Small callback/thunk that reads a party names field from ECX+0x124 and forwards it to AUTOMAP_SetPartyNames.
 void __fastcall AUTOMAP_UpdatePartyNamesCallback(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 // The ECX slot that carries a function pointer was one variable holding three callees with two
-// different conventions - fpRequiredUserAction (bool __cdecl(void)), UI_ShowPopupDialog and
+// different conventions - fpRequiredUserAction (BOOL __cdecl(void)), UI_ShowPopupDialog and
 // NET_D2GS_CLIENT_Send_0x6D_PING (void __stdcall(void)). Typing it void * split it into two register
 // variables with disjoint live ranges: pfnCallback, which reaches MPQ_LoadVideoMpqFiles, and pfFrame,
 // which reaches D2GFX_PlayCutScene and only ever holds PING or 0. void * is the honest type for both -
@@ -143,20 +138,20 @@ uint8_t __stdcall INV_GetItemDescDirtyFlag();
 void __fastcall MONUNIQUE_Clt_ClearMonsterOverride(struct D2UnitStrc * pUnit, int32_t eModifier, int32_t bApply);
 void __fastcall MONUNIQUE_DispatchDeathEffect(struct D2UnitStrc * pUnit, int32_t nUMod, int32_t bIsChampion);
 void __fastcall MONUNIQUE_Clt_SpawnPainWormDeathExplosion(struct D2UnitStrc * pUnit, int32_t nUMod, int32_t bIsChampion);
-void __fastcall MONSTER_FreeMonsterPath(int * pThis);
+void __fastcall MONSTER_FreeMonsterPath(int * pUnit);
 int __stdcall NPCMENU_ConfirmTransactionReturn();
 int __stdcall NPCMENU_GetCurrentMenuId();
-void __fastcall TRADE_HandleTradeComplete(int32_t nValue, char cParam);
+void __fastcall TRADE_HandleTradeComplete(int32_t nValue, char bIsGoldAmount);
 int __stdcall D2CLIENT_GetTradeAcceptedFlags();
 int __stdcall D2CLIENT_GetTradePlayerGoldAmount();
-void __fastcall TRADE_SendGoldToPartner(uint32_t nParam);
+void __fastcall TRADE_SendGoldToPartner(uint32_t nGoldAmount);
 int __stdcall TRADE_IsTradeThrottled();
 void __stdcall SHOP_CleanupAssets();
 void __fastcall NET_D2GS_CLIENT_Handle0x50_QuestSpecial(struct D2GSPacketSrv0x50 * pPacket);
 // Handles GS→client packet 0x5E (quest availability update): copies 37 bytes (9 dwords + 1 byte) from packet payload into aQuestAvailabilityPacket global buffer, then sets bReceivedQuestAvailabilityPacket=1.
 void __fastcall NET_D2GS_CLIENT_Incoming0x5E_QUESTPICKS(char * pBytes);
 uint32_t __stdcall GetQuestAvailabilityByIndex(int32_t nUnused, int32_t nQuestIndex);
-void __fastcall thunk_ExitGamePlayCutScene(int32_t nParam);
+void __fastcall thunk_ExitGamePlayCutScene(int32_t pPacket);
 // Handles GS→client packet 0x89: forwards byte pBytes[1] (subcommand/type) to Storm::Source::ClientEngine::HandleIncoming0x89 for game-state update processing.
 void __fastcall NET_D2GS_CLIENT_Incoming0x89_QUESTEVENTTRIGGER(char * pBytes);
 int32_t __fastcall SEED_RollRange(struct D2SeedStrc * pSeed, int32_t nMin, int32_t nMax);
@@ -183,19 +178,18 @@ uint32_t __stdcall DRAW_ShouldDrawEdges(int32_t nParam);
 // TRUE when left <= nX < right and top <= nY < bottom; halts (dFloor.cpp line 118, ptRect) on a NULL rect.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 BOOL __stdcall DFLOOR_IsPointInRect(RECT * pRect, int nX, int nY);
-int32_t __fastcall UI_GetDialogLineCount(int16_t nParam);
-int32_t __thiscall WARDEN_DecryptBuffer(int * pnParam, int32_t param_1);
+int32_t __fastcall UI_GetDialogLineCount(int16_t nDialogId);
+int32_t __thiscall WARDEN_DecryptBuffer(int * ppModule, int32_t nOrdinal);
 // Decrypt Warden anti-cheat module data using RSA/crypto operations
 uint32_t __fastcall WARDEN_DecryptModule(uint32_t * * ppInput, uint32_t nInputSize, uint32_t * * ppOutput, uint32_t nOutputSize);
 // RC4 key schedule: fills pRc4State's 256-byte S-box with 0..255, zeroes the i/j bytes at +0x100/+0x101, then swaps S[i] with S[j], j += S[i] + pKey[i % nKeyLength].
 // The only caller, WARDEN_DecryptAndLoadModule, passes a 0x10-byte key; 1.14d asm 004e09c0..004e0a1a.
 void __thiscall WARDEN_RC4Init(struct D2RC4StateStrc * pRc4State, uint8_t * pKey, uint32_t nKeyLength);
-void __fastcall SKILLSSOR_StatExpireCallback_ClearState(struct D2UnitStrc * pUnit, eD2States eState, int32_t nParam);
+void __fastcall SKILLSSOR_StatExpireCallback_ClearState(struct D2UnitStrc * pUnit, eD2States eState, int32_t pStatListEx);
 int __fastcall SKILLSCLT_CheckSkillIsValid(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame);
 void __fastcall SKILLSASS_StatExpireCallback_ClearState(struct D2UnitStrc * pUnit, eD2States eState, int32_t nParam);
 void __stdcall BINK_RenderVideoFrame();
 void __fastcall BINK_PlayVideoFile(char * szFileName, int32_t nParam, fnBinkFrameCallback pfnFrameCallback);
-void AtexitCleanup_FreeLinkedListAndCritSec();
 _EXCEPTION_DISPOSITION SehHandler_6ca218(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 _EXCEPTION_DISPOSITION SehHandler_6ca238(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 

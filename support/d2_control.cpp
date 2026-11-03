@@ -170,9 +170,9 @@ extern volatile void* g_pHwbpTarget;
 // and its caller. Installed by swapping the pointer in the dispatch table, so no generated
 // code is touched. A caller passing an unexpected height is the one thing the hardware
 // watchpoint cannot rule out.
-static void (*g_pfnRealFillY)(void*, int, int, int) = nullptr;
+static void (__fastcall *g_pfnRealFillY)(void*, int, int, int) = nullptr;
 
-static void FillYTrampoline(void* ppvBits, int nWidth, int nHeight, int a4) {
+static void __fastcall FillYTrampoline(void* ppvBits, int nWidth, int nHeight, int a4) {
     void* pRet = __builtin_return_address(0);
     D2TraceFmt("FILLY caller=%08X bits=%08X w=%d h=%d a4=%d  clipYMin=%d clipBottom=%d",
                (unsigned)(uintptr_t)pRet, (unsigned)(uintptr_t)ppvBits, nWidth, nHeight, a4,
@@ -1029,7 +1029,7 @@ static void HandleLine(char* line, char* reply, int replyMax) {
                     } else {
                         int32_t ix = 0, iy = 0;
                         D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv160(rawX, rawY, &ix, &iy);
-                        if (!D2Client::GAME::Wall2::WALL2_IsInDrawGrid(ix, iy - 1, pAllocB))
+                        if (!D2Client::GAME::Wall2::WALL2_IsInDrawGrid_Extern(ix, iy - 1, pAllocB))
                             aRejG[t]++;
                         else
                             aPass[t]++;
@@ -1177,8 +1177,8 @@ static void HandleLine(char* line, char* reply, int replyMax) {
         D2GfxHelperStrc* pF = D2GfxRendereInitFunctionsStrc;
         if (!pF) { lstrcpynA(reply, "{\"err\":\"no table\"}", replyMax); return; }
         if (!g_pfnRealFillY) {
-            g_pfnRealFillY = (void (*)(void*, int, int, int))pF->nfpFillYBufferTable;
-            pF->nfpFillYBufferTable = (void (*)(void*, int, int, int))FillYTrampoline;
+            g_pfnRealFillY = (void (__fastcall *)(void*, int, int, int))pF->nfpFillYBufferTable;
+            pF->nfpFillYBufferTable = FillYTrampoline;
         }
         wsprintfA(reply, "{\"hooked\":1,\"real\":\"%08X\",\"tramp\":\"%08X\"}",
                   (unsigned)(uintptr_t)g_pfnRealFillY, (unsigned)(uintptr_t)FillYTrampoline);
@@ -1359,8 +1359,8 @@ static void HandleLine(char* line, char* reply, int replyMax) {
         D2SkillStrc* pRight = pList->pRightSkill;
         D2SkillStrc* pLeft = pList->pLeftSkill;
         int nCodeR = 0, nCodeL = 0;
-        int bUsableR = pRight ? (int)D2Client::UNIT::Player::PLAYER_CheckSkillUsability(&nCodeR, pPl, &pRight) : -1;
-        int bUsableL = pLeft  ? (int)D2Client::UNIT::Player::PLAYER_CheckSkillUsability(&nCodeL, pPl, &pLeft)  : -1;
+        int bUsableR = pRight ? (int)D2Client::UNIT::Player::PLAYER_CheckSkillUsability_Extern(&nCodeR, pPl, &pRight) : -1;
+        int bUsableL = pLeft  ? (int)D2Client::UNIT::Player::PLAYER_CheckSkillUsability_Extern(&nCodeL, pPl, &pLeft)  : -1;
         D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pPl);
         wsprintfA(whyOut,
             "{\"life\":%d,\"mana\":%d,\"maxmana\":%d,\"intown\":%d,"
@@ -1375,7 +1375,7 @@ static void HandleLine(char* line, char* reply, int replyMax) {
             pRight ? (int)D2Client::UNIT::PlrSkills::PLRSKILLS_CanUseSkillCheck(pPl, pRight) : -1,
             bUsableL, nCodeL,
             pLeft ? (int)D2Client::UNIT::PlrSkills::PLRSKILLS_CanUseSkillCheck(pPl, pLeft) : -1,
-            (int)D2Client::UI::ui::GetMouseX(), (int)D2Client::UI::ui::GetMouseY(),
+            (int)D2Client::Cursor::GetMouseX(), (int)D2Client::Cursor::GetMouseY(),
             (int)D2Client::UI::Draw::DRAW_GetBottomPanelY());
         lstrcpynA(reply, whyOut, replyMax);
         return;
@@ -1489,17 +1489,17 @@ static void HandleLine(char* line, char* reply, int replyMax) {
         D2UnitStrc** ppTable = (D2UnitStrc**)((char*)ServerSideUnitHashTables + UNIT_PLAYER * 0x200);
         for (int nBucket = 0; nBucket < 128 && !pSrv; nBucket++)
             for (D2UnitStrc* pU = ppTable[nBucket]; pU; pU = pU->pListNext) { pSrv = pU; break; }
-        D2GameStrc* pGame = D2Game::GAME::Server::QSERVER_GetFirstActiveGame();
+        ::SGAMEDATA* pGame = D2Game::GAME::Server::QSERVER_GetFirstActiveGame();
         if (!pSrv || !pGame) { lstrcpynA(reply, "{\"err\":\"no server unit or game\"}", replyMax); return; }
         D2SkillStrc* pR = D2Common::Units::GetRightSkill(pSrv);
         int nMode = pR ? (int)D2Common::Skills::GetSkillMode(pSrv, pR) : -1;
-        int nCanInt = (int)D2Game::PLAYER::PlayerModes::PLRMODES_CanInterruptCurrentMode(pSrv, pGame, (uint32_t)nMode);
+        int nCanInt = (int)D2Game::PLAYER::PlayerModes::PLRMODES_CanInterruptCurrentMode_Extern(pSrv, pGame, (uint32_t)nMode);
         wsprintfA(scOut,
             "{\"game\":\"%08X\",\"unit\":\"%08X\",\"skillmode\":%d,\"caninterrupt\":%d,"
             "\"cancel\":%d,\"cast\":%d,\"before\":[%d,%d]}",
             (unsigned)(uintptr_t)pGame, (unsigned)(uintptr_t)pSrv, nMode, nCanInt,
             (int)D2Game::PLAYER::PlayerModes::PLRMODES_TryCancelModeAndMoveToLocation(pGame, pSrv, nMode, 1, pR),
-            pR ? (int)D2Game::PLAYER::PlayerMsg::CastSkillOnLocation(pSrv, pGame, wx, wy, pR) : -1,
+            pR ? (int)D2Game::PLAYER::PlayerMsg::CastSkillOnLocation_Extern(pSrv, pGame, wx, wy, pR) : -1,
             (int)(pSrv->pPath.pDynamicPath ? pSrv->pPath.pDynamicPath->Coords.tSubtile.nPosX : -1),
             (int)(pSrv->pPath.pDynamicPath ? pSrv->pPath.pDynamicPath->Coords.tSubtile.nPosY : -1));
         lstrcpynA(reply, scOut, replyMax);
@@ -1526,7 +1526,7 @@ static void HandleLine(char* line, char* reply, int replyMax) {
             sx, sy, wx, wy,
             (int)D2Common::Units::GetTargetX(pPl),
             (int)D2Common::Units::GetTargetY(pPl),
-            (int)D2Client::UNIT::UnitMode::UNITMODE_CanInterruptSkill(pPl),
+            (int)D2Client::UNIT::UnitMode::UNITMODE_CanInterruptSkill_Extern(pPl),
             (unsigned)(uintptr_t)pSk,
             pSk ? (int)D2Common::Skills::GetSkillId(pSk, "", 0) : -1,
             pSk ? (int)D2Common::Skills::GetOwnerGUID(pSk) : -1);
@@ -1541,8 +1541,8 @@ static void HandleLine(char* line, char* reply, int replyMax) {
             msg.nTargetUnitType = (uint32_t)wx;
             msg.nTargetUnitId = (uint32_t)wy;
             int nCode = 0;
-            int nValid = (int)D2Client::UNIT::Player::PLAYER_ValidateSkillMessage(&nCode, pPl, &msg);
-            int nCast  = (int)D2Client::SKILLS::Skills::SKILLS_CastSkillClient(
+            int nValid = (int)D2Client::UNIT::Player::PLAYER_ValidateSkillMessage_Extern(&nCode, pPl, &msg);
+            int nCast  = (int)D2Client::SKILLS::Skills::SKILLS_CastSkillClient_Extern(
                                   (eD2Skills)msg.nSkillId, pPl, (int32_t)msg.nItemId, msg.nSkillLvl);
             int u = (int)strlen(cdOut);
             wsprintfA(cdOut + u - 1, ",\"validate\":%d,\"vcode\":%d,\"castclient\":%d,"
@@ -2173,6 +2173,10 @@ static DWORD WINAPI ServerThread(LPVOID) {
             if (srv == INVALID_SOCKET) { Sleep(800); }
             continue;
         }
+        // One connection at a time, so a client that connects and then says nothing
+        // (a status poller holding its socket open) would park every later caller in
+        // the backlog forever. Three seconds of silence ends the turn.
+        { DWORD tmo = 3000; setsockopt(c, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tmo, sizeof(tmo)); }
         char buf[1024]; int used = 0;
         for (;;) {
             int n = recv(c, buf + used, (int)sizeof(buf) - 1 - used, 0);
@@ -2512,7 +2516,7 @@ static void WalkerStep(void) {
     }
 
     g_walkSteps++;
-    D2Client::UNIT::Player::CLIENT_MovePlayerToPosition(pPlayerUnit, (int16_t)nStepX, (int16_t)nStepY, 1);
+    D2Client::UNIT::Player::CLIENT_MovePlayerToPosition_Extern(pPlayerUnit, (int16_t)nStepX, (int16_t)nStepY, 1);
 }
 
 extern "C" void D2CONTROL_Pump(void) {
@@ -2525,6 +2529,20 @@ extern "C" void D2CONTROL_Pump(void) {
         CloseHandle(CreateThread(0, 0, D2CONTROL_HangWatchdog, 0, 0, &dwWatchdogId));
     }
     long frame = InterlockedIncrement(&g_frames);
+    // The game-view write-watch, armed from a flag file when the control channel is
+    // not available: `test\watchview` beside the exe arms DR0 on D2GameView->pView.bottom
+    // the first frame a game view exists, on this thread (the writer's). One-shot.
+    {
+        static bool bViewWatchTried = false;
+        if (!bViewWatchTried && D2GameView != nullptr &&
+            GetFileAttributesA("test\\watchview") != INVALID_FILE_ATTRIBUTES) {
+            bViewWatchTried = true;
+            g_pHwbpTarget = (void*)((char*)D2GameView + 0x10);
+            D2TraceFmt("VIEWWATCH arming on %08X (D2GameView=%08X)", (unsigned)(uintptr_t)g_pHwbpTarget,
+                       (unsigned)(uintptr_t)D2GameView);
+            D2ProbeArmClipHwbpSelf();
+        }
+    }
     // NOT armed by default. D2TRACE_WatchWrite sets an x86 hardware write watchpoint, and the
     // trap handler writes a trace line from a vectored exception handler - on an address the
     // game writes every frame that is a guaranteed hang, and it took a whole build to diagnose
@@ -2600,17 +2618,17 @@ extern "C" void D2CONTROL_Pump(void) {
             // The cast path bails before it sends anything if the REAL cursor is below the
             // bottom panel (PLAYER_ExecuteModeBasedAction's first two lines), so the cursor
             // has to be where the click says it is - a queued WM_MOUSEMOVE is not enough.
-            D2Client::UI::ui::SetMouseXY(a.x, a.y);
+            D2Client::Cursor::SetMouseXY(a.x, a.y);
             D2Client::UNIT::Player::ClickMap((int32_t)a.wp, a.x, a.y, 0);
             D2TraceFmt("CLICKMAP-CMD type=%d at %d,%d mouse=%d,%d panelY=%d", (int)a.wp, a.x, a.y,
-                       (int)D2Client::UI::ui::GetMouseX(), (int)D2Client::UI::ui::GetMouseY(),
+                       (int)D2Client::Cursor::GetMouseX(), (int)D2Client::Cursor::GetMouseY(),
                        (int)D2Client::UI::Draw::DRAW_GetBottomPanelY());
         } else if (a.kind == 6) {
             D2Client::UNIT::UnitMode::UNITMODE_ExecuteSkillAction(
                 (eD2UnitModeAction)(int)a.wp, D2Client::UNIT::Player::GetPlayerUnit_UI(), a.x, a.y, 0);
             D2TraceFmt("CASTDBG action=%d at world %d,%d", (int)a.wp, a.x, a.y);
         } else if (a.kind == 5) {
-            D2Client::GAME::Msg::NET_D2GS_CLIENT_Send((byte*)a.path, a.x);
+            D2Client::GAME::Msg::NET_D2GS_CLIENT_Send_Extern((byte*)a.path, a.x);
             D2TraceFmt("CPKT op=%02X len=%d", (unsigned char)a.path[0], a.x);
         } else if (a.kind == 1) {
             // The game's own capture: it reads the real back buffer, so it sees exactly

@@ -20,7 +20,6 @@
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Cursor.h"
 #include "D2Client/D2BNetGatewayAccessStr.h"
-#include "D2Client/D2Client.h"
 #include "D2Client/D2GSPacketSrv0x2A.h"
 #include "D2Client/D2GfxMemoryStrc.h"
 #include "D2Client/D2GfxSettingsStrc.h"
@@ -34,7 +33,6 @@
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/GAME/Sound.h"
 #include "D2Client/Renderer/Glide.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/Chat.h"
@@ -45,6 +43,7 @@
 #include "D2Client/UI/Panel.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/QuestLog.h"
+#include "D2Client/UI/ShowItems.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/SpellSel.h"
 #include "D2Client/UI/Text.h"
@@ -72,6 +71,7 @@
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/Logging/ProfCore.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Unit.h"
 #include "D2Direct3D/Renderer/Direct3D.h"
 #include "D2Direct3D/d3dFloorCache.h"
@@ -115,10 +115,10 @@
 #include "Storm/3rdparty/zlib/deflate.h"
 #include "Storm/3rdparty/zlib/trees.h"
 #include "Storm/Source/SCMD.h"
+#include "Storm/Source/SComp.h"
 #include "Storm/Source/SErr.h"
-#include "Storm/Source/SSystem.h"
+#include "Storm/Source/SFile.h"
 #include "Storm/Storm.h"
-#include "Storm/_unnamespaced.h"
 #include "Storm/H/stpl.h"
 
 // Forward declarations
@@ -193,6 +193,7 @@ struct D2DrawFloorStrc;
 struct D2DrlgActEnvironmentData;
 struct D2DrlgActStrc;
 struct D2DrlgFileCacheNodeStrc;
+struct D2DrlgFileStrc;
 struct D2DrlgLevelDataList;
 struct D2DrlgLevelPlacementStrc;
 struct D2DrlgLevelStrc;
@@ -221,10 +222,7 @@ struct D2GameRecordFileHeaderStrc;
 struct D2GameRecordStrc;
 struct D2GameViewStrc;
 struct D2Game_Line0x546 {
-    D2Game_Line0x546() = default;
-    D2Game_Line0x546(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2Game_Line0x546(int a0, int a1) : nInitSeed(a0), nAutomap(a1) {}
 
     /* 0x00 */ int nInitSeed;
     /* 0x04 */ int nAutomap;
@@ -274,7 +272,6 @@ struct D2LowQualityItemsTxt;
 struct D2LvlMazeTxt;
 struct D2LvlPrestTxt;
 struct D2LvlSubTxt;
-struct D2LvlTblsTxt;
 struct D2LvlTypesTxt;
 struct D2LvlWarpTxt;
 struct D2MagicAffixTableStrc;
@@ -392,6 +389,7 @@ struct D2SetsTxtFStrc;
 struct D2ShrinesTableEntryStrc;
 struct D2ShrinesTxt;
 struct D2SkillCalcTxt;
+struct D2SkillChargeDescStrc;
 struct D2SkillDescTxt;
 struct D2SkillStrc;
 struct D2SkillsHeaderTxt;
@@ -410,6 +408,7 @@ struct D2SpriteCache;
 struct D2SpriteCacheEntryStrc;
 struct D2Srp;
 struct D2SrpCredentialsStrc;
+struct D2SrpSaltVerifierStrc;
 struct D2StatDescRowStrc;
 struct D2StatScreenButtonStrc;
 struct D2StatesDataTbls;
@@ -483,6 +482,8 @@ struct IDirectSoundBuffer;
 struct IKsPropertySet;
 struct IgnoreList;
 struct ListBoxWrapper;
+struct SCompCodecEntryStrc;
+struct SCompEncodeCodecEntryStrc;
 struct SErrAppFatalContextStrc;
 struct SGAMEDATA;
 struct SMemHeapStatsStrc;
@@ -544,6 +545,7 @@ typedef BOOL (__stdcall *pfnSymUnloadModule64)(HANDLE hProcess, DWORD BaseOfDllL
 typedef D2FontGlyphStrc * (__fastcall *pfnFontGetGlyphEntry)(uint16_t wCharCode);
 typedef D2RoomExStrc * (__fastcall *fpDrlgMazeFindEdgeRoom)(D2DrlgLevelStrc * pLevel);
 typedef D2UnitStrc * (__fastcall *D2InitUnitObject)(::SGAMEDATA * pGame, D2RoomStrc * pRoom, int32_t nMonStatsId, int32_t nPosX, int32_t nPosY, BOOL bUseMonStats);
+typedef D2UnitStrc * (__fastcall *D2ObjectPopulateFnFunc)(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uint8_t nDensity, int nObjectClassId, uint16_t nChancePercent);
 typedef DWORD (__stdcall *fnGetUnknownFlag)();
 typedef DWORD (__stdcall *fnSendKeepAlive)();
 typedef DWORD (__stdcall *pfnSymGetModuleBase)(HANDLE hProcess, DWORD dwAddr);
@@ -569,13 +571,13 @@ typedef char (__stdcall *fnGetProtocolVersionChar)();
 typedef char * (__stdcall *grGetString)(FxU32 pname);
 typedef eD2ClientAppMode (__stdcall *fnClientAppModeProc)();
 typedef eD2ServerIncomingStatus (__fastcall *D2NET_SERVER_CLTtoD2GS)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, char * pBytes, uint32_t nSize);
-typedef int (*fnConnectToBattleNet)();
 typedef int (*fnLogIndent)(int nAction, int nParam);
 typedef int (__fastcall *D2MissileSrvDoFunc)(::SGAMEDATA * pGame, D2UnitStrc * pMissile);
 typedef int (__fastcall *D2PathTypeFunc)(D2PathTypeArg * pPathTypeArg);
 typedef int (__fastcall *SkillSelectProcFn)(D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit);
 typedef int (__fastcall *fnApplyPrepatch)(int * pdw);
 typedef int (__fastcall *fnCacheFreeMem)(void * pMem);
+typedef int (__fastcall *fnConnectToBattleNet)();
 typedef int (__fastcall *fnDequeueMessage)(int * pTypeOut, void * pBufOut);
 typedef int (__fastcall *fnEnterChatAndJoinChannel)(char * szUser, char * szStat, char * szAcct, char * szChan, uint32_t dwFlags);
 typedef int (__fastcall *fnGetStateAndClear)(int * pOut);
@@ -627,7 +629,6 @@ typedef void (__fastcall *D2MissileCltDoFunc)(D2UnitStrc * pMissile);
 typedef void (__fastcall *D2MissileSrvDmgFunc)(::SGAMEDATA * pGame, D2UnitStrc * pMissile, D2UnitStrc * pTarget, D2DamageStrc * pDamage);
 typedef void (__fastcall *D2NET_CLIENT_D2GStoCLT)(char * pBytes);
 typedef void (__fastcall *D2NET_CLIENT_D2GStoCLT_Unit)(D2UnitStrc * pUnit, char * pBytes);
-typedef void (__fastcall *D2ObjectPopulateFnFunc)(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uint8_t nDensity, int nObjectClassId, uint16_t nChancePercent);
 typedef void (__fastcall *D2ObjectsInitFnFunc)(D2ObjectInitFnArg * pInitArg);
 typedef void (__fastcall *D2SkillDescAttackFunc)(D2UnitStrc * pUnit, D2SkillStrc * pSkill, D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t * pnMinDamage, int32_t * pnMinColor, int32_t * pnMaxDamage, int32_t * pnMaxColor);
 typedef void (__fastcall *D2SkillDescDamageFunc)(D2UnitStrc * pUnit, D2SkillStrc * pSkill, D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t nXLeft, int32_t nY, int32_t nXRight);
@@ -675,6 +676,7 @@ typedef void (__fastcall *pfnLruFreeEntry)(void * pEntry);
 typedef void (__fastcall *pfnMCPGameListEntry)(uint32_t nEntryField0, uint32_t nEntryCount, uint32_t nEntryField2, uint32_t nListFlag, void * pEntryData);
 typedef void (__fastcall *pfnMCPMessage)(uint32_t nMessageId, uint32_t nDataLength, void * pMessageData);
 typedef void (__fastcall *pfnMonUniqueModInit)(D2UnitStrc * pUnit, int32_t eModifier, int32_t bApply);
+typedef void (__fastcall *pfnNewsEntryCallback)(uint32_t dwEntryId, char * szMessage);
 typedef void (__fastcall *pfnPartyScreenAction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget, uint32_t dwArg, uint32_t dwArg2);
 typedef void (__fastcall *pfnPlayerModeNetMsg)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2ClientStrc * pClient, int32_t nModeIndex);
 typedef void (__fastcall *pfnRoomExActivationHandler)(D2RoomExStrc * pRoomEx);
@@ -798,10 +800,7 @@ struct D2CmdBindingStrc {
 };
 
 struct D2CofPathOverrideStrc {
-    D2CofPathOverrideStrc() = default;
-    D2CofPathOverrideStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2CofPathOverrideStrc(uint32_t a0, uint32_t a1) : dwToken(a0), nMode(a1) {}
 
     /* 0x00 */ uint32_t dwToken; // COF token chars, matched first
     /* 0x04 */ uint32_t nMode; // mode the override applies to
@@ -830,19 +829,22 @@ struct D2D3DTileCornerStrc {
     /* 0x08 */ int32_t nZ;
 };
 
+struct D2DnsThreadParamStrc {
+    /* 0x00 */ char * pszOut;
+    /* 0x04 */ char * pszHost;
+};
+
 struct D2EndGameUiState {
-    /* 0x00 */ bool showCongrats; // Show end-game congrats flow
-    /* 0x01 */ uint8_t _pad0[3];
-    /* 0x04 */ bool showCutscene; // End-game cutscene/congrats active flag
-    /* 0x05 */ uint8_t _pad1[3];
-    /* 0x08 */ bool congratzOkClicked; // Congrats OK clicked
-    /* 0x09 */ uint8_t _pad2[3];
+    /* 0x00 */ BOOL showCongrats; // Show end-game congrats flow
+    /* 0x04 */ BOOL showCutscene; // End-game cutscene/congrats active flag
+    /* 0x08 */ BOOL congratzOkClicked; // Congrats OK clicked
 };
 
 struct D2ExitCutsceneState {
+    operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
+
     /* 0x00 */ int pendingCutsceneId; // Pending exit cutscene id
-    /* 0x04 */ bool cutscenePlayed; // Exit cutscene played/active flag
-    /* 0x05 */ uint8_t _pad0[3];
+    /* 0x04 */ BOOL cutscenePlayed; // Exit cutscene played/active flag
 };
 
 struct __attribute__((packed)) D2GameListEntryStrc {
@@ -861,10 +863,7 @@ struct D2GemsTableStrc {
 };
 
 struct D2HashSeedPairStrc {
-    D2HashSeedPairStrc() = default;
-    D2HashSeedPairStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2HashSeedPairStrc(uint32_t a0, int a1) : dwHashLow(a0), nHashHigh(a1) {}
 
     /* 0x00 */ uint32_t dwHashLow; // Low 32 bits of hash seed for nibble
     /* 0x04 */ int nHashHigh; // High 32 bits of hash seed for nibble
@@ -895,20 +894,14 @@ struct D2LeapArcSegmentStrc {
 };
 
 struct D2ManaAbsorbFieldStrc {
-    D2ManaAbsorbFieldStrc() = default;
-    D2ManaAbsorbFieldStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2ManaAbsorbFieldStrc(int a0, int a1) : nDamageFieldOffset(a0), bSecondary(a1) {}
 
     /* 0x00 */ int nDamageFieldOffset; // byte offset into the damage struct
     /* 0x04 */ int bSecondary;
 };
 
 struct D2MonStatAnimEntryStrc {
-    D2MonStatAnimEntryStrc() = default;
-    D2MonStatAnimEntryStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2MonStatAnimEntryStrc(uint32_t a0, uint32_t a1) : dwFlags(a0), dwValidFlags(a1) {}
 
     /* 0x00 */ uint32_t dwFlags;
     /* 0x04 */ uint32_t dwValidFlags;
@@ -920,10 +913,7 @@ struct D2NET_SERVER_D2GS_ClientToServer {
 };
 
 struct D2NpcControlInitStrc {
-    D2NpcControlInitStrc() = default;
-    D2NpcControlInitStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2NpcControlInitStrc(int a0, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4) : nMonStatsId(a0), nFlags(a1), nData(a2), nName(a3), nPad(a4) {}
 
     /* 0x00 */ int nMonStatsId; // monstats id this record configures
     /* 0x04 */ uint8_t nFlags; // gossip/trade/repair flags
@@ -997,18 +987,10 @@ struct D2SmackerGlideBufferStrc {
 };
 
 struct D2SocketOffsetStrc {
-    D2SocketOffsetStrc() = default;
-    D2SocketOffsetStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2SocketOffsetStrc(int a0, int a1) : nX(a0), nY(a1) {}
 
     /* 0x00 */ int nX;
     /* 0x04 */ int nY;
-};
-
-struct D2SrpSaltVerifierStrc {
-    /* 0x00 */ uint8_t aSalt[32]; // new-password SRP salt s
-    /* 0x20 */ uint8_t aVerifier[32]; // new-password SRP verifier v
 };
 
 struct __attribute__((packed)) D2StatDescRowStrc {
@@ -1034,10 +1016,7 @@ struct __attribute__((packed)) D2StatScreenButtonStrc {
 };
 
 struct D2TileCmpSubTileOffset {
-    D2TileCmpSubTileOffset() = default;
-    D2TileCmpSubTileOffset(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2TileCmpSubTileOffset(int32_t a0, int32_t a1) : nPixelCol(a0), nPixelRow(a1) {}
 
     /* 0x00 */ int32_t nPixelCol; // column pixel offset into DT1 subtile source data
     /* 0x04 */ int32_t nPixelRow; // row multiplier (x0xa0) into DT1 subtile source data
@@ -1117,22 +1096,17 @@ struct D2UIFlagStrc {
 };
 
 struct D2UniqueCandidateStrc {
-    D2UniqueCandidateStrc() = default;
-    D2UniqueCandidateStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2UniqueCandidateStrc(int a0, int a1) : nUniqueIdx(a0), nCumulativeWeight(a1) {}
 
     /* 0x00 */ int nUniqueIdx; // uniqueitems.txt row index
     /* 0x04 */ int nCumulativeWeight; // running rarity total
 };
 
-#pragma pack(push, 1)
-struct D2UniqueCandidatePoolStrc {
+struct __attribute__((packed)) D2UniqueCandidatePoolStrc {
     /* 0x00 */ uint32_t nGoldCodeInitFlag; // gItemDropGoldCodeInitFlag; the pick loop folds its address as the table base minus one row
     /* 0x04 */ uint32_t _pad;
     /* 0x08 */ D2UniqueCandidateStrc aCandidates[4096];
 };
-#pragma pack(pop)
 
 struct D2WinWndHandlerStrc {
     /* 0x00 */ int32_t nType; // Handler kind, selecting the branch in D2WIN_RegisterWindowHandler @00506c40: 0 message, 1 command, 2 key down, 3 key up.
@@ -1179,33 +1153,18 @@ struct DSCAPS {
     /* 0x5C */ uint32_t dwReserved2;
 };
 
-struct SCompCodecEntryStrc {
-    /* 0x00 */ uint32_t dwMethodMask;
-    /* 0x04 */ void (__fastcall *pfnCodec)(void *, uint32_t *, void *, uint32_t, uint32_t);
-};
-
-struct SCompEncodeCodecEntryStrc {
-    /* 0x00 */ uint32_t dwMethodMask;
-    /* 0x04 */ void (__fastcall *pfnCodec)(short *, uint32_t *, short *, uint32_t, void *, uint32_t);
-};
-
 struct ZlibHuffCode {
-    ZlibHuffCode() = default;
-    ZlibHuffCode(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
     operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
-    ZlibHuffCode(uint8_t a0, uint8_t a1, short a2) : op(a0), bits(a1), val(a2) {}
 
     /* 0x00 */ uint8_t op; // operation, extra bits, table bits
     /* 0x01 */ uint8_t bits; // bits in this part of the code
     /* 0x02 */ short val; // offset in table or code value
 };
 
-#pragma pack(push, 1)
-struct D2ZlibStaticDTreeDistCodeStrc {
+struct __attribute__((packed)) D2ZlibStaticDTreeDistCodeStrc {
     /* 0x00 */ ct_data static_dtree[30]; // zlib trees.h static_dtree[D_CODES]
     /* 0x78 */ uint8_t _dist_code[512]; // zlib trees.h _dist_code[DIST_CODE_LEN]; _tr_tally/compress_block read it at base-1+dist folded
 };
-#pragma pack(pop)
 
 struct D2PickableStrc {
     /* 0x00 */ eD2Quests eQuestId; // Quest that must be completed for pickup restriction
@@ -1249,10 +1208,8 @@ extern char s_English_006cc81c[8];
 extern char gszHeapTagOperatorNew[4];
 // lpDefault parameter of GetPrivateProfileStringA
 extern char lpDefault_006cc837[1];
-// lpCaption parameter of MessageBoxA
-extern LPCSTR lpCaption_006cc848;
 extern uint8_t gbChatDlgUpdateMarker;
-extern char gbCompressionDecoderMarker[2];
+extern char gszDot[2];
 extern char s_Dec_006ccb00[4];
 extern char s_Nov_006ccb04[4];
 extern char s_Oct_006ccb08[4];
@@ -1265,6 +1222,8 @@ extern char s_Apr_006ccb20[4];
 extern char s_Mar_006ccb24[4];
 extern char s_Feb_006ccb28[4];
 extern char s_Jan_006ccb2c[4];
+extern double gdFogJulianDaysPerYear;
+extern double gdFogJulianDaysPerMonth;
 extern double gdConst0_25;
 extern double gdBytesToMegabytes;
 extern float gfTwoPow32;
@@ -1283,23 +1242,17 @@ extern char param_2_006ce200[5];
 extern uint32_t gadwBitMasks[32];
 // Inverted bit masks ~(1<<n) for n=0..31 (0xfffffffe..0x7fffffff); 37 of the 38 references AND with it to clear a bit (e.g. D2WINMAIN_SetControlVisible 004f9701); the 38th is the startup self-check CMP in ERRORMANAGER_InitErrorManager (00408e63).
 extern uint32_t gadwInvBitMasks[32];
-extern uint32_t gdwBitBufferSeed[9];
 extern double gdConst1;
 extern double gfFloatScalingFactor;
+extern uint64_t cSStrAtoDecimalPoint;
 extern uint8_t gbFloatConstantBase;
 extern char s_File___s_006cf1e8[10];
 extern char s__s_006cf248[6];
 extern char s_Expr___s_006cf250[11];
 extern char gdwSystemMemoryMax[2];
-extern int gnSSCompDeflateFlags[32];
-extern uint32_t gdwADPCMCoefficient[89];
-extern SCompCodecEntryStrc paSCompDecompressCodecTable[5];
 extern char szOOGPasswordDialogTimeFmt;
 // param_2 parameter of wsprintfA
 extern char param_2_006cff28[3];
-extern D2SSCompDeflateBlockEntryStrc gaSSCompDeflateBlockTable[10];
-extern ZlibHuffCode gaZlibInflateTableMid[512];
-extern ZlibHuffCode gaZlibInflateTableStart[32];
 extern D2ZlibExtraLBitsBlOrderStrc gZlibExtraLBitsBlOrder;
 extern int gaZlibExtraDBits[30];
 extern int gaZlibExtraBlBits[19];
@@ -1315,7 +1268,9 @@ extern char * gpszPaletteSkyPl2[4];
 extern char gaLanguageCodeFallback[4];
 extern char gaLanguageCodeAbbrevTable[4];
 extern char gpCutsceneVideoFrameBuffer[8];
+extern char dwIntroFrameRate_24_36[8];
 extern char gpCutscenesBlackBarTexture[8];
+extern char dwIntroFrameRate_29_32[8];
 extern uint8_t gaNewCharDefaultEquipTemplate[16];
 extern char s_ama_006d5564[4];
 extern char s_sor_006d5568[4];
@@ -1328,7 +1283,6 @@ extern char s_asn_006d557c[4];
 extern char param_2_006d57bc[3];
 // NOT a D2CharSelStrc: .rdata string pool starting with "*", then "<%s> ", "<%s%s> ", channel messages
 extern char gsCharSelContext[4];
-extern uint8_t gaBnetCdKeyCharDecodeTable[256];
 extern char gszCmdLineSwitchP[2];
 extern char gszCmdLineSwitchC[2];
 extern char gpCubeRecipeItemTypeFlags_7[4];
@@ -1366,15 +1320,11 @@ extern D2UIFlagInitStrc g_UIFlagInitDrawPanel3[3];
 extern D2UIFlagInitStrc g_UIFlagInitDrawPanel4[2];
 // param_2 parameter of wsprintfA
 extern char param_2_006d6454[3];
-// 13 points of {x,y} walked with a sliding 8-byte window by the automap unit/party X-marker draw. Four separate labels on its first four dwords left only the first segment with real coordinates, so D2GFX_DrawLine was called 11 times per marker with whatever followed in .rdata.
-extern POINT gaAutomapXMarkerPolyline[13];
 extern char gaFreeUnitsOrderData[3];
 extern uint8_t gaMonsterDenEnvironmentData;
 extern uint8_t gaWeatherTransitionConstant;
 extern int cChatCmdExclaim;
 extern char cChatCmdSlash[2];
-extern uint8_t gabWardenEmbeddedModuleHash[16];
-extern uint8_t gabWardenModuleRc4Key[16];
 // NOT a pool manager: .rdata string pool starting with "end". D2PoolManagerStrc (6092 B, correct type, correctly applied at 00800000 and 0088cadc) was misapplied here
 extern char gTxtCompilationMemPool[4];
 extern char s_D2X_OUT__s_BIK_006d912c[15];
@@ -1417,15 +1367,13 @@ extern char s_a1q1_006da2bc[5];
 extern D2MonMsgAnimModeStrc gaMonMsgAnimModeTable[30];
 extern float FLOAT_006da690;
 extern float FLOAT_006da6b8;
+extern char cObjectDataPeriod[18];
 extern int ganMissileRingSinOffsets[64];
 extern int ganMissileRingCosOffsets[64];
 // 8-direction delta table {0,-1,-2,-1,0,1,2,1}; string .\SKILLS\SkillsPal.cpp at +0x20
 extern int gnPaladinSkillIndexTable[8];
-extern D2Missile032SpreadStrc gaMissile032SpreadConstData[6];
 extern uint64_t gaIntensityTableConstant;
-extern uint32_t gnIntensityTableModes[10];
 extern double gdConst255;
-extern eD2States gaeSetBonusStates[6];
 extern char * gpszPaletteAct1Dat;
 extern char * gpszPaletteAct1Pl2;
 extern char * gpszPaletteActPathFormat;
@@ -1435,6 +1383,7 @@ extern uint32_t gnStringTruncateConstant;
 extern uint32_t gnPaletteLoadBufferSize;
 extern uint8_t gaPaletteLoadData;
 extern unsigned int gaItemTypeTxtIndexData;
+extern uint8_t gnFontKerningTracking;
 extern uint64_t gaEnvironmentConstantData1;
 extern GUID gIID_IDirectSound3DBuffer;
 extern GUID gIID_IKsPropertySet;
@@ -1442,6 +1391,9 @@ extern uint8_t gEAXPropertyGuid_Reserved2[16];
 extern uint8_t gEAXPropertyGuid_Obstruction[16];
 extern uint8_t gEAXPropertyGuid_Reserved1[16];
 extern uint8_t gaEAXPropertyGuid_ObstructionParams[9];
+extern float gnSoundFrequency_22kHz;
+extern float gnSoundQuality_Low;
+extern double gnSoundAttenuation_Max;
 extern char gaLanguageCodeLookup[4];
 extern uint8_t gaBnSendRawBytesHeader[4];
 extern char gaCDKeyAuthData[4];
@@ -1468,9 +1420,6 @@ extern char * gpszD2ExpMpqName;
 extern uint16_t gaPossessiveNameData;
 extern char s_ColonSeparator[2];
 extern D2NET_SERVER_D2GS_ClientToServer NET_D2GS_SERVER_INCOMING[103];
-extern int ganUnitHashTableBaseOffsets[6];
-// gaStartingLevelByAct - uint[5] = {1, 15, 20, 26, 32}. Indexed by act (D2Game::Game::Clients::GetAct result, clamped to <= 4 and bounded by gnActCount == 5) and passed straight to DAMAGE_SetUnitToLevel. Was mis-named gaPlayerInitStats and typed uint[4]; element [4] at 006e1530 was separately mis-labelled gnSkillAmaStrafe_MissileCount, a name with no supporting reference - its only two xrefs are the indexed loads at 00570834 and 005706bc.
-extern uint32_t gaStartingLevelByAct[5];
 extern uint32_t PlayerMultiplyer[9];
 extern uint32_t PlayerMultiplyer2[9];
 extern D2PlayerModeFnPairStrc gaPlayerModeMoveFuncs[20];
@@ -1478,31 +1427,22 @@ extern D2ShrinesTableEntryStrc OBJECTSHRINEFUNCTION[24];
 extern int gaMissileOffsets_LightningUniqueY[4];
 // Indexed by monster class id - 540. MONSTER_EquipFromClassTable 005b1c7a uses LEA ESI,[ESI*8+0x6e1bb0], a base 540 rows before the table that lands inside an unrelated string; the decompiler cannot fold that bias.
 extern D2MonsterEquipEntryStrc gaMonsterEquipTable[12];
-extern uint32_t gnAuraDamageScale_ManaAbsorb[3];
-extern uint8_t BYTE_ARRAY_006e3138[80];
 extern char gszExtDc6[5];
 extern char gszExtDcc[5];
 extern char gszDirObjects[20];
-extern fpCelDrawFrameByFormat gaaCelDrawFuncTable[2];
+extern char gszSrcFileSpriteCache[22];
 extern uint32_t gaCelCmpDataBlock_006e36a0[224];
-extern uint32_t gaCelCmpDirectionLookupByDirectionAndFrame[512];
+extern double gdConst360;
+extern double gdConst60;
 extern double gdConst180;
-// DCC field-width codes: {0,1,2,4,6,8,10,12,14,16,20,24,26,28,30,32}. Sixteen entries, but only fifteen fit here - the sixteenth (32) is the word at 006e5fac, which gdwD2CMPCodecTab0 also claims as its entry 0 because the compiler biased that table's base by one word. Ghidra cannot express the overlap, so this stays uint32_t[15]; the reconstruction has to carry the sixteenth element itself or a field-width code of 15 reads out of bounds.
-extern uint32_t g_aCodecBitMaskLookupTable[48];
-// Low-bit masks for the DCC bit reader: entry n is (1 << n) - 1, for n = 0..32. CODEC_ReadBits indexes it with the field width, which reaches 32, so the array is 33 entries and the last one is 0xffffffff.
-// Was typed int32_t[32]; a stray label (gElemType_E_ElementTypeCode) sat on the final element, all nine of whose references came from CODEC_DecompressAllFrames.
-extern int32_t gaCodecLookupTable[33];
-// content is ~((1<<n)-1) for n=0..31; string "Sprite Decompression Error" at +0x80
-extern uint32_t gdwD2CMPCodecTab1[32];
+extern double gdConst0_2;
 extern char gsGameMonsterSpawnContext[4];
 extern char gsGameMissileTblsContext[4];
 extern char gsGameDataTblsContext[4];
+extern char gaAutomapTileNames[20][8];
 extern uint32_t gszTxtCol_Act;
 extern unsigned int gszTxtCol_Red;
-extern int gaPlayerAnimModeCheckTable[100];
-extern int gaAnimTableClassic[80];
-extern int gaAnimTableExpansion[80];
-extern eD2States aSetItemsStateList[5];
+extern unsigned int gItemCommon_i_ItemTypeId;
 extern unsigned int gszTxtColName_lvl;
 extern unsigned int gszTxtColName_op;
 extern unsigned int gszTxtColName_S8;
@@ -1521,16 +1461,12 @@ extern unsigned int gszObjMonCompToken_RA;
 extern unsigned int gszObjMonCompToken_LG;
 extern unsigned int gszObjMonCompToken_TR;
 extern unsigned int gszObjMonCompToken_HD;
-extern int INT_ARRAY_006eb308[16];
-extern int gaUnitTypeInteractSizes[6];
-// index formula b+9*a (LEA [ECX+EAX*8]; ADD EAX) with a,b<=4 -> max index 40; string at +0xa4 = 41*4
-extern int gaPathDirectionStepDeltas[41];
-extern uint8_t DIFFDIRECTIONS[256];
+extern unsigned int gDelim_A_Act;
+extern char gDelim_n_NpcClass[4];
 extern uint32_t gszHirelingFieldName_act;
 extern char s_A_006ed5ac[2];
 extern char s_B_006ed5b0[2];
 extern char s_C_006ed5b4[2];
-extern int gaSetItemBonusStates[6];
 extern char s_HDM_006ee7c0[4];
 extern D2DrlgPresetTypeTablesStrc gPresetTypeTables;
 extern int gnOutdoorsGridWidthByLevel[53];
@@ -1545,14 +1481,6 @@ extern D2DrlgLevelDataList ACT4_D2DrlgLevelData2;
 extern int gaRoadPresetDirectionLookup[9];
 extern int gaOutPlaceAdjacentRoadIndex[81];
 extern int gaWildernessLevelSeedOffsets[170];
-extern int gPathDirectionTable[76];
-extern uint8_t gaDrlgPathDirectionTable[80];
-extern int gPathDirectionOffsetsX[16];
-extern int gnDrlgLevelSeed[64];
-extern int gnDrlgMemoryMax[48];
-extern int gnPathSearchMax[128];
-extern int gnPathNodeMax[128];
-extern uint32_t gaPathDirectionLookupTable[6];
 extern int gnDrlgLevelGenerationState[8];
 extern int gnAct5OuterWallGridOffsetByType[24];
 extern int gaAct5SceneryPresetTable_0[15][7];
@@ -1602,13 +1530,9 @@ extern D2IniConfigValuesStrc D2IniConfigValues[58];
 // lpServiceStatus parameter of SetServiceStatus
 extern _SERVICE_STATUS lpServiceStatus_007065fc;
 extern _SERVICE_STATUS gszCommandLineLocaleCode;
-extern char * gaErrorTypeNames[12];
 extern char * gaMonthAbbreviations[12];
 extern uint8_t gabHuffmanCodeLengths[256];
 extern float sinTable_f32[512];
-extern uint32_t gpServerMemHeap;
-extern char gszLogFilePath[260];
-extern char s___AUMessage_LogManager___00708124[28];
 extern uint32_t gnSFileDataChunkSize;
 extern uint32_t gnSFileReadErrorMode;
 extern uint32_t gbSFileSeekOptimization;
@@ -1625,9 +1549,6 @@ extern D2StormListHead gnStormErrorCallbackCount;
 extern char gszSSystemListAllocTag[14];
 extern char s___AUWNDREC___00708850[16];
 extern D2StormListHead gpWndTrackingListHead;
-extern char s__I_00708874[4];
-extern char s__E_00708880[4];
-extern char s__D_0070888c[4];
 extern char s___AUBREAKCMD___007088d8[16];
 extern D2StormListHead gpSevtBreakCmdListHead;
 extern int32_t gaMenuFormFontParamsFont3[2];
@@ -1659,10 +1580,6 @@ extern uint32_t gnClassDescriptionTooltipClassId;
 // Provenance: FORMS_CreateAnyForm 004f93c0 and a census of every record.
 extern FORMS_PredefinedFormStrc gaPredefinedForms[333];
 extern int gnClassDescriptionTooltipState;
-extern int gnCharSelLoadMoreEntryIndex;
-extern int gnCharSelLoadingEntryIndex;
-extern int gnCharSelScreenSlotCount;
-extern uint8_t gaNewCharDefaultAppearance[16];
 // Profile keys profile\sex, profile\location, profile\description passed as one array (count 3) to the network interface.
 // Provenance: PUSH 0x70cd54 / MOV EDX,3 at 0043f611 and 00440cc2.
 extern char * gaszChatDlgProfileKeys[3];
@@ -1672,8 +1589,8 @@ extern uint8_t gnLadderCurrentFilterMode;
 extern uint32_t gnChatRoomListSelectedBase;
 extern uint32_t gbLadderFilterPending;
 extern uint32_t gbLadderExpansionEnabled;
-extern uint32_t gnChatTabCompletionIndex;
-extern uint32_t gnLadderBoardSelectedRank;
+extern int gnChatTabCompletionIndex;
+extern int gnLadderBoardSelectedRank;
 extern uint32_t gnLadderRequestedCharIndex;
 extern int32_t gaMultiFormFontParamsFont4[2];
 extern int32_t gaMultiFormFontParamsFont3[2];
@@ -1692,15 +1609,6 @@ extern FORMS_AnimFrameStrc gaMultiLogoAnimFrames[5];
 // Provenance: FORMS_CreateAnyForm 004f93c0 and a census of every record.
 // Index 0x80 (0070e650, FORM_Timer -> CHATDLG_OnTimerRequestLadderData) is the last record: UIMENU_LadderBoard_PrintClassesAndTableHeaders 00440887 calls FORMS_CreateAnyFormFromListEx(0x80).
 extern FORMS_PredefinedFormStrc gaPredefinedForms_b[129];
-extern FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e920;
-extern FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e950;
-extern FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e980;
-extern char gszOogLevelRestrictionText[4];
-extern char gszOogMaxPlayersText[4];
-extern int32_t gnPendingGameInfoCharIndex;
-extern uint32_t gnCurrentChannelContextId;
-// COM callback dispatch table — 24 entries (indices 0x00–0x17). Indexed by COM event type code. See ComCallback.cpp ~L1065: (*gaComCallbackDispatch[eventType])(a, b)
-extern pfnComCallback gaComCallbackDispatch[24];
 extern eD2ClientAppMode gdwAppMode;
 // Points at "Diablo II"; copied into the command-line caption pointers by StaticInit_6ca9a0/6ca9b0.
 // Provenance: 006ca9a0, 006ca9b0 MOV EAX,[0x70ee50].
@@ -1717,9 +1625,7 @@ extern D2UIFlagInitStrc g_UIFlagInitGameDataPanel3[2];
 extern char s___AUSGAMEDATA___0070f56c[16];
 extern char s___AV__TSExplicitList_USGAMEDATA__0070f584[48];
 extern char s___AV__TSHashObjectChunk_USGAMEDA_0070f5f4[56];
-extern D2GameRecordStrc * gpCurrentGameRecord;
 extern uint32_t gnLastMouseButtonEventType;
-extern D2UIFlagInitStrc gaUIFlagInitMessageHandlers[4];
 extern int nHealthBarScreenX;
 extern int gnMercenaryHealthBarScreenY;
 extern D2UIFlagInitStrc gaUIFlagInitNpcShopHandlers[8];
@@ -1737,35 +1643,15 @@ extern uint32_t gaScreenResolutionTableIndexArray;
 extern uint32_t gaScreenResolutionModeArray;
 extern int ScreenSizeX;
 extern int ScreenSizeY;
-extern char s___AUTALLOCREC___00711480[16];
-extern D2NET_CLIENT_D2GS_ServerToClient NET_D2GS_CLIENT_INCOMING[175];
 extern char * gaLanguageNames_00711d04[15];
 extern D2UIFlagInitStrc gsUIEngineFlagInit[4];
 extern D2UIFlagInitStrc gsUIEngineFlagInit2[4];
-extern uint32_t nNextGUID;
-extern uint32_t gnSelectConstant13_X;
-extern uint32_t gnSelectConstant13_Y;
-extern D2UIFlagInitStrc gUIFlagGeneralInit[3];
-// Seven cursors, 28 bytes each, 00712010..007120d4. The five int columns of record 0 had been labelled as five standalone globals (gnUIFrameCounter, gdwUIRedrawFlags, gnUIMouseMode, gnUIInputState, gnUIKeyPressCount) which the emitter turned into function-local statics, and the table itself was declared 20 bytes late. UI_GetCursorMaxFrames therefore returned 1<<8 for every cursor and UI_HandleCursorMouseMove saw bKeyPressSwitch set on EVERY mouse move, forcing ItemTypeOnHand=5 and nCursorDataIndex=4. The dword at 007120d4 is the count, 7 - the three asserts test that, not CursorData[6].nFrameOffset.
-extern D2CursorDataStrc CursorData[7];
-extern int gnCursorDataCount;
 extern int gaKeyBindingsDefault[285];
 extern D2CmdBindingStrc gaCmdBindings[57];
+extern D2CmdBindingStrc gaCmdHandlerTable[57];
+extern D2CmdBindingStrc gnCmdTableMax[57];
 extern D2UIFlagInitStrc gsUICmdTblFlagInit[4];
-extern int gnDenOfEvilLightTimerTick;
-extern int gnDiabloSpawnLightTimer;
-extern uint32_t gnQuestMonsterUnitId;
-extern uint32_t gaMonsterModePrecacheEntries[15];
-extern uint32_t gnMonsterModePrecacheCount;
-extern uint32_t gnBlizzardSoundPlayed;
 extern uint32_t gbLightmapColorEnabled;
-extern D2SeedStrc * gpArcaneStarsSeed;
-extern eD2ArenaFlags CLIENT_ArenaFlags;
-extern eD2PlayerClassIDDWORD eD2PlayerClassIDDWORD_00712f00;
-extern int gnChatHistoryReadIndex;
-extern uint32_t gnChatHistoryWriteIndex;
-extern D2UIFlagInitStrc gUIFlagChatInit;
-extern D2UIFlagInitStrc g_UIFlagInitChatPanel;
 extern D2EscMenuHeaderStrc gEscMenuHeaderInitData;
 // 38 records of {nEnabled,nHideable,nSavedState}. Split into three labels, so opening the ESC menu wrote 456 bytes past a 4-byte object and read its per-flag config from garbage.
 extern D2EscMenuUIFlagStrc gaEscMenuUIFlags[38];
@@ -1782,7 +1668,6 @@ extern D2EscMenuHeaderStrc gaEscMenuHeaderExpansionOptions;
 extern D2EscMenuHeaderStrc gaEscMenuHeaderExpansionSaveExit;
 extern D2EscMenuItemStrc gaEscMenuClassicSaveExitTable[6];
 extern D2EscMenuItemStrc gaEscMenuExpansionSaveExitTable[7];
-extern uint32_t gpWardenModuleParam;
 extern D2CutsceneDescStrc gdwSoundHeaderCacheIndex[8];
 extern uint32_t gnInventoryActiveUnitId;
 extern int gnItemDescTitleMaxWidth;
@@ -1811,21 +1696,8 @@ extern int AmountOfNPCTabs;
 extern uint32_t CurrentNpcButtonSelection;
 extern int gaNpcShopButtonTable[2];
 extern int NPCButtonArray[16];
-extern int gnBeltPanelState;
-extern BOOL gbPanelClickProcessed;
-extern int32_t gnBeltSlotUnderCursor;
-extern int gnBeltTooltipX;
-extern int gnBeltTooltipY;
 extern char * gaLanguageNames_00722414[15];
 extern char * gaLanguageNames_00722470[15];
-extern int gaWaypointRowLayout[55];
-// @data gnScrollingTextBoxTopY
-// @wasnamed gnTextOverheadCounter
-// @evidence = 12. Stored to rect.top at 004a0ef0 with +0x70 giving rect.bottom, and
-// passed at 0049d663 as the Y paired with gnTextScrollBoxX @007bf278. It is a layout coordinate, not
-// a counter. @wasnamed gnTextOverheadCounter - the real counter is 007bf20e.
-extern unsigned int gnScrollingTextBoxTopY;
-extern D2UIFlagInitStrc gsUITextFlagInit[7];
 extern uint16_t gaQuestDescData_DenOfEvil[32];
 extern uint16_t gaQuestDescData_SistersBurialGrounds[32];
 extern uint16_t gaQuestDescData_ToolsOfTheTrade[32];
@@ -1862,17 +1734,13 @@ extern int nConfigControlSelected;
 extern D2UIConfigTabEntryStrc g_UIConfigTabTable[3];
 extern uint32_t gnConfigBindingFirstClick;
 extern D2UIFlagInitStrc gsUIFlagInit1;
-extern D2UIFlagInitStrc gsUIFlagInit0;
+extern D2UIFlagInitStrc gsUIFlagInit0[6];
 extern D2UIFlagInitStrc gsUIFlagInit2;
 extern D2UIFlagInitStrc gsUIFlagInit3;
 extern D2StatDescRowStrc gaStatDescRows[15];
 // The four character-screen attribute (+) buttons, 14 bytes each. Every column of record 0 was its own symbol, so only the first button existed - the other three hit-tested and sent their stat id from unrelated memory.
 extern D2StatScreenButtonStrc gaStatScreenButtons[4];
 extern char * gaLanguageNames_00724a80[15];
-extern D2ClassIconWithNameStrc pSpellsClassSkillicon[7];
-extern int nSkillTreeActiveTab;
-extern D2ClassIconWithNameStrc pSpellsClassSkilltree[7];
-extern int gnSkillTreeHighlightIndex;
 extern char * gaLanguageNames_007251e0[15];
 extern D2SpeechBankStrc gaNpcSpeechData_725498[12];
 extern int D2NPCSpeechCount;
@@ -1909,9 +1777,6 @@ extern D2SpeechBankStrc D2SpeechBankStrc_ARRAY_007266f0[12];
 extern D2SpeechBankStrc D2SpeechBankStrc_ARRAY_007267a8[11];
 extern D2NPCSpeechStrc D2NPCSpeech[46];
 extern char * gaLanguageNames_007273a8[15];
-extern D2UIFlagInitStrc g_UIFlagInitDialogMouseWheel;
-// Fourteen {eEventType, nMessageOrKeyCode, pfHandler} records, 007273f0..00727498. Every handler is in 004b7xxx and the table ends exactly where the ASCII "dialogbackground" begins at 00727498, which pins the count. Typed as a single struct, every dialog's mouse and key handlers were registered from whatever followed record 0 in memory and no menu line could ever be clicked - the NPC menu appeared but nothing in it responded.
-extern D2UIFlagInitStrc gsUIDialogFlagInit[14];
 extern int nSoundVolumeLeftChannel;
 extern int nSoundVolumeRightChannel;
 extern uint16_t gaButtonDescriptors[4];
@@ -1922,12 +1787,11 @@ extern int nCashDisplayItemCount;
 // @evidence u16 = 0x0FB1. Read at 004bfef3 as movzx word [piVar1-0x16] and passed
 // to GetLocaleString. A string id, not a Y bound. @wasnamed gnNpcCashTabBoundsY1 (3-way collision).
 extern D2NpcCashTabStrc gaNpcCashTabs[2];
-extern D2UIFlagInitStrc gUIFlagMapInit;
+extern D2UIFlagInitStrc gUIFlagMapInit[8];
 // Former interior labels: gnCursorInvTypeAutoOpenB=+0x4
 extern uint32_t gnCursorInvTypeAutoOpenC[5];
 extern uint32_t gnCursorInvTypeAutoOpenA;
-extern D2SkillCltDoFunc SKILLCLTDOFUNCS[130];
-extern int SKILLCLTDOFUNCS_SIZE;
+extern int gaUnitSoundIdsAmazon[11];
 extern int gaUnitSoundTable[28];
 extern eD2Sounds eD2Sounds_ARRAY_00727f48[12];
 extern eD2Sounds eD2Sounds_ARRAY_00727f78[12];
@@ -2044,7 +1908,7 @@ extern eD2Sounds eD2Sounds_ARRAY_00729538[12];
 extern eD2Sounds eD2Sounds_ARRAY_00729568[12];
 extern eD2Sounds eD2Sounds_ARRAY_00729598[12];
 // VP: vanilla-plus - per-class player sound tables, indexed [0..10]. Real contents recovered from the retail 1.14d Game.exe static .data (they are initialized data, not runtime-filled): the decompile shrank each table to a 1-byte stub because no recovered code wrote or sized them - every indexed read ran past the object into neighboring globals, and a garbage sound id crashed SOUND_PlaySound on the null sounds.txt line (AV read at D2SoundsTxt.Volume@0x3C, the 0x2C inventory-full pickup path). Slot semantics (verified against LoD sounds.txt wavs): [0]/[1] hit/death bases, [2..7] event codes 0x13/0x15/0x16/0x17/0x14/0x18 (impossible, cantuseyet, needkey, cantcarry = the pickup-fail voice, needmana, not_in_town), [8] chat_a_1 base for anim events 0x19-0x20, [9] act1_complete_andariel base for quest events 0x21-0x53 (linear, 0x53 = act5_defeat_baal), [10] footstep block base. Values live in globals.cpp, one grep gate per class pins the full initializer.
-extern int gaUnitSoundIdsAmazon[11];
+// [R99 supersession] Amazon's extern now lives at upstream's site (after SKILLCLTDOFUNCS_SIZE, ghidra 1870 order).
 extern eD2Sounds eD2Sounds_ARRAY_007295c8[12];
 extern int gaUnitSoundIdsBarbarian[11];
 extern int gaUnitSoundIdsNecromancer[11];
@@ -2055,11 +1919,8 @@ extern int gaUnitSoundIdsDruid[11];
 extern int * gaUnitSoundTableByClassId[7];
 extern int gaAmbientMusicLevelSetTable[168];
 extern char * gaLanguageNames_0072a300[15];
-extern uint32_t gnLightmapQualityLastCheck;
-extern D2MissileSrvDoFuncData MISSILECLTCOLLIDEFUNCS[9];
-extern int32_t aIntensityTable_Mode0[120];
-extern int32_t aIntensityTable_Mode1[120];
 extern uint32_t gnDialogDataInitialized;
+extern D2SkillChargeDescStrc gaSkillChargeDescTable[6];
 extern D2SkillDescDamageFunc gapSkillDamageDescFuncTable[36];
 extern D2SkillDescAttackFunc gpSkillDescAttackFuncTable[18];
 extern int32_t gaSkillDescLayoutPositions[36];
@@ -2070,6 +1931,7 @@ extern char * gaLanguageNames_0072d994[15];
 extern char * gaLanguageNames_0072d9d0[15];
 extern char * gaLanguageNames_0072da0c[15];
 extern D2GfxSettingsStrc D2GFXRenderedData;
+extern D2GfxSettingsStrc dwD2GFX_Gamma;
 extern BOOL bAspect;
 extern uint32_t IsOSCursorVisible;
 extern char * gpszDiabloIIClassNameSource;
@@ -2085,12 +1947,6 @@ extern uint32_t gbCursorVisible;
 extern uint32_t gbWindowIsActive;
 extern D2WinWndHandlerStrc gaUIWindowHandlers[33];
 extern uint32_t gbMessageLoopActive;
-extern uint32_t gbPaletteGammaShiftEnabled;
-extern uint32_t gnTextBoxLineSpacing;
-extern int32_t gnLastUsedFontId;
-extern uint32_t gnFontIdSmall;
-extern uint32_t gnFontIdLarge;
-extern uint32_t gnFontIdBody;
 extern uint32_t gaCompCharClassTokens[25];
 extern uint32_t gnD2CompCOFLayerCount;
 extern uint32_t gaCompAnimModeTokens[20];
@@ -2105,56 +1961,29 @@ extern GrTexInfo gTexInfoDebugFontGlide;
 extern void * gapGlideStripVertexPtrsA[10];
 extern void * gapGlideStripVertexPtrsB[10];
 extern D2GlideWallCornerStrc gaGlideWallCornerTable[60];
-extern GrTexInfo gTexInfoBlocks0Glide;
-extern GrTexInfo gTexInfoBlocks1Glide;
-extern GrTexInfo g_GrTexInfoGlBlocks;
-extern GrTexInfo gTexInfoGlideSurfaceBlocks;
 extern int gnDirectDrawPaletteSize;
 extern uint32_t gnDirectDrawGamma;
-extern uint32_t gnSoundHardwareAcceleration;
 extern int gaAmbientSoundFlags;
 // Ambient sound table for area-based background audio. Array of {char* szFilename, int bPlayed} entries. Count stored in gaAmbientSoundFlags. SOUND_PlayNextAmbientSound iterates through this table, alternates with gaAmbientSoundEntryTable based on gnAmbientSoundLanguageCode flag. Reset by SOUND_ResetAmbientSoundFlags.
 extern int gAmbientSoundTable[16];
 extern int gaAmbientSoundEntryTable[16];
 extern uint32_t gnAmbientSoundCount;
-extern uint32_t gnSoundGlobalVolume;
 extern char s___AUTMESSAGESOURCE___0072f9fc[24];
 extern StormLinkedListStrc gFaultHandlerList;
 extern char * gaszLanguageNames[32];
-extern D2BNetClientCallbacksStrc sgBNetClientCallbacks;
-extern HANDLE ghCacheFileHandle;
-extern uint32_t gaBnCacheCrc32Table[256];
-extern char * szBnNewsChannelName;
-extern char s___AUItem_NewsTable___0072ff8c[24];
-extern uint32_t g_nRealmLogonResult;
-extern uint32_t g_dwProductId;
-extern uint16_t gwStrTableDefaultEncoding[256];
-extern D2LangTableEntryStrc gaLanguageTable[13];
-extern uint16_t gcAbbrevKilSymbol;
-extern uint16_t gcAbbrevMilSymbol;
-extern uint16_t gcAbbrevBilSymbol;
-extern uint16_t gcAbbrevTrilSymbol;
-extern short gnNpcMenuQuestIdTable[256];
-extern D2Utf8DecodeRowStrc gaUtf8DecodeTable[7];
 extern uint32_t CLIENT_SocketToServer;
 extern int NET_D2GS_CLIENT_INCOMING_SIZE[181];
 extern unsigned short QServerNextToken;
 extern uint32_t GameSeed;
-extern uint32_t dwCycleLastSecond;
 extern int32_t Frames_PerSecond;
 extern D2UnitIdToNameFunc PFN_UnitTypeCallbackTable[5];
 extern BOOL DontNoSafeGameBool;
-extern uint32_t gpInactiveMonsterStateFlagSentinel;
-extern uint32_t gnMonsterStateFlagMask1;
-extern uint32_t gnMonsterStateFlagMask2;
 extern uint8_t gbQuestReconnectMode;
 extern int nQuestDataExtendedSize;
 extern int NPCINTRO_ListAct1[6];
 extern int NPCINTRO_ListAct2[11];
 extern int NPCINTRO_ListAct3[7];
 extern int NPCINTRO_ListAct5[7];
-// Player-animation-mode net-message table, indexed by eD2PlayerAnimMode (20 values, Death..KnockBack). 20 records of {pfnPlayerModeNetMsg *pfnSend; int32 nMsgId; int32 nMsgIdAlt} = 240 bytes, 0x7319e8..0x731ad7; the dword at 0x731ad8 is 0x43, not a code pointer, which bounds the table. DispatchPlayerModeNetMsg @0x5484b0 reads (&base)[mode*3] as the handler, so the function pointer is field 0.
-extern D2PlayerModeNetMsgStrc gaPlayerModeNetMsgTable[20];
 extern int gnDirectionXOffsets[8];
 extern int gnDirectionYOffsets[8];
 extern D2ObjectPopulateFnFunc OBJECTSPOPULATEFN[10];
@@ -2166,13 +1995,6 @@ extern D2ObjectPopulateEntryStrc gaObjectPopulateTable[7];
 extern D2ObjectSpawnOffsetGroupStrc gaObjectSpawnOffsetTables[4];
 extern D2SkillSrvStFunc SKILLSRVSTFUNCS[91];
 extern D2SkillSrvDoFunc SKILLSRVDOFUNCS[191];
-extern int gnActCount;
-extern int gnNPCSpokenBitIndexMapCount;
-extern int gaNPCSpokenBitIndexMap[35][2];
-extern PFN_ObjectOperateCallback gapObjectOperateCallbacks[10];
-extern int gnObjectOperateCallbackCount;
-extern D2ObjectOperateFnFunc OBJECTSOPERATEFN[101];
-extern int SHRINESCOUNT;
 extern char gaQ33_Normal_AmazonBowCodes[5][4];
 extern char gaQ33_Normal_SorceressOrbCodes[5][4];
 extern char gaQ33_Normal_NecromancerWandCodes[5][4];
@@ -2194,7 +2016,7 @@ extern char gaQ33_Hell_PaladinScepterCodes[5][4];
 extern char gaQ33_Hell_BarbarianAxeCodes[5][4];
 extern char gaQ33_Hell_DruidHelmCodes[5][4];
 extern char gaQ33_Hell_AssassinClawCodes[7][4];
-extern uint8_t gbQuestA5Q2Unknown;
+extern D2NPCMessageTableStrc gbQuestA5Q2Unknown[6];
 extern D2MonsterUModHandlerRowStrc g_MonsterUModHandlerTable[43];
 extern char * gaLanguageNames_0073c6e0[15];
 extern D2MissileSrvDoFuncData gaMissileSrvDoFuncTable[9];
@@ -2204,9 +2026,6 @@ extern D2MissileSrvDmgFunc MISSILESSRVDMGFUNCS[31];
 extern uint8_t gaSkillLevelCaps[60];
 extern D2ItemSpellStrc ITEMSPELLFUNCS[31];
 extern uint8_t gaSkeletonComponentsByMasteryLvl[11][9];
-extern uint32_t bUseCompressedData;
-extern void* gpszExtDcc;
-extern void* gpszExtDc6;
 extern char s___AUTCELENTRY___00741f14[16];
 extern char s___AUCELLIST___00741f2c[16];
 extern char s___AV__TSExplicitList_UCELLIST____00741f44[48];
@@ -2222,31 +2041,20 @@ extern D2DataTableTxtStrc * sgptDataTable;
 extern int gpaMiscTxtTables;
 extern char * gaLanguageNames_0074430c[15];
 extern char * gaLanguageNames_0074430c_11[15];
-// RoomEx activation dispatch, indexed by the room's priority 0..3. Called __fastcall(pRoomEx) from InitNearRooms (0061b407, 0061b460) and AddRoomDataActual (0061b4d1). Four entries: the neighbouring table at 00744394 is a separate array, not elements [4..7] of this one.
-extern pfnRoomExActivationHandler gaRoomExActivationHandlers[4];
-// RoomEx deactivation dispatch, indexed by the room's priority 0..3. Entries 0-2 are ECX->EAX adapters that tail-jump into DRLGROOMEX_RecalcPriority; entry 3 is ClearRoomExIfFlag0x01. Reached from DRLGROOMEX_PropagateDecRefCount, DRLGROOMEX_SwapActiveRoomEx and the indirect JMP at 0061b5a3.
-extern pfnRoomExDeactivationHandler gaRoomExDeactivationHandlers[4];
 extern char * gaLanguageNames_007443a8[15];
 extern uint32_t gnTimeRates[3];
-extern uint32_t aENVIRONMENTDATA1[18];
-extern D2DrlgActEnvironmentData aENVIRONMENTDATA3[6];
-extern D2DrlgActEnvironmentData aENVIRONMENTDATA2[6];
 extern char * gaLanguageNames_007444c8[15];
-extern D2SeedStrc * psDataTableSeed;
 extern char * gaLanguageNames_00744508[15];
 extern char * gaLanguageNames_00744588[15];
 extern char * gaLanguageNames_007445c4[15];
 extern char * gaLanguageNames_00744600[15];
-extern D2InventorySizesStrc gsInventoryBodyLocGridSize;
-extern D2InventorySizesStrc g_InventorySizesDefaultConfig;
 extern char * gaLanguageNames_00745648[15];
 extern char * gaLanguageNames_00745684[15];
 extern char * gaLanguageNames_007456c0[15];
 extern char * gaLanguageNames_007456fc[15];
 extern char * gaLanguageNames_00745738[15];
-extern D2ItemsEventMethodStrc gaSkillCalcMethods[7];
-extern int32_t gnSkillCalcMethodCount;
 extern fpProperties PROPERTIESFUNCTIONS[37];
+extern uint16_t aaWaypointsBitMasks_0__1_[112][2];
 extern D2MonSeqTxt D2MonSeqTxt_ARRAY_007466dc[7];
 extern uint8_t gaMonSeqMonsterTblData_Unknown;
 extern uint8_t gaMonSeqAnimData;
@@ -2302,20 +2110,16 @@ extern uint32_t gaOverlayVariantCodes2[12];
 extern char * gaLanguageNames_00748a58[16];
 extern char * gaLanguageNames_00748a98[15];
 extern int gpsPresetObjectTable[750];
-extern int gaFieldStepDeltaX[9];
-extern int gaFieldStepDeltaY[9];
 extern uint32_t DEFAULT_SECURITY_COOKIE;
 extern double DOUBLE_0074adb4;
 // CRT x87 dispatch: maps the FXAM condition bits (C3,C2,C1,C0 folded into 4 bits) to a byte offset into the caller's per-class jump table.
 // Provenance: 00698548/006985af MOV EBX,0x74adbc; XLAT; MOVSX; ADD EBX,EDX+0x10; JMP [EBX] (code not yet in a function).
 extern uint8_t gabyFxamClassOffset[16];
 extern unsigned int gaCRT_FPremData_3;
-extern uint8_t gaCRT_PKWareLitLenBitsTableC[256];
 extern BOOL BOOL_0074c020;
 extern uint32_t gsD3DTextureDescTemplate[8]; // [vanilla-plus fix 19a; upstream ad964f3 landed the same 8-dword A1R5G5B5 template]
 extern uint16_t gaD3DPerspectiveStripIndices[22];
 extern D2D3DTileCornerStrc gaD3DWallCornerTable[60];
-extern char * gnExcelRecordFieldNotFound;
 extern int TokenHashMapBucketSize;
 extern uint32_t nTokenBucketMask;
 extern uint32_t gnQServerIpConnCountModulo;
@@ -2323,12 +2127,9 @@ extern uint32_t gnQServerHacklistBucketCount;
 extern char s___AUCMDDEF___0074c47c[16];
 extern D2StormListHead gStormCmdListHeadBackslash;
 extern D2StormListHead gStormCmdListHeadSlash;
-extern HANDLE ghCurrentProcessHandle;
 extern eD2ApplicationMode geD2ApplicationMode;
 extern SERVICE_STATUS_HANDLE ghServiceCtrlHandler;
-extern HINSTANCE WinMain_hInstance;
 extern uint32_t gnServiceRunning;
-extern BOOL D2Ini_bUseDirect;
 // lpCriticalSection parameter of InitializeCriticalSection
 // lpCriticalSection parameter of DeleteCriticalSection
 extern _RTL_CRITICAL_SECTION lpCriticalSection_0074c830;
@@ -2346,66 +2147,21 @@ extern char * g_szPrimaryAssignment;
 extern char * g_szAssignments;
 extern int gbSystemInfoInitialized;
 extern uint32_t g_eOSType;
-extern int fGameVersion;
+extern float fGameVersion;
 extern uint32_t g_dwTotalPhysicalMemory;
 // lpSystemInfo parameter of GetSystemInfo
 extern _SYSTEM_INFO gSystemInfo;
 extern char gszCrashReportProcessPath[2048];
 extern uint32_t g_dwErrorState;
 extern uint32_t gbFogErrorManagerInitialized;
-extern int gnAsyncDataPriorityDeferDepth;
-extern D2AsyncData_Line0x128 * gpAsyncDataDeferredList;
-extern uint32_t gbAsyncDataInitialized;
-extern uint32_t gnAsyncDataHandleBufferSize;
-extern D2AsyncDataStrc * pD2AsyncDataStrc;
 extern uint32_t gaHuffmanFastDecodeTable[256];
 extern uint8_t gabHuffmanNextTable[256];
-extern uint64_t gaServerSentPacketByteCounts[256];
-// Running 64-bit total of payload bytes passed to NET_D2GS_SERVER_LogSentPacket (nSize); zeroed by NET_SERVER_SentPacketLog_Clear.
-// Provenance: 0040b181-0040b1a4 ADD [lo],x / ADC [hi],0.
-extern unsigned long long gnSentPacketRawBytes;
-// Running 64-bit total of encoded bytes on the wire: ceil(huffman bits/8) plus the 1- or 2-byte length header.
-// Provenance: 0040b181-0040b1a4 ADD [lo],x / ADC [hi],0.
-extern unsigned long long gnSentPacketWireBytes;
-// Running 64-bit total of length-header bytes (1, or 2 when the encoded size is >= 0xf0).
-// Provenance: 0040b181-0040b1a4 ADD [lo],x / ADC [hi],0.
-extern unsigned long long gnSentPacketHeaderBytes;
 // lpCriticalSection parameter of DeleteCriticalSection
 // lpCriticalSection parameter of InitializeCriticalSection
 // lpCriticalSection parameter of LeaveCriticalSection
 // lpCriticalSection parameter of EnterCriticalSection
 extern _RTL_CRITICAL_SECTION lpCriticalSection_0075cfbc;
 extern uint32_t gnDbgSymInitRefcount;
-// cp parameter of inet_addr
-extern char cp_0075d040[256];
-extern int gLogMessageQueueCount;
-extern int gLogMessageQueueTotalBytes;
-// 20 log-file slots of 16 chars, i.e. char[20][16] - stride 0x10, not char[16][20]. Proof: FindOrOpenLogFileSlot indexes gLogFileNameArray[nSlot] with nSlot 0..19 and advances the walker by 0x10 (0040ee1e SHL EDI,4), CloseLogFileByName steps 0x10 and bails at nSlot > 0x13, and the length guard halts on SStrLen > 0xf. HAZARD for the reconstruction: the scan loop at 0040eef0 terminates on the hard-coded address 0x75d288, which is one-past-the-end of this array. The generator binds that constant to the next symbol (gLogRealmStartupLocalTime) instead of to &gLogFileNameArray[20]; in the recompiled binary the two are ~44 KB apart, so the loop runs ~2810 iterations and nSlot runs far out of bounds.
-extern char gLogFileNameArray[20][16];
-// SYSTEMTIME filled by GetLocalTime in StartLogWriterThread (00410562) and read field-by-field by WriteRealmStartupHeader (0040ed7a..0040eda8). Was mistyped as a 2-byte short with its wMonth/wDay/wHour/wMinute/wSecond/wMilliseconds members labelled as six separate globals (gRealmStartupPacketField1..3, gNetworkStateData3..5); those labels were the struct members and have been folded in. Note 0075d288 is also one-past-the-end of gLogFileNameArray and is used as the scan-loop terminator in FindOrOpenLogFileSlot (0040eef0).
-extern _SYSTEMTIME gLogRealmStartupLocalTime;
-// gLogFileSlotMutex is a 20-element int array, one flag per log-file slot, not a scalar. StartLogWriterThread (004105a4..004105e0) sets all 20 to 1 with unrolled stores; FindOrOpenLogFileSlot reads gLogFileSlotMutex[nSlot] and clears it after WriteRealmStartupHeader. It was typed as a single int with the other 19 elements carrying auto-generated labels gaLogFileSlotMutex_0..12, which made the generator emit them as function-local statics in StartLogWriterThread while the indexed access ran off the 4-byte scalar into gLogWriterThreadHandle / gLogManagerInitialized / gLogWriterThreadStopFlag / gLogWriterThreadId / gLogMessageQueueHead / gpLogMessageQueueHead. Extent 0075d298..0075d2e7 ends exactly at gLogWriterThreadHandle.
-extern int gLogFileSlotMutex[20];
-extern HANDLE gLogWriterThreadHandle;
-extern uint32_t gLogManagerInitialized;
-extern uint32_t gLogFileLastAccessTimeArray[20];
-extern char gLogFilePathArray[20][260];
-extern FILE * globalOpenFileHandleArray[20];
-extern uint32_t gLogFileLastWriteTimeArray[20];
-extern uint32_t gLogWriterThreadStopFlag;
-// lpThreadId parameter of CreateThread
-extern LPDWORD gLogWriterThreadId;
-// lpCriticalSection parameter of LeaveCriticalSection
-// lpCriticalSection parameter of EnterCriticalSection
-extern CRITICAL_SECTION gLogMessageQueueCS;
-// lpCriticalSection parameter of LeaveCriticalSection
-// lpCriticalSection parameter of EnterCriticalSection
-extern _RTL_CRITICAL_SECTION gLogFileCS;
-extern D2StormListHead gLogMessageQueueHead;
-extern D2HighResTimestampStrc gHighResTimerInitTimestamp;
-// lpCriticalSection parameter of DeleteCriticalSection
-// lpCriticalSection parameter of InitializeCriticalSection
-extern CRITICAL_SECTION gHighResTimerCS;
 extern SMemHeapStatsStrc gaSMemHeapStats[4096];
 extern int g_SMemLastTickCount;
 extern void * g_SMemHeapBuckets[256];
@@ -2420,9 +2176,6 @@ extern int g_SMemHeapCleanupFlags[256];
 extern void * g_SMemPendingCleanupHeap;
 extern uint32_t g_SMemDebugFillEnabled;
 extern uint32_t g_SMemInitialized;
-extern unsigned int guStringAlignmentTemp;
-extern uint32_t gbSStrConversionTablesInitialized;
-extern double gdPow10Table[200];
 extern IDirectSound * g_pDirectSound;
 extern uint32_t gbAsyncIOWorkerShutdown;
 // lpFilename parameter of GetModuleFileNameA
@@ -2463,19 +2216,9 @@ extern uint32_t gbFormatErrorModulesInitialized;
 extern uint32_t gbSSystemShutdownInProgress;
 extern uint32_t dwLastErrorCode;
 extern pfnBlizzardError pfnBlizzardErrorCallback;
-extern void * gpScompTempBuffer;
-extern uint32_t gnScompTempBufferOwnerThreadId;
-// lpCriticalSection parameter of LeaveCriticalSection
-// lpCriticalSection parameter of EnterCriticalSection
-extern _RTL_CRITICAL_SECTION lpCriticalSection_00779214;
-// @blizzard s_critsect[4] (SLOG.CPP)
-extern CRITICAL_SECTION gaSLogCritSect[4];
-// @blizzard s_loghead[4] (SLOG.CPP)
-extern D2SLogStrc * gaSLogHead[4];
-extern uint32_t gpActiveWindow;
 extern uint32_t gnSevtSnapshotActive;
 extern void * gpEventHashBuckets;
-extern void * gaEventRegistryHead;
+extern uint32_t gaEventRegistryHead;
 extern uint32_t gnSevtRegisteredEventCount;
 // lpCriticalSection parameter of LeaveCriticalSection
 // lpCriticalSection parameter of EnterCriticalSection
@@ -2697,14 +2440,12 @@ extern char gszLadderCharNameFilter[16];
 extern D2ControlStrc * gpCtlLobbyChat[2];
 extern D2LobbyControlsStrc gpLobbyForm0;
 extern D2BNetClientCallbacksStrc * pNetworkUnknown;
-extern uint32_t gnLadderScrollPageSize;
+extern int gnLadderScrollPageSize;
 extern uint32_t ghBannerAdProcess;
 extern char * gapszProfileReadBuffers[3];
 extern char gszOogReplyCommandBuffer[256];
-extern char gaChatDlgHistoryBuffer[10][256];
 extern D2IniConfigStrc * D2IniData_multiplayer;
 extern uint16_t LastGameRequestId;
-extern uint16_t gwLastGameInfoRequestId;
 extern void * gpChatFormList;
 extern int FORMS_nListExCount;
 extern uint32_t gbLadderNewsExpanded;
@@ -2748,14 +2489,6 @@ extern DC6 * gpDC6PaladinTab;
 extern DC6 * gpDC6BarbarianTab;
 extern DC6 * gpDC6DruidTab;
 extern DC6 * gpDC6AssassinTab;
-extern D2WinButton * gpCtlLadderBtnOverall;
-extern D2WinButton * gpCtlLadderBtnAmazon;
-extern D2WinButton * gpCtlLadderBtnSorceress;
-extern D2WinButton * gpCtlLadderBtnNecromancer;
-extern D2WinButton * gpCtlLadderBtnPaladin;
-extern D2WinButton * gpCtlLadderBtnBarbarian;
-extern D2WinButton * gpCtlLadderBtnDruid;
-extern D2WinButton * gpCtlLadderBtnAssassin;
 extern DC6 * gpDC6SquelchAura;
 extern DC6 * gpDC6SelectAura;
 extern DC6 * gpDC6NumberArrows1;
@@ -2773,7 +2506,6 @@ extern D2ControlStrc * gpCtlChannelOkButton;
 extern D2ControlStrc * gpCtlChannelDlgCancelButton;
 extern D2WinEditBox * gpCtlChannelNameEditBox;
 extern D2WinTextBox * gpCtlChannelList;
-extern D2WinTextBox * g_pLadderBoardTextBox;
 extern D2ControlStrc * ghWndGameNameEditBox;
 extern DC6 * gpDC6CreateGameBckg;
 extern DC6 * gpDC6CreateGameButton;
@@ -2787,7 +2519,7 @@ extern DC6 * gpDC6PlayerProfileBckg2;
 extern DC6 * gpDC6HelpBckg;
 extern DC6 * gpDC6D2LogoBlackBnet;
 extern DC6 * gpDC6D2LogoBnet;
-extern uint32_t gnChatHistoryEntryCount;
+extern int gnChatHistoryEntryCount;
 extern uint32_t gnNotifyEnabled;
 extern uint32_t gbIsChannelScreen;
 extern uint32_t gdwLadderRankRequestTimeout;
@@ -2807,9 +2539,6 @@ extern D2WinTextBox * BattleNetNews;
 extern D2WinTextBox * gpControlJoinGameError;
 extern uint32_t gnOpenBNetMode;
 extern ChatDlgCallback gpfnChatDlgCallback;
-extern void * gpChatMessageQueueHead;
-extern void * gpChatMessageQueueTail;
-extern void * gpChatPlayerNameListHead;
 extern unsigned int gdwLastGameListRefreshTick;
 // Former interior labels: gszLanGameListEntryName=+0x1 gszLanGameListEntryDescription=+0x11 gbOOGLobbyScreenStatePadding=+0x12 gwOOGLobbyScreenState=+0x31 gwGameListCacheEntryPort=+0x33 gdwGameListCacheEntryFlags=+0x37 gPlayerInputState1=+0x6e gbDamageModConfigLoaded=+0xa3a5
 extern D2GameListEntryStrc gbLanGameListEntryNamePadding2[1000];
@@ -2883,7 +2612,7 @@ extern D2ControlStrc * gpChatCommandsOKButton;
 extern D2ControlStrc * gpChatCommandsBackground;
 extern uint32_t gnGameListFilterState;
 extern uint32_t gnMCPCreateGamePendingFlag;
-extern uint32_t gnFilteredGameListCount;
+extern int gnFilteredGameListCount;
 extern int nGameListDifficultyFilter;
 extern uint32_t CreateGameDifflevel;
 extern char gszProfileCharacterName[16];
@@ -2894,7 +2623,7 @@ extern D2ChannelUserStrc * gpChannelUserListHead;
 extern void * gpChannelUserLinkedListHead;
 extern int gnChannelUserTotalCount;
 extern int gnChannelUserCount;
-extern uint32_t gnChannelUserListScrollOffset;
+extern int gnChannelUserListScrollOffset;
 extern void * gpCurrentChatRoomContext;
 extern uint32_t gdwLastChatSendTick;
 extern uint32_t g_nMCPGameDifficulty;
@@ -2947,7 +2676,9 @@ extern int gConnectShortTimeoutStartTick;
 extern uint32_t gbBloodFlag;
 // End-game UI state block (congrats/cutscene flags).
 extern D2EndGameUiState gEndGameUiState;
+// End-game cutscene/congrats flag set by quest log (advances difficulty).
 extern D2EndGameUiState gShowEndGameCutscene;
+// Congrats screen OK clicked; DRAW_Congratz exits when set.
 extern D2EndGameUiState gCongratzOkClicked;
 extern uint8_t CLIENT_nDifficulty;
 // Beta screen slideshow index (page).
@@ -2961,6 +2692,7 @@ extern BOOL D2CLIENT_ExitVar3;
 extern BOOL gLevelLoadInProgress;
 // Exit cutscene state: pending id + played flag.
 extern D2ExitCutsceneState gExitCutsceneState;
+// Exit cutscene played/active flag; suppresses connection-refused handling and drives end-game flow.
 extern D2ExitCutsceneState gExitCutscenePlayed;
 extern D2DrlgActStrc * sgpDrlgAct;
 extern D2Game_Line0x546 * D2GameGame0x546;
@@ -2985,7 +2717,6 @@ extern uint32_t gnCameraWorldDeltaY;
 extern uint32_t gbMinimapClickValid;
 // Load screen timer duration in ms (paired with gLoadTimerStartTick).
 extern D2ClientTimerStrc gLoadTimerDurationMs;
-extern TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0> gQServerGameState;
 // NAME IS WRONG - this is the accelerator table, not a "loaded" flag. It was typed `bool` while all
 // three of its accesses are dword: CLIENT_LoadLNG stores LoadAcceleratorsA(ghLngLibrary,0x64) here,
 // FreeLanguage clears it, and MessageGameLoop passes it to TranslateAcceleratorA. Retyped HACCEL on
@@ -3000,13 +2731,12 @@ extern D2GameRecordFileHeaderStrc lpBuffer_007a2768;
 extern uint32_t gdwQuestResurrectDismissThrottle;
 extern DC6 * DC6_EnteredAreaName;
 extern DC6 * pDC6_Frame;
-extern uint32_t gnGoldDialogTransactionType;
+extern int gnGoldDialogTransactionType;
 extern SpinnerWrapper * gpCurrentDialog;
 extern EditBoxWrapper * gpDialogDefaultActionCallback;
 extern ButtonWrapper * gpUiGoldTransactionDialog;
 extern ButtonWrapper * gpUiGoldDialogCancelButton;
 extern uint32_t gbKeyConfigModeActiveInDialog;
-extern uint32_t gbLoadScreenLevelLoadInProgress;
 extern D2UIFlagStrc GFX_bShowUIFlag;
 extern int gnPanelOffsetX;
 extern int gnPanelOffsetY;
@@ -3020,7 +2750,6 @@ extern DC6 * gpDC6YouDiedHardcoreImage;
 extern DC6 * gpDC6DeathInstructionImage;
 extern D2UIFlagDescStrc gaUIFlagDescsClient[3];
 extern uint32_t gnGoldDialogTransactionMode;
-extern uint32_t gnLoadScreenAnimFrame;
 extern uint16_t gU16ImmunityStringBuffer2[256];
 extern uint32_t gnImmunityText2Color;
 extern uint16_t UNICODE_007a2c80[80];
@@ -3073,11 +2802,18 @@ extern uint32_t gnConnectionLostScreenState;
 extern uint32_t gbCharScreenOkPressed;
 extern uint32_t gbCharScreenOkButtonConfirmed;
 extern uint32_t gbCharScreenCancelPressed;
-extern BOOL BOOL_007a5260;
-extern BOOL bRecursionClick;
 extern D2UnitStrc * ClientSideUnitHashTables[6][128];
+extern D2UnitStrc * ClientSideUnitHashTables_1__0_[6][128];
+extern D2UnitStrc * ClientSideUnitHashTables_1__1_[6][128];
+extern D2UnitStrc * ClientSideUnitHashTables_2__0_[6][128];
 extern D2UnitStrc * ClientSideUnitHashTables_3__0_[6][128];
 extern D2UnitStrc * ServerSideUnitHashTables[6][128];
+extern D2UnitStrc * ServerSideUnitHashTables_0__1_[6][128];
+extern D2UnitStrc * ServerSideUnitHashTables_1__0_[6][128];
+extern D2UnitStrc * ServerSideUnitHashTables_1__1_[6][128];
+extern D2UnitStrc * ServerSideUnitHashTables_2__0_[6][128];
+extern D2UnitStrc * ServerSideUnitHashTables_3__0_[6][128];
+extern D2UnitStrc * ServerSideUnitHashTables_4__0_[6][128];
 extern D2UnitStrc * pPlayerUnit;
 extern int gnSelectExclusionRectLeft;
 extern int gnSelectExclusionRectTop;
@@ -3093,22 +2829,6 @@ extern D2UnitStrc * pCursorItem;
 extern int32_t gCursorAnimationFrame;
 extern uint32_t gnCursorAnimStartTick;
 extern int ItemTypeOnHand;
-extern unsigned int gnD2GSBytesSentTotal;
-extern uint32_t gnD2GSPacketsSentTotal;
-extern int gnCursorInitialized;
-extern pfnVoidNoArgCallback gpfnMouseLeftButtonHandler;
-extern pfnVoidNoArgCallback gpfnMouseRightButtonHandler;
-extern D2KeyBindStrc gaKeyBindingsBackup[114];
-extern pfnVoidNoArgCallback gpfnMouseMiddleButtonHandler;
-extern D2KeyBindStrc g_KeyBindingsTable[114];
-extern pfnVoidNoArgCallback gpfnScrollUpButtonHandler;
-extern pfnVoidNoArgCallback gpfnScrollDownButtonHandler;
-extern pfnVoidNoArgCallback gpfnMouseLeftButtonAltHandler;
-extern pfnVoidNoArgCallback gpfnMouseRightButtonAltHandler;
-extern pfnVoidNoArgCallback gpfnMouseMiddleButtonAltHandler;
-extern unsigned int gbKeyBindingsEnabled;
-extern uint16_t gwKeyNameBuffer[4];
-extern unsigned int gbKeyConfigModeActive;
 // D2ClientLightPulseStrc (44 bytes, 0x007a742c..0x007a7457). CMD_InitKeyConfigUI (0046ae50) opens with memset(&gRoomLightPulse, 0, 0x2c) then writes bRoomLightPulseActive / nFadeInDuration / nFadeOutDuration / nHoldDuration / nTotalDuration / eLevelId - so the 44-byte clear and the field writes are one object.
 extern D2ClientLightPulseStrc gRoomLightPulse;
 extern BOOL DenOfEvilLight;
@@ -3137,6 +2857,7 @@ extern char gWeatherPaletteLightingNightColors[12];
 extern float gnWeatherTransitionInitialized;
 extern char gWeatherPaletteMudDuskColors[12];
 extern DC6 * DC6_UncompOverlays_Rain[4];
+extern DC6 * DC6_UncompOverlays_Rain2[4];
 extern int DC6_UncompOverlays_Rain_FrameCount[4];
 extern int gnWeatherParticleState;
 extern int gnWeatherRngCountdown;
@@ -3179,18 +2900,11 @@ extern int32_t gaArcaneStarXVelocity[256];
 extern uint32_t gnLastLightmapUpdateFrame;
 extern DC6 * gpAncientsBgDC6;
 extern DC6 * gnDrawBackgroundRenderOffset;
-extern void * gpMonsterPalShiftList;
-extern void * gpPalShiftEntryListHead;
-// byte[0x1e00] = 30 transforms x 256. D2FILE_ReadFile(handle, 0x7b9580, 0x1e00) at InitPal 00476f1d. PALSHIFT_GetMonsterTransform bounds the index at <= 0x1d (CMP ESI,0x1d / JA at 0047759a) then SHL 8 + base. Ends exactly at gbPalShiftRandTransformLoaded (007bb380). Was typed D2GamePalShiftRandTransformStrc* (4 bytes); that struct is a 7679-byte all-undefined auto blob, one byte short of the real 0x1e00 - do not use it.
-extern uint8_t PalShift_RandTransform[7680];
-extern int gbPalShiftRandTransformLoaded;
-extern D2GamePalShiftGreenBloodStrc * PalShift_GreenBlood;
 extern uint32_t gnEngineMode;
 extern uint32_t fps;
 extern uint32_t gbFPSStatsEnabled;
 extern uint32_t gnCurrentEngineFlags;
 extern uint32_t gbHideExtendedFPSStats;
-extern uint32_t gnLoadingProgressRatio;
 extern uint32_t gnChatHistoryScrollIndex;
 extern int gaIMECompositionBuffer;
 extern char gaChatInputBuffer;
@@ -3213,40 +2927,13 @@ extern uint8_t gaChatHistoryBuffer[4112];
 // Zeroed as 16 dwords by StaticInit_6cab30; cleared ([0]=0) at 0047ab98 after the GCS_RESULTSTR (0x800) commit, in INPUT_HandleIMEStartComposition (0047acb8), INPUT_HandleIMEEndComposition (0047ad1c), CHAT_InitIME (0047b112) and CHAT_ShutdownIME (0047b379).
 // Provenance: write xrefs in 1.14d; the interior label gpIMECompositionStringEnd (007bc88e) was folded into this array.
 extern uint16_t gwcIMECompositionString[32];
-extern int gnMiniPanelButtonX[8];
-extern uint32_t gnMiniPanelButtonY[8];
-extern uint32_t gnMiniPanelButtonFrame[8];
-extern uint32_t gnMiniPanelButtonState[8];
-extern uint32_t gnMiniPanelButtonState6[8];
-extern int gnEscMenuSelectedIndex;
-// Global pointer to current escape menu header. Points to static menu table headers that contain item count, spacing, row height, and star decoration offset. Reassigned during menu transitions (main menu, options, save/exit, etc).
-extern D2EscMenuHeaderStrc * gpEscMenuItemCount;
-extern D2EscMenuItemStrc * gpEscMenuCurrentTable;
-extern uint32_t gbEscMenuSliderDragging;
-extern uint32_t gnEscMenuSliderValue;
-extern DC6 * gpEscMenuOptBarDC6;
-extern DC6 * gpEscMenuOptBarCDC6;
-extern DC6 * gpEscMenuOptSkullDC6;
-extern int SizeCurrentSelectedEscMenuItem;
-extern DC6 * gpMiniPanelBackgroundDC6;
-extern DC6 * gpMiniPanelButtonsDC6;
-extern uint32_t gnMiniPanelRightScreen;
-extern uint32_t gnMiniPanelLeftScreen;
-extern uint32_t gnMiniPanelMouseOverButton;
-extern uint32_t gbMiniPanelSinglePlayer;
-extern uint32_t gnMiniPanelHoverState;
-extern void * gpWardenResponseData;
-extern uint32_t gnWardenResponseSize;
-extern D2WardenModuleStrc * gpWardenActiveModule;
-extern D2WardenModuleStrc * gpWardenPendingModule;
-extern D2BNetClientCallbacksStrc * sgpUnknownSequence;
 extern void * pSoundChannelDataArray;
 extern D2SoundsTxt * pTxtSounds;
 extern int nTxtSoundsSize;
 extern D2SoundEnvironTxt * pTxtSoundEnviron;
 extern int nTxtSoundEnvironSize;
-extern uint32_t gpSoundHdrGlobal;
-extern uint32_t gnSoundIdRangeMax;
+extern int gpSoundHdrGlobal;
+extern int gnSoundIdRangeMax;
 extern void * gpSoundLRUListHead;
 extern uint32_t gnCurrentGameAudioVolume;
 extern unsigned int gdwLastSoundAsyncLoadTick;
@@ -3254,16 +2941,28 @@ extern int gnSoundEvictedAudioVolume;
 extern uint32_t gnSoundAsyncLoadCount;
 extern uint32_t gnSoundBufferMaxBytes;
 extern uint32_t gnSoundBufferBytesLoaded;
-extern char gbCutsceneActive;
-extern uint8_t gbLoggerStateInactive;
-extern uint8_t gbItemDescDirtyFlag;
-extern uint8_t geCutsceneCurrentSoundId;
 extern D2NpcShopButtonStrc gaNpcShopButtons[4];
+extern D2NpcShopButtonStrc DRAW_UI_NPC_BUTTONS[4];
+extern D2NpcShopButtonStrc gaNpcShopButtonStringIds[4];
+extern D2NpcShopButtonStrc gnNpcShopButtonActionType[4];
+extern D2NpcShopButtonStrc gnCurrentNpcButtonSelection[4];
+extern D2NpcShopButtonStrc gnNpcShopButtonActionType_b[4];
+extern D2NpcShopButtonStrc gnSomeUIOffset1[4];
+extern D2NpcShopButtonStrc gnCurrentShopNpcButtonState[4];
+extern D2NpcShopButtonStrc NpcButtonFirst[4];
+extern D2NpcShopButtonStrc NpcButtonThird[4];
+extern D2NpcShopButtonStrc gwInvNpcButton1TextId[4];
+extern D2NpcShopButtonStrc gbInvNpcButtonState[4];
+extern D2NpcShopButtonStrc gwInvNpcButton4TextId[4];
+extern D2GridScreenCoordinates gnTradePage2ScreenTop;
+extern D2GridScreenCoordinates gnTradePage2ScreenBottom;
+extern D2GridScreenCoordinates gnTradePage2ScreenLeft;
+extern D2GridScreenCoordinates gnTradePage2ScreenRight;
 extern unsigned int gdwInvLastActionTickCount;
 extern int gnInvMouseX;
 extern BOOL gbInvOverlayFlag;
 extern DC6 * gpInvShopTabImage;
-extern uint32_t gpInvCursorItem;
+extern int gpInvCursorItem;
 extern int gbInvNpcScreenCoordsInitialized;
 extern uint32_t gpInvItemUnderCursor;
 extern uint32_t gbInvBodySlotUnderCursorExists;
@@ -3335,7 +3034,7 @@ extern uint32_t gnInvMercBodySlot2;
 extern uint32_t gbInvRecipeScrollOpen;
 extern uint8_t gpInvRecipeScrollImage[8192];
 extern uint32_t gnHireDisplayMode;
-extern uint32_t gpHireHoverUnit;
+extern int gpHireHoverUnit;
 extern uint32_t gnHireIconDrawX;
 extern uint32_t gnHireIconHoverX;
 extern uint32_t gnHireIconHoverY;
@@ -3366,7 +3065,6 @@ extern uint32_t gpPanelMenuButton;
 extern uint32_t gpPanelRunButton;
 extern uint8_t gbPanelStaminaColorRed;
 extern int gpPartyAcceptButton;
-extern int32_t gpWaypointButtonHover;
 extern D2WaypointListEntryStrc gaWaypointListEntries[9];
 extern uint8_t gbWaypointButtonPressed;
 extern uint32_t ClickingDownOnWaypointEntry;
@@ -3379,6 +3077,9 @@ extern uint32_t NoOtherWaypointAvailableBool;
 extern uint16_t gnQuestScrollLine[6];
 extern D2TextBoxStrc * gpTextScrollingBox;
 extern RECT gnTextBoxExclusionLeft[16];
+extern RECT gnTextBoxExclusionTop[16];
+extern RECT gnTextBoxExclusionRight[16];
+extern RECT gnTextBoxExclusionBottom[16];
 extern D2TextBoxStrc * gpStaticTextPopup;
 extern uint32_t gdwTextPopupExpireTime;
 extern ListBoxWrapper * gpTextMessageLogHead;
@@ -3422,13 +3123,13 @@ extern int gQuestLogSelectedQuestByAct[5];
 extern D2QuestLogStrc gQuestLog;
 extern int gnUICtrlConfigTotalRows;
 extern int gnUICtrlConfigScrollMaxLines;
-extern uint32_t gnUICtrlConfigColumnWidth;
+extern int gnUICtrlConfigColumnWidth;
 extern uint32_t gnUICtrlConfigMouseButtonState;
 extern uint32_t gnUICtrlConfigButton3State;
 // int[7] - one mouse-capture flag per control-config UI region. UI_UpdateConfigControlsState (004a4ad0) and UI_ConfigHandleMouseClick contain seven inlined copies of the same scan: for (p = &gaControlConfigRegionMouseState[0]; p < &gaControlConfigRegionMouseState[7]; p++) if (*p && p != &self) goto skip; i.e. "claim the mouse only if no OTHER region already holds it". Both the do-while bound (base+28, 0x007c02a4) and the last loop's exit test (0x007c02a3 < p) prove the extent: 7 dwords, 0x007c0288..0x007c02a3.
 // Indices: [0] list area  [1] up arrow  [2] down arrow  [3] scroll bar  [4] scroll thumb  [5] below thumb  [6] tab/button row.
 extern int gaControlConfigRegionMouseState[7];
-extern uint32_t gnUICtrlConfigScrollOffset;
+extern int gnUICtrlConfigScrollOffset;
 extern int g_ControlConfigUIState;
 extern int gnUICtrlConfigActiveButton;
 extern BOOL gbUICtrlConfigKeyBindMode;
@@ -3443,23 +3144,6 @@ extern BOOL gbUISkillButtonHovered;
 extern uint64_t gbUIGoldStashMode;
 extern BOOL gbUIStatScreenMouseDown;
 extern uint64_t gbUIStatWindowDrawFlag;
-// One 965-byte region: four int[60] grids plus a 5-byte index. SPELLSEL_Initialize and SPELLSEL_RenderAllSkillGrids memset all 0x3c5 bytes of it. Modelled as four separate objects the memset targeted only the first 240-byte array, so 725 bytes of whatever the linker placed after it were zeroed on entering a game and again on every skill-grid render, while the three sibling arrays were never cleared.
-extern D2SpellSelGridRegionStrc gSpellSelGridRegion;
-// Spell selection UI state array — skill IDs for each slot. Part of large 1396-byte spell selection state (0x007c06c8-0x007c0c3c). Initialized to 0xFFFFFFFF by SpellSel initialization. Indexed by slot number, values sent to server via packet 0x3C.
-extern int gSpellSelectionSkillIDs[16];
-extern int gbSpellSelActiveRightSkillSlot;
-extern int32_t gSpellSelLeftSkillBindings[16];
-extern int gSpellSelRightSkillBindings[16];
-extern DC6 * gpSpellSelSkillIconDC6;
-extern unsigned int gbSpellSelMouseHandFlag;
-extern int gbSpellSelSkillTreeNodeHovered[128];
-// 128 per-skill-node state ints, indexed 19 times as (&base)[n*4]. Typed bool (one byte), every node past 0 read and wrote outside the object.
-extern int gaSpellSelSkillTreeState[128];
-extern BOOL gbSpellSelSkillTreeBackground;
-extern uint32_t BooleanWaitingForSkillingMaybe;
-extern uint32_t gnSpellSelSkillTreeOffsetY;
-extern uint32_t gnSpellSelSkillTreeClickY;
-extern uint8_t gnSpellSelTabHighlightColor;
 // GetTickCount of the last time the 1-second throttle at 004ab7b0 (SpellSel, no function yet) passed.
 // Provenance: asm 004ab7b0-004ab7d3: now - [0x7c0c54] > 1000 -> store now, return 1; else return 0.
 extern uint32_t gdwSpellSelThrottleTick;
@@ -3512,7 +3196,6 @@ extern DC6 * gpNpcMenuShopInventoryDC6;
 extern DC6 * gpNpcMenuShopInventoryBuffer;
 extern D2UnitStrc * gpNpcShopOwnerUnit;
 extern short gbNpcMenuShopOpened;
-extern uint8_t gnNpcMenuMercListCount;
 extern uint8_t gbNpcMenuTransactionPending;
 extern BOOL gbNpcMenuTransactionConfirmed;
 extern uint32_t gnNpcMenuTransactionItemGUID;
@@ -3521,16 +3204,11 @@ extern uint32_t gnNpcMenuShopTransactionCost;
 extern unsigned int gdwNpcMenuLastClickTimestamp;
 extern uint16_t gNpcMenuConfirmDialogStrings[40];
 extern int32_t gnDialogStructAllocCount;
-extern uint32_t gnTradeGoldUpdateBuffer;
 extern uint32_t gnTradePlayerGoldAmount;
 extern uint32_t gdwTradeThrottleTimestamp;
 extern bool gbTradeResetFlag;
 extern uint32_t gnTradeAcceptedFlags;
 extern int32_t g_nTradeWindowState;
-extern uint8_t gbTradeWindowOpen;
-extern uint16_t gwszTradePartnerName[16];
-extern uint8_t aQuestAvailabilityPacket[37];
-extern BOOL bReceivedQuestAvailabilityPacket;
 extern D2SoundChannelNodeStrc * gpActiveSoundChannelsHead;
 extern uint32_t gnSoundChannelCount;
 extern uint32_t gpSoundChannelsArray;
@@ -3544,44 +3222,15 @@ extern uint32_t gnCursorItemUnitId;
 extern uint32_t gnTextSystemInitFlag;
 extern DC6 * gpUpgradeMenuDC6;
 extern DC6 * gpHoradricBackgroundDC6;
-extern int gItemDrawFlags;
-extern D2GroundItemLabelStrc gaGroundItemLabels[32];
-extern short gnWeaponHandClassId_Right;
-extern short gnWeaponHandClassId_Left;
 extern int gaLevelAmbientMusicPlayedFlags[1024];
 extern int gnSoundLastInitTick;
 extern uint32_t gdwSoundChannelIndex;
 extern uint32_t gnSoundInitCooldown;
 extern unsigned int gnSoundLastPlayerAnimModeTime;
 extern int geSoundLastPlayerAnimMode;
-extern int gPlrModeTokens[20];
-extern int gTxtCompositTokens[16];
-extern int gObjModeTokens[8];
-extern int gMonModeTokens[16];
-extern int gArmTypeTokens[3];
-extern uint32_t gdwWarpFadeExpireTime;
-extern unsigned int gdwAmbientMusicLevelChangeTick;
-extern unsigned int gdwAmbientMusicRestartTick;
-extern int geCutsceneAmbientMusicSoundId;
-extern uint32_t geAmbientMusicLevelId;
-extern uint32_t gdwAmbientMusicChangeTime;
-extern uint32_t gbSoundSequenceActive;
-extern uint32_t geSoundSequenceSoundId;
-extern uint32_t gnSoundSequenceResumeIndex;
-extern uint32_t gbPendingSoundSequencePlay;
-extern uint32_t geDelayedSoundId;
-extern uint32_t gnDelayedSoundPlayIndex;
-extern uint32_t gbPendingDelayedSoundPlay;
-extern uint32_t gnSoundSequenceEndIndex;
-extern uint32_t geLastAmbientMusicLevelId;
-extern int UNIT_CenterXCoordsDiv5;
-extern int gnPlayerTileGridIndex;
-extern int UNIT_CenterYCoordsDiv5;
-extern uint32_t BackgroundSoundsActive;
 // lpAddend parameter of InterlockedDecrement
 // lpAddend parameter of InterlockedIncrement
 extern LONG * lpAddend_007c8a74;
-extern D2ClientSoundChannelStrc gaSoundChannels[16];
 extern BOOL pAudioMixerInterface;
 extern int32_t int32_t_007c8c7c;
 extern uint32_t gnActiveSoundChannelCount;
@@ -3675,13 +3324,14 @@ extern D2FogArchiveStrc * MPQ_d2char;
 extern D2FogArchiveStrc * MPQ_d2video;
 extern D2FogArchiveStrc * MPQ_d2Xtalk;
 extern D2FogArchiveStrc * MPQ_d2data;
+extern D2FogArchiveStrc * MPQ_d2kfixup_mpq;
 extern D2FogArchiveStrc * MPQ_d2kfixup;
 extern D2FogArchiveStrc * MPQ_d2speech;
 extern D2FogArchiveStrc * MPQ_d2music;
 extern D2FogArchiveStrc * MPQ_d2Xvideo;
 extern D2FogArchiveStrc * MPQ_patch_d2;
 extern D2FogArchiveStrc * MPQ_d2exp;
-extern uint32_t gnPaletteGammaShiftState;
+extern int gnPaletteGammaShiftState;
 extern uint8_t gnPaletteIndexCounter[39]; // [vanilla-plus fix 24b, merged: true extent 39B = 9 PALETTEENTRY + 3B manual triple; upstream form kept]
 extern uint8_t gPaletteTransposeBase[3328];
 extern uint8_t gPaletteMenuInGame[256];
@@ -3741,8 +3391,6 @@ extern char gpSmackerVideoBuffer[260];
 extern uint8_t gbSmackerVideoFlags;
 extern uint32_t gbSmackerKeepTempFile;
 extern DC6 * gpPentSpinCursorDC6;
-// Global pointer to D2Win popup control form. Contains D2ControlStrc base, message count, array of 8 popup message entries (132 bytes each), and selected index. Created/destroyed dynamically for tooltip popups and context menus. 1128 bytes total.
-extern D2WinPopup * gpD2WinPopupControl;
 extern grDrawLine GLIDEDLL__grDrawLine_8;
 extern grDepthMask GLIDEDLL_grDepthMask_4;
 extern grDrawPoint GLIDEDLL_grDrawPoint_4;
@@ -3790,7 +3438,7 @@ extern int gnGlideSecondaryTMUCount[2];
 extern uint32_t ghGlideWindow;
 extern uint32_t gbGlideInitialized;
 extern uint32_t gbPlayingCutScene;
-extern uint32_t gbWINDOWED;
+extern int gbWINDOWED;
 extern uint32_t gnGlideColorCombineMode;
 extern uint32_t gnGlideAlphaBlendMode;
 extern uint32_t gnGlideTextureFilteringMode;
@@ -3853,23 +3501,14 @@ extern int gnGlidePerspectiveOriginY;
 extern void * gpPerspectiveLookupTable;
 extern uint8_t (*gpGlideSmackerTexBuf0)[32768];
 extern uint8_t (*gpGlideSmackerTexBuf1)[32768];
+extern D2GlideVertexStrc gaGlideSmackerVertices[4];
 extern uint32_t gnGlideSmackTex1StartAddr;
 extern uint32_t gnGlideSmackTex2StartAddr;
 extern uint8_t (*gpGlideSmackerTexBuf2)[32768];
 extern uint32_t gnGlideTMUHandle;
-extern uint32_t gnGlideTMUId;
-extern void * gpGlBlocksWallBuffer;
-extern void * gpGlBlocksFloorBuffer;
-extern uint32_t gnBinkGlideYOffset;
-extern uint32_t gnBinkGlideXOffset;
-extern void * gpBinkVideoGlide;
-extern uint32_t gnGlideBinkSurfaceType;
-extern uint32_t g_bGlideBinkVideoQuitRequested;
 extern PALETTEENTRY gaPaletteEntries[256];
 extern uint32_t gdwDDrawInitFlags;
 extern GUID gGlideOpenWindowConfig;
-extern uint32_t gnDDrawSurfaceWidth;
-extern uint32_t gnDDrawDisplayModeIndex;
 extern uint32_t gnDDrawSurfaceHeight;
 extern uint32_t gbDDrawWindowInitialized;
 extern BOOL gbDDrawPaletteSet;
@@ -3895,13 +3534,8 @@ extern uint8_t gaSmackerPaletteRemap[260];
 // @wasnamed gnBinkDDrawYOffset; the genuine offset is 008816b8, computed at 005138ef as
 // (WindowHeight - binkHeight) >> 1 and passed to BinkCopyToBuffer.
 extern uint32_t gbSmackerPaletteDirty;
-extern uint32_t gnBinkDDrawYOffset;
-extern uint32_t gnBinkDDrawXOffset;
-extern void * gpBinkVideoDirectDraw;
-extern uint32_t gnBinkDDrawSurfaceType;
-extern uint32_t g_bBinkDDrawVideoQuitRequested;
 extern IKsPropertySet * gpDirectSoundEAXInterface;
-extern HWND g_hwndSoundWindow;
+extern BOOL gbSoundInBackground;
 extern IDirectSound3DBuffer * gpEAXInterface1;
 extern IDirectSoundBuffer * gpEAXInterface2;
 extern IDirectSoundBuffer * gpDSoundPrimaryBuffer;
@@ -3923,24 +3557,8 @@ extern uint32_t gbHasLegacyEMU10K1Driver;
 extern uint32_t gbHasLegacySoundDriverCrlds3d;
 extern uint32_t LanguageCode;
 extern D2SoundSmpStrc * gpMusicStreamBuffer;
-extern uint32_t gnMusicEnabled;
-extern uint32_t gbSoundFastPathActive;
 extern uint32_t gnAmbientSoundLanguageCode;
 extern uint32_t gbAmbientSoundLangInitialized;
-extern uint32_t g_nSoundMixerType;
-extern uint32_t g_nSoundMasterVolume;
-extern uint32_t g_nSoundMusicVolume;
-extern uint32_t g_nSoundPositionalBias;
-extern uint32_t g_nSoundNpcSpeech;
-extern uint32_t g_nSoundOptionsMusic;
-// lpCriticalSection parameter of DeleteCriticalSection
-// lpCriticalSection parameter of InitializeCriticalSection
-// lpCriticalSection parameter of LeaveCriticalSection
-// lpCriticalSection parameter of EnterCriticalSection
-extern _RTL_CRITICAL_SECTION lpCriticalSection_008817c4;
-extern D2SoundSmpStrc * gpaSoundEffectBuffers[8];
-extern uint32_t gnSoundEffectSampleCount;
-extern void * gpWavFileCacheListHead;
 extern uint32_t g_nSoundSampleParam;
 extern int * gpSoundSampleList;
 // @data ghSoundThreadStopEvent
@@ -3950,25 +3568,9 @@ extern int * gpSoundSampleList;
 // stores CreateThread at 00516566 and is the one passed to WaitForSingleObject at 0051513a.
 extern HANDLE ghSoundThreadStopEvent;
 extern HANDLE ghSoundThread;
-extern CRITICAL_SECTION gcsErrorHandlerList;
-extern uint32_t gbFaultHandlerListInitialized;
-extern pfnFaultError g_pfnFaultErrorCallback;
 extern D2BNetGatewayAccessStr ActualRealmInfo;
-// lpCriticalSection parameter of LeaveCriticalSection
-// lpCriticalSection parameter of EnterCriticalSection
-// lpCriticalSection parameter of DeleteCriticalSection
-extern _RTL_CRITICAL_SECTION lpCriticalSection_00881860;
 extern int gnBnetLogFileHandle;
 extern unsigned int gbBnetLogInitialized;
-extern D2BnCacheFileHeaderStrc * gpCacheFileHeader;
-extern void * gpCacheBlockTable;
-extern void * g_pCacheCryptTable;
-extern uint8_t * gpCacheBufferPoolFirst;
-extern uint32_t gbCacheIsOpen;
-// lpCriticalSection parameter of LeaveCriticalSection
-// lpCriticalSection parameter of EnterCriticalSection
-// lpCriticalSection parameter of DeleteCriticalSection
-extern _RTL_CRITICAL_SECTION lpCriticalSection_00881894;
 extern uint32_t g_nBNetServerToken;
 extern uint32_t g_nBNetClientToken;
 extern void * g_pBNetChannelListData;
@@ -3994,20 +3596,13 @@ extern long Target_00881bfc;
 extern LONG * Destination_00881c00;
 extern uint32_t g_nBNetThreadInitFlag;
 extern uint32_t g_pfnNewsChannelCallback;
-extern pfnVoidNoArgCallback g_pfnMotdCallback;
+extern pfnNewsEntryCallback g_pfnMotdCallback;
 extern pfnVoidNoArgCallback g_pfnNewsCallback;
 extern D2BnNewsTableStrc g_nNewsMaxCacheSize;
 extern uint32_t g_nFirstUnreadNewsIndex;
 extern uint32_t g_dwNewsTimestamp;
 extern unsigned int gnNetworkSendState;
-extern unsigned int gbBnetDownloadCancelFlag;
-// lpFileName parameter of DeleteFileA
-extern char lpFileName_00881c58[260];
-// lpAddend parameter of InterlockedDecrement
-// lpAddend parameter of InterlockedIncrement
-extern LONG * lpAddend_00881d5c;
-extern uint8_t gbBnetFtpFileTransferActive;
-extern uint8_t bBnetFtpDownloadActive;
+extern char gbBnetFtpFileTransferActive[256];
 extern char gszBNetChatInputBuffer[260];
 // lpCriticalSection parameter of LeaveCriticalSection
 // lpCriticalSection parameter of EnterCriticalSection
@@ -4020,8 +3615,6 @@ extern uint32_t g_nBattleNetConnectionData;
 // lpCriticalSection parameter of DeleteCriticalSection
 extern _RTL_CRITICAL_SECTION lpCriticalSection_00882004;
 extern uint32_t g_nBattleNetConnectionState;
-extern BnMessQueue * nLobbyChatCurrentMessage;
-extern BnMessQueue * nLobbyChatQueueMessages;
 extern char g_szCurrentChannelName[256];
 extern BOOL NET_SID_INCOMING_CLIENT_PacketRequireAnswer[94];
 extern uint32_t g_nSIDResponseCount1;
@@ -4049,11 +3642,6 @@ extern uint16_t * gpStringBufferExpansion;
 extern D2StringTableTblFileStrc * gpStringTablePatchD2;
 extern D2StringTableTblFileStrc * gpStringTableExpansion;
 extern int gnStringTableRefCount;
-extern uint16_t gnUnicodeKamapEntryCount;
-extern uint8_t gnUnicodeKamapGroupCount;
-extern void * gpUnicodeKamapToCodeTable;
-extern void * g_pUnicodeKamapTable;
-extern uint16_t * gpUnicodeCodeToMapTable;
 // lpThreadId parameter of CreateThread
 extern LPDWORD lpThreadId_00882b30;
 extern D2PacketsClientStrc * pD2PacketsClientBuffer;
@@ -4085,11 +3673,6 @@ extern int gbQServerSendPlayerPos;
 extern D2BattleNetEventCallbackTable * BattleNetServerService;
 extern BOOL IsBattleNetServer;
 extern uint32_t Frames_TimeBetweenFrames;
-extern uint32_t PlayerCountOverride;
-// 17 records of 16 bytes, one per NPC vendor store index. The count is pinned two ways: SUNITPROXY_FreeAllNpcItemTables walks from &record[0].pQuestItems to that address + 272, and 00883d78 + 17*16 lands exactly on gbaNpcItemTableBuilt at 00883e88. Ghidra had typed the four fields of record 0 as four separate globals (gpaNpcTradeItemTable, ganNpcTradeItemCounts, gpaNpcQuestItemTable, ganNpcTradeQuestItemCounts), so only vendor 0 had real storage and every other vendor's item pointers and counts were read from and written to unrelated .data - the shop never produced a valid item list.
-extern D2NpcItemTablesStrc gaNpcItemTables[17];
-// One byte per vendor store index, 17 of them - the 'item table already built' guard. Two stray interior labels at +1 and +8 had truncated it to a single byte.
-extern uint8_t gbaNpcItemTableBuilt[17];
 extern uint32_t gptItemCodeArmor;
 extern uint32_t gptItemCodeSwordType;
 extern D2ClientStrc * QServerClientBucketByName[256];
@@ -4105,11 +3688,7 @@ extern CRITICAL_SECTION gQServerClientByIdCs;
 // lpCriticalSection parameter of EnterCriticalSection
 extern CRITICAL_SECTION gQServerClientByNameCs;
 extern int gQServerClientTablesInitialized;
-extern BOOL DEBUGPRINT;
-extern uint32_t g_bWhisperSquelched;
-extern uint32_t g_bWhisperDelivered;
 extern uint32_t gnSeedCounter;
-extern D2UniqueCandidatePoolStrc gUniqueCandidatePool;
 extern D2TaskQueueSlotStrc * gaTaskQueueHeadArray[32];
 extern D2LinkNodeStrc gsTaskQueueListHead;
 // lpFrequency parameter of QueryPerformanceFrequency
@@ -4121,7 +3700,6 @@ extern CRITICAL_SECTION aTaskQueueCriticalSections[32];
 // lpCriticalSection parameter of LeaveCriticalSection
 // lpCriticalSection parameter of EnterCriticalSection
 extern _RTL_CRITICAL_SECTION lpCriticalSection_0088caa8;
-extern uint32_t gnMonsterSpawnTotalCount;
 extern D2LRUCacheStrc gSpriteCacheLru;
 extern int gbSpriteCacheLruInitialized;
 extern void * gpSpriteCachePoolManager;
@@ -4132,33 +3710,14 @@ extern BYTE gaGfxHashTable[65536];
 extern uint32_t gbSpriteCacheConversionEnabled;
 extern D2GfxMemoryStrc D2GfxMemoryStrc_0089db60;
 extern D2TileProjectStrc * gpTileProjectListHead;
-extern uint8_t gaItemPaletteData[241920];
-extern pfnCelPixelDataFree gpCelPixelDataFreeCallback;
 extern TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0> gCelCmpCacheHandler;
-extern uint32_t gbTransparentColorEnabled;
-extern uint32_t gnPaletteMaxIndex;
-extern uint32_t gaColorDistanceLookupTable[512];
-extern uint8_t gaPaletteMaskData[256];
-extern uint32_t gnPaletteColorDepth;
-extern uint32_t gbPaletteLoaded;
-extern D2PaletteEntryStrc gaGlobalPaletteRed[256];
-extern uint32_t gnDrawTransparentColorRGB;
-extern uint32_t gbBlackColorIsTransparent;
-extern uint32_t gbPaletteMaskEnabled;
-extern int32_t gnFastCmpEffectMapMaxRow[80];
-extern int32_t gnFastCmpEffectMapMinRow[80];
-extern uint32_t gaFastCmpEffectPixelOffsetTable[6400];
 // lpCriticalSection parameter of DeleteCriticalSection
 // lpCriticalSection parameter of InitializeCriticalSection
 // lpCriticalSection parameter of LeaveCriticalSection
 // lpCriticalSection parameter of EnterCriticalSection
 extern _RTL_CRITICAL_SECTION lpCriticalSection_008f03cc;
-// lpAddend parameter of InterlockedDecrement
-// lpAddend parameter of InterlockedIncrement
-extern LONG * lpAddend_008f03e4;
 extern uint8_t gaCodecFrameWorkBuffer2[262144];
 extern D2CodecPixelBufferEntryStrc gaCodecFrameDecodeBuffer[5625];
-extern IgnoreList * gpIgnoreList;
 extern unsigned int gpfnProfCoreInitCallback;
 extern D2DataTableTxtStrc sgtDataTable;
 extern D2SeedStrc gsAutoMapSeed;
@@ -4175,7 +3734,7 @@ extern D2LvlSubTxt * sgpTxtLvlSub;
 extern int nTxtLvlSubSize;
 extern int * gpnLvlSubTypeToIndex;
 extern D2ExpansionLvlTblsTxt * pExpansionLvlTbls;
-extern D2LvlTblsTxt * pTxtLvlTbls;
+extern D2DrlgFileStrc * * pTxtLvlTbls;
 extern void * gpaDrlgLvlSubPresetFiles;
 extern D2AutoMapLvlTbls * pAutoMapLvlTbls;
 // lpCriticalSection parameter of LeaveCriticalSection
@@ -4190,60 +3749,31 @@ extern D2ItemsTableStrc gsItemsTable;
 extern D2ItemsTableStrc sgpTxtItems;
 extern short * pTxtItemsVersion;
 extern D2MagicAffixTableStrc gsMagicAffixTable;
+extern D2MagicAffixTableStrc pTxtMagicAffixes;
 extern D2GemsTableStrc nTxtGemsSize;
 extern D2RunesTxtTableStrc nTxtRunesSize;
 extern D2RareAffixTableStrc gsRareAffixTable;
+extern D2RareAffixTableStrc pTxtRareAffixes;
 extern D2GambleTableStrc nTxtGambleSize;
 extern int nTxtItemRatioSize;
 extern D2ItemRatioTxt * pTxtItemRatio;
 extern D2QualityItemsTableStrc nTxtQualityItemsSize;
 extern D2LowQualityItemsTableStrc nTxtLowQualityItemsSize;
 extern D2BooksTableStrc gsBooksTable;
-extern uint32_t gaItemTypeBaseIdTable[510];
+extern D2BooksTableStrc pTxtBooks;
 extern D2ShrinesTxt * pTxtShrines;
 extern int nTxtShrinesSize;
 extern D2ObjectsTxt * sgpTxtObjects;
 extern int nTxtObjectsSize;
 extern D2ObjGroupTxt * pTxtObjGroup;
 extern int nTxtObjGroupSize;
-extern unsigned int gnTreasureClassArraySize;
-extern D2MonItemPercentTxt * pMonItemPercentTxt;
-extern D2UniqueNameTablesStrc gsTxtUniqueNameTables;
-extern unsigned int gnAutoItemTypeTCCount;
-extern unsigned short gwMonsterTblsDefaultId;
-extern unsigned int nTxtMonModeSize;
-extern D2MonModeTxt * pTxtMonMode1;
-extern D2MonModeTxt * pTxtMonMode2;
-extern D2MonModeTxt * pTxtMonMode3;
-extern unsigned int nTxtObjTypeModeSize;
-extern D2ObjTypeTxt * pTxtObjTypeMode;
-extern D2ObjTypeTxt * pTxtObjType;
-extern D2ObjModeTxt * pTxtObjMode;
-extern unsigned int nTxtPlrTypeModeSize;
-extern D2PlrTypeModeTxt * pTxtPlrTypeMode1;
-extern D2PlrTypeModeTxt * pTxtPlrTypeMode2;
-extern D2PlrTypeModeTxt * pTxtPlrTypeMode3;
-extern D2ArmTypeTxt * pTxtArmType;
-extern D2CompositTxt * pTxtComposit;
-extern int nTxtInventorySize;
-extern D2InventoryTxt * pTxtInventory;
 extern D2BeltsTxt * pTxtBelts;
-extern int sgCharTemplateLevelIndex[64];
-extern D2CharTemplateTxt * sgpTxtCharTemplate;
-extern int nTxtCharTemplateSize;
-extern D2ArenaTxt * sgpTxtArena;
 extern D2DrlgFileCacheNodeStrc * gpDrlgFileCache;
 // lpCriticalSection parameter of LeaveCriticalSection
 // lpCriticalSection parameter of EnterCriticalSection
 extern _RTL_CRITICAL_SECTION lpCriticalSection_0096d610;
 extern D2CubeMainTxt * pTxtCubeMain;
 extern int nTxtCubeMainSize;
-extern void * gpFieldDataTable;
-extern unsigned int gnFieldDataTableWidth;
-extern unsigned int gnFieldDataTableHeight;
-extern int gnFieldDataTableSize;
-extern unsigned int gnFieldTableHalfWidth;
-extern unsigned int gnFieldTableHalfHeight;
 extern unsigned int gdwDrlgLevelPlacementFlags;
 extern unsigned int UINT_0096d6a8;
 extern GUID gsD3DAdapterGuid; // [vanilla-plus fix 19b; upstream typed it GUID (16B) - supersedes our uint8_t[16]]
@@ -4288,14 +3818,7 @@ extern void * gpD3DTextureSpritePoolMemory0;
 extern void * gpD3DTextureSpritePoolMemory1;
 extern IDirect3DVertexBuffer * g_pD3DSpriteQuadVB;
 extern int gd3dVertexBufferOffset;
-extern int gD3DFontVertex0;
-extern float gfD3DFontVertex0X;
-extern float gfD3DFontVertex0Z;
-extern float gfD3DFontVertex0Y;
-extern float gfD3DFontVertex2Y;
-extern float gfD3DFontVertex1Y;
-extern float gfD3DFontVertex2X;
-extern float gfD3DFontVertex3X;
+extern D2D3DVertexStrc gD3DFontVertex0[4];
 // lpBuffer parameter of GetCharWidthA
 extern void * g_pFontTextureBuffer[96];
 extern void * g_pFontTextureSurface[96];
@@ -4307,6 +3830,7 @@ extern D2D3DVertexStrc gaD3DPerspectiveStripVertices[15];
 // one: 006b80af does FST float with 0.0 into it, and the stride is a 32-byte D3DTLVERTEX (z=0.5 at
 // +8, rhw=1.0 at +0xc, tu/tv at +0x18/+0x1c). @wasnamed gpD3DPerspectiveVertexBuffer.
 extern D2D3DVertexStrc gaD3DPerspectiveVertices[4];
+extern uint16_t gpD3DGroundTileVertexBuffer[65];
 extern IDirect3DVertexBuffer * g_pD3DGroundTileVB;
 extern uint8_t GlobalGreen;
 extern uint8_t GlobalBlue;
@@ -4316,34 +3840,14 @@ extern int gnPerspectiveScaleY;
 extern int gnPerspectiveScaleZ;
 extern uint32_t g_aPerspectiveZDivisionTable[8192];
 extern uint32_t g_aSmackerSurfaceArray;
+extern D2D3DVertexStrc gaD3DSmackerVertices[4];
 extern void * pSmackerDecodeBuffer;
 extern IDirectDrawSurface7 * gpD3DSmackerSystemSurface0[2];
 extern IDirect3DTexture2 * gpD3DSmackerSystemTexture0[2];
 extern IDirectDrawSurface7 * gpD3DSmackerVideoSurface0[2];
 extern IDirect3DTexture2 * gpD3DSmackerVideoTexture0[2];
-extern IDirectDrawSurface7 * gpD3DFloorTileSystemSurface;
-extern IDirect3DTexture2 * gpD3DFloorTileMemoryTexture;
-extern IDirectDrawSurface7 * gpD3DSubtileSystemSurface;
-extern IDirect3DTexture2 * gpD3DSubtileMemoryTexture;
-extern uint32_t gnD3DBinkVideoYOffset;
-extern uint32_t gnD3DBinkVideoXOffset;
-extern void * gpBinkVideoD3D;
-extern uint32_t gnBinkDDSurfaceType;
-extern uint32_t gbBinkVideoShouldStop;
 extern uint32_t gbQServerUseDedicatedIoWorkers;
 extern unsigned int gdwHacklistLastLogTime;
-extern uint32_t gbScmdHasPriorityCommand;
-// prgbq parameter of SetDIBColorTable
-extern RGBQUAD prgbq_00989c40[256];
-extern BYTE * gpGlidePaletteTableData[72];
-extern HPALETTE RENDERER_WINDOWED_hPalette;
-extern HBITMAP RENDERER_WINDOWED_hDIBitmap;
-extern uint32_t RENDERER_WINDOWED_nScaleOffsetY;
-extern uint32_t RENDERER_WINDOWED_nScaleWidth;
-extern HFONT RENDERER_WINDOWED_hDebugFont;
-extern D2SmackerGlideBufferStrc gnSmackerGlideYOffset;
-extern uint32_t gnSmackerDecodeState;
-extern char gszSystemGlobalString[1024];
 extern HMODULE hDbgHelpDll;
 extern pfnSymGetModuleInfo64 pSymGetModuleInfo64;
 extern pfnSymGetSymFromAddr64 pSymGetSymFromAddr64;
@@ -4679,12 +4183,12 @@ extern void * vftable[1];
 
 } // namespace Fog::_3rdparty::crashy
 
-namespace Storm::SFile {
+namespace Storm::Source::SFile {
 
 // struct Storm::SFile::ARCHIVEREC RTTI Type Descriptor
 extern uint8_t RTTI_Type_Descriptor;
 
-} // namespace Storm::SFile
+} // namespace Storm::Source::SFile
 
 namespace Class::FILEREC {
 
@@ -4760,7 +4264,7 @@ extern uint32_t AutoMapLeft3;
 
 namespace D2Game::GAME::Rendering {
 
-extern uint32_t CurrentRendingEngine;
+extern int CurrentRendingEngine;
 
 } // namespace D2Game::GAME::Rendering
 
@@ -4802,13 +4306,13 @@ extern DC6 * gpDC6CursorIcon;
 
 namespace D2Game::Quests::QUESTS::Quest40 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[4];
 
 } // namespace D2Game::Quests::QUESTS::Quest40
 
 namespace D2Game::Quests::QUESTS::A5Q1 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[8];
 
 } // namespace D2Game::Quests::QUESTS::A5Q1
 
@@ -4826,7 +4330,7 @@ extern D2NPCMessageTableStrc aNpcGossipData[10];
 
 namespace D2Game::Quests::QUESTS::A5Q4 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[8];
 
 } // namespace D2Game::Quests::QUESTS::A5Q4
 
@@ -4838,37 +4342,37 @@ extern D2NPCMessageTableStrc aNpcGossipData[9];
 
 namespace D2Game::Quests::QUESTS::A5Q6 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[9];
 
 } // namespace D2Game::Quests::QUESTS::A5Q6
 
 namespace D2Game::Quests::QUESTS::Quest37 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[3];
 
 } // namespace D2Game::Quests::QUESTS::Quest37
 
 namespace D2Game::Quests::QUESTS::A1Q0 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[3];
 
 } // namespace D2Game::Quests::QUESTS::A1Q0
 
 namespace D2Game::Quests::QUESTS::A1Q1 {
 
-extern D2NPCMessageTableStrc aNpcGossipData[5]; // [R54] issue #13 A1Q1: 5-slot gossip table (was singular 1-slot)
+extern D2NPCMessageTableStrc aNpcGossipData[8]; // [R54->R87] issue #13 A1Q1: retail-exact 8-slot table (was singular 1-slot; fork's 5-slot superseded by upstream bc47c6bc)
 
 } // namespace D2Game::Quests::QUESTS::A1Q1
 
 namespace D2Game::Quests::QUESTS::A1Q2 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[6]; // [R85->R87] issue #22 A1Q2: retail-exact 6-slot table (was singular 1-slot; fork's 5-slot superseded by upstream bc47c6bc)
 
 } // namespace D2Game::Quests::QUESTS::A1Q2
 
 namespace D2Game::Quests::QUESTS::A1Q3 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[6];
 
 } // namespace D2Game::Quests::QUESTS::A1Q3
 
@@ -4880,37 +4384,37 @@ extern D2NPCMessageTableStrc aNpcGossipData[11];
 
 namespace D2Game::Quests::QUESTS::A1Q5 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[5];
 
 } // namespace D2Game::Quests::QUESTS::A1Q5
 
 namespace D2Game::Quests::QUESTS::A1Q6 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[6];
 
 } // namespace D2Game::Quests::QUESTS::A1Q6
 
 namespace D2Game::Quests::QUESTS::A1Q7 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[6];
 
 } // namespace D2Game::Quests::QUESTS::A1Q7
 
 namespace D2Game::Quests::QUESTS::Quest38 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[3];
 
 } // namespace D2Game::Quests::QUESTS::Quest38
 
 namespace D2Game::Quests::QUESTS::A2Q0 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[3];
 
 } // namespace D2Game::Quests::QUESTS::A2Q0
 
 namespace D2Game::Quests::QUESTS::A2Q1 {
 
-extern D2NPCMessageTableStrc aNpcGossipData[5]; // [R54] issue #13 A2Q1: 5-slot gossip table (was singular 1-slot)
+extern D2NPCMessageTableStrc aNpcGossipData[9]; // [R54->R87] issue #13 A2Q1: retail-exact 9-slot table (was singular 1-slot; fork's 5-slot superseded by upstream bc47c6bc)
 
 } // namespace D2Game::Quests::QUESTS::A2Q1
 
@@ -4922,7 +4426,7 @@ extern D2NPCMessageTableStrc aNpcGossipData[11];
 
 namespace D2Game::Quests::QUESTS::A2Q3 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[6];
 
 } // namespace D2Game::Quests::QUESTS::A2Q3
 
@@ -4934,25 +4438,25 @@ extern D2NPCMessageTableStrc aNpcGossipData[12];
 
 namespace D2Game::Quests::QUESTS::A2Q5 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[4];
 
 } // namespace D2Game::Quests::QUESTS::A2Q5
 
 namespace D2Game::Quests::QUESTS::A2Q6 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[8];
 
 } // namespace D2Game::Quests::QUESTS::A2Q6
 
 namespace D2Game::Quests::QUESTS::A2Q7 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[6];
 
 } // namespace D2Game::Quests::QUESTS::A2Q7
 
 namespace D2Game::Quests::QUESTS::A2Q8 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[2];
 
 } // namespace D2Game::Quests::QUESTS::A2Q8
 
@@ -4964,49 +4468,49 @@ extern fpUmodInit aUmodInitTable[43];
 
 namespace D2Game::Quests::QUESTS::A4Q0 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[2];
 
 } // namespace D2Game::Quests::QUESTS::A4Q0
 
 namespace D2Game::Quests::QUESTS::A4Q1 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[6];
 
 } // namespace D2Game::Quests::QUESTS::A4Q1
 
 namespace D2Game::Quests::QUESTS::A4Q2 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[7];
 
 } // namespace D2Game::Quests::QUESTS::A4Q2
 
 namespace D2Game::Quests::QUESTS::A4Q3 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[5];
 
 } // namespace D2Game::Quests::QUESTS::A4Q3
 
 namespace D2Game::Quests::QUESTS::A4Q4 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[3];
 
 } // namespace D2Game::Quests::QUESTS::A4Q4
 
 namespace D2Game::Quests::QUESTS::Quest39 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[3];
 
 } // namespace D2Game::Quests::QUESTS::Quest39
 
 namespace D2Game::Quests::QUESTS::A3Q0 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[3];
 
 } // namespace D2Game::Quests::QUESTS::A3Q0
 
 namespace D2Game::Quests::QUESTS::A3Q1 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[6];
 
 } // namespace D2Game::Quests::QUESTS::A3Q1
 
@@ -5018,7 +4522,7 @@ extern D2NPCMessageTableStrc aNpcGossipData[13];
 
 namespace D2Game::Quests::QUESTS::A3Q3 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[8];
 
 } // namespace D2Game::Quests::QUESTS::A3Q3
 
@@ -5030,13 +4534,13 @@ extern D2NPCMessageTableStrc aNpcGossipData[9];
 
 namespace D2Game::Quests::QUESTS::A3Q5 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[8];
 
 } // namespace D2Game::Quests::QUESTS::A3Q5
 
 namespace D2Game::Quests::QUESTS::A3Q6 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[8];
 
 } // namespace D2Game::Quests::QUESTS::A3Q6
 
@@ -5331,6 +4835,14 @@ extern unsigned int gnD3DTextureCapFlags;
 extern unsigned int g_bCutscenePlaying;
 
 } // namespace D2Direct3D::Renderer
+
+// =============================================================================
+// Globals recovered from multi-function body references
+// (classified static-local by xref count, but named in other bodies too)
+// =============================================================================
+
+extern uint32_t nNextGUID;
+extern uint32_t dwCycleLastSecond;
 
 // =============================================================================
 // Declaration closure

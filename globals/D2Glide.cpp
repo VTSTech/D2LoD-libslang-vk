@@ -326,38 +326,6 @@ D2GlideWallCornerStrc gaGlideWallCornerTable[60] = {
     }
 }; D2_GLOBAL_GUARD(gaGlideWallCornerTable, "gaGlideWallCornerTable");
 
-GrTexInfo gTexInfoBlocks0Glide = {
-    /* .smallLodLog2 = */ 0x8,
-    /* .largeLodLog2 = */ 0x8,
-    /* .aspectRatioLog2 = */ 0x2,
-    /* .format = */ 0xa,
-    /* .data = */ nullptr
-}; D2_GLOBAL_GUARD(gTexInfoBlocks0Glide, "gTexInfoBlocks0Glide");
-
-GrTexInfo gTexInfoBlocks1Glide = {
-    /* .smallLodLog2 = */ 0x8,
-    /* .largeLodLog2 = */ 0x8,
-    /* .aspectRatioLog2 = */ 0x2,
-    /* .format = */ 0xa,
-    /* .data = */ nullptr
-}; D2_GLOBAL_GUARD(gTexInfoBlocks1Glide, "gTexInfoBlocks1Glide");
-
-GrTexInfo g_GrTexInfoGlBlocks = {
-    /* .smallLodLog2 = */ 0x5,
-    /* .largeLodLog2 = */ 0x5,
-    /* .aspectRatioLog2 = */ 0x0,
-    /* .format = */ 0x5,
-    /* .data = */ nullptr
-}; D2_GLOBAL_GUARD(g_GrTexInfoGlBlocks, "g_GrTexInfoGlBlocks");
-
-GrTexInfo gTexInfoGlideSurfaceBlocks = {
-    /* .smallLodLog2 = */ 0x8,
-    /* .largeLodLog2 = */ 0x8,
-    /* .aspectRatioLog2 = */ 0x1,
-    /* .format = */ 0x5,
-    /* .data = */ nullptr
-}; D2_GLOBAL_GUARD(gTexInfoGlideSurfaceBlocks, "gTexInfoGlideSurfaceBlocks");
-
 GlSubtileCacheStrc gGlideSubtileTextureCache = {}; D2_GLOBAL_GUARD(gGlideSubtileTextureCache, "gGlideSubtileTextureCache");
 
 GlFloorCacheStrc gGlideFloorTextureCache = {}; D2_GLOBAL_GUARD(gGlideFloorTextureCache, "gGlideFloorTextureCache");
@@ -382,10 +350,13 @@ D2GlideVertexStrc gaGlideGroundTileVertices[36] = {}; D2_GLOBAL_GUARD(gaGlideGro
 
 void * gapGlideGroundStripVertexPtrs[60] = {}; D2_GLOBAL_GUARD(gapGlideGroundStripVertexPtrs, "gapGlideGroundStripVertexPtrs");
 
+D2GlideVertexStrc gaGlideSmackerVertices[4] = {}; D2_GLOBAL_GUARD(gaGlideSmackerVertices, "gaGlideSmackerVertices");
+
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
+uint8_t gnFontKerningTracking = 0x0; D2_GLOBAL_GUARD(gnFontKerningTracking, "gnFontKerningTracking");
 uint32_t gnGlideTextureMode = -0x1; D2_GLOBAL_GUARD(gnGlideTextureMode, "gnGlideTextureMode");
 uint32_t ghGlideSstWindow = 0; D2_GLOBAL_GUARD(ghGlideSstWindow, "ghGlideSstWindow");
 int gnGlideTextureMemoryUsed = 0; D2_GLOBAL_GUARD(gnGlideTextureMemoryUsed, "gnGlideTextureMemoryUsed");
@@ -393,7 +364,7 @@ uint32_t gbGlideIsDebugBuild = 0; D2_GLOBAL_GUARD(gbGlideIsDebugBuild, "gbGlideI
 FxI32 gnGlideTextureMemoryMask = 0; D2_GLOBAL_GUARD(gnGlideTextureMemoryMask, "gnGlideTextureMemoryMask");
 uint32_t ghGlideWindow = 0; D2_GLOBAL_GUARD(ghGlideWindow, "ghGlideWindow");
 uint32_t gbGlideInitialized = 0; D2_GLOBAL_GUARD(gbGlideInitialized, "gbGlideInitialized");
-uint32_t gbWINDOWED = 0; D2_GLOBAL_GUARD(gbWINDOWED, "gbWINDOWED");
+int gbWINDOWED = 0; D2_GLOBAL_GUARD(gbWINDOWED, "gbWINDOWED");
 uint32_t gnGlideColorCombineMode = 0; D2_GLOBAL_GUARD(gnGlideColorCombineMode, "gnGlideColorCombineMode");
 uint32_t gnGlideAlphaBlendMode = 0; D2_GLOBAL_GUARD(gnGlideAlphaBlendMode, "gnGlideAlphaBlendMode");
 uint32_t gnGlideTextureFilteringMode = 0; D2_GLOBAL_GUARD(gnGlideTextureFilteringMode, "gnGlideTextureFilteringMode");
@@ -430,14 +401,6 @@ uint32_t gnGlideSmackTex1StartAddr = 0; D2_GLOBAL_GUARD(gnGlideSmackTex1StartAdd
 uint32_t gnGlideSmackTex2StartAddr = 0; D2_GLOBAL_GUARD(gnGlideSmackTex2StartAddr, "gnGlideSmackTex2StartAddr");
 uint8_t (*gpGlideSmackerTexBuf2)[32768] = 0; D2_GLOBAL_GUARD(gpGlideSmackerTexBuf2, "gpGlideSmackerTexBuf2");
 uint32_t gnGlideTMUHandle = 0; D2_GLOBAL_GUARD(gnGlideTMUHandle, "gnGlideTMUHandle");
-uint32_t gnGlideTMUId = 0; D2_GLOBAL_GUARD(gnGlideTMUId, "gnGlideTMUId");
-void * gpGlBlocksWallBuffer = 0; D2_GLOBAL_GUARD(gpGlBlocksWallBuffer, "gpGlBlocksWallBuffer");
-void * gpGlBlocksFloorBuffer = 0; D2_GLOBAL_GUARD(gpGlBlocksFloorBuffer, "gpGlBlocksFloorBuffer");
-uint32_t gnBinkGlideYOffset = 0; D2_GLOBAL_GUARD(gnBinkGlideYOffset, "gnBinkGlideYOffset");
-uint32_t gnBinkGlideXOffset = 0; D2_GLOBAL_GUARD(gnBinkGlideXOffset, "gnBinkGlideXOffset");
-void * gpBinkVideoGlide = 0; D2_GLOBAL_GUARD(gpBinkVideoGlide, "gpBinkVideoGlide");
-uint32_t gnGlideBinkSurfaceType = 0; D2_GLOBAL_GUARD(gnGlideBinkSurfaceType, "gnGlideBinkSurfaceType");
-uint32_t g_bGlideBinkVideoQuitRequested = 0; D2_GLOBAL_GUARD(g_bGlideBinkVideoQuitRequested, "g_bGlideBinkVideoQuitRequested");
 
 namespace D2Common::Drlg::Maze {
 
@@ -535,9 +498,9 @@ namespace Fog::_3rdparty::crashy {
 
 } // namespace Fog::_3rdparty::crashy
 
-namespace Storm::SFile {
+namespace Storm::Source::SFile {
 
-} // namespace Storm::SFile
+} // namespace Storm::Source::SFile
 
 namespace Class::FILEREC {
 

@@ -8,16 +8,6 @@
 #include <cstdarg>
 #include "d2_platform.h"
 
-// Forward declarations
-struct D2StormListHead;
-struct StormLinkedListStrc;
-
-// Data types
-struct StormLinkStrc {
-    /* 0x00 */ struct StormLinkStrc * pPrevLink; // points at the previous node's link, or at the list head's own link
-    /* 0x04 */ int pNext; // pointer to the NEXT ITEM (not its link); end of list is ~(int)&headLink, i.e. negative
-};
-
 namespace Storm::Source::SSystem {
 
 // Function declarations
@@ -30,47 +20,10 @@ void __stdcall SSYSTEM_SetSystemOption(uint32_t nOptionId, uint32_t * pValue, in
 uint32_t __fastcall SSYSTEM_InitializeAndReturn(uint32_t nFlags);
 char * ILT_strpbrk(char * _Str, char * _Control);
 void __stdcall __break();
-void __stdcall SSYSTEM_SetShutdownFlag(uint32_t dwParam);
-uint32_t __thiscall SSYSTEM_ListOffsetToPointer(int * pNode, int * pBase);
-int32_t __thiscall SSYSTEM_ListGetPointer(int32_t pList, int32_t pNode);
-void __thiscall SSYSTEM_ListUnlinkAndInsert(int * * pList, int * * pNode, int32_t nInsertMode, int * * ppTarget);
-uint32_t __thiscall SSYSTEM_ListGetNext(int32_t pList, int32_t pNode);
-void __thiscall SSYSTEM_ListUnlink(int32_t pThis, int * pNode);
-uint32_t __thiscall SSYSTEM_ListGetData(int32_t pList, int32_t pNode);
-void __fastcall SSYSTEM_ListClearPositive(struct D2StormListHead * pList);
-void __fastcall SSYSTEM_ListClearAll(struct D2StormListHead * pList);
-int * * __thiscall SSYSTEM_ListAllocNode(int * * pList, int32_t nInsertMode, int32_t nDataSize, uint32_t nAllocFlags);
-int * __thiscall SSYSTEM_ListFreeNode(int * pNode, uint8_t bFreeMemory);
-void __fastcall SSYSTEM_ListFreeAllNodes(int32_t pList);
-int __stdcall SSYSTEM_MemCompare(uint8_t * pLeft, uint8_t * pRight, uint32_t nLength);
-// @blizzard SMemCopy (Storm ordinal 491)
-void __stdcall SMemCopy(void * _Dst, void * _Src, size_t _Size);
-// @blizzard SMemFill (Storm ordinal 492)
-void __stdcall SMemFill(void * pMemory, size_t nSize, uint8_t bValue);
-// @blizzard SMemMove (Storm ordinal 493)
-void __stdcall SMemMove(void * pParam1, void * pParam2, size_t nSize);
-// @blizzard SMemZero (Storm ordinal 494)
-void __stdcall SMemZero(void * pMemory, size_t nSize);
-void __fastcall LINKEDLIST_GetNodeValue(void * pNode);
-struct StormLinkStrc * __thiscall LINKEDLIST_GetNodePointer(struct StormLinkStrc * pLink, int32_t nLinkOffset);
-void __fastcall LINKEDLIST_UnlinkNodeSelf(struct StormLinkStrc * pLink);
-struct StormLinkStrc * __thiscall LINKEDLIST_GetOffset(struct StormLinkedListStrc * pList, void * pItem);
-void __thiscall LINKEDLIST_SetNodeValue(struct StormLinkedListStrc * pNode, int32_t dwValue);
-void __thiscall LINKEDLIST_InsertNode(struct StormLinkedListStrc * pList, void * pNewItem, int32_t nInsertMode, void * pRefItem);
-int32_t __thiscall LINKEDLIST_GetNodeAt(int * pList, int32_t nOffset);
-void __thiscall LINKEDLIST_RemoveNode(int * pnParam, int32_t nOffset);
-// @wasnamed LINKEDLIST_GetCount - one name on two different functions.
-// @evidence Calls LINKEDLIST_GetOffset(nOffset,p) then returns node[+4].
-// It counts nothing. 00426a60 is the real count (returns max(pList[+8],0)).
-// @caveat no xrefs - an inlined Storm TS-list template instance. Name is body-derived, not recovered.
-int32_t __thiscall LINKEDLIST_GetNodeLinkAtOffset(int * pnParam, int32_t nOffset);
-void __fastcall LINKEDLIST_FreeNode(void * pParam);
-void __fastcall LINKEDLIST_FreeNodeAndUnlink(void * pParam);
-void * __thiscall LINKEDLIST_AllocAndInsertNode(struct StormLinkedListStrc * pList, int32_t nInsertMode, int32_t nExtraSize, uint32_t dwFlags);
-FILE * __thiscall LINKEDLIST_DetachNode(FILE * pFile, uint8_t bFree);
-void __fastcall LINKEDLIST_FreeNodeSafe(void * pParam);
-void __fastcall LINKEDLIST_FreeAllNodes(void * pListHead);
-int32_t __thiscall LINKEDLIST_FindNode(int * pList, void * pNode);
+void __stdcall SSYSTEM_SetShutdownFlag(uint32_t bShutdown);
+// TSFixedArray<unsigned int> constructor: zeroes the 20-byte array header.
+// Named per redivivus issue #35: SBIG_Constructor passes it with TSFixedArray_Ui_Destructor to the eh vector constructor iterator, so it is not a TSList helper.
+void __fastcall TSFixedArray_Ui_Constructor(void * pNode);
 void __stdcall SetCurrentThreadId();
 void __stdcall StaticInit_6ca890();
 

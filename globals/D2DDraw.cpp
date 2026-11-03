@@ -27,8 +27,6 @@ uint8_t gaSmackerPaletteRemap[260] = {}; D2_GLOBAL_GUARD(gaSmackerPaletteRemap, 
 int gnDirectDrawPaletteSize = 0x64; D2_GLOBAL_GUARD(gnDirectDrawPaletteSize, "gnDirectDrawPaletteSize");
 uint32_t gnDirectDrawGamma = 0x64; D2_GLOBAL_GUARD(gnDirectDrawGamma, "gnDirectDrawGamma");
 uint32_t gdwDDrawInitFlags = 0; D2_GLOBAL_GUARD(gdwDDrawInitFlags, "gdwDDrawInitFlags");
-uint32_t gnDDrawSurfaceWidth = 0; D2_GLOBAL_GUARD(gnDDrawSurfaceWidth, "gnDDrawSurfaceWidth");
-uint32_t gnDDrawDisplayModeIndex = 0; D2_GLOBAL_GUARD(gnDDrawDisplayModeIndex, "gnDDrawDisplayModeIndex");
 uint32_t gnDDrawSurfaceHeight = 0; D2_GLOBAL_GUARD(gnDDrawSurfaceHeight, "gnDDrawSurfaceHeight");
 uint32_t gbDDrawWindowInitialized = 0; D2_GLOBAL_GUARD(gbDDrawWindowInitialized, "gbDDrawWindowInitialized");
 BOOL gbDDrawPaletteSet = 0; D2_GLOBAL_GUARD(gbDDrawPaletteSet, "gbDDrawPaletteSet");
@@ -140,9 +138,9 @@ namespace Fog::_3rdparty::crashy {
 
 } // namespace Fog::_3rdparty::crashy
 
-namespace Storm::SFile {
+namespace Storm::Source::SFile {
 
-} // namespace Storm::SFile
+} // namespace Storm::Source::SFile
 
 namespace Class::FILEREC {
 

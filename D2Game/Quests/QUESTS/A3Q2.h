@@ -45,11 +45,12 @@ BOOL __fastcall Q19_IsKhalimsWillNotComplete(::SGAMEDATA * pGame);
 // OBJOP_A3Q2_KhalimRelicPedestal (Khalim's Will object op, OperateFn45). Operate handler for the relic pedestal/Compelling Orb object. When triggered and the quest event flag is set, finds the associated object, schedules the orb's operate+death events, marks the GUID completion field (=2), and NotifyPlayersAboutEvent(9) (orb destroyed -> Mephisto path opens). Drives the physical quest-completion event; QuestRecord transition itself happens via the dialog/callbacks.
 BOOL __fastcall OBJOP_A3Q2_KhalimRelicPedestal(struct D2ObjectOperateFnArg * pOperation);
 // Q19_UpdateCompellingOrbObject (Khalim's Will). Per-frame/refresh updater for the Compelling Orb object: if the orb-event flag is set, locates the orb unit, syncs its update flag, and (if changed) schedules its operate event. Maintains orb object state; no QuestRecord transitions.
-void __fastcall Q19_UpdateCompellingOrbObject(struct D2QuestDataStrc * pQuestData);
+// Registers: pQuestData in ECX; pMonster in EDX is passed by the caller but not read.
+void __fastcall Q19_UpdateCompellingOrbObject(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pMonster);
 // Objects_InitFn41 (Khalim's Will, InitFn41). Object init for the Compelling Orb: marks the orb-event flag set, records the object's GUID, and sets the object's update flag (2 during intro, else the tracked GUID). Initializes orb object state; no QuestRecord transitions.
-void __fastcall Objects_InitFn41(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn41_SewerStairs(struct D2ObjectInitFnArg * pInitArg);
 // Objects_InitFn42 (Khalim's Will, InitFn42). Object init for a related quest object: while quest is still in intro state, sets the object update flag to 2. No QuestRecord transitions.
-void __fastcall Objects_InitFn42(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn42_SewerLever(struct D2ObjectInitFnArg * pInitArg);
 // Q19_OnPlayerCubeKhalimsWill (Khalim's Will). Callback when a player has the assembled Khalim's Will (transmuting relics in the cube). Reads Completed (and RewardAwaits when not complete) and updates the quest GUID per-player counters tracking who has assembled the Will. State reads only; no SetQuestState.
 void __fastcall Q19_OnPlayerCubeKhalimsWill(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // Q19_CheckPlayerHasKhalimsEye (Khalim's Will). Per-player iterator predicate: if player lacks Khalim's Eye (0x20796571) and lacks the assembled Will (0x20326671), increments the quest GUID eye-needed counter. Used by the Eye relic portal drop to decide how many to spawn.
@@ -65,12 +66,12 @@ BOOL __fastcall OBJOP_A3Q2_KhalimsRelicPortalDrop2(struct D2ObjectOperateFnArg *
 // Operate handler (OperateFn59) for a Khalim's Will relic super-chest/portal. Same flow as Drop1 but drops Khalim's Brain (0x20726271), counting eligible players via Q19_CheckPlayerHasKhalimsBrain. No QuestRecord state transitions.
 BOOL __fastcall OBJOP_A3Q2_KhalimsRelicPortalDrop3(struct D2ObjectOperateFnArg * pOperation);
 // Q19_UpdateOrbCount (Khalim's Will). Adds nParam to the quest's in-memory Khalim-relic/orb counter and flags it dirty. Bookkeeping only; no QuestRecord transitions.
-void __fastcall Q19_UpdateOrbCount(::SGAMEDATA * pGame, int nParam);
+void __fastcall Q19_UpdateOrbCount(::SGAMEDATA * pGame, int nCountDelta);
 // A3Q2 (Khalim's Will) active-dialog filter for Meshif (NPC 0xf5). Returns true if Meshif should offer quest dialog: checks if any Khalim body-part item (eye/brain/heart/flail/assembled flail) is held and the corresponding step-flag has not yet been set, or if all 4 parts are held without Step0x05. Also returns true if quest is in progress (nStateFlag!=0) and Step0x02 is unset. Returns false for all other NPCs.
 bool __fastcall Q19_ActiveFilter(struct D2QuestDataStrc * pQuestData, int32_t nTargetClassId, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2UnitStrc * pUnitEx);
 void __fastcall Q19_Callback00_NpcActivate(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // A3Q2 (Khalim's Will) quest status-string selector. Writes a status code byte into *nUnknown based on which Khalim body-part items the player carries (eye/brain/heart/flail) and relevant quest-record step states; codes 1–7 map to UI status strings. Returns true once Act3 is reachable (AbleGoToAct3 Completed); always returns true thereafter.
-bool __fastcall Q19_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown);
+bool __fastcall Q19_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode);
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q2.cpp
 void __fastcall Q19_InitData(struct D2QuestDataStrc * pQuestData);
 // 1 internal function (defined in .cpp)

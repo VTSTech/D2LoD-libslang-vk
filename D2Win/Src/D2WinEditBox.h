@@ -33,7 +33,6 @@ typedef void (__stdcall *fpD2WinEditBoxSubmit)(uint16_t * wszText);
 namespace D2Win::Src::D2WinEditBox {
 
 // Function declarations
-void __fastcall D2WINEDITBOX_Destroy(int * pEditBox);
 uint32_t __fastcall D2WINEDITBOX_GetTextLength(uint16_t * pwChar);
 void __fastcall FORMS_DestroyD2WinEditBox(::D2WinEditBox * pWinEditBox);
 // Sets pEditBox->fpFilterCallback (+0x268), the per-key filter HandleKeyPress calls with (pEditBox, nCursorIndex, pointer to the key char) and whose 0 rejects the key. Every caller passes a code address in EDX (0042fde0, 0042fe60, 0042ff00, 00430590, 0042fef0, 0043dba0). Halts on NULL or a non-edit-box control.
@@ -43,7 +42,7 @@ void __fastcall D2WINEDITBOX_SetFilterCallback(::D2WinEditBox * pEditBox, fpD2Wi
 // It sets a callback.
 void __fastcall D2WINEDITBOX_SetChangeCallback(::D2WinEditBox * pEditBox, fpD2WinEditBoxChange fpChangeCallback);
 char * __stdcall D2WINEDITBOX_GetTextBuffer();
-void __fastcall D2WINEDITBOX_ValidateInput(char * szText);
+BOOL __fastcall D2WINEDITBOX_ValidateInput(char * szText);
 // Clears the selection: nSelAnchor = -1, nSelCursor = 0. Halts (lines 0x1A4/0x1A6) unless
 // pEditBox is a non-null FORM_EditBox. It does not touch focus.
 void __fastcall D2WINEDITBOX_ClearSelection(::D2WinEditBox * pEditBox);
@@ -59,11 +58,11 @@ void __fastcall D2WINEDITBOX_LinkTabOrder(::D2WinEditBox * pEditBox, ::D2WinEdit
 BOOL __stdcall Mouse(struct D2ControlMsg * pEditBox);
 BOOL __stdcall D2WINEDITBOX_CreateControl(struct D2ControlMsg * pControl, int eFormType, int pDC6);
 BOOL __stdcall Push(struct D2ControlMsg * pControlMsg);
-int __stdcall D2WINEDITBOX_Unused_Placeholder_7(uint32_t dwUnused1, uint32_t dwUnused2, char * szText);
-uint32_t __stdcall D2WINEDITBOX_Unused_Placeholder_8(uint32_t dwUnused1, uint32_t dwUnused2, char * szText);
-BOOL __fastcall D2WINEDITBOX_HandleKeyPress(::D2WinEditBox * pEditBox, uint8_t bParam);
-BOOL __fastcall D2WINEDITBOX_HandleKeyRelease(::D2WinEditBox * pEditBox, char cParam);
-int __fastcall D2WINEDITBOX_SetTextWide(::D2WinEditBox * pnParam, uint16_t * wszText);
+int __stdcall D2WINEDITBOX_FilterDigitChar(uint32_t dwUnused1, uint32_t dwUnused2, char * szText);
+uint32_t __stdcall D2WINEDITBOX_FilterLetterChar(uint32_t dwUnused1, uint32_t dwUnused2, char * szText);
+BOOL __fastcall D2WINEDITBOX_HandleKeyPress(::D2WinEditBox * pEditBox, uint8_t byKeyChar);
+BOOL __fastcall D2WINEDITBOX_HandleKeyRelease(::D2WinEditBox * pEditBox, char cVirtualKey);
+int __fastcall D2WINEDITBOX_SetTextWide(::D2WinEditBox * pEditBox, uint16_t * wszText);
 BOOL __fastcall Draw(::D2WinEditBox * pEditBox);
 BOOL __stdcall PushFlag0x8(struct D2ControlMsg * pControlMsg);
 // Sets the text of a D2Win edit box from a narrow string: widens szText into a zeroed 256-WCHAR buffer (STRING_CopyCharToWCharWithSetMaxSize) and passes it to D2WINEDITBOX_SetTextWide.

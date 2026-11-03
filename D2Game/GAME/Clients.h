@@ -49,7 +49,7 @@ void __fastcall AppearenceItems2(uint32_t pClient, struct D2UnitStrc * pUnit, ui
 // @sourcefile .\GAME\Clients.cpp
 void __fastcall FreeClientList(::SGAMEDATA * pGame);
 // Builds a proximity-sorted list of up to nParam units from all adjacent rooms around the client's current room and serialises them into the client's packet buffer. Gets the player unit's world position, iterates every unit in adjacent rooms via CLIENT_AddUnitToProximitySortedList, then calls CLIENT_PopulateVisibilityPacketBuffer. Halts fatally if pClient->pRoom is null or the adjacent-room list is unavailable.
-void __fastcall GAME_CollectNearbyUnitPositions(struct D2ClientStrc * pClient, uint32_t nParam);
+void __fastcall GAME_CollectNearbyUnitPositions(struct D2ClientStrc * pClient, uint32_t nUnitLimit);
 // Per-frame update for one connected client. Sends remove-object packets for stale adjacent rooms, sends adjacent-room unit updates, flushes changed stats to the player, recalculates inventory if the refresh flag is set, increments the room ticker, and on a room change fires quest and NPC-intro callbacks and calls GAME_OnClientRoomChange. Finishes by linking the player unit into the update list.
 void __fastcall UpdateSingleClient(::SGAMEDATA * pGame, struct D2ClientStrc * pClient);
 BOOL __fastcall IsClientInGame(::SGAMEDATA * pGame, int32_t nClientid);
@@ -62,11 +62,6 @@ uint8_t __fastcall GetAct(struct D2ClientStrc * pClient);
 // Sets the current act (0-4) for a client connection. Called during game join flow and act transitions. Validates act range (must be 0-4) before updating client structure, halts on invalid act.
 void __fastcall CLIENT_SetAct(struct D2ClientStrc * pClient, uint8_t nAct);
 void __fastcall ClientSetDwSaveTo1(struct D2ClientStrc * pClient);
-void * __fastcall GetSavePacketList(struct D2ClientStrc * pClient);
-// @wasnamed GetSavePacketList - one name on two different functions.
-// @evidence Writes pClient->pSavePacketList (line 0x80a). 00538350 reads it (line 0x7ff).
-// A setter had been given the getter's name.
-void __fastcall SetSavePacketList(struct D2ClientStrc * pClient, void * pSavePacketList);
 // Returns the byte at pClient+0x1ad, beside the byte nAct; halts (line 2070) on NULL. Only this function and CLIENT_SetUnk0x1AD touch it.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 uint8_t __fastcall CLIENT_GetUnk0x1AD(struct D2ClientStrc * pClient);
@@ -82,7 +77,7 @@ int __stdcall ReturnFFFFFFFF();
 void __stdcall ReturnVoid(uint32_t dwParam);
 uint32_t __fastcall GetPlayerClassId(struct D2ClientStrc * pClient);
 void __fastcall SetClassOfClient(struct D2ClientStrc * pClient, uint8_t nClass);
-void __fastcall SetFileFlags(struct D2ClientStrc * pClient, int16_t nParam);
+void __fastcall SetFileFlags(struct D2ClientStrc * pClient, int16_t nCharStatus);
 uint32_t __fastcall GetCharacterStatus(struct D2ClientStrc * pClient);
 void __fastcall SetFlagIf(struct D2ClientStrc * pClient, uint16_t nFlag, BOOL nSet);
 uint32_t __fastcall CLIENT_TestFileFlags(struct D2ClientStrc * pClient, uint16_t fFileFlag);
@@ -107,8 +102,8 @@ uint32_t __fastcall QSERVER_IsClientAllowedToJoin(uint32_t nClientId, uint32_t n
 // Handles a heartbeat pong response for a client identified by nClientId. Computes round-trip ping as (now - dwSendTick) - dwClientTick. In-game path: stores the sample in a 16-slot ring buffer and recomputes the rolling average across up to 16 samples. Pre-game (QServer) path: accumulates an average over up to 10 samples using 64-bit arithmetic. In both cases sends the 0x8F Pong packet back to the client and resets its timeout watchdog timestamp.
 void __fastcall SendPongByClientId(uint32_t nClientId, int32_t dwSendTick, int32_t dwClientTick, uint32_t dwUnused);
 BOOL __fastcall NET_D2GS_SERVER_GetPlayerNameByClientId(int32_t nClientId, char * szPlayerName);
-int32_t __fastcall GetClientId(char * szText);
-BOOL __fastcall SERVER_IsPlayerCharacterInGame(char * szText1, char * szText2);
+int32_t __fastcall GetClientId(char * szCharName);
+BOOL __fastcall SERVER_IsPlayerCharacterInGame(char * szCharName, char * szCharNameOut);
 // Appends an incoming save-data chunk to the client's in-progress save buffer. Looks up the client by nClientId in the QServer bucket table (under critical section), allocates pSaveGame on the first chunk, memcpys the chunk, advances nSaveOpenSize. When nSaveOpenSize reaches nTotalSize the save is complete: sets fClientFlags bit 3, runs PLAYERSAVE_CRC32MissileTable, and returns 1. Returns 0 if the QServer tables are uninitialised or the client is not found.
 // @sourcefile .\GAME\Clients.cpp
 int __fastcall CLIENT_AccumulateSaveData(uint32_t nClientId, void * buffer, size_t size, size_t nTotalSize, uint32_t dwSaveFlags, uint32_t dwParam1, uint32_t dwParam2);
@@ -136,10 +131,10 @@ void __fastcall GetGuildInfo(struct D2ClientStrc * pClient, uint8_t * pGuildInfo
 void __fastcall SetGuildInfo(struct D2ClientStrc * pClient, uint8_t byGuildInfo1, uint8_t byGuildInfo2, uint8_t byGuildInfo3);
 void __fastcall SetExperience(struct D2ClientStrc * pClient, int32_t nExp);
 int32_t __fastcall GetExperience(struct D2ClientStrc * pClient);
-bool __fastcall HasWeaponSwapped(struct D2ClientStrc * pClient);
+BYTE __fastcall HasWeaponSwapped(struct D2ClientStrc * pClient);
 void __fastcall SetWeaponSwap(struct D2ClientStrc * pClient, uint8_t bWeaponSwapped);
 void __fastcall SERVER_PutPacketInQueueList(struct D2ClientStrc * pClient, struct D2PacketListStrc * pPacketList);
-void __fastcall CLIENT_SetPacketList(struct D2ClientStrc * pClient, int32_t pPacketList);
+void __fastcall CLIENT_SetPacketList(struct D2ClientStrc * pClient, struct D2PacketListStrc * pPacketList);
 struct D2PacketListStrc * __fastcall CLIENT_ClearDispatchList(struct D2ClientStrc * pClient);
 struct D2PacketListStrc * __fastcall CLIENT_GetPacketList(struct D2ClientStrc * pClient);
 struct D2PacketListStrc * __fastcall CLIENT_GetDispatchList(struct D2ClientStrc * pClient);
@@ -156,14 +151,14 @@ BOOL __fastcall CheckSyncWarpRateExceeded(::SGAMEDATA * pGame, struct D2UnitStrc
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 int __fastcall CLIENT_GetLangId(struct D2ClientStrc * pClient);
 // Places player unit into the game world (state 3→waiting rooms). Spawns unit at town coordinates (or provided room), sends ReassignPlayer packet, loads corpses from inventory (resurrects mercs or places corpse objects), restores iron golem from save if present. Core of server-side join flow after character load.
-void __stdcall CLIENT_PlacePlayerInRoom(struct D2ClientStrc * pClient, struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2DrlgActStrc * pDrlgAct, ::SGAMEDATA * pSpawnXY, uint32_t nUnused);
+void __fastcall CLIENT_PlacePlayerInRoom(struct D2ClientStrc * pClient, struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2DrlgActStrc * pDrlgAct, ::SGAMEDATA * pSpawnXY);
 // Main client join handler: validates expansion/hardcore compatibility, loads or creates player unit, sends handshake packet (0x0B), portal flags (0x5F), stats, items, hotkeys, selected skills (left/right), life/mana/stamina. Computes A5Q3 resist bonuses if expansion. Returns error code on validation failure (kicks client). State 1→loading character data.
 int32_t __fastcall CLIENT_LoadCharacterAndSendGameData(struct D2ClientStrc * pClient, ::SGAMEDATA * pGame, int32_t bLoadFromSave, struct D2RoomStrc * pRoom, uint32_t nX, uint32_t nY);
 // Allocates and initializes D2ClientStrc (1304 bytes). Sets client ID, 180-second timeout, class (arena template override), char/account names, language. Initializes 16 hotkey slots to -1, zeroes packet lists. Inserts into game's client linked list and two hash tables (by ID and name). Max 8 clients per game. Returns new client or null if full.
 // @sourcefile .\GAME\Clients.cpp
 struct D2ClientStrc * __fastcall CreateClient(::SGAMEDATA * pGame, uint32_t nClientId, uint8_t nClass, char * pCharName, char * szAccountName, uint8_t * pClientContainer, uint8_t nLanguageId, uint32_t dwUnused1, uint32_t dwUnused2);
 // Serializes a client's character header/appearance block into the save/wire buffer pbParam (used in the player save & "exit game" cleanup path). Writes a 0x0E length tag, then the player's level, two SaveCharAppearance blobs (head+body, 0xFF-padded), class code (nClassId+1, wrapped), a level byte, char status (sets the death-flag bit 8 when dead and bit 4 set), guild flags, 3 guild-info bytes (0->0xFF), and the 4-byte guild tag. Returns (in the guarded value) the buffer pointer when the record is invalid (bad level/class/status or wrong length), having zeroed the first byte; otherwise null. __fastcall(pClient, pbParam).
-void __fastcall CleanUp(struct D2ClientStrc * pClient, uint8_t * pbParam);
+void __fastcall CleanUp(struct D2ClientStrc * pClient, uint8_t * pBuffer);
 // Removes client from game and cleans up all resources. Optionally saves player (bSavePlayer), removes from hash tables (by ID and name), broadcasts 0x5A PlayerLeave event, frees player unit and pets, notifies quests, frees memory pools. Called on disconnect, timeout, or kick.
 // @sourcefile .\GAME\Clients.cpp
 void __fastcall CleanUpClient(::SGAMEDATA * pGame, uint32_t nClientId, int32_t bSavePlayer);
@@ -171,24 +166,15 @@ void __fastcall CleanUpClient(::SGAMEDATA * pGame, uint32_t nClientId, int32_t b
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 struct D2UnitStrc * __fastcall CLIENT_GetAttachedUnit(::SGAMEDATA * pGame, struct D2ClientStrc * pClient);
 // Dead code / unused client join path. Sets pClient->nClass to bParam, resolves the player unit and its spawn coords, then deletes the existing unit from the room (AllocDrlgDelete + FreeServerUnit) and reloads it from scratch via CLIENT_LoadCharacterAndSendGameData + CLIENT_PlacePlayerInRoom. Clears the lowest fClientFlags bit and fires GAME_OnClientRoomChange if the room changed. Halts with an internal error if pClient is null. Not referenced by any active join flow.
-void __fastcall UnusedClientJoinGame(struct D2ClientStrc * pClient, uint8_t bParam);
+void __fastcall UnusedClientJoinGame(struct D2ClientStrc * pClient, int nClass);
 void __fastcall UnusedClientJoinGame2(::SGAMEDATA * pGame, struct D2ClientStrc * pClient, uint8_t bActNo);
-void __fastcall SendAdjacentRoomUpdates(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2ClientStrc * pClient);
 // pRoom in EAX, pClient in EDI: UNITS_SendUnitUpdateToClient for every unit in pRoom->pUnitList (pRoomNext chain); halts (line 98) on a NULL room.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 void __stdcall CLIENT_SendRoomUnitUpdates(struct D2RoomStrc * pRoom, struct D2ClientStrc * pClient);
 void __fastcall UnusedUpdateFunctionForUnits(struct D2RoomStrc * pRoom, struct D2ClientStrc * pClient);
-// Sends SCMD 0x0A (RemoveObject) packets to pClient for every entry in the DrlgDelete list of each adjacent room, skipping the client's own player unit. Iterates all adjacent rooms of pRoom, walks each room's pDrlgDelete linked list, and calls NET_D2GS_SERVER_Send_0x0A_RemoveObject for non-self entries. Halts fatally if pRoom is null or the player unit cannot be resolved.
-void __fastcall GAME_SendRemoveObjectsForAdjacentRooms(struct D2RoomStrc * pRoom, struct D2ClientStrc * pClient);
 void __fastcall FreePendingDrlgDeletes(::SGAMEDATA * pGame);
-// Reveals a room to a client and sends init-unit packets for all units in it. Sends SCMD 0x07 (MapReveal) with the room's level ID and tile coordinates, adds the client to the room's client count, and if this is the first or second client in the room triggers MONSTERAI_TriggerMageThink for all monsters. Then iterates the room's unit list and calls SERVER_SendInitUnitPacket for every unit except the client's own player. Halts fatally if pRoom is null.
-void __fastcall CLIENT_RevealRoomAndSendUnits(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2ClientStrc * pClient);
-// Hides a room from a client and cleans up its units. Sends SendRemoveObject for every unit in the room, removes the client from the room's client count, and if nClientsCount drops to zero calls MONSTER_StartAiAndRegenTimers for all monsters (re-enabling AI/regen). Finally sends SCMD 0x08 (MapHide) with the room's level ID and tile coordinates. Halts fatally if pRoom is null.
-void __fastcall RoomClearForClientAndHideMap(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2ClientStrc * pClient);
 void __fastcall MovementUpdateForClient(::SGAMEDATA * pGame, struct D2RoomStrc * * ppRoom, struct D2UnitStrc * pUnit);
 void __fastcall CLIENT_BroadcastMovementToAdjacentRooms(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2UnitStrc * pUnit);
-void __fastcall CLIENT_RemoveFromAdjacentRooms(struct D2RoomStrc * pRoom, int32_t nClientId);
-void __fastcall TellClientToLoadAct(::SGAMEDATA * pGame, struct D2ClientStrc * pClient);
-// 6 internal functions (defined in .cpp)
+// 4 internal functions (defined in .cpp)
 
 } // namespace D2Game::GAME::Clients

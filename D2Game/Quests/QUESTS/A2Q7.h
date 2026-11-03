@@ -10,8 +10,6 @@
 
 // Forward declarations
 struct D2BitBufferStrc;
-struct D2ObjectInitFnArg;
-struct D2ObjectOperateFnArg;
 struct D2QuestArgStrc;
 struct D2QuestDataA2Q6Strc;
 struct D2QuestDataStrc;
@@ -22,42 +20,14 @@ struct SGAMEDATA;
 namespace D2Game::Quests::QUESTS::A2Q7 {
 
 // Function declarations
-// Q14 (The Seven Tombs / Act2 Q6). Sends packet 0x50 QuestSpecial type 0xd to the operating player's client: the offset (Tal Rasha tomb levelId - 0x42) of the true Horadric-orifice tomb, so the client can mark the correct tomb symbol on the map. Caches the chosen tombLevelId into A2Q6 quest-specific data. No quest-state transition.
-void __fastcall Q14_SendTombLevelInfo(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
-// Q14 helper: returns the next "arcane" object classId to spawn (Tal Rasha sarcophagus/orifice decoy set: 0x133..0x139). On first call lazily fills a 6-entry ring (skipping the index matching the real tomb level), then cycles through it round-robin. Returns 0x133 if no tomb level is set yet. No quest-state transition.
-uint32_t __fastcall A2Q6_GetNextFalseTombPortalClassId(struct D2QuestDataStrc * pQuestData);
 // Q14 predicate (used as a quest-display/state filter): true if The Seven Tombs is NOT yet started (no quest record, or introduced and stateFlag < 2). nStateFlag<2 == still in step 0/1.
 uint8_t __fastcall Q14_IsSevenTombsNotStarted(::SGAMEDATA * pGame);
 // Q14 predicate: true if The Seven Tombs is introduced and stateFlag != 0 (any progress made).
 uint8_t __fastcall Q14_IsSevenTombsAtState1(::SGAMEDATA * pGame);
 // Q14 predicate: returns false (0) whenever The Seven Tombs is introduced (the inner test is a decompiler tautology bVar1||!bVar1). Effectively: true (1) only if quest data missing or not introduced. Used as a "not active yet" gate.
 int __fastcall Q14_IsSevenTombsProgressed(::SGAMEDATA * pGame);
-// @wasnamed SelectUnkownArkaneThingId - one name on two different functions.
-// @evidence Calls GetQuestDataByQuestNoInternal(QUESTINT_TheSevenTombs)
-// and then 0059d720. A wrapper that supplies the quest record.
-uint32_t __fastcall A2Q6_GetNextFalseTombPortalClassIdForGame(::SGAMEDATA * pGame);
 // Q14 accessor: returns the "town/Duriel portal already created" flag from A2Q6 data (field_0x0B). Returns 1 (treat as created) if quest not introduced. Used to gate the stairs-to-tombs operate and portal creation.
-uint8_t __fastcall Q14_GetPortalCreatedFlag(::SGAMEDATA * pGame);
-// A2Q7 (The Tainted Sun) timer callback that creates the two warp portals after the Horadric Staff is placed. If the pending-create flag (offset +0xd) is set: waits for the orifice object to reach Death/open anim and fires its open event; spawns the red town-portal object (class 100) in a nearby room and toggles HasPortal flags on both rooms. On success sets portal-created flag (+0xb=1) and clears the pending flag. No quest-record state change.
-uint8_t __fastcall Q14_TimerCreatePortal(::SGAMEDATA * pGame, struct D2QuestDataStrc * pQuestData);
-// Q14 helper: scans the victim object's room for any UNIT_WARP and walks the operating player through it (SUnit::TakeStairs). Used by the tomb-stairs operate fn.
-void __fastcall TakeStairs(struct D2ObjectOperateFnArg * pOperateArg);
-// Q14 object OperateFn: stairs/warp into the Tal Rasha tombs. Allows traversal only if The Seven Tombs isn't introduced yet OR the Duriel-area portal has already been created (field_0x0B), and the warp object is in Walk (open) anim. Calls TakeStairs. No quest-state transition.
-uint32_t __fastcall Q14_OperateStairsToTombs(struct D2ObjectOperateFnArg * pOperateArg);
-// Q14 object InitFn (Objects_InitFn37): on spawn of a Q14 quest object, records its GUID into A2Q6 data (field_0x28) and marks it present (field_0x6=1). Sets the object's client visibility/update mode: hidden(2) if quest not introduced or already-portal-created flag set, else visible(0). No quest-record state change.
-void __fastcall Objects_InitFn37(struct D2ObjectInitFnArg * pInitArg);
-// Q14 object InitFn (Objects_InitFn38): records this object's GUID into A2Q6 data and sets bAllPlayersLeft. Update mode = hidden(2) if quest not introduced, else field_0x18. No quest-record state change.
-void __fastcall Objects_InitFn38(struct D2ObjectInitFnArg * pInitArg);
-// Q14 predicate: true if The Seven Tombs is introduced AND the Duriel/town portal has NOT yet been created (!field_0x0B). Inverse of Q14_GetPortalCreatedFlag.
-BOOL __fastcall Q14_IsPortalNotCreated(::SGAMEDATA * pGame);
-// Q14 object InitFn (Objects_InitFn21): orifice/Tal Rasha chamber object init. Records GUID, marks present. If the staff has been used (state byte [3]) but portal not yet created ([0xb]==0), schedules the Q14_TimerCreatePortal timer to spawn the portals and marks timer-armed. Sets object hidden(2). No quest-record state change.
-void __fastcall Objects_InitFn21(uint32_t * pInitArg);
-// Q14 per-party-member callback: completes The Horadric Staff quest record for one player if not already complete and the player is in Act II. Sets Completed+JustCompleted and (unless mid-trade) strips the 3 staff component quest items (hsu/vip/msf). Invoked for every party member when the staff is placed in the orifice.
-void __fastcall Q14_CompleteHoradricStaffOnPartyMember(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
-// Q14 object OperateFn (OBJOP_A2Q7_OpenArcaneNpcTrade): player operates the Horadric orifice. If the object is closed (Death anim) and player not busy trading: if player holds the assembled Horadric Staff (item 'hsu '), set interact target + send packet 0x58 to open the staff-in-orifice UI; otherwise play the "can't do that" sound. Closes the interaction when the object returns to Neutral. No quest-record state change here (that happens in Q14_OnStaffUsedInOrifice).
-BOOL __fastcall OBJOP_A2Q7_OpenArcaneNpcTrade(struct D2ObjectOperateFnArg * pOperation);
-// Q14 core event: the Horadric Staff has been placed in the orifice. Completes The Horadric Staff quest record (Completed+JustCompleted) for the acting player and every party member, strips the staff component items, broadcasts event 3 (cinematic/quest log), flags Jerhyn to spawn (bShouldSpawnJerhyn) + field_0x0E, arms Q14_TimerCreatePortal (delay derived from missile 0x152 Range), and toggles HasPortal flags on the chamber rooms. This is the Seven Tombs / Tal Rasha chamber opening trigger.
-void __fastcall Q14_OnStaffUsedInOrifice(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
+uint8_t __fastcall Q14_GetPortalCreatedFlag(struct D2QuestArgStrc * pQuestArgs);
 // IterateAllUnits callback for Q14_IsNpcStationary: if the player is within collision
 // distance < 0xC of pA2Q6Data->pTyraelSpawnAnchor (+0x40), sets
 // pA2Q6Data->bTyraelSpawnSpotOccupied (+0x44). Q14_IsNpcStationary passes its pA2Q6Data as pArgs.
@@ -69,9 +39,9 @@ BOOL __fastcall Q14_IsNpcStationary(::SGAMEDATA * pGame, struct D2UnitStrc * pNp
 // Q14 predicate: true if The Seven Tombs is introduced and stateFlag < 4 (not yet at the Duriel-killed/Tyrael step).
 bool __fastcall Q14_IsSevenTombsLessThanState4(::SGAMEDATA * pGame);
 // Q14: compute Tyrael's post-Duriel spawn coordinates. Only if the portal-spawn-in-progress flag is set: picks a spot in Lut Gholein (LEVEL_LutGholein) near object class 0xc, finds free WARP-collision coords, writes x/y into pPoint and the room into *pdwParam. Returns 1 on success, 0 otherwise.
-BOOL __fastcall Q14_GetTyraelSpawnCoords(::SGAMEDATA * pGame, POINT * pPoint, struct D2RoomStrc * * pdwParam);
+BOOL __fastcall Q14_GetTyraelSpawnCoords(::SGAMEDATA * pGame, POINT * pPoint, struct D2RoomStrc * * ppSpawnRoom);
 // Q14: set/clear the Izual(Tyrael) placement flag in A2Q6 data, only while the quest is introduced and field_0x0E unset. cParam==0 -> mark located (bIzualLocationSet=1) and set pIzualUnit sentinel (8 single-player / 9 multiplayer); cParam!=0 -> clear bIzualLocationSet. No quest-record state change.
-void __fastcall Q14_SetTyraelState(int nParam, char cParam);
+void __fastcall Q14_SetTyraelState(int pQuestData, char bClear);
 // Q15 (Act2Guard4Gossip / Jerhyn gossip pseudo-quest) state-2 handler. When the kill/target unit is Jerhyn (classId 0x179) and the one-shot bBloodRavenKilled-style flag is set, clears it and unhooks itself (handler[2]=null). One-time post-trigger cleanup; no quest-record write.
 void __fastcall Q15_Callback02_NpcDeactivate(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // Q15 (Act2Guard4Gossip / Jerhyn gossip) message-handler. On a dialog with Jerhyn (NPC 0x179): for the special intro lines 0x3b/0x3c set the gossip record to JustCompleted and arm the state-2 cleanup handler; for any other line set it to Completed. This records "player has spoken to Jerhyn" in the quest-record bitbuffer.
@@ -81,7 +51,7 @@ void __fastcall Q15_Callback00_NpcActivate(struct D2QuestDataStrc * pQuestData, 
 // Q15 (Act2Guard4Gossip) state-8 handler: empty stub. No behavior.
 void __fastcall Q15_Callback08_MonsterKilled(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // Q15 (Act2Guard4Gossip) status filter: always returns false. The Jerhyn gossip pseudo-quest never shows in the quest-log status pass.
-bool __fastcall Q15_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown);
+bool __fastcall Q15_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode);
 // Q15 (Act2Guard4Gossip) active filter for Jerhyn (NPC 0x179): returns true (gossip is "active"/available) when the Jerhyn-spoke record is neither Completed nor JustCompleted, or when Radament's Lair just completed but Jerhyn not yet marked complete. Read-only on quest records. Decides whether Jerhyn currently has act-progress gossip to offer.
 bool __fastcall Q15_ActiveFilter(struct D2QuestDataStrc * pQuestData, int32_t nTargetClassId, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2UnitStrc * pUnitEx);
 // Q15 (Act2Guard4Gossip) quest-init: registers this slot as the Jerhyn gossip pseudo-quest. Zeroes the state-handler table, installs handler[0]=Callback_00 (dialog select), handler[8]=Callback_08 (stub), handler[0xb]=Callback_11 (message), sets pNpcMessages to the 0x179/0x3b gossip table, allocates A2Q7 quest-specific data, marks bIsActive, and crucially sets nQuestIdReal = QUEST_Act2Guard4Gossip with the status/active filters. This is the "extra" Act2 slot: NOT a public quest but the Jerhyn spoke-to gossip tracker.

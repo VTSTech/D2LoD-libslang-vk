@@ -117,14 +117,14 @@ bool __fastcall Q26_SequenceFilter(D2QuestDataStrc * pQuestData) {
 
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (pQuestData_00) {
-      BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData_00->fpSequenceFilter);
-      if (BVar2) {
+      BOOL BVar1 = IsBadCodePtr((FARPROC)pQuestData_00->fpSequenceFilter);
+      if (BVar1) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa1);
         exit(-1);
       }
 
-      bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
-      return bVar1;
+      bool bResult = pQuestData_00->fpSequenceFilter(pQuestData_00);
+      return bResult;
     }
 
     return false;
@@ -152,7 +152,7 @@ BOOL __fastcall Q26_PlayerNotifyCompleted(::SGAMEDATA * pGame, D2UnitStrc * pUni
 // A4Q1 (Fallen Angel / Izual) NPC dialog handler, handler index 0xb. Jerhyn msg 0x29e: sets bPortalJerhynSpawned, advances stateflag to 2, resyncs all players, sends gossip. Jerhyn msg 0x2a4 (turn-in): if RewardAwaits+JustCompleted, finalizes quest (stateflag 5, sequence filter, broadcast, set Completed, clear step states, award +2 skill points). Izual-spirit msg 0x2a3: marks talked, sets Step0x05, broadcasts stateflag 4.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q1.cpp
 void __fastcall Q26_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    bool _bRewardOrCompletion;
+    BOOL _bRewardOrCompletion;
     bool bRewardOrCompletion;
     bool bBadCodePtr;
     bool bJustCompleted;
@@ -233,8 +233,8 @@ void __fastcall Q26_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     static int32_t gdwQ15QuestStateMessages[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 }; D2_STATIC_GUARD(gdwQ15QuestStateMessages, "D2Game::Quests::QUESTS::A4Q1::Q26_Callback00_NpcActivate::gdwQ15QuestStateMessages");
 
     BOOL bJustCompleted;
-    bool bStep0x05;
-    bool bParticipated;
+    BOOL bStep0x05;
+    BOOL bParticipated;
     int32_t nTargetClassId;
     uint32_t nGossipMsgIdx;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
@@ -330,10 +330,13 @@ uint8_t __fastcall Q26_QuestUpdate_SpawnIzual(::SGAMEDATA * pGame, D2QuestDataSt
 
 // Q26_PlayerCheckNearIzual — per-player proximity completion check (run via IteratePlayerOrMonsterUnits on Izual death). If the player's room == Izual's room or an adjacent room, and quest not Completed/RewardAwaits, marks that player's record JustCompleted + RewardAwaits. Grants kill credit to players near Izual when he dies.
 BOOL __fastcall Q26_PlayerCheckNearIzual(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    bool _bQuestState;
+    BOOL _bQuestState;
     bool bQuestState;
+    uint32_t nRoomIdx;
+    D2UnitDataPlayerStrc* pIzualRoom;
     D2RoomStrc** pAdjacentRooms;
     uint32_t nAdjacentRoomCount;
+    int bIsNearIzual;
     D2RoomStrc* pPlayerRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     D2QuestDataStrc* pPlayerData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheFallenAngel);
     if (!pPlayerData) {
@@ -342,58 +345,48 @@ BOOL __fastcall Q26_PlayerCheckNearIzual(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     }
 
     D2RoomStrc* pQuestData = D2Common::Units::UNITS_GetRoom(pPlayerData->pQuestSpecificData.pA4Q1->pIzualUnit);
-    if (!pPlayerRoom) {
-      return 0;
-    }
+    if (pPlayerRoom) {
+      D2BitBufferStrc* pBitBuffer;
+      bIsNearIzual = 0;
+      if (pPlayerRoom == pQuestData) {
+        bIsNearIzual = 1;
+      } else {
+        pPlayerRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+        if (!pPlayerRoom) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1d9);
+          exit(-1);
+        }
 
-    int bIsNearIzual = 0;
-    if (pPlayerRoom == pQuestData) {
-      bIsNearIzual = 1;
-    } else {
-      uint32_t nRoomIdx;
-      pPlayerRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-      if (!pPlayerRoom) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1d9);
-        exit(-1);
-      }
-
-      D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pPlayerRoom, &pAdjacentRooms, (int*)&nAdjacentRoomCount);
-      nRoomIdx = 0;
-      if (nAdjacentRoomCount > 0) {
-        do {
+        D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pPlayerRoom, &pAdjacentRooms, (int*)&nAdjacentRoomCount);
+        for (nRoomIdx = 0; nRoomIdx < nAdjacentRoomCount; nRoomIdx++) {
           if (pAdjacentRooms[nRoomIdx] == pQuestData) {
             bIsNearIzual = 1;
             break;
           }
+        }
+      }
 
-          nRoomIdx++;
-        } while (nRoomIdx < nAdjacentRoomCount);
+      pIzualRoom = D2Common::Units::GetPlayerData(pUnit);
+      pBitBuffer = pIzualRoom->pQuestRecord[pGame->nDifficulty];
+      _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheFallenAngel, QUESTSTATE_Completed);
+      if (!_bQuestState) {
+        _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheFallenAngel, QUESTSTATE_RewardAwaits);
+        if (!_bQuestState && bIsNearIzual) {
+          /* SetQuestState(rec=0x19 FallenAngel, JustCompleted=0xd) — Izual died nearby:
+                         credit self player as having completed it now */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheFallenAngel, QUESTSTATE_JustCompleted);
+          /* SetQuestState(rec=0x19 FallenAngel, RewardAwaits=1) — nearby player: mark
+                         reward (+2 skills) pending until Jerhyn turn-in */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheFallenAngel, QUESTSTATE_RewardAwaits);
+        }
       }
     }
 
-    D2UnitDataPlayerStrc* pIzualRoom = D2Common::Units::GetPlayerData(pUnit);
-    D2BitBufferStrc* pBitBuffer = pIzualRoom->pQuestRecord[pGame->nDifficulty];
-    _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheFallenAngel, QUESTSTATE_Completed);
-    if (_bQuestState) {
-      return 0;
-    }
-
-    _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheFallenAngel, QUESTSTATE_RewardAwaits);
-    if (!(!_bQuestState && bIsNearIzual)) {
-      return 0;
-    }
-
-    /* SetQuestState(rec=0x19 FallenAngel, JustCompleted=0xd) — Izual died nearby:
-                         credit self player as having completed it now */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheFallenAngel, QUESTSTATE_JustCompleted);
-    /* SetQuestState(rec=0x19 FallenAngel, RewardAwaits=1) — nearby player: mark
-                         reward (+2 skills) pending until Jerhyn turn-in */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheFallenAngel, QUESTSTATE_RewardAwaits);
     return 0;
 }
 
 // Q26_Callback_08 — Izual-death handler (handler[8], fires when Izual monster dies). Logs "Finished quest", clears handler[2]/[8], sets stateflag 4, stores Izual unit + death coords. Marks killer/nearby players JustCompleted+RewardAwaits (if not already done), then iterates party: proximity credit (CheckNearIzual), propagate completion, and mark out-of-act members CannotComplete. Queues Q26_QuestUpdate_SpawnIzual timer.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q1.cpp
 void __fastcall Q26_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    bool _bQuestState;
+    BOOL _bQuestState;
     bool bQuestState;
     D2UnitDataPlayerStrc* pGame;
     ::SGAMEDATA* pPlayerData;
@@ -532,7 +525,7 @@ void __fastcall Q26_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 1;
     ::SGAMEDATA* pSVar1 = pQuestData->pGame;
-    pQuestData->pNpcMessages = &A4Q1::aNpcGossipData;
+    pQuestData->pNpcMessages = A4Q1::aNpcGossipData;
     pQuestData->sStateFunctions.fpQuestStateHandler[10] = Q26_Callback10_PlayerLeavesGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[3] = Q26_Callback03_ChangedLevel;
     pQuestData->sStateFunctions.fpQuestStateHandler[8] = Q26_Callback08_MonsterKilled;

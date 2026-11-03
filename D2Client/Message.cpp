@@ -15,6 +15,29 @@
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
+static D2UIFlagInitStrc gaUIFlagInitMessageHandlers[4] = {
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x2,
+        /* .pfHandler = */ &D2Client::_Message::MESSAGE_OnQuitMessage
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x1c,
+        /* .pfHandler = */ &D2Client::_Message::MESSAGE_OnActivate
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x84,
+        /* .pfHandler = */ (fnD2InitUIFlagFunction)&D2Client::_Message::WndProcD
+    },
+    {
+        /* .eEventType = */ 0x1,
+        /* .nMessageOrKeyCode = */ 0x9ca4,
+        /* .pfHandler = */ (fnD2InitUIFlagFunction)&D2Client::_Message::MESSAGE_OnClose
+    }
+}; D2_STATIC_GUARD(gaUIFlagInitMessageHandlers, "gaUIFlagInitMessageHandlers");
+
 namespace D2Client::_Message {
 
 void __stdcall MESSAGE_OnQuitMessage(D2UIMouseMsgStrc * pMsg) {
@@ -217,14 +240,14 @@ void __fastcall MESSAGE_UnregisterEventHandlerBatch(HWND hWnd, D2UIFlagInitStrc 
     }
 }
 
-uint32_t __fastcall MESSAGE_RegisterWindowMessageHandlers(uint32_t nParam) {
-    if (!nParam) {
+uint32_t __fastcall MESSAGE_RegisterWindowMessageHandlers(HWND hWnd) {
+    if (!hWnd) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x178);
       exit(-1);
     }
 
-    MESSAGE_RegisterEventHandlerBatch((HWND)nParam, gaUIFlagInitMessageHandlers, 4);
-    Storm::WindowHandle::SMsgPushRegisterState(nParam);
+    MESSAGE_RegisterEventHandlerBatch(hWnd, gaUIFlagInitMessageHandlers, 4);
+    Storm::WindowHandle::SMsgPushRegisterState((uint32_t)hWnd);
     return 1;
 }
 

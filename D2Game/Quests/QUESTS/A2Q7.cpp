@@ -2,62 +2,37 @@
 
 #include "D2Game/Quests/QUESTS/A2Q7.h"
 #include "D2Client/Archive.h"
-#include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/SKILLS/SkillsPal.h"
-#include "D2Client/UI/SkillDesc.h"
-#include "D2Client/UNIT/Monster.h"
-#include "D2Client/UNIT/Player.h"
-#include "D2Client/Units.h"
 #include "D2Common/Collision.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
-#include "D2Common/D2MissilesTxt.h"
-#include "D2Common/D2MonStatsTxt.h"
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
-#include "D2Common/D2SeedStrc.h"
-#include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
 #include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
-#include "D2Common/DATATBLS/ObjectTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
-#include "D2Common/Drlg/Drlg.h"
-#include "D2Common/Drlg/Preset.h"
-#include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/QuestRecord.h"
 #include "D2Common/Unit.h"
 #include "D2Common/Units.h"
-#include "D2Game/D2ObjectInitFnArg.h"
-#include "D2Game/D2ObjectOperateFnArg.h"
-#include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/D2QuestDataStrc.h"
 #include "D2Game/GAME/Event.h"
-#include "D2Game/GAME/SCmd.h"
 #include "D2Game/GAME/Server.h"
 #include "D2Game/GAME/Targets.h"
-#include "D2Game/ITEMS/Items/Drop.h"
-#include "D2Game/Objects/Objects.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
-#include "D2Game/UNIT/Party.h"
 #include "D2Game/UNIT/PlayerList.h"
 #include "D2Game/UNIT/SUnit.h"
-#include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
-#include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/UI/Automap.h"
-#include "D2Game/D2Game.h"
-#include "D2Game/Monster/AI/AI.h"
+#include "D2Common/D2SeedStrc.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -72,77 +47,12 @@
 static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA2Q7Strc) == 0x1, "D2_NEW_AT(D2QuestDataA2Q7Strc): the 32-bit layout must be the 0x1 bytes 1.14d allocates");
 
 
-#ifndef RECON_FPTD_fpExecuteOnUnitFunction
-#define RECON_FPTD_fpExecuteOnUnitFunction
-typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
 #ifndef RECON_FPTD_fpSUnitIterateCallback
 #define RECON_FPTD_fpSUnitIterateCallback
 typedef void (__fastcall *fpSUnitIterateCallback)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArgs);
 #endif
 
 namespace D2Game::Quests::QUESTS::A2Q7 {
-
-// Q14 (The Seven Tombs / Act2 Q6). Sends packet 0x50 QuestSpecial type 0xd to the operating player's client: the offset (Tal Rasha tomb levelId - 0x42) of the true Horadric-orifice tomb, so the client can mark the correct tomb symbol on the map. Caches the chosen tombLevelId into A2Q6 quest-specific data. No quest-state transition.
-void __fastcall Q14_SendTombLevelInfo(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    D2GSPacketSrv0x50 sPacket;
-    D2QuestDataStrc* pSevenTombsData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    sPacket.nPacketId = 'P';
-    sPacket.nMessageType = 0xd;
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x45f);
-    eD2LevelId eTombLevel = D2Common::DUNGEON::Dungeon::GetHoradricStaffTombLevelId(pGame->pAct[1]);
-    if (eTombLevel == LEVEL_None) {
-      sPacket.aPayload[0] = 0;
-    } else {
-      sPacket.aPayload[0] = (short int)eTombLevel - 0x42;
-      pSevenTombsData->pQuestSpecificData.pA2Q6->nHoradricStaffTombLevelId = eTombLevel;
-    }
-
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x50_QuestSpecial(pClient, &sPacket);
-}
-
-// Q14 helper: returns the next "arcane" object classId to spawn (Tal Rasha sarcophagus/orifice decoy set: 0x133..0x139). On first call lazily fills a 6-entry ring (skipping the index matching the real tomb level), then cycles through it round-robin. Returns 0x133 if no tomb level is set yet. No quest-state transition.
-uint32_t __fastcall A2Q6_GetNextFalseTombPortalClassId(D2QuestDataStrc * pQuestData) {
-    // Static local variables (originally global data)
-    static uint32_t gaArkaneThingIdTable[7] = { 0x139, 0x138, 0x134, 0x136, 0x137, 0x135, 0x133 }; D2_STATIC_GUARD(gaArkaneThingIdTable, "D2Game::Quests::QUESTS::A2Q7::A2Q6_GetNextFalseTombPortalClassId::gaArkaneThingIdTable");
-
-    int32_t* pnDecoyRingEntry;
-    int nDecoysPlaced;
-    int nTombsLeft;
-    eD2LevelId eTombLevel = D2Common::DUNGEON::Dungeon::GetHoradricStaffTombLevelId(pQuestData->pGame->pAct[1]);
-    if (eTombLevel != LEVEL_None) {
-      D2QuestDataA2Q6Strc* pSpecificData = pQuestData->pQuestSpecificData.pA2Q6;
-      if (pSpecificData->bFalseTombRingInit == '\0') {
-        int iTomb;
-        nDecoysPlaced = 0;
-        pSpecificData->bFalseTombRingInit = '\x01';
-        iTomb = 0;
-        pnDecoyRingEntry = pSpecificData->anFalseTombPortalClassId;
-        nTombsLeft = 7;
-        do {
-          if (iTomb == eTombLevel - LEVEL_TalRashasTomb1) {
-            iTomb++;
-          } else if (iTomb < 7 && nDecoysPlaced < 6) {
-            *pnDecoyRingEntry = gaArkaneThingIdTable[iTomb];
-            nDecoysPlaced++;
-            pnDecoyRingEntry++;
-            iTomb++;
-          }
-
-          nTombsLeft--;
-        } while (nTombsLeft);
-      }
-      if (pSpecificData->nFalseTombRingIndex == 6) {
-        pSpecificData->nFalseTombRingIndex = 0;
-      }
-
-      uint32_t nClassId = pSpecificData->anFalseTombPortalClassId[pSpecificData->nFalseTombRingIndex];
-      pSpecificData->nFalseTombRingIndex++;
-      return nClassId;
-    }
-
-    return 0x133;
-}
 
 // Q14 predicate (used as a quest-display/state filter): true if The Seven Tombs is NOT yet started (no quest record, or introduced and stateFlag < 2). nStateFlag<2 == still in step 0/1.
 uint8_t __fastcall Q14_IsSevenTombsNotStarted(::SGAMEDATA * pGame) {
@@ -181,382 +91,14 @@ int __fastcall Q14_IsSevenTombsProgressed(::SGAMEDATA * pGame) {
     return (uint32_t)uVar1 << 8;
 }
 
-// @wasnamed SelectUnkownArkaneThingId - one name on two different functions.
-// @evidence Calls GetQuestDataByQuestNoInternal(QUESTINT_TheSevenTombs)
-// and then 0059d720. A wrapper that supplies the quest record.
-uint32_t __fastcall A2Q6_GetNextFalseTombPortalClassIdForGame(::SGAMEDATA * pGame) {
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (pQuestData) {
-      uint32_t uVar1;
-      uVar1 = A2Q6_GetNextFalseTombPortalClassId(pQuestData);
-      return uVar1;
-    }
-
-    return 0x133;
-}
-
 // Q14 accessor: returns the "town/Duriel portal already created" flag from A2Q6 data (field_0x0B). Returns 1 (treat as created) if quest not introduced. Used to gate the stairs-to-tombs operate and portal creation.
-uint8_t __fastcall Q14_GetPortalCreatedFlag(::SGAMEDATA * pGame) {
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
+uint8_t __fastcall Q14_GetPortalCreatedFlag(D2QuestArgStrc * pQuestArgs) {
+    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pQuestArgs->pGame, QUESTINT_TheSevenTombs);
     if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
       return pQuestData->pQuestSpecificData.pA2Q6->bPortalCreated;
     }
 
-    return 1;
-}
-
-// A2Q7 (The Tainted Sun) timer callback that creates the two warp portals after the Horadric Staff is placed. If the pending-create flag (offset +0xd) is set: waits for the orifice object to reach Death/open anim and fires its open event; spawns the red town-portal object (class 100) in a nearby room and toggles HasPortal flags on both rooms. On success sets portal-created flag (+0xb=1) and clears the pending flag. No quest-record state change.
-uint8_t __fastcall Q14_TimerCreatePortal(::SGAMEDATA * pGame, D2QuestDataStrc * pQuestData) {
-    D2ObjectsTxt* pOrificeTxt;
-    int32_t nOrificeX;
-    int32_t nOrificeY;
-    D2RoomStrc* pNearbyRoom;
-    D2UnitStrc* pUnit;
-    int nSpawnY;
-    D2QuestDataA2Q6Strc* pQuestSpecific = pQuestData->pQuestSpecificData.pA2Q6;
-    int nObjectsReady = 0;
-    if (pQuestSpecific->field_0xD == 1) {
-      D2UnitStrc* pDVar1;
-      if (pQuestSpecific->bChamberObjectPresent) {
-        pDVar1 = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_OBJECT, pQuestSpecific->nChamberObjectGUID);
-        if (pDVar1) {
-          nObjectsReady = 1;
-          if (pDVar1->eAnimMode.ePlayerMode == Death) {
-            if (pQuestSpecific->nStateResumeFlag) {
-              D2Common::Units::SetupUpdateFlag(pDVar1, 2);
-            } else {
-              D2Common::Units::SetupUpdateFlag(pDVar1, 1);
-              pOrificeTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pDVar1->nClassId);
-              GAME::Event::SetEvent(pQuestData->pGame, pDVar1, 1, (pOrificeTxt->FrameCnt[1] >> 8) + pQuestData->pGame->dwGameFrame, 0, 0);
-            }
-          }
-        }
-      }
-      if (pQuestSpecific->field_0x4) {
-        pDVar1 = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_OBJECT, pQuestSpecific->field_0x20);
-        if (pDVar1) {
-          nOrificeX = D2Client::Units::GetXPosFromDynamicPathUnit(pDVar1);
-          nOrificeY = D2Client::Units::GetYPosFromDynamicPathUnit(pDVar1);
-          nSpawnY = nOrificeY + 3;
-          pNearbyRoom = D2Common::Units::UNITS_GetRoom(pDVar1);
-          pNearbyRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pNearbyRoom, nOrificeX - 0xd, nSpawnY);
-          if (pNearbyRoom) {
-            pUnit = UNIT::SUnit::CreateUnit(UNIT_OBJECT, 100, nOrificeX - 0xd, nOrificeY + 3, pGame, pNearbyRoom, 1, 1, nullptr);
-            if (pUnit) {
-              nObjectsReady++;
-              if (pQuestSpecific->nStateResumeFlag) {
-                D2Common::Units::SetupUpdateFlag(pUnit, 2);
-              } else {
-                D2Common::Units::SetupUpdateFlag(pUnit, 1);
-                D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(D2Common::Units::UNITS_GetRoom(pDVar1), 1);
-                D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pNearbyRoom, 1);
-              }
-            }
-          }
-        }
-      }
-      if (!nObjectsReady) {
-        return '\0';
-      }
-
-      pQuestSpecific->bPortalCreated = 1;
-      pQuestSpecific->field_0xD = 0;
-    }
-
-    pQuestSpecific->bPortalTimerArmed = 0;
     return '\x01';
-}
-
-// Q14 helper: scans the victim object's room for any UNIT_WARP and walks the operating player through it (SUnit::TakeStairs). Used by the tomb-stairs operate fn.
-void __fastcall TakeStairs(D2ObjectOperateFnArg * pOperateArg) {
-    D2UnitStrc* pObject;
-    D2RoomStrc* pDVar1 = D2Common::Units::UNITS_GetRoom(pOperateArg->sArg.pVictim);
-    for (pObject = pDVar1->pUnitList; pObject; pObject = pObject->pRoomNext) {
-      if (pObject->eUnitType == UNIT_WARP) {
-        UNIT::SUnit::TakeStairs(pOperateArg->sArg.pGame, pOperateArg->pAttacker, pObject);
-      }
-    }
-}
-
-// Q14 object OperateFn: stairs/warp into the Tal Rasha tombs. Allows traversal only if The Seven Tombs isn't introduced yet OR the Duriel-area portal has already been created (field_0x0B), and the warp object is in Walk (open) anim. Calls TakeStairs. No quest-state transition.
-uint32_t __fastcall Q14_OperateStairsToTombs(D2ObjectOperateFnArg * pOperateArg) {
-    D2QuestDataStrc* pDVar2 = GetQuestDataByQuestNoInternal(pOperateArg->sArg.pGame, QUESTINT_TheSevenTombs);
-    if (!(!pDVar2 || pDVar2->bIsNotIntroduction != '\x01' || pDVar2->pQuestSpecificData.pA2Q6->bPortalCreated)) {
-      return 0;
-    }
-
-    D2UnitStrc* pDVar1 = pOperateArg->sArg.pVictim;
-    if (!(pDVar1 && pDVar1->eAnimMode.ePlayerMode == Walk)) {
-      return 0;
-    }
-
-    A2Q7::TakeStairs(pOperateArg);
-    return 0;
-}
-
-// Q14 object InitFn (Objects_InitFn37): on spawn of a Q14 quest object, records its GUID into A2Q6 data (field_0x28) and marks it present (field_0x6=1). Sets the object's client visibility/update mode: hidden(2) if quest not introduced or already-portal-created flag set, else visible(0). No quest-record state change.
-void __fastcall Objects_InitFn37(D2ObjectInitFnArg * pInitArg) {
-    D2QuestDataA2Q6Strc* pA2Q6Data;
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_TheSevenTombs);
-    if (pQuestData) {
-      int nObjectGUID;
-      pA2Q6Data = pQuestData->pQuestSpecificData.pA2Q6;
-      pA2Q6Data->bChamberObjectPresent = 1;
-      if (!pInitArg->pObject) {
-        nObjectGUID = -1;
-      } else {
-        nObjectGUID = pInitArg->pObject->nUnitGUID;
-      }
-
-      pA2Q6Data->nChamberObjectGUID = nObjectGUID;
-      if (pQuestData->bIsNotIntroduction == '\0') {
-        D2Common::Units::SetupUpdateFlag(pInitArg->pObject, 2);
-        return;
-      }
-      if (pA2Q6Data->bPortalCreated != 1) {
-        if (pA2Q6Data->field_0xD == 1) {
-          D2Common::Units::SetupUpdateFlag(pInitArg->pObject, 2);
-          return;
-        }
-
-        D2Common::Units::SetupUpdateFlag(pInitArg->pObject, 0);
-        return;
-      }
-    }
-
-    D2Common::Units::SetupUpdateFlag(pInitArg->pObject, 2);
-}
-
-// Q14 object InitFn (Objects_InitFn38): records this object's GUID into A2Q6 data and sets bAllPlayersLeft. Update mode = hidden(2) if quest not introduced, else field_0x18. No quest-record state change.
-void __fastcall Objects_InitFn38(D2ObjectInitFnArg * pInitArg) {
-    int nObjectGUID;
-    D2QuestDataStrc* pDVar2 = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_TheSevenTombs);
-    if (!pDVar2) {
-      return;
-    }
-
-    D2QuestDataA2Q6Strc* pDVar1 = pDVar2->pQuestSpecificData.pA2Q6;
-    pDVar1->bTyraelObjectPresent = 1;
-    if (!pInitArg->pObject) {
-      nObjectGUID = -1;
-    } else {
-      nObjectGUID = pInitArg->pObject->nUnitGUID;
-    }
-
-    pDVar1->nTyraelObjectGUID = nObjectGUID;
-    if (pDVar2->bIsNotIntroduction == '\0') {
-      D2Common::Units::SetupUpdateFlag(pInitArg->pObject, 2);
-      return;
-    }
-
-    D2Common::Units::SetupUpdateFlag(pInitArg->pObject, pDVar1->nDurielState);
-}
-
-// Q14 predicate: true if The Seven Tombs is introduced AND the Duriel/town portal has NOT yet been created (!field_0x0B). Inverse of Q14_GetPortalCreatedFlag.
-BOOL __fastcall Q14_IsPortalNotCreated(::SGAMEDATA * pGame) {
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
-      return (uint32_t)!pQuestData->pQuestSpecificData.pA2Q6->bPortalCreated;
-    }
-
-    return 0;
-}
-
-// Q14 object InitFn (Objects_InitFn21): orifice/Tal Rasha chamber object init. Records GUID, marks present. If the staff has been used (state byte [3]) but portal not yet created ([0xb]==0), schedules the Q14_TimerCreatePortal timer to spawn the portals and marks timer-armed. Sets object hidden(2). No quest-record state change.
-void __fastcall Objects_InitFn21(uint32_t * pInitArg) {
-    int nStaffUsedFlag;
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal((::SGAMEDATA*)*pInitArg, QUESTINT_TheSevenTombs);
-    if (!pQuestData) {
-      return;
-    }
-
-    D2QuestDataA2Q6Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA2Q6;
-    pQuestSpecificData->field_0x4 = 1;
-    if (!pInitArg[1]) {
-      nStaffUsedFlag = -1;
-    } else {
-      nStaffUsedFlag = *(int*)(pInitArg[1] + 0xc);
-    }
-
-    pQuestSpecificData->field_0x20 = nStaffUsedFlag;
-    if (!pQuestSpecificData->nStateResumeFlag || pQuestSpecificData->bPortalTimerArmed) {
-      if (!pQuestSpecificData->bPortalCreated) {
-        return;
-      }
-    } else if (!pQuestSpecificData->bPortalCreated) {
-      AddQuestTimer(pQuestData, Q14_TimerCreatePortal, 1);
-      pQuestSpecificData->bPortalTimerArmed = 1;
-      D2Common::Units::SetupUpdateFlag((D2UnitStrc*)pInitArg[1], 2);
-      return;
-    }
-
-    D2Common::Units::SetupUpdateFlag((D2UnitStrc*)pInitArg[1], 2);
-}
-
-// Q14 per-party-member callback: completes The Horadric Staff quest record for one player if not already complete and the player is in Act II. Sets Completed+JustCompleted and (unless mid-trade) strips the 3 staff component quest items (hsu/vip/msf). Invoked for every party member when the staff is placed in the orifice.
-void __fastcall Q14_CompleteHoradricStaffOnPartyMember(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
-    BOOL bIsTrading = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Completed);
-    if (bIsTrading == 1) {
-      return;
-    }
-
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    if (!pRoom) {
-      return;
-    }
-
-    eD2LevelId eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-    eAct neAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
-    if (neAct != ACT_II) {
-      return;
-    }
-
-    /* SetQuestState(QUEST_TheHoradricStaff=0xa, Completed=0) -> mark staff quest
-                         done for self party member */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Completed);
-    /* SetQuestState(QUEST_TheHoradricStaff=0xa, JustCompleted=0xd) -> trigger
-                         completion FX/quest-log popup self game */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_JustCompleted);
-    bIsTrading = PLAYER::PlayerTrade::IsInteractingWithPlayer(pGame, pUnit, 1);
-    if (bIsTrading) {
-      return;
-    }
-
-    QUEST_RemoveQuestItemFromPlayer(pGame, pUnit, 0x20747368);
-    QUEST_RemoveQuestItemFromPlayer(pGame, pUnit, 0x20706976);
-    QUEST_RemoveQuestItemFromPlayer(pGame, pUnit, 0x2066736d);
-}
-
-// Q14 object OperateFn (OBJOP_A2Q7_OpenArcaneNpcTrade): player operates the Horadric orifice. If the object is closed (Death anim) and player not busy trading: if player holds the assembled Horadric Staff (item 'hsu '), set interact target + send packet 0x58 to open the staff-in-orifice UI; otherwise play the "can't do that" sound. Closes the interaction when the object returns to Neutral. No quest-record state change here (that happens in Q14_OnStaffUsedInOrifice).
-BOOL __fastcall OBJOP_A2Q7_OpenArcaneNpcTrade(D2ObjectOperateFnArg * pOperation) {
-    uint32_t nOrificeGUID;
-    eD2ObjectAnimMode eOrificeAnimMode;
-    D2GSPacketSrv0x58 sPacket;
-    D2QuestDataStrc* pSevenTombsData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_TheSevenTombs);
-    if (!pSevenTombsData) {
-      return 0;
-    }
-
-    D2UnitStrc* pVictim = UNIT::SUnit::GetInteractedNpc(pOperation->sArg.pGame, pOperation->pAttacker);
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pOperation->pAttacker, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x635);
-    D2UnitStrc* pInteractedNpc = pOperation->sArg.pVictim;
-    if (!pInteractedNpc) {
-      eOrificeAnimMode = eD2ObjectAnimMode_ns::Neutral;
-    } else {
-      eOrificeAnimMode = pInteractedNpc->eAnimMode.ePlayerMode;
-    }
-    if (eOrificeAnimMode != eD2ObjectAnimMode_ns::Neutral) {
-      if (!(eOrificeAnimMode == Operating && pVictim == pInteractedNpc)) {
-        return 0;
-      }
-
-      UNIT::SUnit::ClearInteractInfo(pOperation->pAttacker);
-      D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
-      return 0;
-    }
-
-    int32_t bPlayerTradeBusy;
-    bPlayerTradeBusy = PLAYER::Player::GetPlayerTradeTickOrBusy(pOperation->pAttacker);
-    if (bPlayerTradeBusy == 1) {
-      return 1;
-    }
-
-    pInteractedNpc = ITEMS::Items::Drop::HasQuestItem(pOperation->sArg.pGame, pOperation->pAttacker, 0x20747368);
-    if (!pInteractedNpc) {
-      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
-      return 1;
-    }
-
-    pInteractedNpc = pOperation->sArg.pVictim;
-    if (!pInteractedNpc) {
-      nOrificeGUID = -1;
-    } else {
-      nOrificeGUID = pInteractedNpc->nUnitGUID;
-    }
-
-    UNIT::SUnit::SetInteractInfo(pOperation->pAttacker, UNIT_OBJECT, nOrificeGUID);
-    D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
-    pInteractedNpc = pOperation->sArg.pVictim;
-    sPacket.nPacketId = 'X';
-    if (!pInteractedNpc) {
-      sPacket.nUnitGUID = -1;
-    } else {
-      sPacket.nUnitGUID = pInteractedNpc->nUnitGUID;
-    }
-
-    sPacket.nUIType = '\0';
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(pClient, &sPacket);
-    return 0;
-}
-
-// Q14 core event: the Horadric Staff has been placed in the orifice. Completes The Horadric Staff quest record (Completed+JustCompleted) for the acting player and every party member, strips the staff component items, broadcasts event 3 (cinematic/quest log), flags Jerhyn to spawn (bShouldSpawnJerhyn) + field_0x0E, arms Q14_TimerCreatePortal (delay derived from missile 0x152 Range), and toggles HasPortal flags on the chamber rooms. This is the Seven Tombs / Tal Rasha chamber opening trigger.
-void __fastcall Q14_OnStaffUsedInOrifice(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
-    D2MissilesTxt* pMissileTxt;
-    int nPosY;
-    int nPosX;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    /* SetQuestState(QUEST_TheHoradricStaff=0xa, Completed=0) -> staff placed in
-                         orifice: complete for acting player */ D2Common::QuestRecord::SetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_TheHoradricStaff, QUESTSTATE_Completed);
-    pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    /* SetQuestState(QUEST_TheHoradricStaff=0xa, JustCompleted=0xd) -> fire
-                         just-completed FX for acting player */ D2Common::QuestRecord::SetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_TheHoradricStaff, QUESTSTATE_JustCompleted);
-    QUEST_RemoveQuestItemFromPlayer(pGame, pUnit, 0x20747368);
-    QUEST_RemoveQuestItemFromPlayer(pGame, pUnit, 0x20706976);
-    QUEST_RemoveQuestItemFromPlayer(pGame, pUnit, 0x2066736d);
-    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId != 0xffff) {
-      UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q14_CompleteHoradricStaffOnPartyMember, 0);
-    }
-
-    NotifyPlayersAboutEvent(pGame, 3);
-    if (sgptDataTable->nTxtMissilesSize <= 0x152) {
-      pMissileTxt = 0;
-    } else {
-      pMissileTxt = sgptDataTable->pTxtMissiles + 0x152;
-    }
-
-    short int nMissileRange = pMissileTxt->Range;
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    D2QuestDataA2Q6Strc* pA2Q4Data = pQuestData->pQuestSpecificData.pA2Q6;
-    pA2Q4Data->field_0xD = 1;
-    pA2Q4Data->bStaffInserted = 1;
-    if (!pA2Q4Data->bPortalTimerArmed) {
-      AddQuestTimer(pQuestData, Q14_TimerCreatePortal, (nMissileRange - 0x4b) / 0x14);
-      pA2Q4Data->bPortalTimerArmed = 1;
-    }
-
-    D2Common::Units::SetupUpdateFlag(pUnit2, 1);
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit2);
-    if (!pRoom) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x686);
-      exit(-1);
-    }
-
-    eD2UnitType eUnitType = pUnit2->eUnitType;
-    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-      nPosY = pUnit2->pPath.pStaticPath->nPosY;
-    } else if (pUnit2->pPath.pDynamicPath) {
-      nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit2->pPath.pDynamicPath);
-    } else {
-      nPosY = 0;
-    }
-
-    eUnitType = pUnit2->eUnitType;
-    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-      nPosX = pUnit2->pPath.pStaticPath->nPosX;
-    } else if (pUnit2->pPath.pDynamicPath) {
-      nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit2->pPath.pDynamicPath);
-    } else {
-      nPosX = 0;
-    }
-
-    D2RoomStrc* pRoom_00 = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nPosX - 0xd, nPosY + 3);
-    D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom, 0);
-    if (!pRoom_00) {
-      return;
-    }
-
-    D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom_00, 0);
 }
 
 // IterateAllUnits callback for Q14_IsNpcStationary: if the player is within collision
@@ -605,7 +147,7 @@ bool __fastcall Q14_IsSevenTombsLessThanState4(::SGAMEDATA * pGame) {
 }
 
 // Q14: compute Tyrael's post-Duriel spawn coordinates. Only if the portal-spawn-in-progress flag is set: picks a spot in Lut Gholein (LEVEL_LutGholein) near object class 0xc, finds free WARP-collision coords, writes x/y into pPoint and the room into *pdwParam. Returns 1 on success, 0 otherwise.
-BOOL __fastcall Q14_GetTyraelSpawnCoords(::SGAMEDATA * pGame, POINT * pPoint, D2RoomStrc * * pdwParam) {
+BOOL __fastcall Q14_GetTyraelSpawnCoords(::SGAMEDATA * pGame, POINT * pPoint, D2RoomStrc * * ppSpawnRoom) {
     LONG nSpawnY;
     LONG nSpawnX;
     D2QuestDataStrc* pSevenTombsData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
@@ -623,7 +165,7 @@ BOOL __fastcall Q14_GetTyraelSpawnCoords(::SGAMEDATA * pGame, POINT * pPoint, D2
     if (pSpawnRoom) {
       pPoint->x = nSpawnX;
       pPoint->y = nSpawnY;
-      *pdwParam = pSpawnRoom;
+      *ppSpawnRoom = pSpawnRoom;
       return 1;
     }
 
@@ -631,8 +173,8 @@ BOOL __fastcall Q14_GetTyraelSpawnCoords(::SGAMEDATA * pGame, POINT * pPoint, D2
 }
 
 // Q14: set/clear the Izual(Tyrael) placement flag in A2Q6 data, only while the quest is introduced and field_0x0E unset. cParam==0 -> mark located (bIzualLocationSet=1) and set pIzualUnit sentinel (8 single-player / 9 multiplayer); cParam!=0 -> clear bIzualLocationSet. No quest-record state change.
-void __fastcall Q14_SetTyraelState(int nParam, char cParam) {
-    D2QuestDataStrc* pA4Q1Data = GetQuestDataByQuestNoInternal(*(::SGAMEDATA**)(nParam + 4), QUESTINT_TheSevenTombs);
+void __fastcall Q14_SetTyraelState(int pQuestData, char bClear) {
+    D2QuestDataStrc* pA4Q1Data = GetQuestDataByQuestNoInternal(*(::SGAMEDATA**)(pQuestData + 4), QUESTINT_TheSevenTombs);
     if (!(pA4Q1Data && pA4Q1Data->bIsNotIntroduction != '\0')) {
       return;
     }
@@ -641,7 +183,7 @@ void __fastcall Q14_SetTyraelState(int nParam, char cParam) {
     if (pSevenTombsData->bStaffInserted == 1) {
       return;
     }
-    if (cParam == '\0') {
+    if (bClear == '\0') {
       eD2HostGameType eGameType;
       eGameType = pA4Q1Data->pGame->nGameType;
       pSevenTombsData->bIzualLocationSet = 1;
@@ -751,41 +293,42 @@ void __fastcall Q15_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 }
 
 // Q15 (Act2Guard4Gossip) status filter: always returns false. The Jerhyn gossip pseudo-quest never shows in the quest-log status pass.
-bool __fastcall Q15_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown) {
+bool __fastcall Q15_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode) {
     return false;
 }
 
 // Q15 (Act2Guard4Gossip) active filter for Jerhyn (NPC 0x179): returns true (gossip is "active"/available) when the Jerhyn-spoke record is neither Completed nor JustCompleted, or when Radament's Lair just completed but Jerhyn not yet marked complete. Read-only on quest records. Decides whether Jerhyn currently has act-progress gossip to offer.
 bool __fastcall Q15_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
-    if (nTargetClassId != 0x179) {
-      return false;
-    }
-
-    ::SGAMEDATA* pGame = pQuestData->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    D2BitBufferStrc* pQuestRecord = pPlayerData->pQuestRecord[pGame->nDifficulty];
-    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_Act2Guard4Gossip, QUESTSTATE_Completed);
-    /* GetQuestState(QUEST_Act2Guard4Gossip=0x1e, JustCompleted=0xd) -> second half
+    BOOL bQuestState;
+    ::SGAMEDATA* pGame;
+    D2BitBufferStrc* pQuestRecord;
+    if (nTargetClassId == 0x179) {
+      D2UnitDataPlayerStrc* pPlayerData;
+      pGame = pQuestData->pGame;
+      pPlayerData = D2Common::Units::GetPlayerData(pUnit);
+      pQuestRecord = pPlayerData->pQuestRecord[pGame->nDifficulty];
+      /* GetQuestState(QUEST_Act2Guard4Gossip=0x1e, Completed=0) -> if neither
+                         Completed nor JustCompleted, Jerhyn gossip is active */ bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_Act2Guard4Gossip, QUESTSTATE_Completed);
+      /* GetQuestState(QUEST_Act2Guard4Gossip=0x1e, JustCompleted=0xd) -> second half
                          of the "not yet spoken" test */ if (!bQuestState) {
-      bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_Act2Guard4Gossip, QUESTSTATE_JustCompleted);
-      if (!bQuestState) {
-        return true;
+        bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_Act2Guard4Gossip, QUESTSTATE_JustCompleted);
+        if (!bQuestState) {
+          return true;
+        }
+      }
+
+      /* GetQuestState(QUEST_RadamentsLair=0x9, JustCompleted=0xd) -> Radament just
+                         done makes Jerhyn gossip active again */ bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_RadamentsLair, QUESTSTATE_JustCompleted);
+      /* GetQuestState(QUEST_Act2Guard4Gossip=0x1e, Completed=0) -> ...but only if
+                         Jerhyn not already marked Completed */ if (bQuestState == 1) {
+        bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_Act2Guard4Gossip, QUESTSTATE_Completed);
+        if (!bQuestState) {
+          return true;
+        }
       }
     }
 
-    /* GetQuestState(QUEST_RadamentsLair=0x9, JustCompleted=0xd) -> Radament just
-                         done makes Jerhyn gossip active again */ bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_RadamentsLair, QUESTSTATE_JustCompleted);
-    /* GetQuestState(QUEST_Act2Guard4Gossip=0x1e, Completed=0) -> ...but only if
-                         Jerhyn not already marked Completed */ if (bQuestState != 1) {
-      return false;
-    }
-
-    bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_Act2Guard4Gossip, QUESTSTATE_Completed);
-    if (bQuestState) {
-      return false;
-    }
-
-    return true;
+    return false;
 }
 
 // Q15 (Act2Guard4Gossip) quest-init: registers this slot as the Jerhyn gossip pseudo-quest. Zeroes the state-handler table, installs handler[0]=Callback_00 (dialog select), handler[8]=Callback_08 (stub), handler[0xb]=Callback_11 (message), sets pNpcMessages to the 0x179/0x3b gossip table, allocates A2Q7 quest-specific data, marks bIsActive, and crucially sets nQuestIdReal = QUEST_Act2Guard4Gossip with the status/active filters. This is the "extra" Act2 slot: NOT a public quest but the Jerhyn spoke-to gossip tracker.
@@ -795,7 +338,7 @@ void __fastcall Q15_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q15_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q15_Callback00_NpcActivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[8] = Q15_Callback08_MonsterKilled;
-    pQuestData->pNpcMessages = &A2Q7::aNpcGossipData;
+    pQuestData->pNpcMessages = A2Q7::aNpcGossipData;
     pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;

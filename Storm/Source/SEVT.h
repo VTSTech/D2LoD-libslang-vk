@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "Storm/Source/SSystem.h"
+#include "Storm/Source/SFile.h"
 
 // Forward declarations
 struct D2StormListHead;
@@ -24,6 +24,13 @@ struct D2SevtHandlerNodeStrc {
     /* 0x0C */ struct D2SevtHandlerNodeStrc * pNext; // next node in the hash bucket chain
 };
 
+struct D2SevtHandlerTableStrc {
+    /* 0x00 */ struct D2SevtHandlerNodeStrc * * pBuckets; // bucket heads, nBucketCount entries
+    /* 0x04 */ uint32_t nBucketCount; // power of two; bucket = key & (nBucketCount - 1)
+    /* 0x08 */ uint32_t nHandlerCount; // decremented by SEvtUnregisterHandler
+    /* 0x0C */ struct D2SevtHandlerTableStrc * pPrevState; // table saved by SEvtPushState, restored by SEvtPopState
+};
+
 struct __attribute__((packed)) StormBreakCmdStrc {
     /* 0x00 */ StormLinkStrc link;
     /* 0x08 */ void * pData;
@@ -36,7 +43,7 @@ namespace Storm::Source::SEVT {
 uint32_t __fastcall SEVT_NextPowerOf2(int nValue);
 // @sourcefile .\SOURCE\SEVT.CPP
 // @blizzard CopyIdHashTable (SEVT.CPP)
-void __stdcall SEVT_CopyIdHashTable(uint32_t * * pDstTable, int * pSrcTable);
+void __stdcall SEVT_CopyIdHashTable(struct D2SevtHandlerTableStrc * pDstTable, struct D2SevtHandlerTableStrc * pSrcTable);
 // Destroys all registered event handlers and cleans up the global event hash table. Iterates through all hash buckets, frees handler tables for each event, deallocates event structures, and resets global state. Thread-safe via critical section.
 // @oracle SEvtDestroy
 // @oracle-source Storm export name list, and the PEF traceback-named body .SEvtDestroy @10018210 in Mac PPC 1.10b Storm
@@ -119,6 +126,8 @@ uint32_t __thiscall LINKEDLIST_UnlinkFreeAndGetCount(void * pListHead, int * pNo
 // @rename-basis Behaviour. The only function in SEVT that invokes registered handler callbacks: SEVT_LookupEvent(arg1, arg2), then walks the event's handler table selecting nodes whose node[0] equals arg3 with a strictly decreasing node[1] priority, calling node[2] with arg4 as its single argument, and returning whether any handler ran. Nothing in the body is Windows-message specific - the old name's uMsg is the handler key that SEvtRegisterHandler stores at node[0], and the callback receives only arg4.
 // @former-name SEVT_DispatchWindowMessage (invented. Its caller WND_DispatchWindowMessage 00420b00 is the Windows-message layer; this is not.)
 BOOL __stdcall SEvtDispatch(uint32_t dwEventId, uint32_t dwSubId, uint32_t dwKey, void * pData);
+void StaticInit_gSevtBreakCmdList();
+void StaticInit_CriticalSection_0077930c();
 void StaticFini_CriticalSection_0077930c();
 // Runs at exit: removes every element from the SEvt break command list, then unlinks the list head itself.
 void StaticFini_gSevtBreakCmdList();

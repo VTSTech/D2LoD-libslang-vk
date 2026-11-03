@@ -2,7 +2,6 @@
 
 #include "Fog/Src/Safesock.h"
 #include "D2Net/Game/Server.h"
-#include "D2Net/in_addr.h"
 #include "D2Net/sockaddr.h"
 #include "Fog/D2QSSocketStrc.h"
 #include "Fog/Memory.h"
@@ -10,6 +9,7 @@
 #include "Fog/Src/LogManager.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
+#include "D2Net/in_addr.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -28,11 +28,13 @@
 static_assert(sizeof(void*) != 4 || sizeof(::D2NetDataStrc) == 0x78, "D2_NEW_AT(D2NetDataStrc): the 32-bit layout must be the 0x78 bytes 1.14d allocates");
 
 
+static char cp_0075d040[256] = {}; D2_STATIC_GUARD(cp_0075d040, "cp_0075d040");
+
 namespace Fog::Src::Safesock {
 
 int __fastcall closeSocket(SOCKET hSocket) {
-    int iVar1 = closesocket(hSocket);
-    return iVar1;
+    int nResult = closesocket(hSocket);
+    return nResult;
 }
 
 BOOL __stdcall StartUp() {
@@ -47,7 +49,7 @@ int __stdcall WSACleanup() {
 }
 
 // @sourcefile .\Src\Safesock.cpp
-D2NetDataStrc * __fastcall Create(char * szHostName, u_short nPort, LPTHREAD_START_ROUTINE pThreadProc, LPVOID pThreadParam, char * szConnectionAlias, uint32_t nParam) {
+D2NetDataStrc * __fastcall Create(char * szHostName, u_short nPort, LPTHREAD_START_ROUTINE pThreadProc, LPVOID pThreadParam, char * szConnectionAlias, uint32_t dwFlags) {
     uint32_t nLocalIpAddr;
     HANDLE hThread;
     char* pDstIp;
@@ -57,7 +59,6 @@ D2NetDataStrc * __fastcall Create(char * szHostName, u_short nPort, LPTHREAD_STA
     char nNoDelayOpt[4];
     WSADATA wsaData;
     uint8_t sockNameBuf[16];
-    sockaddr_in connectAddr;
     char cIpChar;
     LPVOID pThreadParamLocal = pThreadParam;
     LPTHREAD_START_ROUTINE pThreadProcLocal = pThreadProc;
@@ -105,17 +106,16 @@ D2NetDataStrc * __fastcall Create(char * szHostName, u_short nPort, LPTHREAD_STA
     nSendBufSize[2] = '\0';
     nSendBufSize[3] = '\0';
     /* char * optval for setsockopt */ /* int optname for setsockopt */ /* int level for setsockopt */ /* SOCKET s for setsockopt */ setsockopt(hSocket, 0xffff, 0x1005, nSendBufSize, 4);
-    uint32_t bNonBlocking = nParam & 1;
+    uint32_t bNonBlocking = dwFlags & 1;
     if (bNonBlocking) {
       /* u_long * argp for ioctlsocket */ /* long cmd for ioctlsocket */ /* SOCKET s for ioctlsocket */ nNonBlockArg = 1;
       ioctlsocket(hSocket, -0x7ffb9982, &nNonBlockArg);
     }
 
     pSafesockStrc->bInit = 1;
-    /* u_short netshort for ntohs */ connectAddr.sin_addr = 0;
-    memset(connectAddr.sin_zero, 0, 8 * sizeof(connectAddr.sin_zero[0]));
+    sockaddr_in connectAddr;
+    memset(&connectAddr, 0, sizeof(connectAddr));
     connectAddr.sin_family = 2;
-    connectAddr.sin_port = 0;
     u_short nPortBE = ntohs(nPort);
     connectAddr.sin_port = nPortBE;
     /* char * cp for inet_addr */ connectAddr.sin_addr = inet_addr(szHostNameOrSockLen);
@@ -195,13 +195,12 @@ int32_t __fastcall WSASocket2_Read(D2NetDataStrc * pNetData, char * pBuffer, siz
       /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&pNetData->pSync);
       /* int flags for recv */ /* int len for recv */ /* char * buf for recv */ /* SOCKET s for recv */ nBytesRead = recv(pNetData->hSocket, pBuffer, nSize, 0);
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pNetData->pSync);
-      if (nBytesRead > 0) {
-        return nBytesRead;
+      if (nBytesRead <= 0) {
+        nWSAError = WSAGetLastError();
+        pNetData->nWSALastError = nWSAError;
+        pNetData->nError = 4;
       }
 
-      nWSAError = WSAGetLastError();
-      pNetData->nWSALastError = nWSAError;
-      pNetData->nError = 4;
       return nBytesRead;
     }
 
@@ -244,13 +243,12 @@ int32_t __fastcall WSASocket2_Send(D2NetDataStrc * pNetData, char * pBytes, size
 int32_t __fastcall WSASocket2_SendOrCloseOnTimeout(D2NetDataStrc * pNetData, char * pBytes, size_t nSize) {
     int nBytesSent = send(pNetData->hSocket, pBytes, nSize, 0);
     int nWSAError = WSAGetLastError();
-    if (!(nBytesSent == -1 && nWSAError == 0x274c)) {
-      return nBytesSent;
+    if (nBytesSent == -1 && nWSAError == 0x274c) {
+      nBytesSent = 0;
+      LogManager::LOGFILE_WriteStringToFile("ERROR: Disconnecting socket due to WSAETIMEDOUT\n");
+      /* SOCKET s for closesocket */ closesocket(pNetData->hSocket);
     }
 
-    nBytesSent = 0;
-    LogManager::LOGFILE_WriteStringToFile("ERROR: Disconnecting socket due to WSAETIMEDOUT\n");
-    /* SOCKET s for closesocket */ closesocket(pNetData->hSocket);
     return nBytesSent;
 }
 
@@ -348,18 +346,18 @@ char * __stdcall NET_GetLocalIp() {
       }
     }
 
-    char* pcVar3 = inet_ntoa((in_addr)sLocalSockAddr.sin_addr);
-    sprintf(cp_0075d040, "%s", pcVar3);
+    char* szIpAddress = inet_ntoa((in_addr)sLocalSockAddr.sin_addr);
+    sprintf(cp_0075d040, "%s", szIpAddress);
     WSACleanup();
     return cp_0075d040;
 }
 
-char * __fastcall NET_MakeIPV4AddressHumanFriendly(in_addr sAddr) {
+char * __fastcall NET_MakeIPV4AddressHumanFriendly(uint32_t sAddr) {
     // Static local variables (originally global data)
     static char szIPV4Address[32] = {}; D2_STATIC_GUARD(szIPV4Address, "Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly::szIPV4Address");
 
     char cChar;
-    char* pSrc = inet_ntoa(sAddr);
+    char* pSrc = inet_ntoa((in_addr)sAddr);
     char* pDst = szIPV4Address;
     do {
       cChar = *pSrc;
@@ -378,22 +376,16 @@ int __fastcall GetSocketStatusAndWsaResultToArguments(D2NetDataStrc * pNetData, 
 }
 
 char * __fastcall inet_nameToIp(char * szText) {
-    // Frame slots -20..-4 are ONE object: &nOctet0 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nOctet0;
-      int nOctets;
-      int nOctet2;
-      int nOctet3;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     char* pDstIp;
+    int nOctet0;
+    int nOctets;
+    int nOctet2;
+    int nOctet3;
     char cChar;
     bool bDidStartUp;
     bDidStartUp = false;
     int nResult;
-    nResult = sscanf(szText, "%d.%d.%d.%d", &__frame0.nOctet0, &__frame0.nOctets, &__frame0.nOctet2, &__frame0.nOctet3);
+    nResult = sscanf(szText, "%d.%d.%d.%d", &nOctet0, &nOctets, &nOctet2, &nOctet3);
     if (nResult == 4) {
       return szText;
     }
@@ -412,11 +404,10 @@ char * __fastcall inet_nameToIp(char * szText) {
         pDstIp++;
       } while (cChar != '\0');
 
-      if (!bDidStartUp) {
-        return cp_0075d040;
+      if (bDidStartUp) {
+        WSACleanup();
       }
 
-      WSACleanup();
       return cp_0075d040;
     }
 
@@ -459,8 +450,8 @@ void __fastcall SAFESOCK_DisableNonBlocking(D2NetDataStrc * pNetData) {
     ioctlsocket(hSocket, -0x7ffb9982, &nIoctlArg);
 }
 
-D2NetDataStrc * __fastcall Create_Flag0(char * szText1, u_short nParam, LPTHREAD_START_ROUTINE pThreadProc, LPVOID pThreadParam, char * szText2) {
-    D2NetDataStrc* pNetData = Create(szText1, nParam, pThreadProc, pThreadParam, szText2, 0);
+D2NetDataStrc * __fastcall SAFESOCK_CreateBlocking(char * szText1, int nPort, LPTHREAD_START_ROUTINE pThreadProc, LPVOID pThreadParam, char * szText2) {
+    D2NetDataStrc* pNetData = Create(szText1, (u_short)nPort, pThreadProc, pThreadParam, szText2, 0);
     return pNetData;
 }
 

@@ -9,33 +9,34 @@
 namespace Fog::Source::SSComp {
 
 void __fastcall COMPRESS_HeapSiftDown(int32_t * pArray, int32_t nCount, int32_t nIndex) {
-    int nChildIndex;
+    int nChildBase;
     int nSiftValue = pArray[nIndex];
-    if (nIndex >= nCount / 2) {
+    if (!(nIndex >= nCount / 2)) {
+      while (true) {
+        int nChildIndex;
+        nChildBase = nIndex * 2;
+        nChildIndex = nChildBase + 1;
+        if (nChildIndex < nCount - 1 && pArray[nChildIndex] < pArray[nChildBase + 2]) {
+          nChildIndex = nChildBase + 2;
+        }
+        if (nSiftValue > pArray[nChildIndex]) {
+          break;
+        }
+
+        pArray[nIndex] = pArray[nChildIndex];
+        nIndex = nChildIndex;
+        if (nChildIndex >= nCount / 2) {
+          pArray[nChildIndex] = nSiftValue;
+          return;
+        }
+      }
+
       pArray[nIndex] = nSiftValue;
       return;
     }
 
-    while (true) {
-      int iVar1;
-      iVar1 = nIndex * 2;
-      nChildIndex = iVar1 + 1;
-      if (nChildIndex < nCount - 1 && pArray[nChildIndex] < pArray[iVar1 + 2]) {
-        nChildIndex = iVar1 + 2;
-      }
-      if (nSiftValue > pArray[nChildIndex]) {
-        break;
-      }
-
-      pArray[nIndex] = pArray[nChildIndex];
-      nIndex = nChildIndex;
-      if (nChildIndex >= nCount / 2) {
-        pArray[nChildIndex] = nSiftValue;
-        return;
-      }
-    }
-
     pArray[nIndex] = nSiftValue;
+    return;
 }
 
 void __fastcall COMPRESS_HeapSort(int32_t * pArray, int32_t nCount) {
@@ -79,29 +80,24 @@ void __fastcall COMPRESS_BuildHuffmanTree(int * pWeights, int32_t nCount) {
     *pWeights += pWeights[1];
     nReadIndex = 0;
     nTailIndex = nCount - 1;
-    nWriteIndex = 1;
     nScanIndex = 2;
-    if (1 < nTailIndex) {
-      do {
-        if (nScanIndex < nCount && pWeights[nReadIndex] >= pWeights[nScanIndex]) {
-          pWeights[nWriteIndex] = pWeights[nScanIndex];
-          nScanIndex++;
-        } else {
-          pWeights[nWriteIndex] = pWeights[nReadIndex];
-          pWeights[nReadIndex] = nWriteIndex;
-          nReadIndex++;
-        }
-        if (nScanIndex < nCount && (nReadIndex >= nWriteIndex || pWeights[nReadIndex] >= pWeights[nScanIndex])) {
-          pWeights[nWriteIndex] += pWeights[nScanIndex];
-          nScanIndex++;
-        } else {
-          pWeights[nWriteIndex] += pWeights[nReadIndex];
-          pWeights[nReadIndex] = nWriteIndex;
-          nReadIndex++;
-        }
-
-        nWriteIndex++;
-      } while (nWriteIndex < nTailIndex);
+    for (nWriteIndex = 1; nWriteIndex < nTailIndex; nWriteIndex++) {
+      if (nScanIndex < nCount && pWeights[nReadIndex] >= pWeights[nScanIndex]) {
+        pWeights[nWriteIndex] = pWeights[nScanIndex];
+        nScanIndex++;
+      } else {
+        pWeights[nWriteIndex] = pWeights[nReadIndex];
+        pWeights[nReadIndex] = nWriteIndex;
+        nReadIndex++;
+      }
+      if (nScanIndex < nCount && (nReadIndex >= nWriteIndex || pWeights[nReadIndex] >= pWeights[nScanIndex])) {
+        pWeights[nWriteIndex] += pWeights[nScanIndex];
+        nScanIndex++;
+      } else {
+        pWeights[nWriteIndex] += pWeights[nReadIndex];
+        pWeights[nReadIndex] = nWriteIndex;
+        nReadIndex++;
+      }
     }
 
     nScanIndex = nCount - 2;
@@ -203,7 +199,7 @@ void __fastcall COMPRESS_BuildHuffmanDecodeTable(uint8_t * pCodeLengths) {
           nIndexC = nIndex + 0x101;
           nIndex++;
           nTmp--;
-          gabHuffmanNextTable[asSortedSymbols[nIndexC]] = (uint8_t)((int)(gabHuffmanNextTable[asSortedSymbols[nIndexA]] + 1) >> (*pCurSortedLen - asSortedSymbols[nIndexB] & 0x1f));
+          gabHuffmanNextTable[asSortedSymbols[nIndexC]] = (uint8_t)((int)(gabHuffmanNextTable[asSortedSymbols[nIndexA]] + 1) >> D2_SHIFT_COUNT(*pCurSortedLen - asSortedSymbols[nIndexB]));
         } while (nTmp);
 
         pDecodeBuf = gaHuffmanDecodeBuffer;
@@ -213,8 +209,8 @@ void __fastcall COMPRESS_BuildHuffmanDecodeTable(uint8_t * pCodeLengths) {
           byCodeLen = asSortedSymbols[nLenIndex + 0xff];
           if (byCodeLen <= 8) {
             bySymbol = asSortedSymbols[nLenIndex + 0x1ff];
-            nIndex = 1 << (8 - byCodeLen & 0x1f);
-            pTableEntry = gaHuffmanFastDecodeTable + ((uint32_t)gabHuffmanNextTable[bySymbol] << (8 - byCodeLen & 0x1f));
+            nIndex = 1 << 8 - byCodeLen;
+            pTableEntry = gaHuffmanFastDecodeTable + ((uint32_t)gabHuffmanNextTable[bySymbol] << 8 - byCodeLen);
             *pTableEntry = (uint32_t)pDecodeBuf;
             *pDecodeBuf = 0;
             pDecodeBuf += 2;
@@ -231,8 +227,8 @@ void __fastcall COMPRESS_BuildHuffmanDecodeTable(uint8_t * pCodeLengths) {
             pSymbolBase = asSortedSymbols + nLenIndex + 0x1ff;
             bySymbol = gabHuffmanNextTable[*pSymbolBase];
             pSymbolPtr = (uint8_t*)(uint32_t)bySymbol;
-            byPrefixIndex = bySymbol >> (byCodeLen - 8 & 0x1f);
-            anOffsets[0x10] = 1 << (byCodeLen - 8 & 0x1f);
+            byPrefixIndex = bySymbol >> D2_SHIFT_COUNT(byCodeLen - 8);
+            anOffsets[0x10] = 1 << D2_SHIFT_COUNT(byCodeLen - 8);
             nCodeLen = (uint32_t)byCodeLen;
             if (!((uint32_t)bySymbol & anOffsets[0x10] - 1U)) {
               gaHuffmanFastDecodeTable[byPrefixIndex] = (uint32_t)pDecodeBuf;
@@ -242,7 +238,7 @@ void __fastcall COMPRESS_BuildHuffmanDecodeTable(uint8_t * pCodeLengths) {
               if (anOffsets[0x10] > 0) {
                 pSymbolPtr = pSymbolBase;
                 do {
-                  nTmp = 1 << (byCodeLen - asSortedSymbols[nIndex + nLenIndex + 0xff] & 0x1f);
+                  nTmp = 1 << D2_SHIFT_COUNT(byCodeLen - asSortedSymbols[nIndex + nLenIndex + 0xff]);
                   if (nTmp) {
                     bySymbol = *pSymbolPtr;
                     pDecodeBuf += nTmp;

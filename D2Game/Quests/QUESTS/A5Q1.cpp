@@ -126,19 +126,19 @@ void __fastcall Q31_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
       return;
     }
 
-    D2QuestDataA5Q1Strc* pvVar1 = pQuestData->pQuestSpecificData.pA5Q1;
-    if (pvVar1->bLarzukTalked == 1) {
+    D2QuestDataA5Q1Strc* pA5Q1Data = pQuestData->pQuestSpecificData.pA5Q1;
+    if (pA5Q1Data->bLarzukTalked == 1) {
       pQuestData->nQuestPacketFlags = '\0';
       QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q31_NpcGossipHandler, true);
-      pvVar1->bLarzukTalked = 0;
+      pA5Q1Data->bLarzukTalked = 0;
     }
-    if (pvVar1->bRewardAccepted != 1) {
+    if (pA5Q1Data->bRewardAccepted != 1) {
       return;
     }
 
     pQuestData->nQuestPacketFlags = '\0';
     QUEST_SetStateAndBroadcast(pQuestData, 4, nullptr, (::fpExecuteOnUnitFunction)Q31_NpcGossipHandler, true);
-    pvVar1->bRewardAccepted = 0;
+    pA5Q1Data->bRewardAccepted = 0;
 }
 
 // A5Q1: overlapping/mid-instruction entry of the state handler at 0x586d80 (Larzuk class 0x1ff): broadcasts state 1 if bLarzukTalked, state 4 if bRewardAccepted, then clears the flags. Same logic as Q31_Callback_02.
@@ -324,36 +324,30 @@ BOOL __fastcall Q31_CheckNearShenk(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void
     } else {
       uint32_t nAdjRoomIdx;
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &pAdjacentRooms, (int*)&nAdjRoomCount);
-      nAdjRoomIdx = 0;
-      if (nAdjRoomCount > 0) {
-        do {
-          if (pAdjacentRooms[nAdjRoomIdx] == pA5Q1Data->pShenkRoom) {
-            bIsNearShenkRoom = '\x01';
-            break;
-          }
-
-          nAdjRoomIdx++;
-        } while (nAdjRoomIdx < nAdjRoomCount);
+      for (nAdjRoomIdx = 0; nAdjRoomIdx < nAdjRoomCount; nAdjRoomIdx++) {
+        if (pAdjacentRooms[nAdjRoomIdx] == pA5Q1Data->pShenkRoom) {
+          bIsNearShenkRoom = '\x01';
+          break;
+        }
       }
     }
 
     pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
-    if (bIsNearShenkRoom == '\0') {
-      return 0;
+    if (bIsNearShenkRoom != '\0') {
+      /* SetQuestState RewardAwaits(1): player saw Shenk die near his room -> Larzuk
+                         reward unlocked */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_SiegeOnHaggorath, QUESTSTATE_RewardAwaits);
+      /* SetQuestState JustCompleted(0xd): triggers quest-complete jingle/journal self
+                         session */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_SiegeOnHaggorath, QUESTSTATE_JustCompleted);
     }
 
-    /* SetQuestState RewardAwaits(1): player saw Shenk die near his room -> Larzuk
-                         reward unlocked */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_SiegeOnHaggorath, QUESTSTATE_RewardAwaits);
-    /* SetQuestState JustCompleted(0xd): triggers quest-complete jingle/journal self
-                         session */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_SiegeOnHaggorath, QUESTSTATE_JustCompleted);
     return 0;
 }
 
 // A5Q1 party-member completion stamp: for each party member, if Siege not already Completed(0)/RewardAwaits(1)/JustCompleted(0xd) AND they are physically in Act 5, set RewardAwaits(1)+JustCompleted(0xd) so the whole party gets credit for Shenk's death.
-void __fastcall Q31_SetCompleteForPartyMember(int32_t pGameRaw, D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
+void __fastcall Q31_SetCompleteForPartyMember(::SGAMEDATA * pGameRaw, D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[*(uint8_t*)(pGameRaw + 0x6d)];
+    D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGameRaw->nDifficulty];
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SiegeOnHaggorath, QUESTSTATE_Completed);
     if (bQuestState == 1) {
       return;
@@ -392,16 +386,14 @@ void __fastcall Q31_SetCompleteForPartyMember(int32_t pGameRaw, D2UnitStrc * pUn
 BOOL __fastcall Q31_PropagateCompleteToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_SiegeOnHaggorath, QUESTSTATE_JustCompleted);
-    if (!bJustCompleted) {
-      return 0;
+    if (bJustCompleted) {
+      uint16_t nPartyId;
+      nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+      if (nPartyId != 0xffff) {
+        UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q31_SetCompleteForPartyMember, 0);
+      }
     }
 
-    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == 0xffff) {
-      return 0;
-    }
-
-    UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q31_SetCompleteForPartyMember, 0);
     return 0;
 }
 
@@ -410,22 +402,17 @@ BOOL __fastcall Q31_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SiegeOnHaggorath, QUESTSTATE_Completed);
-    if (bQuestState == 1) {
-      return 0;
+    if (bQuestState != 1) {
+      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SiegeOnHaggorath, QUESTSTATE_RewardAwaits);
+      if (bQuestState != 1) {
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SiegeOnHaggorath, QUESTSTATE_JustCompleted);
+        if (bQuestState != 1) {
+          D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_SiegeOnHaggorath, QUESTSTATE_CannotCompleteQuestInGame);
+          QUEST_SendQuestStatePacket(pUnit, 0x1f, 0);
+        }
+      }
     }
 
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SiegeOnHaggorath, QUESTSTATE_RewardAwaits);
-    if (bQuestState == 1) {
-      return 0;
-    }
-
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SiegeOnHaggorath, QUESTSTATE_JustCompleted);
-    if (bQuestState == 1) {
-      return 0;
-    }
-
-    D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_SiegeOnHaggorath, QUESTSTATE_CannotCompleteQuestInGame);
-    QUEST_SendQuestStatePacket(pUnit, 0x1f, 0);
     return 0;
 }
 
@@ -433,11 +420,10 @@ BOOL __fastcall Q31_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 BOOL __fastcall Q31_PlayCompletionSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_SiegeOnHaggorath, QUESTSTATE_JustCompleted);
-    if (!bQuestState) {
-      return 0;
+    if (bQuestState) {
+      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x50, pUnit);
     }
 
-    UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x50, pUnit);
     return 0;
 }
 
@@ -505,32 +491,27 @@ void __fastcall Q31_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 
 // A5Q1 active filter for Larzuk (class 0x1ff): returns true (quest is interactable) if RewardAwaits(1) and reward not yet given (Step0x05 unset), OR if intro shown, in-progress, and not Completed(0)/RewardAwaits(1). Read-only.
 bool __fastcall Q31_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
-    if (nTargetClassId != 0x1ff) {
-      return false;
-    }
-
-    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-    if (bQuestState) {
-      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Step0x05);
-      if (!bQuestState) {
-        return true;
+    if (nTargetClassId == 0x1ff) {
+      BOOL bQuestState;
+      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
+      if (bQuestState) {
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Step0x05);
+        if (!bQuestState) {
+          return true;
+        }
+      }
+      if (pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag == 1) {
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
+        if (!bQuestState) {
+          bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
+          if (!bQuestState) {
+            return true;
+          }
+        }
       }
     }
-    if (!(pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag == 1)) {
-      return false;
-    }
 
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
-    if (bQuestState) {
-      return false;
-    }
-
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-    if (bQuestState) {
-      return false;
-    }
-
-    return true;
+    return false;
 }
 
 // A5Q1 sequence filter: chains to the next quest's sequence filter (nSequenceQuestId). Only proceeds when this quest reached stateFlag 5 (reward given) or intro shown; validates the chained fn ptr before calling. No quest-state bit reads.
@@ -615,7 +596,7 @@ void __fastcall Q31_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q31_Callback02_NpcDeactivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q31_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q31_Callback13_PlayerStartedGame;
-    pQuestData->pNpcMessages = &A5Q1::aNpcGossipData;
+    pQuestData->pNpcMessages = A5Q1::aNpcGossipData;
     pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     D2QuestDataA5Q1Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA5Q1Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q1.cpp", 0x2d3);
@@ -667,7 +648,7 @@ void __fastcall Objects_InitFn70(D2ObjectInitFnArg * pInitArg) {
 }
 
 // A5Q1 object init fn 71: spawns Shenk the Overseer (monstats 0x1ff) once per quest at a valid location in the room, records his unit GUID + spawn-guard flags, and copies the preset DRLG map file for his AI. Guards via per-quest "already spawned" byte. No quest-record bit changes.
-void __fastcall Objects_InitFn71(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn71_LarzukStandard(D2ObjectInitFnArg * pInitArg) {
     D2MapAIStrc** pMonsterMapAi;
     POINT sSpawnPos;
     D2RoomStrc* pSpawnRoom;

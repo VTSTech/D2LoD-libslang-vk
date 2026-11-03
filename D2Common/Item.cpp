@@ -3,7 +3,6 @@
 #include "D2Common/Item.h"
 #include "D2Client/DataTbls.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -17,6 +16,7 @@
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
@@ -29,6 +29,8 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
+
+static int gaSetItemBonusStates[6] = { 0xa5, 0xa6, 0xa7, 0xa8, 0xa9, 0xaa }; D2_STATIC_GUARD(gaSetItemBonusStates, "gaSetItemBonusStates");
 
 namespace D2Common {
 
@@ -102,12 +104,12 @@ void __fastcall ITEM_UpdateSetItemStates(D2UnitStrc * pUnit, uint32_t nEquippedM
     0x6
 }; D2_STATIC_GUARD(gnItemQualityByBaseId, "D2Common::ITEM_UpdateSetItemStates::gnItemQualityByBaseId");
 
-    int16_t _nSetIndex;
+    int32_t _nSetIndex;
     int16_t nSetIndex;
     int nBonusIdx;
     eD2States* pStateEntry;
     eD2States eState;
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_ITEM) {
       return;
     }
 
@@ -134,13 +136,10 @@ void __fastcall ITEM_UpdateSetItemStates(D2UnitStrc * pUnit, uint32_t nEquippedM
         }
 
         nQuality--;
-        nBonusIdx = 0;
-        if (nQuality > 0) {
-          do {
-            Stats::StatsEx::STATLIST_ToggleStateDisabled(pUnit, gaSetItemBonusStates[nBonusIdx], 0);
-            nBonusIdx++;
-          } while (nBonusIdx < nQuality);
+        for (nBonusIdx = 0; nBonusIdx < nQuality; nBonusIdx++) {
+          Stats::StatsEx::STATLIST_ToggleStateDisabled(pUnit, gaSetItemBonusStates[nBonusIdx], 0);
         }
+
         if (nQuality < 5) {
           pStateEntry = (eD2States*)(gaSetItemBonusStates + nQuality);
           do {
@@ -162,7 +161,7 @@ void __fastcall ITEM_UpdateSetItemStates(D2UnitStrc * pUnit, uint32_t nEquippedM
             nBonusIdx += -4;
           }
 
-          bDisabled = !(nEquippedMask & 1 << ((uint8_t)nQuality & 0x1f));
+          bDisabled = !(nEquippedMask & 1 << D2_SHIFT_COUNT(nQuality));
           if (!bDisabled) {
             eState = *(eD2States*)((int)gaSetItemBonusStates + nBonusIdx);
           } else {
@@ -182,7 +181,7 @@ void __fastcall ITEM_ManageSetBonusStatList(D2UnitStrc * pUnit, D2UnitStrc * pUn
     D2StatListExStrc* pStatList;
     int nExistingSetId;
     eD2States eState;
-    if (!(nMode <= 1 && pUnit && pUnit2 && pUnit2->eUnitType == UNIT_ITEM)) {
+    if (!(nMode <= 1 && pUnit && (pUnit2 ? pUnit2->eUnitType : UNIT_COUNT) == UNIT_ITEM)) {
       return;
     }
 

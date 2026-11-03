@@ -100,11 +100,11 @@ void __fastcall Objects_InitFn31(struct D2ObjectInitFnArg * pInitArg);
 // Objects_InitFn33. Empty object init fn (no-op stub) for an A2Q2 quest object.
 void __fastcall Objects_InitFn33(struct D2ObjectInitFnArg * pInitArg);
 // Objects_InitFn32. Empty object init fn (no-op stub) for an A2Q2 quest object.
-void __fastcall Objects_InitFn32(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn32_HoradricScrollChest(struct D2ObjectInitFnArg * pInitArg);
 // Q10_GetQuestInfo. Quest-info query callback. Reads A2Q2 quest-specific data but
 // effectively always returns *pdwParam=0 and *pbInfoPresent=true. Read-only;
 // no QuestRecord access.
-void __fastcall Q10_GetQuestInfo(::SGAMEDATA * pGame, uint32_t * pdwParam, bool * pbInfoPresent);
+void __fastcall Q10_GetQuestInfo(::SGAMEDATA * pGame, uint32_t * pdwBoxCount, bool * pbInfoPresent);
 // Q10_OnStaffAssembledViaCube. Invoked from the Horadric Cube cubing-result code
 // when Staff of Kings + Amulet of the Viper combine into the Horadric Staff ('msf ').
 // Marks A2Q2 data bStaffAssembled, decrements viper/msf counts and increments staff
@@ -120,7 +120,7 @@ void __fastcall Q10_OnStaffAssembledViaCube(::SGAMEDATA * pGame, struct D2UnitSt
 //  - Else (in progress) it inspects held items (rt1/msf/box/vip/tsh) and the
 //    Step0x03/04/05/06/10 bits to pick status 1,2,3,4,6,9. Status 9 = "ready to
 //    build staff" (has cube+amulet pieces, counts satisfied / TaintedSun flag).
-bool __fastcall Q10_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown);
+bool __fastcall Q10_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode);
 // A2Q2 (Horadric Staff) inventory-recount handler, handler index 0xd. Increments per-piece counters in D2QuestDataA2Q2Strc for each staff component (msf/box/vip/tsh) the player currently holds. If quest not Completed, Seven Tombs introduced, Izual not set, and player lacks the Staff of Kings, clears step bits Step0x04/0x05/0x06 so the relevant dialog re-offers.
 void __fastcall Q10_Callback13_PlayerStartedGame(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // Q10_Callback_14. Item-gained handler (handler[0xe]). Increments the A2Q2 per-piece

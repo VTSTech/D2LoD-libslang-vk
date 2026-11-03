@@ -4,16 +4,17 @@
 #include "support/d2_boot.h" // [d2boot]
 #include "D2CMP/SRC/LRUCache.h"
 #include "D2CMP/SRC/SpriteCache.h"
+#include "D2CMP/SRC/SubTile.h"
 #include "D2CMP/tagPALETTEENTRY.h"
 #include "D2Client/D2ControlStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
-#include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/D2GfxSettingsStrc.h"
 #include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Draw.h"
 #include "D2Client/GAME/PalShift.h"
 #include "D2Client/Renderer/Renderer.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
+#include "D2Hell/D2Hell.h"
 #include "D2Multi/OOGUtilities.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
@@ -24,8 +25,8 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
 #include "Storm/Source/SReg.h"
-#include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
+#include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/UI/Panel.h"
 #include "D2Win/Src/D2WinFont.h"
 
@@ -38,8 +39,6 @@ typedef void (__stdcall *fnBinkFrameCallback)();
 #endif
 
 namespace D2gfx::D2GFX {
-
-static D2GfxSettingsStrc dwD2GFX_Gamma = {}; D2_STATIC_GUARD(dwD2GFX_Gamma, "D2gfx::D2GFX::dwD2GFX_Gamma");
 
 // JMP thunk
 BOOL __stdcall D2GFX_GetPerspectiveCapable_ForPerspectiveItem() {
@@ -201,7 +200,7 @@ BOOL __stdcall D2GFX_Initialize(HINSTANCE hInstance, WNDPROC pfWndProc, eD2Rende
     wndClass.cbWndExtra = 0;
     wndClass.hInstance = hInstance;
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
-    /* UINT fuLoad for LoadImageA */ /* int cy for LoadImageA */ /* int cx for LoadImageA */ /* UINT type for LoadImageA */ /* LPCSTR name for LoadImageA */ /* HINSTANCE hInst for LoadImageA */ wndClass.hIcon = (HICON)LoadImageA(hInstance, (LPCSTR)((bIsExpansion != 0) + 0x66), 1, 0, 0, 0);
+    /* UINT fuLoad for LoadImageA */ /* int cy for LoadImageA */ /* int cx for LoadImageA */ /* UINT type for LoadImageA */ /* LPCSTR name for LoadImageA */ /* HINSTANCE hInst for LoadImageA */ wndClass.hIcon = (HICON)LoadImageA(hInstance, (LPCSTR)(bIsExpansion != 0 ? 0x67 : 0x66), 1, 0, 0, 0);
     /* LPCSTR lpCursorName for LoadCursorA */ /* HINSTANCE hInstance for LoadCursorA */ wndClass.hCursor = LoadCursorA((HINSTANCE)0x0, (LPCSTR)0x7f00);
     /* int i for GetStockObject */ wndClass.hbrBackground = (HBRUSH)GetStockObject(5);
     /* WNDCLASSA * lpWndClass for RegisterClassA */ wndClass.lpszMenuName = (LPCSTR)0x0;
@@ -211,7 +210,7 @@ BOOL __stdcall D2GFX_Initialize(HINSTANCE hInstance, WNDPROC pfWndProc, eD2Rende
     if (!nAtom) {
       DWORD dwLastError;
       dwLastError = GetLastError();
-      FAULT_ShowFormattedErrorWithArgs(dwLastError);
+      D2Hell::FAULT_ShowFormattedErrorWithArgs(dwLastError);
       return 0;
     }
 
@@ -269,9 +268,9 @@ void __stdcall RENDERER_ToggleBlendedShadows() {
 }
 
 BOOL __stdcall D2GFX_ToggleLowQuality() {
-    bool bNewLowQuality = !D2GFXRenderedData.bLowQuality;
-    D2GFXRenderedData.bLowQuality = (uint32_t)bNewLowQuality;
-    return (uint32_t)bNewLowQuality;
+    BOOL bNewLowQuality = (BOOL)!D2GFXRenderedData.bLowQuality;
+    D2GFXRenderedData.bLowQuality = bNewLowQuality;
+    return bNewLowQuality;
 }
 
 void __stdcall HideOSCursor() {
@@ -427,7 +426,7 @@ HWND __stdcall D2GFX_CreateWindow(BOOL bWindowed, int32_t nResolution) {
       /* LPVOID lpParam for CreateWindowExA */ /* HINSTANCE hInstance for CreateWindowExA */ /* HMENU hMenu for CreateWindowExA */ /* HWND hWndParent for CreateWindowExA */ /* int nHeight for CreateWindowExA */ /* int nWidth for CreateWindowExA */ /* int Y for CreateWindowExA */ /* int X for CreateWindowExA */ /* DWORD dwStyle for CreateWindowExA */ /* LPCSTR lpWindowName for CreateWindowExA */ /* LPCSTR lpClassName for CreateWindowExA */ /* DWORD dwExStyle for CreateWindowExA */ /* Create full screen window */ hwndD2GFX_Window = CreateWindowExA(0x40008, szWindowClassName, gpszWindowTitle, nResolution, bWindowed, nWindowX, nSystemResolutionX, nSystemResolutionXY, (HWND)0x0, (HMENU)0x0, hInstance, (LPVOID)0x0);
       if (!hwndD2GFX_Window) {
         nErrorCode = GetLastError();
-        FAULT_ShowFormattedErrorWithArgs(nErrorCode);
+        D2Hell::FAULT_ShowFormattedErrorWithArgs(nErrorCode);
         return (HWND)0x0;
       }
 
@@ -582,62 +581,59 @@ BOOL __stdcall D2GFX_UpdateWindowSize(int32_t nResolutionMode) {
     tagRECT rcCurrentClient;
     HWND hWndLocal;
     HWND hWnd = hwndD2GFX_Window;
-    if (RENDERER_CurrentRenderedFunctions) {
-      int cy;
-      nResolutionMode = nResolutionMode;
-      if (bD2GFX_Windowed != 1) {
-        return 1;
-      }
+    if (!RENDERER_CurrentRenderedFunctions) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x232);
+      exit(-1);
+    }
 
+    int cy;
+    nResolutionMode = nResolutionMode;
+    if (bD2GFX_Windowed == 1) {
       /* LPRECT lpRect for GetClientRect */ /* HWND hWnd for GetClientRect */ hWndLocal = hwndD2GFX_Window;
       rcCurrentClient.left = 0;
       rcCurrentClient.top = 0;
       rcCurrentClient.right = 0;
       rcCurrentClient.bottom = 0;
       GetClientRect(hwndD2GFX_Window, &rcCurrentClient);
-      if (!(rcCurrentClient.right - rcCurrentClient.left < 0x321 && rcCurrentClient.bottom - rcCurrentClient.top < 0x259)) {
-        return 1;
-      }
+      if (rcCurrentClient.right - rcCurrentClient.left <= 0x320 && rcCurrentClient.bottom - rcCurrentClient.top <= 0x258) {
+        /* UINT fWinIni for SystemParametersInfoA */ /* PVOID pvParam for SystemParametersInfoA */ /* UINT uiParam for SystemParametersInfoA */ /* UINT uiAction for SystemParametersInfoA */ __frame0.nWorkAreaLeft = 0;
+        __frame0.nWorkAreaTop = 0;
+        __frame0.nWorkAreaRight = 0;
+        __frame0.nWorkAreaBottom = 0;
+        SystemParametersInfoA(0x30, 0, &__frame0.nWorkAreaLeft, 0);
+        nWorkAreaHeight = __frame0.nWorkAreaBottom - __frame0.nWorkAreaTop;
+        nWindowX = __frame0.nWorkAreaRight - __frame0.nWorkAreaLeft;
+        /* LPRECT lpRect for GetWindowRect */ /* HWND hWnd for GetWindowRect */ rcWindowPos.left = 0;
+        rcWindowPos.top = 0;
+        rcWindowPos.right = 0;
+        rcWindowPos.bottom = 0;
+        GetWindowRect(hWnd, &rcWindowPos);
+        __frame0.rcNewWindow.top = 0;
+        __frame0.rcNewWindow.right = 0;
+        __frame0.rcNewWindow.bottom = 0;
+        __frame0.rcNewWindow.left = 0;
+        D2GFX_GetWindowSizeByResolutionMode(nResolutionMode, (int*)&__frame0.rcNewWindow.right, (int*)&__frame0.rcNewWindow.bottom);
+        /* DWORD dwExStyle for AdjustWindowRectEx */ /* BOOL bMenu for AdjustWindowRectEx */ /* DWORD dwStyle for AdjustWindowRectEx */ /* LPRECT lpRect for AdjustWindowRectEx */ nWindowSizeY = __frame0.rcNewWindow.bottom;
+        AdjustWindowRectEx(&__frame0.rcNewWindow, 0xcb0000, 0, 0x40000);
+        cy = __frame0.rcNewWindow.bottom - __frame0.rcNewWindow.top;
+        nWindowSizeY = cy - nWindowSizeY;
+        nWindowX = (nWindowX - (__frame0.rcNewWindow.right - __frame0.rcNewWindow.left)) / 2 + __frame0.nWorkAreaLeft;
+        if (nWindowX < 0) {
+          nWindowX = 0;
+        }
 
-      /* UINT fWinIni for SystemParametersInfoA */ /* PVOID pvParam for SystemParametersInfoA */ /* UINT uiParam for SystemParametersInfoA */ /* UINT uiAction for SystemParametersInfoA */ __frame0.nWorkAreaLeft = 0;
-      __frame0.nWorkAreaTop = 0;
-      __frame0.nWorkAreaRight = 0;
-      __frame0.nWorkAreaBottom = 0;
-      SystemParametersInfoA(0x30, 0, &__frame0.nWorkAreaLeft, 0);
-      nWorkAreaHeight = __frame0.nWorkAreaBottom - __frame0.nWorkAreaTop;
-      nWindowX = __frame0.nWorkAreaRight - __frame0.nWorkAreaLeft;
-      /* LPRECT lpRect for GetWindowRect */ /* HWND hWnd for GetWindowRect */ rcWindowPos.left = 0;
-      rcWindowPos.top = 0;
-      rcWindowPos.right = 0;
-      rcWindowPos.bottom = 0;
-      GetWindowRect(hWnd, &rcWindowPos);
-      __frame0.rcNewWindow.top = 0;
-      __frame0.rcNewWindow.right = 0;
-      __frame0.rcNewWindow.bottom = 0;
-      __frame0.rcNewWindow.left = 0;
-      D2GFX_GetWindowSizeByResolutionMode(nResolutionMode, (int*)&__frame0.rcNewWindow.right, (int*)&__frame0.rcNewWindow.bottom);
-      /* DWORD dwExStyle for AdjustWindowRectEx */ /* BOOL bMenu for AdjustWindowRectEx */ /* DWORD dwStyle for AdjustWindowRectEx */ /* LPRECT lpRect for AdjustWindowRectEx */ nWindowSizeY = __frame0.rcNewWindow.bottom;
-      AdjustWindowRectEx(&__frame0.rcNewWindow, 0xcb0000, 0, 0x40000);
-      cy = __frame0.rcNewWindow.bottom - __frame0.rcNewWindow.top;
-      nWindowSizeY = cy - nWindowSizeY;
-      nWindowX = (nWindowX - (__frame0.rcNewWindow.right - __frame0.rcNewWindow.left)) / 2 + __frame0.nWorkAreaLeft;
-      if (nWindowX < 0) {
-        nWindowX = 0;
-      }
+        nWorkAreaHeight = (nWorkAreaHeight - cy) / 2 + __frame0.nWorkAreaTop;
+        if (nWorkAreaHeight < 0) {
+          nWorkAreaHeight = 0;
+        }
 
-      nWorkAreaHeight = (nWorkAreaHeight - cy) / 2 + __frame0.nWorkAreaTop;
-      if (nWorkAreaHeight < 0) {
-        nWorkAreaHeight = 0;
+        /* UINT uFlags for SetWindowPos */ /* int cy for SetWindowPos */ /* int cx for SetWindowPos */ /* int Y for SetWindowPos */ /* int X for SetWindowPos */ /* HWND hWndInsertAfter for SetWindowPos */ /* HWND hWnd for SetWindowPos */ SetWindowPos(hwndD2GFX_Window, HWND_NOTOPMOST, nWindowX, nWorkAreaHeight, __frame0.rcNewWindow.right - __frame0.rcNewWindow.left, cy, 0x14);
+        D2GFX_GetWindowSizeByResolutionMode(nResolutionMode, (int*)&rInitialWindowRect.right, (int*)&rInitialWindowRect.bottom);
+        /* LPRECT lpRect for GetWindowRect */ /* HWND hWnd for GetWindowRect */ GetWindowRect(hWndLocal, &rInitialWindowRect);
       }
-
-      /* UINT uFlags for SetWindowPos */ /* int cy for SetWindowPos */ /* int cx for SetWindowPos */ /* int Y for SetWindowPos */ /* int X for SetWindowPos */ /* HWND hWndInsertAfter for SetWindowPos */ /* HWND hWnd for SetWindowPos */ SetWindowPos(hwndD2GFX_Window, HWND_NOTOPMOST, nWindowX, nWorkAreaHeight, __frame0.rcNewWindow.right - __frame0.rcNewWindow.left, cy, 0x14);
-      D2GFX_GetWindowSizeByResolutionMode(nResolutionMode, (int*)&rInitialWindowRect.right, (int*)&rInitialWindowRect.bottom);
-      /* LPRECT lpRect for GetWindowRect */ /* HWND hWnd for GetWindowRect */ GetWindowRect(hWndLocal, &rInitialWindowRect);
-      return 1;
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x232);
-    exit(-1);
+    return 1;
 }
 
 void __stdcall D2GFX_ClearCaches() {
@@ -662,6 +658,7 @@ void __stdcall D2GFX_PlayCutScene(char * szFile, int32_t nResolution, void * pfF
 
     RENDERER_CurrentRenderedFunctions->nfpPlayCutScene(szFile, nResolution, (fnBinkFrameCallback)pfFrame);
 }
+
 
 BOOL __stdcall D2GFX_CheckCutScene() {
     if (!RENDERER_CurrentRenderedFunctions) {
@@ -702,17 +699,11 @@ void __stdcall D2GFX_CloseSmacker(D2SmackerContextStrc * pContext) {
 
 void __stdcall DRAW_HideTaskbarAppBars() {
     HWND hWnd;
-    _AppBarData appBarData;
     if (bD2GFX_Windowed == 1) {
       return;
     }
 
-    appBarData.uCallbackMessage = 0;
-    appBarData.rc.left = 0;
-    appBarData.rc.top = 0;
-    appBarData.rc.right = 0;
-    appBarData.rc.bottom = 0;
-    appBarData.lParam = 0;
+    _AppBarData appBarData = {0};
     appBarData.cbSize = 0x24;
     appBarData.hWnd = hwndD2GFX_Window;
     UINT nEdge = 0;
@@ -815,7 +806,7 @@ BOOL __stdcall D2GFX_BeginScene(BOOL bClear, DWORD nRed, DWORD nGreen, DWORD nBl
     return bResult;
 }
 
-double __stdcall D2GFX_GetGammaFloat_Unused() {
+double __stdcall D2GFX_GetPerformanceFrequency() {
     LARGE_INTEGER liFrequency;
     /* LARGE_INTEGER * lpFrequency for QueryPerformanceFrequency */ QueryPerformanceFrequency(&liFrequency);
     return (double)liFrequency.QuadPart;
@@ -827,9 +818,9 @@ double D2GFX_CalculateGammaRamp() {
 static LARGE_INTEGER gliPerfCounterStart = {}; D2_STATIC_GUARD(gliPerfCounterStart, "D2gfx::D2GFX::D2GFX_CalculateGammaRamp::gliPerfCounterStart");
     static unsigned int gbGammaRampInitialized; D2_STATIC_GUARD_BSS(gbGammaRampInitialized, "D2gfx::D2GFX::D2GFX_CalculateGammaRamp::gbGammaRampInitialized");
 
-    int64_t lVar1;
     LARGE_INTEGER liFrequency;
     LARGE_INTEGER liElapsed;
+    int64_t nElapsedTicks;
     if (!(gbGammaRampInitialized & 1)) {
       gbGammaRampInitialized |= 1;
       /* LARGE_INTEGER * lpPerformanceCount for QueryPerformanceCounter */ QueryPerformanceCounter(&gliPerfCounterStart);
@@ -839,9 +830,9 @@ static LARGE_INTEGER gliPerfCounterStart = {}; D2_STATIC_GUARD(gliPerfCounterSta
     bool bBorrow = liElapsed.u.LowPart < gliPerfCounterStart.u.LowPart;
     liElapsed.u.LowPart -= *(uint32_t*)(char*)&gliPerfCounterStart;
     liElapsed.u.HighPart = liElapsed.u.HighPart - *(uint32_t*)((char*)&gliPerfCounterStart + 4) - (uint32_t)bBorrow;
-    lVar1 = (uint64_t)liElapsed.QuadPart;
+    nElapsedTicks = (uint64_t)liElapsed.QuadPart;
     /* LARGE_INTEGER * lpFrequency for QueryPerformanceFrequency */ QueryPerformanceFrequency(&liFrequency);
-    return (double)lVar1 / ((double)liFrequency.QuadPart / 1000.0);
+    return (double)nElapsedTicks / ((double)liFrequency.QuadPart / 1000.0);
 }
 
 // End render frame. Dispatches EndScene1/2 to backend, then Sleep() for frame pacing.
@@ -957,7 +948,7 @@ void __stdcall D2GFX_SetPaletteTable(BYTE * * ppPaletteTable) {
 }
 
 void __stdcall D2GFX_SetGlobalLight(int nRed, int nGreen, int nBlue) {
-    RENDERER_CurrentRenderedFunctions->nfpSetGlobalLight((uint8_t)nRed, (uint8_t)nGreen, (uint8_t)nBlue);
+    RENDERER_CurrentRenderedFunctions->nfpSetGlobalLight(nRed, nGreen, nBlue);
 }
 
 void __stdcall D2GFX_DrawPerspectiveImage(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, DWORD dwGamma, int32_t nDrawMode, int32_t nScreenMode, BYTE * pPalette) {
@@ -981,8 +972,8 @@ void __stdcall D2GFX_DrawVerticalCropImage(D2GfxDataStrc * pDC6Context, int32_t 
     RENDERER_CurrentRenderedFunctions->nfpDrawVerticalCropImage(pDC6Context, nPositionX, nPositionY, nPercentHideFromBottom, nPercentShowFromBottom, nDrawMode);
 }
 
-void __stdcall D2GFX_DrawSprite6(D2GfxDataStrc * pDC6Context, int32_t nParam1, int32_t nParam2, D2GfxTileRectStrc * pClipRect, int32_t nParam3) {
-    RENDERER_CurrentRenderedFunctions->nfpDrawClippedImage(pDC6Context, nParam1, nParam2, pClipRect, nParam3);
+void __stdcall D2GFX_DrawSprite6(D2GfxDataStrc * pDC6Context, int32_t nPosX, int32_t nPosY, D2GfxTileRectStrc * pClipRect, int32_t nDrawMode) {
+    RENDERER_CurrentRenderedFunctions->nfpDrawClippedImage(pDC6Context, nPosX, nPosY, pClipRect, nDrawMode);
 }
 
 void __stdcall D2GFX_DrawShadow(D2GfxDataStrc * pDC6Context, int32_t nPositionX, int32_t nPositionY) {
@@ -1048,12 +1039,11 @@ uint32_t __stdcall D2GFX_IsInPerspectiveBounds(int32_t nXpos, int32_t nYpos) {
       }
 
       nDelta = nYpos - nD2GFX_PerspectiveScaleY;
-      if (nDelta >= 0) {
-        return (uint32_t)(nDelta < 0x320001);
+      if (nDelta < 0) {
+        nDelta = -nDelta;
       }
 
-      nDelta = -nDelta;
-      return (uint32_t)(nDelta < 0x320001);
+      return (uint32_t)(nDelta <= 0x320000);
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x74);
       exit(-1);
@@ -1190,55 +1180,55 @@ void __fastcall D2GFX_DrawTileSimple(uint8_t * pbSrcBase, uint8_t * pbDstBase, u
 }
 
 void __fastcall D2GFX_DrawTileAdvanced(uint8_t * pbSrcBase, uint8_t * pbDstBase, int32_t nLightAccumX, int32_t nLightStepX, int32_t nLightAccumY, int32_t nLightStepY) {
-    uint8_t* pbSrcPixel;
+    int nDstRowOffset;
     uint8_t* pbLightBufPixel;
     int iRowOffset = 0;
     do {
-      int iVar1;
-      iVar1 = gaGroundTileRowOffsets[iRowOffset];
-      pbLightBufPixel = gpLineBufferTileArray[nLightAccumX >> 7][nLightAccumY >> 7] + iVar1;
+      uint8_t* pbSrcPixel;
+      nDstRowOffset = gaGroundTileRowOffsets[iRowOffset];
+      pbLightBufPixel = gpLineBufferTileArray[nLightAccumX >> 7][nLightAccumY >> 7] + nDstRowOffset;
       pbSrcPixel = pbSrcBase + gaGroundTileSrcPointers[iRowOffset];
       switch ((uint32_t)gaGroundTileRowWidths[iRowOffset]) {
         case 0x20:
-          pbDstBase[iVar1 + 0x1f] = gaPaletteColorLUT[pbLightBufPixel[0x1f]][pbSrcPixel[0x1f]];
-        pbDstBase[iVar1 + 0x1e] = gaPaletteColorLUT[pbLightBufPixel[0x1e]][pbSrcPixel[0x1e]];
-        pbDstBase[iVar1 + 0x1d] = gaPaletteColorLUT[pbLightBufPixel[0x1d]][pbSrcPixel[0x1d]];
-        pbDstBase[iVar1 + 0x1c] = gaPaletteColorLUT[pbLightBufPixel[0x1c]][pbSrcPixel[0x1c]];
+          pbDstBase[nDstRowOffset + 0x1f] = gaPaletteColorLUT[pbLightBufPixel[0x1f]][pbSrcPixel[0x1f]];
+        pbDstBase[nDstRowOffset + 0x1e] = gaPaletteColorLUT[pbLightBufPixel[0x1e]][pbSrcPixel[0x1e]];
+        pbDstBase[nDstRowOffset + 0x1d] = gaPaletteColorLUT[pbLightBufPixel[0x1d]][pbSrcPixel[0x1d]];
+        pbDstBase[nDstRowOffset + 0x1c] = gaPaletteColorLUT[pbLightBufPixel[0x1c]][pbSrcPixel[0x1c]];
         case 0x1c:
-          pbDstBase[iVar1 + 0x1b] = gaPaletteColorLUT[pbLightBufPixel[0x1b]][pbSrcPixel[0x1b]];
-        pbDstBase[iVar1 + 0x1a] = gaPaletteColorLUT[pbLightBufPixel[0x1a]][pbSrcPixel[0x1a]];
-        pbDstBase[iVar1 + 0x19] = gaPaletteColorLUT[pbLightBufPixel[0x19]][pbSrcPixel[0x19]];
-        pbDstBase[iVar1 + 0x18] = gaPaletteColorLUT[pbLightBufPixel[0x18]][pbSrcPixel[0x18]];
+          pbDstBase[nDstRowOffset + 0x1b] = gaPaletteColorLUT[pbLightBufPixel[0x1b]][pbSrcPixel[0x1b]];
+        pbDstBase[nDstRowOffset + 0x1a] = gaPaletteColorLUT[pbLightBufPixel[0x1a]][pbSrcPixel[0x1a]];
+        pbDstBase[nDstRowOffset + 0x19] = gaPaletteColorLUT[pbLightBufPixel[0x19]][pbSrcPixel[0x19]];
+        pbDstBase[nDstRowOffset + 0x18] = gaPaletteColorLUT[pbLightBufPixel[0x18]][pbSrcPixel[0x18]];
         case 0x18:
-          pbDstBase[iVar1 + 0x17] = gaPaletteColorLUT[pbLightBufPixel[0x17]][pbSrcPixel[0x17]];
-        pbDstBase[iVar1 + 0x16] = gaPaletteColorLUT[pbLightBufPixel[0x16]][pbSrcPixel[0x16]];
-        pbDstBase[iVar1 + 0x15] = gaPaletteColorLUT[pbLightBufPixel[0x15]][pbSrcPixel[0x15]];
-        pbDstBase[iVar1 + 0x14] = gaPaletteColorLUT[pbLightBufPixel[0x14]][pbSrcPixel[0x14]];
+          pbDstBase[nDstRowOffset + 0x17] = gaPaletteColorLUT[pbLightBufPixel[0x17]][pbSrcPixel[0x17]];
+        pbDstBase[nDstRowOffset + 0x16] = gaPaletteColorLUT[pbLightBufPixel[0x16]][pbSrcPixel[0x16]];
+        pbDstBase[nDstRowOffset + 0x15] = gaPaletteColorLUT[pbLightBufPixel[0x15]][pbSrcPixel[0x15]];
+        pbDstBase[nDstRowOffset + 0x14] = gaPaletteColorLUT[pbLightBufPixel[0x14]][pbSrcPixel[0x14]];
         case 0x14:
-          pbDstBase[iVar1 + 0x13] = gaPaletteColorLUT[pbLightBufPixel[0x13]][pbSrcPixel[0x13]];
-        pbDstBase[iVar1 + 0x12] = gaPaletteColorLUT[pbLightBufPixel[0x12]][pbSrcPixel[0x12]];
-        pbDstBase[iVar1 + 0x11] = gaPaletteColorLUT[pbLightBufPixel[0x11]][pbSrcPixel[0x11]];
-        pbDstBase[iVar1 + 0x10] = gaPaletteColorLUT[pbLightBufPixel[0x10]][pbSrcPixel[0x10]];
+          pbDstBase[nDstRowOffset + 0x13] = gaPaletteColorLUT[pbLightBufPixel[0x13]][pbSrcPixel[0x13]];
+        pbDstBase[nDstRowOffset + 0x12] = gaPaletteColorLUT[pbLightBufPixel[0x12]][pbSrcPixel[0x12]];
+        pbDstBase[nDstRowOffset + 0x11] = gaPaletteColorLUT[pbLightBufPixel[0x11]][pbSrcPixel[0x11]];
+        pbDstBase[nDstRowOffset + 0x10] = gaPaletteColorLUT[pbLightBufPixel[0x10]][pbSrcPixel[0x10]];
         case 0x10:
-          pbDstBase[iVar1 + 0xf] = gaPaletteColorLUT[pbLightBufPixel[0xf]][pbSrcPixel[0xf]];
-        pbDstBase[iVar1 + 0xe] = gaPaletteColorLUT[pbLightBufPixel[0xe]][pbSrcPixel[0xe]];
-        pbDstBase[iVar1 + 0xd] = gaPaletteColorLUT[pbLightBufPixel[0xd]][pbSrcPixel[0xd]];
-        pbDstBase[iVar1 + 0xc] = gaPaletteColorLUT[pbLightBufPixel[0xc]][pbSrcPixel[0xc]];
+          pbDstBase[nDstRowOffset + 0xf] = gaPaletteColorLUT[pbLightBufPixel[0xf]][pbSrcPixel[0xf]];
+        pbDstBase[nDstRowOffset + 0xe] = gaPaletteColorLUT[pbLightBufPixel[0xe]][pbSrcPixel[0xe]];
+        pbDstBase[nDstRowOffset + 0xd] = gaPaletteColorLUT[pbLightBufPixel[0xd]][pbSrcPixel[0xd]];
+        pbDstBase[nDstRowOffset + 0xc] = gaPaletteColorLUT[pbLightBufPixel[0xc]][pbSrcPixel[0xc]];
         case 0xc:
-          pbDstBase[iVar1 + 0xb] = gaPaletteColorLUT[pbLightBufPixel[0xb]][pbSrcPixel[0xb]];
-        pbDstBase[iVar1 + 10] = gaPaletteColorLUT[pbLightBufPixel[10]][pbSrcPixel[10]];
-        pbDstBase[iVar1 + 9] = gaPaletteColorLUT[pbLightBufPixel[9]][pbSrcPixel[9]];
-        pbDstBase[iVar1 + 8] = gaPaletteColorLUT[pbLightBufPixel[8]][pbSrcPixel[8]];
+          pbDstBase[nDstRowOffset + 0xb] = gaPaletteColorLUT[pbLightBufPixel[0xb]][pbSrcPixel[0xb]];
+        pbDstBase[nDstRowOffset + 10] = gaPaletteColorLUT[pbLightBufPixel[10]][pbSrcPixel[10]];
+        pbDstBase[nDstRowOffset + 9] = gaPaletteColorLUT[pbLightBufPixel[9]][pbSrcPixel[9]];
+        pbDstBase[nDstRowOffset + 8] = gaPaletteColorLUT[pbLightBufPixel[8]][pbSrcPixel[8]];
         case 8:
-          pbDstBase[iVar1 + 7] = gaPaletteColorLUT[pbLightBufPixel[7]][pbSrcPixel[7]];
-        pbDstBase[iVar1 + 6] = gaPaletteColorLUT[pbLightBufPixel[6]][pbSrcPixel[6]];
-        pbDstBase[iVar1 + 5] = gaPaletteColorLUT[pbLightBufPixel[5]][pbSrcPixel[5]];
-        pbDstBase[iVar1 + 4] = gaPaletteColorLUT[pbLightBufPixel[4]][pbSrcPixel[4]];
+          pbDstBase[nDstRowOffset + 7] = gaPaletteColorLUT[pbLightBufPixel[7]][pbSrcPixel[7]];
+        pbDstBase[nDstRowOffset + 6] = gaPaletteColorLUT[pbLightBufPixel[6]][pbSrcPixel[6]];
+        pbDstBase[nDstRowOffset + 5] = gaPaletteColorLUT[pbLightBufPixel[5]][pbSrcPixel[5]];
+        pbDstBase[nDstRowOffset + 4] = gaPaletteColorLUT[pbLightBufPixel[4]][pbSrcPixel[4]];
         case 4:
-          pbDstBase[iVar1 + 3] = gaPaletteColorLUT[pbLightBufPixel[3]][pbSrcPixel[3]];
-        pbDstBase[iVar1 + 2] = gaPaletteColorLUT[pbLightBufPixel[2]][pbSrcPixel[2]];
-        pbDstBase[iVar1 + 1] = gaPaletteColorLUT[pbLightBufPixel[1]][pbSrcPixel[1]];
-        pbDstBase[iVar1] = gaPaletteColorLUT[*pbLightBufPixel][*pbSrcPixel];
+          pbDstBase[nDstRowOffset + 3] = gaPaletteColorLUT[pbLightBufPixel[3]][pbSrcPixel[3]];
+        pbDstBase[nDstRowOffset + 2] = gaPaletteColorLUT[pbLightBufPixel[2]][pbSrcPixel[2]];
+        pbDstBase[nDstRowOffset + 1] = gaPaletteColorLUT[pbLightBufPixel[1]][pbSrcPixel[1]];
+        pbDstBase[nDstRowOffset] = gaPaletteColorLUT[*pbLightBufPixel][*pbSrcPixel];
       }
 
       pbDstBase += gRenderBufferPitch;
@@ -1351,7 +1341,7 @@ void __fastcall D2GFX_DrawWallTileWithPerspective(uint8_t * pbTileData, uint8_t 
     uint32_t nRunLength;
     uint32_t nSkipCount;
     uint8_t* pbTileDataNext;
-    uint8_t (*pbLineBufRowPtr)[32] = gpLineBufferTileArray[nLightAccumX >> (byShift & 0x1f)] + (nLightAccumY >> (byShift & 0x1f));
+    uint8_t (*pbLineBufRowPtr)[32] = gpLineBufferTileArray[nLightAccumX >> D2_SHIFT_COUNT(byShift)] + (nLightAccumY >> D2_SHIFT_COUNT(byShift));
     uint8_t* pbDstWritePtr = pbDstRow;
     uint8_t* pbDstRowStart = pbDstRow;
     do {
@@ -1372,7 +1362,7 @@ void __fastcall D2GFX_DrawWallTileWithPerspective(uint8_t * pbTileData, uint8_t 
         nLightAccumY += nLightStepY;
         pbDstRow += gRenderBufferPitch;
         nRowsLeft--;
-        pbLineBufRowPtr = gpLineBufferTileArray[nLightAccumX >> (byShift & 0x1f)] + (nLightAccumY >> (byShift & 0x1f));
+        pbLineBufRowPtr = gpLineBufferTileArray[nLightAccumX >> D2_SHIFT_COUNT(byShift)] + (nLightAccumY >> D2_SHIFT_COUNT(byShift));
         pbTileData = pbTileDataNext;
         pbDstWritePtr = pbDstRow;
         pbDstRowStart = pbDstRow;
@@ -1455,7 +1445,8 @@ void __fastcall D2GFX_DrawWallTileWithPerspective(uint8_t * pbTileData, uint8_t 
 }
 
 void __stdcall D2GFX_InitializeLineBuffer() {
-    uint32_t nBlendValue;
+    int nBlendValue;
+    uint32_t uVar1;
     int iPixel;
     int nColorStep;
     uint8_t (*pbTileRowPtr)[32];
@@ -1469,19 +1460,19 @@ void __stdcall D2GFX_InitializeLineBuffer() {
       pbTileRowPtr = pbCurTileEntry;
       do {
         iPixel = 0;
-        nBlendValue = iTileRow << 0x18;
+        uVar1 = iTileRow << 0x18;
         do {
-          nBlendValue = (int)nBlendValue < 1 ? 0 : nBlendValue;
-          if (0x1effffff < (int)nBlendValue) {
+          nBlendValue = (int)uVar1 <= 0 ? 0 : uVar1;
+          if (nBlendValue >= 0x1f000000) {
             nBlendValue = 0x1f000000;
           }
 
-          (*(uint8_t (*)[32])*pbTileRowPtr)[iPixel] = (uint8_t)(nBlendValue >> 0x18);
+          (*(uint8_t (*)[32])*pbTileRowPtr)[iPixel] = (uint8_t)((uint32_t)nBlendValue >> 0x18);
           iPixel++;
-          nBlendValue += nColorStep >> 5;
+          uVar1 = nBlendValue + (nColorStep >> 5);
         } while (iPixel < 0x20);
 
-        if ((int)nBlendValue >> 0x18 != nExpectedEndVal) {
+        if ((int)uVar1 >> 0x18 != nExpectedEndVal) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x285);
           exit(-1);
         }
@@ -1583,6 +1574,21 @@ BOOL __stdcall CreateWindowWithChecks(BOOL bWindowed, int32_t nResolutionMode) {
     gnResolutionMode = nResolutionMode;
     gbWindowed = bWindowed;
     return 1;
+}
+
+void StaticInit_gpszWindowClassName() {
+    // Static local variables (originally global data)
+    static char * fnCursorVisibilityHook = s_Diablo_II_006cc8b8; D2_STATIC_GUARD(fnCursorVisibilityHook, "D2gfx::D2GFX::StaticInit_gpszWindowClassName::fnCursorVisibilityHook");
+
+    gpszWindowClassName = fnCursorVisibilityHook;
+}
+
+void StaticInit_szWindowClassName() {
+    szWindowClassName = gpszDiabloIIClassNameSource;
+}
+
+void StaticInit_gpszWindowTitle() {
+    gpszWindowTitle = gpszDiabloIIClassNameSource;
 }
 
 } // namespace D2gfx::D2GFX

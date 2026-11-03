@@ -15,7 +15,7 @@
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Storm/H/CCritSect.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 
@@ -33,11 +33,10 @@ template<> TSLink<::MappingEntryNode>* TSLink<MappingEntryNode>::NextLink(int32_
     if ((int)nNextOffset < 0) {
       return (TSLink<::MappingEntryNode>*)~nNextOffset;
     }
-    if (nLinkOffset >= 0) {
-      return (TSLink<::MappingEntryNode>*)(nNextOffset + nLinkOffset);
+    if (nLinkOffset < 0) {
+      nLinkOffset = (int)this - this->m_prevlink->m_next;
     }
 
-    nLinkOffset = (int)this - this->m_prevlink->m_next;
     return (TSLink<::MappingEntryNode>*)(nNextOffset + nLinkOffset);
 }
 
@@ -73,11 +72,10 @@ template<> uint32_t TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>
 }
 
 template<> uint32_t __stdcall TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>::RoundToMultiple(uint32_t nValue, uint32_t nMultiple) {
-    if (!(nValue % nMultiple)) {
-      return nValue;
+    if (nValue % nMultiple) {
+      nValue += nMultiple - nValue % nMultiple;
     }
 
-    nValue += nMultiple - nValue % nMultiple;
     return nValue;
 }
 
@@ -130,12 +128,7 @@ template<> void TSExplicitList<MappingEntryNode, -572662307>::LinkNode(::Mapping
     if (pDestSlot) {
       int* pPrevLink;
       pTailLink = pSrcSlot->m_next;
-      if ((int)pTailLink < 0) {
-        pPrevLink = (int*)~pTailLink;
-      } else {
-        pPrevLink = (int*)((int)pSrcSlot + (pTailLink - pDestSlot->m_next));
-      }
-
+      pPrevLink = (int*)D2_StormNextLink(pSrcSlot, -1);
       *pPrevLink = (int)pDestSlot;
       pSrcSlot->m_prevlink->m_next = pSrcSlot->m_next;
       pSrcSlot->m_prevlink = 0;
@@ -201,13 +194,7 @@ template<> void TSExplicitList<MappingEntryNode, -572662307>::UnlinkNode(::Mappi
       return;
     }
 
-    uint32_t nNextLink = pSlot->m_next;
-    if ((int)nNextLink < 0) {
-      pPrevLink = (int*)~nNextLink;
-    } else {
-      pPrevLink = (int*)((int)pSlot + (nNextLink - nHeadEntry->m_next));
-    }
-
+    pPrevLink = (int*)D2_StormNextLink(pSlot, -1);
     *pPrevLink = (int)nHeadEntry;
     pSlot->m_prevlink->m_next = pSlot->m_next;
     pSlot->m_prevlink = 0;
@@ -219,7 +206,7 @@ template<> void TSHashObject<MappingEntryNode, HASHKEY_STRI>::Destructor() {
     uint32_t nNextLink;
     char* pObject = this->m_key.szString;
     if (pObject) {
-      Storm::SMem::SMemFree(pObject, "d:\\diablo2\\Diablo2\\3rdparty\\storm\\h\\stpl.h", 0x5e4, 0);
+      Storm::Source::SMem::SMemFree(pObject, "d:\\diablo2\\Diablo2\\3rdparty\\storm\\h\\stpl.h", 0x5e4, 0);
     }
 
     TSLink<::MappingEntryNode>* nHeadEntry = this->m_linktofull.m_prevlink;

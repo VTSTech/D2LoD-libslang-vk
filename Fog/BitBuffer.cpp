@@ -8,6 +8,18 @@
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
+static uint32_t gdwBitBufferSeed[9] = {
+    0x0,
+    0x1,
+    0x3,
+    0x7,
+    0xf,
+    0x1f,
+    0x3f,
+    0x7f,
+    0xff
+}; D2_STATIC_GUARD(gdwBitBufferSeed, "gdwBitBufferSeed");
+
 namespace Fog::BitBuffer {
 
 void __stdcall SetBitAtOffset(char * pBuffer, uint32_t nOffset) {
@@ -20,9 +32,9 @@ BOOL __stdcall CheckBitAtOffset(char * pBuffer, int32_t nOffset) {
 
 // NOTE: Return type changed void→uint8_t (1 callers, MEDIUM confidence)
 uint8_t __stdcall UnsetBitAtOffset(char * pBuffer, int32_t nOffset) {
-    uint32_t dVar1 = gadwInvBitMasks[nOffset & 7];
-    pBuffer[nOffset >> 3] &= (uint8_t)dVar1;
-    return (uint8_t)dVar1;
+    uint32_t dwInvMask = gadwInvBitMasks[nOffset & 7];
+    pBuffer[nOffset >> 3] &= (uint8_t)dwInvMask;
+    return (uint8_t)dwInvMask;
 }
 
 void __stdcall XorBitAtOffset(char * pBuffer, int32_t nOffset) {
@@ -216,11 +228,10 @@ void __stdcall InitBitBuffer(D2BitBufferStrc * pBitBuffer, uint8_t * pBytes, siz
 
 int32_t __stdcall GetNextPositon(D2BitBufferStrc * pBitBuffer) {
     size_t nNextPos = pBitBuffer->nCurrentPos;
-    if (!pBitBuffer->nBitsAtPos) {
-      return nNextPos;
+    if (pBitBuffer->nBitsAtPos) {
+      nNextPos++;
     }
 
-    nNextPos++;
     return nNextPos;
 }
 
@@ -247,7 +258,7 @@ void __stdcall WriteValueToBitBuffer(D2BitBufferStrc * pBitBuffer, int32_t nValu
         nBitsThisStep = nSizeInBits;
       }
 
-      *pBitBuffer->pBuffer |= ((uint8_t)gdwBitBufferSeed[nBitsThisStep] & (uint8_t)nValue) << ((uint8_t)pBitBuffer->nBitsAtPos & 0x1f);
+      *pBitBuffer->pBuffer |= ((uint8_t)gdwBitBufferSeed[nBitsThisStep] & (uint8_t)nValue) << D2_SHIFT_COUNT(pBitBuffer->nBitsAtPos);
       pBitBuffer->nBitsAtPos += nBitsThisStep;
       if (pBitBuffer->nBitsAtPos != 8) {
         break;
@@ -260,7 +271,7 @@ void __stdcall WriteValueToBitBuffer(D2BitBufferStrc * pBitBuffer, int32_t nValu
         *pBitBuffer->pBuffer = 0;
       }
 
-      nValue >>= (uint8_t)nBitsThisStep & 0x1f;
+      nValue >>= D2_SHIFT_COUNT(nBitsThisStep);
       nSizeInBits -= nBitsThisStep;
     }
 }
@@ -285,7 +296,7 @@ int32_t __stdcall Read(D2BitBufferStrc * pBitBuffer, int32_t nSize) {
 
     nSize = 0;
     pBitBuffer = 0;
-    if (nBitsRemaining >= 1) {
+    if (nBitsRemaining > 0) {
       do {
         uint8_t byCurrent;
         nBitsThisStep = 8 - pBuf->nBitsAtPos;
@@ -298,7 +309,7 @@ int32_t __stdcall Read(D2BitBufferStrc * pBitBuffer, int32_t nSize) {
         byMask = *(uint8_t*)((int)gbGameSaveFileMarker + nBitsAtPos);
         dwBitMask = gdwBitBufferSeed[nBitsThisStep];
         pBuf->nBitsAtPos = nBitsAtPos + nBitsThisStep;
-        nSize += ((uint8_t)((byMask & byCurrent) >> ((uint8_t)nBitsAtPos & 0x1f)) & dwBitMask) << ((uint8_t)(uintptr_t)pBitBuffer & 0x1f);
+        nSize += ((uint8_t)((byMask & byCurrent) >> D2_SHIFT_COUNT(nBitsAtPos)) & dwBitMask) << D2_SHIFT_COUNT((uintptr_t)pBitBuffer);
         nBitsRemaining -= nBitsThisStep;
         if (nBitsAtPos + nBitsThisStep == 8) {
           pBuf->nCurrentPos++;
@@ -322,11 +333,10 @@ uint32_t __stdcall ReadUnsigned(D2BitBufferStrc * pBitBuffer, int32_t nSize) {
 
 int32_t __stdcall ReadSigned(D2BitBufferStrc * pBitBuffer, int32_t nSize) {
     uint32_t dwValue = Read(pBitBuffer, nSize);
-    if (!(nSize < 0x20 && dwValue & 1 << ((uint8_t)nSize - 1 & 0x1f))) {
-      return dwValue;
+    if (nSize < 0x20 && dwValue & 1 << D2_SHIFT_COUNT(nSize - 1)) {
+      dwValue |= ~((1 << D2_SHIFT_COUNT(nSize)) - 1U);
     }
 
-    dwValue |= ~((1 << ((uint8_t)nSize & 0x1f)) - 1U);
     return dwValue;
 }
 
@@ -345,18 +355,18 @@ void __stdcall BitBufferEndCurrentByte(D2BitBufferStrc * pBitBuffer) {
     *pBitBuffer->pBuffer = 0;
 }
 
-void __stdcall BITBUFFER_WriteDwordPair(D2BitBufferStrc * pBitBuffer, int32_t nValue, int32_t nSize) {
-    WriteValueToBitBuffer(pBitBuffer, *(int32_t*)(nValue + nSize * 8), *(int32_t*)(nValue + 4 + nSize * 8));
+void __stdcall BITBUFFER_WriteDwordPair(D2BitBufferStrc * pBitBuffer, int32_t * nValue, int32_t nSize) {
+    WriteValueToBitBuffer(pBitBuffer, nValue[nSize * 2], nValue[nSize * 2 + 1]);
 }
 
-int32_t __stdcall BITBUFFER_ReadHuffmanValue(D2BitBufferStrc * pBitBuffer, int32_t pHuffmanTree) {
+int32_t __stdcall BITBUFFER_ReadHuffmanValue(D2BitBufferStrc * pBitBuffer, int32_t * pHuffmanTree) {
     uint32_t nBit;
-    int nNodeIndex;
+    size_t nBitsAtPos;
     int nNodeBase = 0;
     while (true) {
-      size_t nBitsAtPos;
+      int iVar1;
       nBitsAtPos = pBitBuffer->nBitsAtPos;
-      nBit = (gadwBitMasks[nBitsAtPos] & (uint32_t)*pBitBuffer->pBuffer) >> ((uint8_t)nBitsAtPos & 0x1f);
+      nBit = (gadwBitMasks[nBitsAtPos] & (uint32_t)*pBitBuffer->pBuffer) >> D2_SHIFT_COUNT(nBitsAtPos);
       pBitBuffer->nBitsAtPos = nBitsAtPos + 1;
       if (nBitsAtPos + 1 == 8) {
         pBitBuffer->nCurrentPos++;
@@ -364,15 +374,15 @@ int32_t __stdcall BITBUFFER_ReadHuffmanValue(D2BitBufferStrc * pBitBuffer, int32
         pBitBuffer->nBitsAtPos = 0;
       }
 
-      nNodeIndex = nBit + nNodeBase;
-      if (*(int*)(pHuffmanTree + nNodeIndex * 4) >= 0) {
+      iVar1 = nBit + nNodeBase;
+      if (pHuffmanTree[iVar1] >= 0) {
         break;
       }
 
-      nNodeBase = nNodeIndex * 2 + 2;
+      nNodeBase = iVar1 * 2 + 2;
     }
 
-    return *(int32_t*)(pHuffmanTree + (nBit + nNodeBase) * 4);
+    return pHuffmanTree[nBit + nNodeBase];
 }
 
 } // namespace Fog::BitBuffer

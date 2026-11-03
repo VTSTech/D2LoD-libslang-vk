@@ -4,7 +4,6 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SSTR.h"
-#include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -23,6 +22,9 @@ static_assert(sizeof(void*) != 4 || sizeof(::BnMessQueue) == 0x12c, "D2_NEW_AT(B
 #define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
+
+static BnMessQueue * nLobbyChatCurrentMessage = 0; D2_STATIC_GUARD(nLobbyChatCurrentMessage, "nLobbyChatCurrentMessage");
+static BnMessQueue * nLobbyChatQueueMessages = 0; D2_STATIC_GUARD(nLobbyChatQueueMessages, "nLobbyChatQueueMessages");
 
 namespace Bnclient {
 
@@ -112,15 +114,15 @@ size_t __fastcall BNMESSQUEUE_DequeueMessage(int * pMessageTypeOut, void * pBuff
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00882004);
     ::BnMessQueue* pBVar2 = nLobbyChatCurrentMessage;
     if (nLobbyChatCurrentMessage) {
-      size_t sVar1;
+      size_t nMessageSize;
       memcpy(pBufferOut, nLobbyChatCurrentMessage->bBuffer, nLobbyChatCurrentMessage->nDataSize);
       *pMessageTypeOut = pBVar2->nZero;
-      sVar1 = pBVar2->nDataSize;
+      nMessageSize = pBVar2->nDataSize;
       pBVar2 = pBVar2->pNext;
       D2_FREE_AT(nLobbyChatCurrentMessage, ".\\BnMessQueue.cpp", 0x86);
       nLobbyChatCurrentMessage = pBVar2;
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00882004);
-      return sVar1;
+      return nMessageSize;
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00882004);

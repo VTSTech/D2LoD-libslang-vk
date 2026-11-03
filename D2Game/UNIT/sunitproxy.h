@@ -33,7 +33,7 @@ struct D2NpcItemTablesStrc {
 
 struct D2NpcPlayerInteractionStrc {
     /* 0x00 */ int nPlayerGUID; // player GUID; SUNITPROXY_AddPlayerInteraction stores it
-    /* 0x04 */ uint32_t unk0x04;
+    /* 0x04 */ uint32_t bGambling;
     /* 0x08 */ struct D2NpcPlayerInteractionStrc * pNext; // next entry
 };
 
@@ -45,13 +45,13 @@ struct D2NpcProxyInventoryStrc {
 
 struct D2NpcTradeStateStrc {
     /* 0x00 */ uint8_t bStoreFilled; // set to 1 after SUNITNPC_FillNpcStore runs; callers skip the refill while it is set
-    /* 0x01 */ uint8_t unk0x01; // SUNITNPC_ProcessNpcAction sets it to 1 the first time it runs
+    /* 0x01 */ uint8_t bHirelingsInitialized; // SUNITNPC_ProcessNpcAction sets it to 1 the first time it runs
     /* 0x02 */ uint8_t nAct; // NPC act; SUNITNPC_GetActCappedLevel indexes the Normal level caps with it
-    /* 0x03 */ uint8_t unk0x03; // must be set before SUNITNPC_ProcessNpcAction / SUNITNPC_HandleResurrect refill the store
+    /* 0x03 */ uint8_t bHasStore; // must be set before SUNITNPC_ProcessNpcAction / SUNITNPC_HandleResurrect refill the store
     /* 0x04 */ uint8_t unk0x04;
     /* 0x05 */ uint8_t unk0x05;
     /* 0x06 */ uint8_t unk0x06;
-    /* 0x07 */ uint8_t unk0x07; // SUNITNPC_HandleTradeAction clears it, resets the proxy and refills the store
+    /* 0x07 */ uint8_t bRefillStorePending; // SUNITNPC_HandleTradeAction clears it, resets the proxy and refills the store
     /* 0x08 */ uint32_t dwLastTradeTick; // GetTickCount() stored by SUNITPROXY_QueueTradeAction and SUNITNPC_FillNpcStore
     /* 0x0C */ void * pTradeList1; // 0xc-byte rows read by SUNITNPC_FillNpcStore
     /* 0x10 */ int nTradeList1;
@@ -72,7 +72,7 @@ struct __attribute__((packed)) D2GameNpcStrc {
     /* 0x04 */ struct D2InventoryStrc * pInventory;
     /* 0x08 */ struct D2NpcProxyInventoryStrc * pProxyInventories; // head of D2NpcProxyInventoryStrc nodes (GetPlayerProxyInventory walks it, RemovePlayerProxyInventory unlinks)
     /* 0x0C */ int flags0x0C;
-    /* 0x10 */ int unk0x10;
+    /* 0x10 */ int pHirelingSlots;
     /* 0x14 */ struct D2SUnitProxyStrc_Line0x85 * pProxyQueue; // head of D2SUnitProxyStrc_Line0x85 entries: pushed by SUNITPROXY_AddItemToNpcProxy/AddTradeQueueEntry, drained by ProcessNpcItemQueue, freed by FreeNpcProxyData
     /* 0x18 */ struct D2NpcPlayerInteractionStrc * pPlayerInteractions; // head of D2NpcPlayerInteractionStrc nodes (AddPlayerInteraction pushes, RemovePlayerFromNpc unlinks)
     /* 0x1C */ int bTrading;
@@ -115,7 +115,7 @@ struct D2SeedStrc * __fastcall SUNITPROXY_GetNpcControl(::SGAMEDATA * pGame);
 void __fastcall SUNITPROXY_RemovePlayerFromNpc(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2PoolManagerStrc * pMemory);
 struct D2InventoryStrc * __fastcall SUNITPROXY_GetPlayerProxyInventory(::SGAMEDATA * pGame, struct D2UnitStrc * pNpcUnit, struct D2UnitStrc * pPlayerUnit);
 // Finds or creates this player's interaction node on an NPC proxy and RETURNS THE NODE. The node is the 12 bytes allocated at 00536cef with EDX = 0xc: player GUID at +0, a flag the trade path reads at +4, next at +8. On the found path the search loop at 00536cd0 jumps to the epilogue with the node still in EAX; on the allocate path the new node is in EAX and the code falls into the same epilogue, so both exits return it. It had been typed void, which left its caller SUNITNPC_OpenTradeScreen at 00579360 reading a declared-but-never-assigned local, taking the identified-item branch for the merchant's own unidentified stock and returning null - no vendor item ever reached the client.
-int32_t __fastcall SUNITPROXY_AddPlayerInteraction(::SGAMEDATA * pGame, struct D2GameNpcStrc * pNpcProxy, struct D2UnitStrc * pPlayerUnit);
+struct D2NpcPlayerInteractionStrc * __fastcall SUNITPROXY_AddPlayerInteraction(::SGAMEDATA * pGame, struct D2GameNpcStrc * pNpcProxy, struct D2UnitStrc * pPlayerUnit);
 void __fastcall SUNITPROXY_ResetNpcProxy(::SGAMEDATA * pGame, struct D2GameNpcStrc * pNpcProxy, struct D2UnitStrc * pUnit);
 // One-time initialisation of the trade and quest item tables for a specific NPC vendor (by nNpcIndex). Guards against re-entry via gbaNpcItemTableBuilt. Scans the Items.txt table twice: first pass counts trade vs quest items for the NPC; allocates gpaNpcTradeItemTable (12 bytes/entry) and gpaNpcQuestItemTable (4 bytes/entry); second pass fills both tables with item class IDs, flags, and level data from the txt rows. Quest items (non-zero npcquest column) go to the quest table; all others to the trade table.
 // @sourcefile .\UNIT\sunitproxy.cpp
@@ -132,7 +132,7 @@ void __stdcall SUNITPROXY_UpdateNpcProxiesForAct(::SGAMEDATA * pGame, char nAct,
 // Called when a player enters an act town level. For the town level (eLevel), counts the players already in that level (IterateAllUnits walks pUnitList[0], the player list) and updates the NPC proxy table for the corresponding act (acts I–V). For the destination level (eLevelIdTwo), fills the intro-NPC packet for the act; also force-starts Act I quest 4, The Search for Cain (A1Q4::ForceStartQuest, a1q4.cpp), when entering Lut Gholein.
 void __fastcall IterateNpcIntroUnits(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2LevelId eLevel, eD2LevelId eLevelIdTwo);
 void __fastcall SERVER_InitClassicTowns(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
-void __fastcall SUNITPROXY_SendProxyItemsToClient(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nNpcProxy, struct D2ClientStrc * pClient);
+void __fastcall SUNITPROXY_SendProxyItemsToClient(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * nNpcProxy, struct D2ClientStrc * pClient);
 // 4 internal functions (defined in .cpp)
 
 } // namespace D2Game::UNIT::sunitproxy

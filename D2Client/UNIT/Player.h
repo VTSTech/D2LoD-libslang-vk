@@ -85,19 +85,15 @@ void __fastcall CLIENT_OnStatChanged(uint32_t dwUnused, struct D2UnitStrc * pUni
 // Initialises a player unit entering a room on the client side: registers the unit in the active slot, allocates a dynamic path, creates inventory and skill list, allocates stat list with base rates at 100, sets unit flags, handles dead/corpse collision state, allocates a light map (dimmed for other players), seeds the RNG direction for non-local players, and preloads adjacent-room monster COFs.
 void __fastcall JoinRoomSetup(struct D2UnitStrc * pUnit, struct D2RoomStrc * pRoom, int32_t nX, int32_t nY);
 void __fastcall CLIENT_FreePlayerUnit(struct D2UnitStrc * pUnit);
-uint32_t __stdcall PLAYER_CheckSkillUsability(int * pnUsabilityCode, struct D2UnitStrc * pUnit, struct D2SkillStrc * * ppSkill);
-// @sourcefile .\UNIT\Player.cpp
-uint32_t __stdcall PLAYER_ValidateSkillMessage(int * pnUsabilityCode, struct D2UnitStrc * pUnit, struct D2ServerMessageHandleStrc * pServerMessageHandle);
 // Client-side player message/command dispatcher: applies a queued action (nMessageType) to a player unit from a D2ServerMessageHandleStrc. Frees any active light map and clears the current skill (except for type 0x13), restores path velocity, and resolves town vs non-town neutral mode. Switches on the message type to: set move/attack/interact targets (0/1/2/0x17/0x18), play a get-hit (6) / block (0x12) / cold-hit overlay+sound (0x13) / knockback (0x14) reaction, run skill cast/validate paths (0x15/0x16) , handle death (8/9) including closing panels and clearing trade/selection, and set run/skill anim modes (0x19). Returns 1 on success; on a failed skill/target it falls through to CLIENT_SetAnimModeAndMoveToCurrentPos and returns 0. Halts via Fog ErrorManager on an invalid message type.
 BOOL __fastcall PlayerMessage(int32_t nMessageType, struct D2UnitStrc * pUnit, struct D2ServerMessageHandleStrc * pMessage, int32_t eNeutralMode);
-BOOL __stdcall CLIENT_MovePlayerToPosition(struct D2UnitStrc * pUnit, int16_t nX, int16_t nY, int32_t nSkillActionMode);
-void __fastcall PLAYER_InteractAtTarget(int32_t nParam);
+void __fastcall PLAYER_InteractAtTarget(int32_t pTargetUnit);
 uint32_t __fastcall SKILL_CheckAuraRange(struct D2SkillStrc * pSkill, struct D2UnitStrc * pUnit, int * pnMinX, int * pnMinY);
 BOOL __stdcall PLAYER_CheckPendingInteraction(int32_t nTargetType, int32_t nTargetGUID);
 void __stdcall PLAYER_ClearRecursionClick();
 BOOL __fastcall IsUnitNotMoving(struct D2UnderMouseStrc * pUnderMouse);
 // Client input dispatcher for map clicks. Converts raw screen coordinates to perspective-view world coords, builds a D2UnderMouseStrc with the player and currently selected unit, sets run/walk and force-move flags from mouseEventFlags, then dispatches to the appropriate handler based on clickType (0=left-down, 1=left-hold, 2=left-up, 3=right-down, 4=right-hold, 5=right-up). Guards against re-entrant calls and ESC-menu-open state.
-int __fastcall ClickMap(int32_t clickType, int32_t nX, int32_t nY, uint8_t mouseEventFlags);
+int __fastcall ClickMap(int32_t clickType, int32_t nX, int32_t nY, uint16_t mouseEventFlags);
 uint8_t __stdcall PLAYER_GetWeaponTypeForAnimation(struct D2UnitStrc * pPlayerUnit, struct D2UnitStrc * pUnit);
 // Client-side handler for a player-death message (msg ptr arg: type byte at +1, dead-unit GUID at +2, killer GUID at +6). Locates the dead player unit; if inactive sets its anim mode to Death. If the dead unit is the local player, finds the killer unit, makes the corpse non-colliding (width 5), and copies the dead unit's position/facing onto the corpse. Then walks the dead unit's inventory unequipping each equipped (grid type 3) item: swaps primary weapon, clears weapon anim mode flags, removes item stats, reloads the unit COF, and drops the item from the client object table.
 void __fastcall PLAYER_HandlePlayerDeath(struct D2GSPacketSrv0x74 * pDeathMsg);
@@ -108,9 +104,9 @@ void __fastcall CLIENT_WarpPlayerAndContinueMove(struct D2UnitStrc * pUnit, stru
 // Per-frame client-side state machine driving a player unit's current animation mode. Uses gaPlayerInitStats[playerMode] flag columns to decide behavior: steps the path and plays footstep sounds for moving modes, advances/handles the skill cast step (setting skill flags and re-issuing the current skill) for action modes, and advances or clamps the animation frame per the mode's loop/freeze attribute. On animation completion it transitions the mode: KnockBack restores position/velocity and reverts to GetHit; players with a queued skill set a pending-interact flag; otherwise it clears the current skill, frees the light map, and reverts to Neutral/TownNeutral. Also reloads the COF when needed, handles room-change updates, interpolates facing direction, cancels run/walk, applies active damage-state skill effects, and resolves player collision.
 // @blizzard UnitProcessPlayerModeSimulation
 void __fastcall PLAYER_ProcessPlayerModeSimulation(struct D2UnitStrc * pUnit);
-uint32_t __fastcall CheckFlagWithMask(struct D2UnitStrc * pUnit, uint32_t nParam);
+uint32_t __fastcall CheckFlagWithMask(struct D2UnitStrc * pUnit, uint32_t dwMask);
 struct D2RoomStrc * __fastcall DRLGROOM_FindBetterNearbyRoom(struct D2RoomStrc * pRoom, int32_t nX, int32_t nY);
-int __fastcall PLAYER_GetMonsterOwnerId(struct D2UnitStrc * pnParam);
+int __fastcall PLAYER_GetMonsterOwnerId(struct D2UnitStrc * pUnit);
 int32_t __fastcall TXT_MonStats_GetBaseId_NoChecks(int32_t nMonsterId);
 int32_t __fastcall TXT_MonStats_GetBaseId(struct D2UnitStrc * pUnit);
 // The parameter arrives in a whole register; typing it from the single byte the body reads made the decompiler splice the indeterminate upper bytes back in as an uninitialised local, which then indexed an array with garbage in its high bits.
@@ -123,16 +119,21 @@ struct D2UnitStrc * __fastcall MISSILE_GetOwnerUnit(struct D2UnitStrc * pUnit);
 // Inserts pUnit into the appropriate global unit hash table (server-side or client-side, selected by UNITFLAG bit 0x21). Computes bucket from nUnitGUID &amp; 0x7f and inserts in ascending GUID order. Halts (ERROR_UnrecoverableInternalError_Halt) if the unit already exists in the table. Returns 1 on successful insert, 0 if the unit was already present (duplicate path).
 uint32_t InsertIntoHashTable(struct D2UnitStrc * pUnit);
 void CLIENT_SendIdlePlayerMessage(struct D2UnitStrc * pUnit);
-void __stdcall PLAYER_PlaceUnitInRoom(int32_t nParam1, struct D2RoomStrc * pRoom, struct D2UnitStrc * pUnit, int32_t nParam2);
+void __stdcall PLAYER_PlaceUnitInRoom(int32_t nX, struct D2RoomStrc * pRoom, struct D2UnitStrc * pUnit, int32_t nY);
 void __fastcall CLIENT_UpdateMonsterAllegiance(struct D2UnitStrc * pUnit, char byOldAllegiance, char byNewAllegiance);
 void __stdcall CLIENT_ClearServerAndClientUnitLists();
-void __stdcall CUNIT_IterateHashTableWithCallback(struct D2UnitStrc * * UnitHashTable, fnUnitIterCallback pParam);
+void __stdcall CUNIT_IterateHashTableWithCallback(struct D2UnitStrc * * UnitHashTable, fnUnitIterCallback pfnCallback);
 // Iterates all 128 buckets of the server-side unit hash table. For each unit calls CLIENT_UpdateUnitFrame, then looks up the matching entry in the client-side hash table and dispatches CLIENT_DispatchMonsterAiBehavior (monsters) or OBJECT_ExecuteClientFunction (objects). Halts fatally on unit-type mismatch.
 void __stdcall CUNIT_UpdateClientFramesAndAI(struct D2UnitStrc * * pUnitHashTable);
 void __fastcall HANDSHAKE_SetClientPlayerUnit(struct D2UnitStrc * pUnit);
 struct D2UnitStrc * __stdcall GetPlayerUnit_UI();
 struct D2UnitStrc * __stdcall GetPlayerUnit_Net();
 uint32_t __stdcall IsPlayerDead();
-// 24 internal functions (defined in .cpp)
+// 27 internal functions (defined in .cpp)
+
+// Extern entries for hand-written callers (each forwards to the function of its name)
+uint32_t __stdcall PLAYER_CheckSkillUsability_Extern(int * pnUsabilityCode, struct D2UnitStrc * pUnit, struct D2SkillStrc * * ppSkill);
+uint32_t __stdcall PLAYER_ValidateSkillMessage_Extern(int * pnUsabilityCode, struct D2UnitStrc * pUnit, struct D2ServerMessageHandleStrc * pServerMessageHandle);
+BOOL __stdcall CLIENT_MovePlayerToPosition_Extern(struct D2UnitStrc * pUnit, int16_t nX, int16_t nY, int32_t nSkillActionMode);
 
 } // namespace D2Client::UNIT::Player

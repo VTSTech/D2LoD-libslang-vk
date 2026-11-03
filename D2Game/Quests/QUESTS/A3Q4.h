@@ -48,7 +48,7 @@ void __fastcall Q21_Callback02_NpcDeactivate(struct D2QuestDataStrc * pQuestData
 //   holds Golden Bird -> 3, +1 if Step0x04 (4).  holds Jade -> 1, +1 if Step0x02 (2).
 //   else if quest active (bIsNotIntroduction): clamps nStateFlagPrev, >5 -> 6 (+1 if multiplayer).
 // Always returns true (out byte written).
-bool __fastcall Q21_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown);
+bool __fastcall Q21_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode);
 // Q21_PlayerSetGoldenBirdQuestState -- per-party-member Golden Bird progress sync (callback for
 // ExecuteFunctionForEveryPartyMember). For a member whose quest is neither Completed nor RewardAwaits,
 // copies the quest-leader's golden-bird sub-state (pA3Q4->sQuestGUID.aPlayerGUID[6], the cached
@@ -117,5 +117,9 @@ void __fastcall Q21_Callback14_PlayerJoinedGame(struct D2QuestDataStrc * pQuestD
 // then enables bird drop (bBirdDropEnabled/bCanDropBird=true).
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q4.cpp
 void __fastcall Q21_InitData(struct D2QuestDataStrc * pQuestData);
+// Q21_Callback_08 (GOLDEN BIRD helper; src=a3q4.cpp) — quest-state[8]=boss-killed handler for Quest "The Golden Bird" (Q1, internal Q21). NOT Blackened Temple. On a tracked Council/boss kill while bCouncilMemberTracking && bKhalimsWillComplete: if killer hasn't already Completed the quest, force-drops the Jade Figurine (dwDropItemCode 0x2034336a = "j34 " / jade fig) as a shield-slot reward. On success: clears handler[8], increments killer-GUID list, clears bKhalimsWillComplete, and if nStateFlag==0 advances internal stateFlag 0->1; if nStateFlagPrev==0 broadcasts state 1 (RewardAwaits) via A3Q4::Q21_PlayerNotifyCompleted. Stops council tracking.
+// State transitions: stateFlag 0->1, broadcast progress state 1.
+// @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q4.cpp
+void __fastcall Q21_Callback08_MonsterKilled(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 
 } // namespace D2Game::Quests::QUESTS::A3Q4

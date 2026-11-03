@@ -118,7 +118,7 @@ void __fastcall Q33_Callback14_PlayerJoinedGame(struct D2QuestDataStrc * pQuestD
 // union aliases here). Used to test whether anyone in the party still carries the Scroll of Resistance.
 void __fastcall Q33_CheckPlayerHasScrollOfResistance(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
 // A5Q3 (Prison of Ice) fpStatusFilter callback. Writes a quest-log display sub-state byte into *nUnknown based on the player's per-difficulty bit-buffer. If Completed: returns true with *nUnknown=0. If RewardAwaits/JustCompleted: maps Step0x08/Step0x09 flags to values 5/6/0xd. Otherwise: checks party for Scroll of Resistance (4), CannotComplete (0xc), or falls back to nStateFlagPrev. Always returns true.
-bool __fastcall Q33_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown);
+bool __fastcall Q33_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode);
 // Q33_InitData (PrisonOfIce constructor): allocates the 0x114-byte A5Q3 quest-specific block and wires the quest:
 // nQuestIdReal=QUEST_PrisonOfIce, state handlers (00/02/03/0a/0b/0d/0e), NPC gossip table (Malah 0x201 str 0x4e94),
 // fpStatusFilter/fpActiveFilter/fpSequenceFilter, nInitNo=5, nSequenceQuestId chain. Zeros Anya state fields.
@@ -129,13 +129,13 @@ void __fastcall Q33_InitData(struct D2QuestDataStrc * pQuestData);
 void __fastcall SpawnFrozenAnya(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // Objects_InitFn67 (PrisonOfIce object init): records the frozen-Anya object GUID; if not yet spawned, schedules the
 // SpawnFrozenAnya timer event (+0x19 frames). Init hook for the ice-block object placement.
-void __fastcall Objects_InitFn67(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn67_DrehyaStartOutsideTown(struct D2ObjectInitFnArg * pInitArg);
 // Objects_InitFn68 (PrisonOfIce object init): records an object GUID and, once, spawns the Frozenstein/guard monster
 // (classId 0x202) near coords, taking over its DRLG map AI from the preset. Sets the spawned flag in pA5Q3.
-void __fastcall Objects_InitFn68(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn68_NihlathakStartInTown(struct D2ObjectInitFnArg * pInitArg);
 // Objects_InitFn69 (PrisonOfIce object init): once Anya-extra-state is set, spawns the SuperUnique boss (Frozenstein,
 // SuperUniques row 0x3c -> preset act value) via SpawnMonster, recording its GUID. Guards Anya's prison.
-void __fastcall Objects_InitFn69(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn69_SpawnFrozenstein(struct D2ObjectInitFnArg * pInitArg);
 // Q33_AnyaTimerCallback (PrisonOfIce): per-frame anim driver for the rescued Anya NPC walking to/within Harrogath.
 // Neutral->Walk; while Walk in Harrogath counts ticks until bAnyaCanRun (then Run), elsewhere waits for bAnyaReachable;
 // Run->GetHit. Re-arms itself each frame (+0x19). Animates Anya's escort back to town.
@@ -167,7 +167,7 @@ uint32_t __fastcall Q33_IsFrozenAnyaAlive(::SGAMEDATA * pGame);
 void __fastcall Q33_OnNpcNotifyPlayers(::SGAMEDATA * pGame);
 // Objects_InitFn74 (PrisonOfIce object init): records the (Anya prison/cave entrance) object GUID; if quest active and
 // prev<2, broadcasts stateFlag 2 (prison discovered) via Q33_NotifyQuestState.
-void __fastcall Objects_InitFn74(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn74_FrozenAnya(struct D2ObjectInitFnArg * pInitArg);
 // Q33_TransformFrozenAnya (PrisonOfIce, quest timer): two-step transform of the frozen-Anya OBJECT into the rescued-Anya
 // MONSTER (classId 0x20f). Step1: stop/derender the ice object. Step2: spawn the Anya monster at the object's coords, take
 // over its DRLG map AI, delete the ice object, store GUIDs, mark bShieldDropActive, re-run Q33_SequenceFilter. Plays the

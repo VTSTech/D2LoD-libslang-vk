@@ -10,7 +10,6 @@
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/SKILLS.h"
 #include "D2Client/SKILLS/Skills.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
@@ -37,6 +36,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/PATH/Path.h"
 #include "D2Common/Skills.h"
@@ -78,7 +78,10 @@ namespace D2Game::SKILLS::SkillBar {
 // Server-side skill start function for skill index 32 (likely Fist of the Heavens or similar melee/charge). Validates skill and retrieves the current attack target via GetTargetEx; returns 0 if target is in town. Applies an attack-rate buff from calc[2], performs a to-hit check via SKILLS_CalcToHit + DAMAGE_CalculateHitCheck, builds a D2DamageStrc with damage/conversion from calc[0]/calc[3], calls DAMAGE_CalculateAndApplyDamage, adds a combat-queue bonus from calc[1], and applies/creates the skill's aura state via D2SetAurastatsFromSkills.
 BOOL __fastcall SKILLBAR_SrvStFn32_StrikeWithAuraState(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     D2DamageStrc sDamage;
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
+    if ((int)eSkill < 0) {
+      return 0;
+    }
+    if (!((int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
 
@@ -101,9 +104,7 @@ BOOL __fastcall SKILLBAR_SrvStFn32_StrikeWithAuraState(::SGAMEDATA * pGame, D2Un
     int32_t nCalcVal = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[2], eSkill, nSkillLvl);
     SkillsServer::SKILLS_ApplyAttackRateBuff(pUnit, nCalcVal);
     memset(&sDamage, 0, 0x70);
-    nCalcVal = 0;
-    uint32_t nHitResult = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
-    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nHitResult, nCalcVal, nHitResult);
+    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl), 0);
     if (sDamage.wResultFlags & 1U) {
       sDamage.wResultFlags |= pSkillsTxt->ResultFlags;
       sDamage.dwHitFlags |= pSkillsTxt->HitFlags;
@@ -112,7 +113,7 @@ BOOL __fastcall SKILLBAR_SrvStFn32_StrikeWithAuraState(::SGAMEDATA * pGame, D2Un
       }
 
       sDamage.dwEnDmgPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[0], eSkill, nSkillLvl);
-      if (pSkillsTxt->EType != ELEMENTAL_NONE) {
+      if ((uint8_t)pSkillsTxt->EType > ELEMENTAL_NONE) {
         sDamage.dwConvPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[3], eSkill, nSkillLvl);
         if (sDamage.dwConvPct > 0) {
           sDamage.nConvType = pSkillsTxt->EType;
@@ -185,7 +186,7 @@ BOOL __fastcall SKILLBAR_SrvStFn33_TargetRevivableCorpse(::SGAMEDATA * pGame, D2
 }
 
 // Resolves the Lightning Fury bolt-count offset for the Find Potion item-code table. Determines act from the unit's room level, rolls the unit's RNG seed mod 100, compares against SkilParam2/SkilParam3 thresholds to pick bolt-count offset (0/1/2), and returns the corresponding entry from gaMapAiDirectionHandlersPtr table indexed by [act*3 + offset]. Returns 0 if out of bounds.
-static uint32_t __stdcall SKILLAMZ_CreateLightningFuryBolts(int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit) {
+static uint32_t __stdcall SKILLAMZ_CreateLightningFuryBolts(::SGAMEDATA * pGame, eD2Skills eSkill, D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
     static int gnLightningFuryBoltCount = 0xf; D2_STATIC_GUARD(gnLightningFuryBoltCount, "D2Game::SKILLS::SkillBar::SKILLAMZ_CreateLightningFuryBolts::gnLightningFuryBoltCount");
     static uint32_t gaAmzLightningFuryBoltTable[15][3] = {
@@ -213,28 +214,28 @@ static uint32_t __stdcall SKILLAMZ_CreateLightningFuryBolts(int32_t nParam1, int
     }
 
     eD2LevelId eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-    eAct eVar2 = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
-    if (eVar2 > 4) {
+    int32_t eVar1 = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
+    if (eVar1 > 4) {
       return 0;
     }
 
-    int iVar1 = (uint32_t)eVar2 + (uint32_t)*(uint8_t*)(nParam1 + 0x6d) * 5;
+    int nActDiffIdx = (uint32_t)eVar1 + (uint32_t)pGame->nDifficulty * 5;
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pUnit->sSeed);
     pUnit->sSeed = sNewSeed;
     int nRoll = sNewSeed.nSeedLow % 100;
-    int32_t nBoltChance1 = D2Client::SKILLS::GetSkilParam2(nParam2);
+    int32_t nBoltChance1 = D2Client::SKILLS::GetSkilParam2(eSkill);
     if (nRoll < nBoltChance1) {
       nBoltCountOffset = 1;
     } else {
       int32_t nBoltChance2;
-      nBoltChance2 = D2Client::SKILLS::GetSkilParam3(nParam2);
+      nBoltChance2 = D2Client::SKILLS::GetSkilParam3(eSkill);
       nBoltCountOffset = 2;
       if (nRoll >= nBoltChance2 + nBoltChance1) {
         nBoltCountOffset = 0;
       }
     }
-    if (iVar1 <= gnLightningFuryBoltCount) {
-      return gaAmzLightningFuryBoltTable[iVar1][nBoltCountOffset];
+    if (nActDiffIdx <= gnLightningFuryBoltCount) {
+      return gaAmzLightningFuryBoltTable[nActDiffIdx][nBoltCountOffset];
     }
 
     return 0;
@@ -242,12 +243,8 @@ static uint32_t __stdcall SKILLAMZ_CreateLightningFuryBolts(int32_t nParam1, int
 
 // Find Potion SrvDoFunc. Gets the target corpse, validates it is revive-eligible and not already flagged STATE_corpse_noselect, marks it no-select, rolls the unit seed mod 100 against calc[0] drop chance, and on success resolves a potion item code via SKILLAMZ_CreateLightningFuryBolts then drops it via SKILLS_DropItemByCode. Returns 1 if the corpse was processed.
 BOOL __fastcall Skills_SrvDoFunc_069_FindPotion(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
-      return 0;
-    }
-
-    D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills;
-    if (!(pSkillsTxt + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
@@ -268,23 +265,20 @@ BOOL __fastcall Skills_SrvDoFunc_069_FindPotion(::SGAMEDATA * pGame, D2UnitStrc 
 
     D2Common::DATATBLS::ItemStats::SetState(pCorpse, STATE_corpse_noselect, 1);
     D2Common::Unit::ROOM_LinkUnitToUpdateList(pCorpse);
-    int32_t nDropChance = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt[eSkill].calc[0], eSkill, nSkillLvl);
+    int32_t nDropChance = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[0], eSkill, nSkillLvl);
     nRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
-    if ((int)nRoll >= nDropChance) {
-      return 1;
+    if ((int)nRoll < nDropChance) {
+      uint32_t szItemCode;
+      szItemCode = SKILLAMZ_CreateLightningFuryBolts(pGame, eSkill, pUnit);
+      SkillsServer::SKILLS_DropItemByCode(pGame, pCorpse, szItemCode, QUALITY_NORMAL);
     }
 
-    uint32_t szItemCode = SKILLAMZ_CreateLightningFuryBolts((int32_t)pGame, eSkill, pUnit);
-    SkillsServer::SKILLS_DropItemByCode(pGame, pCorpse, szItemCode, QUALITY_NORMAL);
     return 1;
 }
 
 // Applies a War Cry aura buff to pUnit from pCaster. Computes duration via auralencalc, allocates or reuses the aura stat list keyed on aurastate, sets its expiry frame and expire callback (DefaultExpireFunction), attaches it to pUnit, toggles state GFX, schedules a game event (0xC) for expiry, populates aura stats via D2SetAurastatsFromSkills, and refreshes passives/pets.
-void __fastcall SKILLBAR_ApplyWarCryBuff(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pCaster, eD2Skills eSkill, int32_t nParam) {
-    if ((int)eSkill < 0) {
-      return;
-    }
-    if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
+void __fastcall SKILLBAR_ApplyWarCryBuff(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pCaster, eD2Skills eSkill, int32_t nSkillLevel) {
+    if ((int)eSkill < 0 || (int)eSkill >= sgptDataTable->nTxtSkillsCount) {
       return;
     }
 
@@ -299,7 +293,7 @@ void __fastcall SKILLBAR_ApplyWarCryBuff(::SGAMEDATA * pGame, D2UnitStrc * pUnit
       return;
     }
 
-    int32_t nDurationFrames = D2Common::Skills::D2GetSkillCalc(pCaster, pSkillsTxt->auralencalc, eSkill, nParam);
+    int32_t nDurationFrames = D2Common::Skills::D2GetSkillCalc(pCaster, pSkillsTxt->auralencalc, eSkill, nSkillLevel);
     int pExpireFrame = nDurationFrames + pGame->dwGameFrame;
     D2StatListExStrc* pStatsEx = D2Common::Stats::StatsEx::GetStatsByState(pUnit, (int)pSkillsTxt->aurastate);
     if (!pStatsEx) {
@@ -326,7 +320,7 @@ void __fastcall SKILLBAR_ApplyWarCryBuff(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     D2Common::DATATBLS::ItemStats::D2StatesTogglegfx(pUnit, (int)pSkillsTxt->aurastate, 1);
     D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pStatsEx, pExpireFrame);
     GAME::Event::SetEvent(pGame, pUnit, 0xc, pExpireFrame, 0, 0);
-    SkillDruid::D2SetAurastatsFromSkills(pCaster, pStatsEx, pSkillsTxt, eSkill, nParam);
+    SkillDruid::D2SetAurastatsFromSkills(pCaster, pStatsEx, pSkillsTxt, eSkill, nSkillLevel);
     SkillsServer::SKILLS_UpdatePassivesAndPets(pUnit);
 }
 
@@ -349,16 +343,13 @@ BOOL __fastcall Skills_SrvDoFunc_068_WarCry(::SGAMEDATA * pGame, D2UnitStrc * pU
 }
 
 BOOL __fastcall Skills_SrvDoFunc_070_DoubleSwing(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+    uint32_t nSeqFlags;
     D2UnitStrc* pTargetUnit = UNIT::SUnit::GetTargetEx(pGame, pUnit);
     if (!pTargetUnit) {
       return 0;
     }
 
-    uint32_t nSeqFlags = pUnit->nSeqFrame >> 8 & 0x80000001;
-    bool bIsFirstHit = !nSeqFlags;
-    if ((int)nSeqFlags < 0) {
-      bIsFirstHit = (nSeqFlags - 1 | -2) == -1;
-    }
+    bool bIsFirstHit = !((pUnit->nSeqFrame >> 8) % 2);
     if (!bIsFirstHit) {
       int32_t nMeleeRange;
       pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
@@ -379,7 +370,7 @@ BOOL __fastcall Skills_SrvDoFunc_070_DoubleSwing(::SGAMEDATA * pGame, D2UnitStrc
 BOOL __fastcall SKILL_CheckCorpseCanBeConsumed(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     int eMonsterUnitType;
     uint32_t eMonsterQuestId;
-    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return 0;
     }
 
@@ -403,16 +394,13 @@ BOOL __fastcall SKILL_CheckCorpseCanBeConsumed(::SGAMEDATA * pGame, D2UnitStrc *
 
 // Generic server-side handler for targeted necromancer curses (Lower Resist, Amplify Damage, Life Tap, Iron Maiden, Weaken, Terror, etc). Reads curse stats and state from skills.txt aurastat/aurastatcalc/auratargetstate, applies via SKILLNEC_ApplyCurseToUnit, then forces monster AI re-evaluation.
 BOOL __fastcall Skills_SrvDoFunc_071_IronMaiden_GenericCurse(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    bool _bCanAttack;
+    uint32_t _bCanAttack;
     bool bCanAttack;
     BOOL nAuraStatIdx;
     D2AiGeneralStrc* pMonsterAi;
     D2NecroSkillArgStrc sCurseArgs;
     short int eStatId;
-    if ((int)eSkill < 0) {
-      return 0;
-    }
-    if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
+    if ((int)eSkill < 0 || (int)eSkill >= sgptDataTable->nTxtSkillsCount) {
       return 0;
     }
 
@@ -433,7 +421,7 @@ BOOL __fastcall Skills_SrvDoFunc_071_IronMaiden_GenericCurse(::SGAMEDATA * pGame
     D2UnitStrc* pTarget = UNIT::SUnit::GetTargetEx(pGame, pUnit);
     D2UnitStrc* pTargetUnit = pTarget;
     if (!pTarget || (nAuraStatIdx = SKILL_CheckCorpseCanBeConsumed(pGame2, pTarget) , !nAuraStatIdx) || (_bCanAttack = UNIT::SUnit::UNITS_CheckIfCanAttackTarget(pGame2, pUnit, pTarget) , !_bCanAttack)) {
-      pTarget = SkillsServer::SKILLS_ApplyAreaHitAtUnit((int32_t)pGame2, pUnit, 0x14, SKILL_CheckCorpseCanBeConsumed);
+      pTarget = SkillsServer::SKILLS_ApplyAreaHitAtUnit(pGame2, pUnit, 0x14, SKILL_CheckCorpseCanBeConsumed);
       pTargetUnit = pTarget;
     }
     if (!pTarget) {
@@ -442,7 +430,7 @@ BOOL __fastcall Skills_SrvDoFunc_071_IronMaiden_GenericCurse(::SGAMEDATA * pGame
 
     int32_t nDurationFrames = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->auralencalc, eSkill, nSkillLvl);
     memset(&sCurseArgs, 0, 0x68);
-    int iVar1 = 0;
+    int nStatIdx = 0;
     int* pAuraStatCalc = pSkillsTxt->aurastatcalc;
     sCurseArgs.pGame = pGame2;
     sCurseArgs.bRegisterExpireCallback = 1;
@@ -456,7 +444,7 @@ BOOL __fastcall Skills_SrvDoFunc_071_IronMaiden_GenericCurse(::SGAMEDATA * pGame
       D2ItemStatCostTxt* pItemStat;
       eStatId = *pAuraStat;
       if (eStatId < 0 || (int)eStatId >= sgptDataTable->nTxtItemStatCostSize) {
-        sCurseArgs.eStat[iVar1] = ~UNITSTAT_strength;
+        sCurseArgs.eStat[nStatIdx] = ~UNITSTAT_strength;
         break;
       }
 
@@ -468,13 +456,13 @@ BOOL __fastcall Skills_SrvDoFunc_071_IronMaiden_GenericCurse(::SGAMEDATA * pGame
         sCurseArgs.bUpdateAnimSpeed = 1;
       }
 
-      sCurseArgs.eStat[iVar1] = (int)*pAuraStat;
+      sCurseArgs.eStat[nStatIdx] = (int)*pAuraStat;
       nDurationFrames = D2Common::Skills::D2GetSkillCalc(pCaster, *pAuraStatCalc, eSkill, nSkillLvl);
-      sCurseArgs.aSkillCalc[iVar1] = nDurationFrames;
-      iVar1++;
+      sCurseArgs.aSkillCalc[nStatIdx] = nDurationFrames;
+      nStatIdx++;
       pAuraStat++;
       pAuraStatCalc++;
-    } while (iVar1 < 6);
+    } while (nStatIdx < 6);
 
     pTarget = pTargetUnit;
     sCurseArgs.eAuraState = (eD2States)pSkillsTxt2->auratargetstate;
@@ -506,11 +494,7 @@ BOOL __fastcall SKILLBAR_SrvStFn34_FindItem(::SGAMEDATA * pGame, D2UnitStrc * pU
 
 // Server do-func for Barbarian Find Item (skill 72). Validates the target corpse is selectable and not yet looted (STATE_corpse_noselect), rolls against calc[0] drop-chance, then draws a second RNG roll to select one of four gold-tier tiers (controlled by Param[0..3] thresholds), and calls BarbFindItemSkill to drop the gold. Returns TRUE on a successful drop attempt.
 BOOL __fastcall Skills_SrvDoFunc_072_FindItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
-      return 0;
-    }
-
-    D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills + eSkill;
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (!pSkillsTxt) {
       return 0;
     }
@@ -562,13 +546,8 @@ BOOL __fastcall Skills_SrvDoFunc_072_FindItem(::SGAMEDATA * pGame, D2UnitStrc * 
 // Server do-func for Barbarian Double Throw (skill 74). Gets the active throwing weapon, reads its missile type, and spawns a missile via CreatingAMissile (or SKILLS_CreateMissileFromUnit for potion-type weapons). Applies to-hit (UNITSTAT_tohit) and damage-percent bonus (calc[0], UNITSTAT_damagepercent) stats to the created missile unit.
 BOOL __fastcall Skills_SrvDoFunc_074_DoubleThrow(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     int32_t nValue;
-    int16_t nLayer;
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
-      return 0;
-    }
-
-    D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills;
-    if (!(pSkillsTxt + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
@@ -586,14 +565,12 @@ BOOL __fastcall Skills_SrvDoFunc_074_DoubleThrow(::SGAMEDATA * pGame, D2UnitStrc
       } else {
         pWeaponOrMissile = SkillsServer::CreatingAMissile(pGame, eMissileType, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 1);
       }
-      if (!pWeaponOrMissile) {
-        return 1;
+      if (pWeaponOrMissile) {
+        D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pWeaponOrMissile, UNITSTAT_tohit, D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl), 0);
+        nValue = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[0], eSkill, nSkillLvl);
+        D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pWeaponOrMissile, UNITSTAT_damagepercent, nValue, 0);
       }
 
-      nLayer = 0;
-      D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pWeaponOrMissile, UNITSTAT_tohit, D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl), nLayer);
-      nValue = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt[eSkill].calc[0], eSkill, nSkillLvl);
-      D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pWeaponOrMissile, UNITSTAT_damagepercent, nValue, 0);
       return 1;
     }
 
@@ -602,50 +579,43 @@ BOOL __fastcall Skills_SrvDoFunc_074_DoubleThrow(::SGAMEDATA * pGame, D2UnitStrc
 
 // Server-side do-function for Grim Ward (skill 75). Finds the Barbarian's current target corpse, validates it as revivable, locates a collision-free position near it, then selects the ward missile type based on MonStats2 size flags (large=srvmissilec, small=srvmissileb, normal=srvmissilea). Spawns the ward missile via CreatingMissile and marks the corpse with STATE_corpse_nodraw + STATE_corpse_noselect, adding it to the room update list.
 BOOL __fastcall Skills_SrvDoFunc_075_GrimWard(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    POINT local_14;
-    if ((int)eSkill < 0) {
-      return 0;
-    }
-    if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
-      return 0;
-    }
-
-    D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills + eSkill;
+    POINT sTargetPos;
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (!pSkillsTxt) {
       return 0;
     }
 
     ::SGAMEDATA* pGameSave = pGame;
     D2UnitStrc* pUnitSave = pUnit;
-    D2UnitStrc* pUnit_00 = UNIT::SUnit::GetTargetEx(pGame, pUnit);
-    if (!pUnit_00) {
+    D2UnitStrc* pCorpse = UNIT::SUnit::GetTargetEx(pGame, pUnit);
+    if (!pCorpse) {
       return 0;
     }
 
-    uint32_t bCorpseValidForRevive = D2Common::Skills::SKILLS_IsCorpseValidForRevive(pUnit_00);
+    uint32_t bCorpseValidForRevive = D2Common::Skills::SKILLS_IsCorpseValidForRevive(pCorpse);
     if (!bCorpseValidForRevive) {
       return 0;
     }
 
-    local_14.x = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
-    local_14.y = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00);
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit_00);
+    sTargetPos.x = D2Client::Units::GetXPosFromDynamicPathUnit(pCorpse);
+    sTargetPos.y = D2Client::Units::GetYPosFromDynamicPathUnit(pCorpse);
+    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pCorpse);
     if (!pRoom) {
       return 0;
     }
 
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, local_14.x, local_14.y);
+    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, sTargetPos.x, sTargetPos.y);
     if (!pRoom) {
       return 0;
     }
 
-    pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &local_14, 2, 0x1000, 1);
-    if (!(pRoom && pUnit_00->eUnitType == UNIT_MONSTER)) {
+    pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &sTargetPos, 2, 0x1000, 1);
+    if (!(pRoom && pCorpse->eUnitType == UNIT_MONSTER)) {
       return 0;
     }
 
     eMissilesId eMissileId = (eMissilesId)pSkillsTxt->srvmissile[1];
-    D2MonStats2Txt* pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pUnit_00->nClassId);
+    D2MonStats2Txt* pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pCorpse->nClassId);
     if (!pMonStats2) {
       return 0;
     }
@@ -662,14 +632,14 @@ BOOL __fastcall Skills_SrvDoFunc_075_GrimWard(::SGAMEDATA * pGame, D2UnitStrc * 
       sSkillArg.pOwner = pUnitSave;
       sSkillArg.eSkillNo = eSkill;
       sSkillArg.nSkillLevel = nSkillLvl;
-      sSkillArg.nX = local_14.x;
+      sSkillArg.nX = sTargetPos.x;
       sSkillArg.nFlags = 1;
-      sSkillArg.nY = local_14.y;
+      sSkillArg.nY = sTargetPos.y;
       sSkillArg.nMissileTxtNo = eMissileId;
       MISSILES::Missiles::CreatingMissile(pGameSave, &sSkillArg);
-      D2Common::DATATBLS::ItemStats::SetState(pUnit_00, STATE_corpse_nodraw, 1);
-      D2Common::DATATBLS::ItemStats::SetState(pUnit_00, STATE_corpse_noselect, 1);
-      D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit_00);
+      D2Common::DATATBLS::ItemStats::SetState(pCorpse, STATE_corpse_nodraw, 1);
+      D2Common::DATATBLS::ItemStats::SetState(pCorpse, STATE_corpse_noselect, 1);
+      D2Common::Unit::ROOM_LinkUnitToUpdateList(pCorpse);
       return 1;
     }
 
@@ -677,22 +647,26 @@ BOOL __fastcall Skills_SrvDoFunc_075_GrimWard(::SGAMEDATA * pGame, D2UnitStrc * 
 }
 
 // Generic server-side melee attack handler used by multiple Barbarian skills. Sets the target unit, calculates to-hit via SKILLS_CalcToHit, resolves hit/miss via DAMAGE_CalculateHitCheck, applies elemental damage conversion (EType/ConvPct from skills.txt), builds a D2DamageStrc, then calls DAMAGE_CalculateAndApplyDamage and DAMAGE_ProcessCombatQueueEntry. Stores hit result (1=hit, 0=miss) in skill param1.
-BOOL __fastcall SKILLBAR_SkillMeleeAttack(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * param_1, eD2Skills eSkill, int32_t nParam) {
+BOOL __fastcall SKILLBAR_SkillMeleeAttack(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget, eD2Skills eSkill, int32_t nSkillLvl) {
     D2DamageStrc sDamage;
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
+    if ((int)eSkill < 0) {
+      return 0;
+    }
+    if (!((int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
 
     D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillsTxt && param_1)) {
+    if (!pSkillsTxt) {
+      return 0;
+    }
+    if (!pTarget) {
       return 0;
     }
 
-    D2Common::Units::SetTargetUnitForDynamicUnit(pUnit, param_1);
+    D2Common::Units::SetTargetUnitForDynamicUnit(pUnit, pTarget);
     memset(&sDamage, 0, 0x70);
-    uint32_t nHitCheckFlags = 0;
-    uint32_t nHitResult = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nParam);
-    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, param_1, nHitResult, nHitCheckFlags, nHitResult);
+    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl), 0);
     if (sDamage.wResultFlags & 1U) {
       sDamage.wResultFlags |= pSkillsTxt->ResultFlags;
       sDamage.dwHitFlags |= pSkillsTxt->HitFlags;
@@ -700,24 +674,24 @@ BOOL __fastcall SKILLBAR_SkillMeleeAttack(::SGAMEDATA * pGame, D2UnitStrc * pUni
         sDamage.dwHitClass = pSkillsTxt->HitClass;
       }
 
-      sDamage.dwEnDmgPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[0], eSkill, nParam);
-      if (pSkillsTxt->EType != ELEMENTAL_NONE) {
-        sDamage.dwConvPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[3], eSkill, nParam);
+      sDamage.dwEnDmgPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[0], eSkill, nSkillLvl);
+      if ((uint8_t)pSkillsTxt->EType > ELEMENTAL_NONE) {
+        sDamage.dwConvPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[3], eSkill, nSkillLvl);
         if (sDamage.dwConvPct > 0) {
           sDamage.nConvType = pSkillsTxt->EType;
         }
       }
 
-      SkillsServer::SetDamageOnEvent(pUnit, &sDamage, eSkill, nParam);
+      SkillsServer::SetDamageOnEvent(pUnit, &sDamage, eSkill, nSkillLvl);
     }
 
-    *(uint8_t*)(char*)&nParam = pSkillsTxt->SrcDam;
-    if (!(uint8_t)nParam) {
-      *(uint8_t*)(char*)&nParam = 0x80;
+    *(uint8_t*)(char*)&nSkillLvl = pSkillsTxt->SrcDam;
+    if (!(uint8_t)nSkillLvl) {
+      *(uint8_t*)(char*)&nSkillLvl = 0x80;
     }
 
-    UNIT::SUnitDmg::DAMAGE_CalculateAndApplyDamage(pGame, pUnit, param_1, &sDamage, (uint8_t)nParam);
-    UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit, param_1, 0);
+    UNIT::SUnitDmg::DAMAGE_CalculateAndApplyDamage(pGame, pUnit, pTarget, &sDamage, (uint8_t)nSkillLvl);
+    UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit, pTarget, 0);
     D2SkillStrc* pSkill = D2Common::Units::GetCurrentSkill(pUnit);
     if (!pSkill) {
       return 1;
@@ -733,10 +707,7 @@ BOOL __fastcall SKILLBAR_SkillMeleeAttack(::SGAMEDATA * pGame, D2UnitStrc * pUni
 
 // Server-side Frenzy skill stack accumulator. Each hit: allocates or retrieves the aura state stat list, resets its expiry timer (auralencalc frames from now), fires a game event, increments UNITSTAT_skill_frenzy capped at nSkillLvl, then recalculates aura stats via D2SetAurastatsFromSkills. No-ops if skill has no param1 or aurastate is invalid.
 void __fastcall SKILLBAR_ApplyFrenzyStack(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    if ((int)eSkill < 0) {
-      return;
-    }
-    if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
+    if ((int)eSkill < 0 || (int)eSkill >= sgptDataTable->nTxtSkillsCount) {
       return;
     }
 
@@ -797,6 +768,7 @@ void __fastcall SKILLBAR_ApplyFrenzyStack(::SGAMEDATA * pGame, D2UnitStrc * pUni
 }
 
 BOOL __fastcall Skills_SrvDoFunc_009_FrenzyMeleeHit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+    uint32_t nSeqFlags;
     BOOL bHitResult;
     int32_t nMeleeRange;
     D2UnitStrc* pTarget = UNIT::SUnit::GetTargetEx(pGame, pUnit);
@@ -804,14 +776,10 @@ BOOL __fastcall Skills_SrvDoFunc_009_FrenzyMeleeHit(::SGAMEDATA * pGame, D2UnitS
       return 0;
     }
 
-    uint32_t nSeqFlags = pUnit->nSeqFrame >> 8 & 0x80000001;
-    bool bIsFirstHit = !nSeqFlags;
-    if ((int)nSeqFlags < 0) {
-      bIsFirstHit = (nSeqFlags - 1 | -2) == -1;
-    }
+    bool bIsFirstHit = !((pUnit->nSeqFrame >> 8) % 2);
     if (bIsFirstHit) {
       UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit, pTarget, 0);
-      UNIT::SUnitDmg::DAMAGE_RemoveDamageListEntry(pGame, (int*)pUnit, (int*)pTarget);
+      UNIT::SUnitDmg::DAMAGE_RemoveDamageListEntry(pGame, pUnit, pTarget);
       PLAYER::PlayerModes::PLRMODES_CheckWeaponQuantityAndDurability(pGame, pUnit);
       PLAYER::PlayerModes::PLRMODES_BreakZeroDurabilityWeapons(pGame, pUnit);
       SKILLBAR_ApplyFrenzyStack(pGame, pUnit, eSkill, nSkillLvl);
@@ -852,18 +820,10 @@ void __fastcall SKILLBAR_OnWarCryExpire(D2UnitStrc * pUnit, eD2States eState, in
 // Server-side skill "start" function (srvstfunc 38): a charge/leap-to-target movement skill (e.g. War Cry / charge class). Validates eSkill against skills.txt and that the unit has the skill; resolves target/cursor position. If a melee target is already in range, queues client packet 0xA5 and force-attacks it. Otherwise sets the unit's dynamic path collision pattern/type, calculates a path toward the cursor, applies walk velocities, lands the unit at the final path point, registers collision there, sets uninterruptable + skill_move state, and stores the destination into the skill's Param1-4. Finally applies the skill's aurastate (if valid): updates state, sets an expiry-timed state via SetStateWithExpiryTime (OnWarCryExpire callback), copies aura/passive stats and the modifier skill/level stats, and fires up to 3 auraevent handlers. Returns 1 on success, 0 on any validation/path failure (queuing 0xA5 to the client on failure).
 BOOL __fastcall SKILLBAR_SrvStFn38_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     BOOL bHasTargetPos;
-    D2StateExArgStrc sStateArgs;
     D2PathPointStrc* pPathPoints;
     uint32_t nTargetY;
     uint32_t nTargetX;
-    if ((int)eSkill < 0) {
-      return 0;
-    }
-    if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
-      return 0;
-    }
-
-    D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills + eSkill;
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (!pSkillsTxt) {
       return 0;
     }
@@ -949,11 +909,7 @@ BOOL __fastcall SKILLBAR_SrvStFn38_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc * p
     }
 
     SkillsServer::D2UpdateState(pUnit, (int)eAuraState, 0);
-    sStateArgs.nDurationInFrames = 0;
-    sStateArgs.eStat = UNITSTAT_strength;
-    sStateArgs.nSkillCalc = 0;
-    sStateArgs.eAuraState = STATE_none;
-    sStateArgs.pFunction = 0;
+    D2StateExArgStrc sStateArgs = {0};
     sStateArgs.eSkill = eSkill;
     sStateArgs.nSkillLvl = nSkillLvl;
     sStateArgs.pUnit = pUnit;
@@ -980,7 +936,7 @@ BOOL __fastcall SKILLBAR_SrvStFn38_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc * p
           break;
         }
 
-        SkillsServer::D2SetAuraEvent(pGame2, pUnit, (uint8_t)*pAuraEventCursor, eSkill, nSkillLvl, (int)pAuraEventCursor[3], 1, (int)pSkillsTxt->aurastate);
+        SkillsServer::D2SetAuraEvent(pGame2, pUnit, (int)*pAuraEventCursor, eSkill, nSkillLvl, (int)pAuraEventCursor[3], 1, (int)pSkillsTxt->aurastate);
         pNearbyTarget = (D2UnitStrc*)((int)pNearbyTarget + 1);
         pAuraEventCursor++;
       } while ((int)pNearbyTarget < 3);
@@ -990,50 +946,47 @@ BOOL __fastcall SKILLBAR_SrvStFn38_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc * p
     return 1;
 }
 
-static BOOL SKILLAMZ_GetPlagueJavelinCloudCount(int32_t nParam) {
-    D2InventoryStrc* pInventory = *(D2InventoryStrc**)(nParam + 0x60);
+static BOOL SKILLAMZ_GetPlagueJavelinCloudCount(int32_t pUnit) {
+    D2InventoryStrc* pInventory = *(D2InventoryStrc**)(pUnit + 0x60);
     if (!pInventory) {
       return 0;
     }
 
     D2UnitStrc* pMainHand = D2Common::INVENTORY::Inventory::INVENTORY_FindWornItemByType(pInventory, 6);
     D2UnitStrc* pOffHand = D2Common::INVENTORY::Inventory::INVENTORY_FindWornItemByType(pInventory, 5);
-    if (!pMainHand) {
-      return 0;
-    }
-
-    uint32_t bIsMeleeWeapon = D2Common::ITEMS::Items::ITEMS_IsA(pMainHand, ITEMTYPE_MeleeWeapon);
-    if (!(bIsMeleeWeapon && pOffHand)) {
-      return 0;
-    }
-
-    bIsMeleeWeapon = D2Common::ITEMS::Items::ITEMS_IsA(pOffHand, ITEMTYPE_MeleeWeapon);
-    if (bIsMeleeWeapon) {
-      return 1;
+    if (pMainHand) {
+      uint32_t bIsMeleeWeapon;
+      bIsMeleeWeapon = D2Common::ITEMS::Items::ITEMS_IsA(pMainHand, ITEMTYPE_MeleeWeapon);
+      if (bIsMeleeWeapon && pOffHand) {
+        bIsMeleeWeapon = D2Common::ITEMS::Items::ITEMS_IsA(pOffHand, ITEMTYPE_MeleeWeapon);
+        if (bIsMeleeWeapon) {
+          return 1;
+        }
+      }
     }
 
     return 0;
 }
 
 // Per-frame tick callback for Amazon Plague Javelin. For monster units returns a seeded RNG result. For players, checks whether the current frame has reached the stored next-cloud-frame (skill param4); if so, computes the next cloud interval based on the active weapon attack speed (bucketed into 4/6/8/10/12/14/16 frames), and returns 1 or 2 indicating how many poison clouds to spawn this tick.
-static int32_t __stdcall SKILLAMZ_CreatePlagueJavelinClouds(int32_t nParam, D2SkillStrc * pSkill, D2UnitStrc * pUnit) {
+static int32_t __stdcall SKILLAMZ_CreatePlagueJavelinClouds(::SGAMEDATA * pGame, D2SkillStrc * pSkill, D2UnitStrc * pUnit) {
     int nAttackFrames;
     if (pUnit && pUnit->eUnitType == UNIT_MONSTER) {
-      D2SeedStrc DVar1;
-      DVar1 = D2_SEED_NEXT(pUnit->sSeed);
-      pUnit->sSeed = DVar1;
-      return (uint8_t)~(uint8_t)DVar1.nSeedLow & 1;
+      D2SeedStrc sNewSeed;
+      sNewSeed = D2_SEED_NEXT(pUnit->sSeed);
+      pUnit->sSeed = sNewSeed;
+      return (uint8_t)~(uint8_t)sNewSeed.nSeedLow & 1;
     }
-    if (!*(int*)(nParam + 0x70)) {
+    if (!pGame->bExpansion) {
       return 1;
     }
 
     int32_t nLastCloudFrame = D2Common::Skills::SKILL_GetParam4(pSkill);
     if (!nLastCloudFrame) {
-      D2Common::Skills::SKILL_SetParam4(pSkill, *(int*)(nParam + 0xa8) + 4);
+      D2Common::Skills::SKILL_SetParam4(pSkill, pGame->dwGameFrame + 4);
       return 1;
     }
-    if (*(int*)(nParam + 0xa8) < nLastCloudFrame) {
+    if (pGame->dwGameFrame < nLastCloudFrame) {
       return 0;
     }
 
@@ -1053,23 +1006,23 @@ static int32_t __stdcall SKILLAMZ_CreatePlagueJavelinClouds(int32_t nParam, D2Sk
       } else if (nAttackFrames < 0x17) {
         nAttackFrames = 0xc;
       } else {
-        nAttackFrames = (uint32_t)(nAttackFrames >= 0x1a) * 2 + 0xe;
+        nAttackFrames = nAttackFrames >= 0x1a ? 0x10U : 0xeU;
       }
     }
 
     BOOL nNextCloudFrame = SKILLAMZ_GetPlagueJavelinCloudCount((int32_t)pUnit);
-    int32_t iVar2 = 2;
+    int32_t iVar1 = 2;
     if (!nNextCloudFrame) {
-      iVar2 = 1;
+      iVar1 = 1;
     }
 
-    int nParam4 = nLastCloudFrame + nAttackFrames;
-    if (nParam4 < *(int*)(nParam + 0xa8)) {
-      nParam4 = *(int*)(nParam + 0xa8) + nAttackFrames;
+    int nPar4 = nLastCloudFrame + nAttackFrames;
+    if (nPar4 < pGame->dwGameFrame) {
+      nPar4 = pGame->dwGameFrame + nAttackFrames;
     }
 
-    D2Common::Skills::SKILL_SetParam4(pSkill, nParam4);
-    return iVar2;
+    D2Common::Skills::SKILL_SetParam4(pSkill, nPar4);
+    return iVar1;
 }
 
 // Cleans up a transport/charge-type skill on the caster: clears skill flags, removes the uninterruptable state, broadcasts packet 0xA5 (skill end), removes the temporary collision footprint at (nCollideX, nCollideY), and resets the dynamic path's collision type and pattern to the normal player/monster defaults. Also removes and frees any aura stat-list associated with the skill's aurastate.
@@ -1090,11 +1043,7 @@ void __fastcall SKILL_DeactivateAndRestoreCollision(::SGAMEDATA * pGameStrc, D2U
 
     D2Common::PATH::DynamicPath::PATH_ChangeCollisionType(pDynamicPath, eCollisionFlag);
     D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pDynamicPath, (bIsPlayerUnit ? -8184 : 0) + 0x3c01);
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
-      return;
-    }
-
-    D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills + eSkill;
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (!pSkillsTxt) {
       return;
     }
@@ -1119,20 +1068,12 @@ BOOL __fastcall Skills_SrvDoFunc_076_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc *
     uint8_t bVar1;
     BOOL bIsAlive;
     D2UnitStrc* pHitTarget;
-    uint32_t nHitResult;
     D2DamageStrc sDamage;
     int nCloudHitIdx;
     int32_t nCloudHitCount;
     uint8_t bySrcDam;
     uint32_t nPrevTargetGUID;
-    if ((int)eSkill < 0) {
-      return 0;
-    }
-    if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
-      return 0;
-    }
-
-    D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills + eSkill;
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (!pSkillsTxt) {
       return 0;
     }
@@ -1163,13 +1104,8 @@ BOOL __fastcall Skills_SrvDoFunc_076_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc *
             UNIT::SUnit::UNITS_SetupAnimTimerEventsFromFrame(pGame, pUnit, 3);
           }
 
-          nCloudHitCount = SKILLAMZ_CreatePlagueJavelinClouds((int32_t)pGame, pSkill, pUnit);
-          nCloudHitIdx = 0;
-          if (nCloudHitCount <= 0) {
-            return 1;
-          }
-
-          do {
+          nCloudHitCount = SKILLAMZ_CreatePlagueJavelinClouds(pGame, pSkill, pUnit);
+          for (nCloudHitIdx = 0; nCloudHitIdx < nCloudHitCount; nCloudHitIdx++) {
             nPrevTargetGUID = D2Common::Skills::SKILL_GetParam3(pSkill);
             pHitTarget = SkillsServer::SKILLS_FindNextUnitInAreaByGUID(pGame, pUnit, 0, 0, 5, 3, nPrevTargetGUID, nullptr);
             if (!pHitTarget) {
@@ -1178,9 +1114,7 @@ BOOL __fastcall Skills_SrvDoFunc_076_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc *
             } else {
               D2Common::Skills::SKILL_SetParam3(pSkill, pHitTarget->nUnitGUID);
               memset(&sDamage, 0, 0x70);
-              iVar1 = 0;
-              nHitResult = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
-              sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pHitTarget, nHitResult, iVar1, nHitResult);
+              sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pHitTarget, D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl), 0);
               if (sDamage.wResultFlags & 1U) {
                 sDamage.wResultFlags |= pSkillsTxt->ResultFlags;
                 sDamage.dwHitFlags |= pSkillsTxt->HitFlags;
@@ -1209,8 +1143,7 @@ BOOL __fastcall Skills_SrvDoFunc_076_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc *
             }
 
             D2Common::Skills::SKILL_SetFlags(pSkill, nSkillFlags);
-            nCloudHitIdx++;
-          } while (nCloudHitIdx < nCloudHitCount);
+          }
 
           return 1;
         }
@@ -1242,9 +1175,7 @@ BOOL __fastcall SKILLBAR_SrvStFn39_Berserk(::SGAMEDATA * pGame, D2UnitStrc * pUn
     }
 
     memset(&sDamage, 0, 0x70);
-    int32_t nDurationFrames = 0;
-    uint32_t nHitResult = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
-    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pUnit2, nHitResult, nDurationFrames, nHitResult);
+    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pUnit2, D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl), 0);
     if (sDamage.wResultFlags & 1U) {
       sDamage.wResultFlags |= pSkillsTxt->ResultFlags;
       sDamage.dwHitFlags |= pSkillsTxt->HitFlags;
@@ -1253,7 +1184,7 @@ BOOL __fastcall SKILLBAR_SrvStFn39_Berserk(::SGAMEDATA * pGame, D2UnitStrc * pUn
       }
 
       sDamage.dwEnDmgPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[0], eSkill, nSkillLvl);
-      if (pSkillsTxt->EType != ELEMENTAL_NONE) {
+      if ((uint8_t)pSkillsTxt->EType > ELEMENTAL_NONE) {
         sDamage.dwConvPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[3], eSkill, nSkillLvl);
         if (sDamage.dwConvPct > 0) {
           sDamage.nConvType = pSkillsTxt->EType;
@@ -1274,7 +1205,7 @@ BOOL __fastcall SKILLBAR_SrvStFn39_Berserk(::SGAMEDATA * pGame, D2UnitStrc * pUn
     }
 
     int nGameFrame = pGame->dwGameFrame;
-    nDurationFrames = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[1], eSkill, nSkillLvl);
+    int32_t nDurationFrames = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[1], eSkill, nSkillLvl);
     nExpireGameFrame = nDurationFrames + nGameFrame;
     if (nExpireGameFrame <= nGameFrame) {
       nExpireGameFrame = nGameFrame + 10;
@@ -1309,7 +1240,7 @@ BOOL __fastcall SKILLBAR_SrvStFn39_Berserk(::SGAMEDATA * pGame, D2UnitStrc * pUn
 }
 
 // For a leap-style skill (Leap/Leap Attack/Teleport-like), clamps and validates the requested target coord (*pnParam1,*pnParam2) to a reachable destination. Clamps the target along the source->target line to the skill's max range (aurarangecalc via D2GetSkillCalc, eSkill@EAX), then tries up to 3 candidate cells (the clamped point and two perpendicular-offset fallbacks) seeking one that is free of player-collision (GetFreeCoordinates/CheckCollision_BlockPlayer), has line-of-sight from source (SKILLS_HasLineOfSight), and is within range. On success overwrites *pnParam1/*pnParam2 with the chosen cell and returns 1; returns 0 if no valid cell or invalid skill. Reads unit position from static/dynamic path.
-static BOOL __stdcall SKILLBAR_FindValidLeapTarget(D2UnitStrc * pUnit, int32_t nParam, int * pnParam1, int * pnParam2, eD2Skills eSkill) {
+static BOOL __stdcall SKILLBAR_FindValidLeapTarget(D2UnitStrc * pUnit, int32_t nSkillLvl, int * pnTargetX, int * pnTargetY, eD2Skills eSkill) {
     D2RoomStrc* pRoom;
     uint32_t bHasLOS;
     LONG LVar1;
@@ -1317,17 +1248,9 @@ static BOOL __stdcall SKILLBAR_FindValidLeapTarget(D2UnitStrc * pUnit, int32_t n
     int nTryCount;
     int32_t nSrcX;
     int32_t nSrcY;
-    BOOL bSearchNeighbors;
     int nOrigTargetY;
-    if ((int)eSkill < 0) {
-      return 0;
-    }
-    if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
-      return 0;
-    }
-
-    D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills;
-    if (!(pSkillsTxt + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
@@ -1349,29 +1272,29 @@ static BOOL __stdcall SKILLBAR_FindValidLeapTarget(D2UnitStrc * pUnit, int32_t n
       nSrcY = 0;
     }
 
-    int32_t nRange = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt[eSkill].aurarangecalc, eSkill, nParam);
+    int32_t nRange = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->aurarangecalc, eSkill, nSkillLvl);
     int nMaxLeapRange = nRange;
-    int32_t nDist = D2Common::Collision::GetDistanceToXY(pUnit, *pnParam1, *pnParam2);
+    int32_t nDist = D2Common::Collision::GetDistanceToXY(pUnit, *pnTargetX, *pnTargetY);
     if (nDist <= 1) {
       nDist = 1;
     }
     if (nDist > nRange) {
-      nOrigTargetY = *pnParam2;
-      *pnParam1 = (*pnParam1 - nSrcX) * nMaxLeapRange / nDist + nSrcX;
-      *pnParam2 = (nOrigTargetY - nSrcY) * nMaxLeapRange / nDist + nSrcY;
+      nOrigTargetY = *pnTargetY;
+      *pnTargetX = (*pnTargetX - nSrcX) * nMaxLeapRange / nDist + nSrcX;
+      *pnTargetY = (nOrigTargetY - nSrcY) * nMaxLeapRange / nDist + nSrcY;
     }
 
-    sCandidatePos.y = *pnParam2;
-    nParam = sCandidatePos.y - nSrcY;
-    if (nParam >= -1) {
-      if (nParam >= 2) {
-        nParam = 2;
+    sCandidatePos.y = *pnTargetY;
+    nSkillLvl = sCandidatePos.y - nSrcY;
+    if (nSkillLvl >= -1) {
+      if (nSkillLvl >= 2) {
+        nSkillLvl = 2;
       }
     } else {
-      nParam = -2;
+      nSkillLvl = -2;
     }
 
-    sCandidatePos.x = *pnParam1;
+    sCandidatePos.x = *pnTargetX;
     int nDeltaX = nSrcX - sCandidatePos.x;
     if (nDeltaX >= -1) {
       if (nDeltaX >= 2) {
@@ -1389,10 +1312,7 @@ static BOOL __stdcall SKILLBAR_FindValidLeapTarget(D2UnitStrc * pUnit, int32_t n
       LVar1 = sCandidatePos.y;
       pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
       pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, sCandidatePos.x, LVar1);
-      bSearchNeighbors = 1;
-      nDist = 0x1c09;
-      nRange = D2Common::Units::GetUnitSizeX(pUnit);
-      pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &sCandidatePos, nRange, nDist, bSearchNeighbors);
+      pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &sCandidatePos, D2Common::Units::GetUnitSizeX(pUnit), 0x1c09, 1);
       nY = sCandidatePos.y;
       LVar1 = sCandidatePos.x;
       if (pRoom) {
@@ -1403,8 +1323,8 @@ static BOOL __stdcall SKILLBAR_FindValidLeapTarget(D2UnitStrc * pUnit, int32_t n
           if (bHasLOS) {
             nRange = D2Common::Collision::GetDistanceToXY(pUnit, LVar1, nY);
             if (nRange <= nMaxLeapRange) {
-              *pnParam1 = LVar1;
-              *pnParam2 = nY;
+              *pnTargetX = LVar1;
+              *pnTargetY = nY;
               return 1;
             }
           }
@@ -1415,14 +1335,14 @@ static BOOL __stdcall SKILLBAR_FindValidLeapTarget(D2UnitStrc * pUnit, int32_t n
       switch (nTryCount) {
         case 2:
           {
-            sCandidatePos.x = *pnParam1 + nParam;
-            sCandidatePos.y = *pnParam2 + nDeltaX;
+            sCandidatePos.x = *pnTargetX + nSkillLvl;
+            sCandidatePos.y = *pnTargetY + nDeltaX;
             break;
           }
         case 1:
           {
-            sCandidatePos.x = *pnParam1 - nParam;
-            sCandidatePos.y = *pnParam2 - nDeltaX;
+            sCandidatePos.x = *pnTargetX - nSkillLvl;
+            sCandidatePos.y = *pnTargetY - nDeltaX;
             break;
           }
         case 0:
@@ -1445,13 +1365,13 @@ static void __stdcall SKILLBAR_InitChargeTarget(::SGAMEDATA * pGame, D2UnitStrc 
     D2Common::Skills::SKILL_SetParam4(pSkill, pUnit2->nUnitGUID);
 }
 
-static BOOL __stdcall SKILLBAR_CanTargetPosition(D2UnitStrc * pUnit, int32_t nParam1, int32_t nParam2, int32_t nParam3) {
-    if (!(nParam3 >= 0 && nParam3 < sgptDataTable->nTxtSkillsCount)) {
+static BOOL __stdcall SKILLBAR_CanTargetPosition(D2UnitStrc * pUnit, int32_t nX, int32_t nY, int32_t nSkillId) {
+    if (!(nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
 
     D2SkillsTxt* pSkillsTxtBase = sgptDataTable->pTxtSkills;
-    if (!(pSkillsTxtBase + nParam3)) {
+    if (!(pSkillsTxtBase + nSkillId)) {
       return 0;
     }
 
@@ -1460,11 +1380,11 @@ static BOOL __stdcall SKILLBAR_CanTargetPosition(D2UnitStrc * pUnit, int32_t nPa
       return 0;
     }
 
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nParam1, nParam2);
+    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nY);
     if (!pRoom) {
       return 0;
     }
-    if (*((uint8_t*)&pSkillsTxtBase[nParam3] + 0x5) & (uint8_t)gadwBitMasks[0]) {
+    if (*((uint8_t*)&pSkillsTxtBase[nSkillId] + 0x5) & (uint8_t)gadwBitMasks[0]) {
       return 1;
     }
 
@@ -1478,13 +1398,11 @@ static BOOL __stdcall SKILLBAR_CanTargetPosition(D2UnitStrc * pUnit, int32_t nPa
 
 // Server-side skill StFunc 40: start/setup handler for a charge-leap movement skill (e.g. Leap/Charge). Validates the skill id and the unit's current skill. For player units it resolves the target/cursor position and validates it (SKILLBAR_CanTargetPosition / SKILLBAR_FindValidLeapTarget). For monster units it derives a leap-past destination from the target's position (or cursor) and finds free collision coordinates. It then reserves the destination room, adds a COLLIDE_PLAYER collision marker at the landing point, sets the unit uninterruptible + STATE_skill_move, and stores the destination X/Y (and target type/GUID for monsters) into the skill params with flag 0x80. Returns TRUE on success, FALSE if validation fails (clearing the current skill).
 BOOL __fastcall SKILLBAR_SrvStFn40_Leap(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    bool _bIsMonsterUnit;
     D2UnitStrc* pTarget;
     BOOL nResult;
-    int32_t nCoordOrWidth;
     D2RoomStrc* pRoom;
-    POINT local_18;
-    bool bIsMonsterUnit;
+    int32_t eCollisionFlag;
+    POINT sDestPoint;
     uint32_t nDestY;
     POINT* pTargetPoint;
     eD2Skills eSkillOrig;
@@ -1507,9 +1425,10 @@ BOOL __fastcall SKILLBAR_SrvStFn40_Leap(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
       eUnitType = pUnit->eUnitType;
     }
 
-    _bIsMonsterUnit = (uint32_t)(eUnitType == UNIT_MONSTER);
-    if (_bIsMonsterUnit) {
-      int32_t eCollisionFlag;
+    BOOL bIsMonsterUnit;
+    bIsMonsterUnit = (BOOL)(eUnitType == UNIT_MONSTER);
+    if (bIsMonsterUnit) {
+      int32_t nCoordOrWidth;
       pTarget = UNIT::SUnit::GetTargetEx(pGame2, pUnit);
       if (!pTarget) {
         nResult = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame2, pUnit, &eSkill, &nDestY);
@@ -1535,10 +1454,10 @@ BOOL __fastcall SKILLBAR_SrvStFn40_Leap(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 
       nResult = 0;
       eCollisionFlag = 0x3c01;
-      local_18.x = eSkill;
-      local_18.y = nDestY;
+      sDestPoint.x = eSkill;
+      sDestPoint.y = nDestY;
       nCoordOrWidth = D2Common::Units::GetUnitSizeX(pUnit);
-      pTargetPoint = &local_18;
+      pTargetPoint = &sDestPoint;
       pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
       pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, pTargetPoint, nCoordOrWidth, eCollisionFlag, nResult);
       if (!pRoom) {
@@ -1547,8 +1466,8 @@ BOOL __fastcall SKILLBAR_SrvStFn40_Leap(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
         return 0;
       }
 
-      eSkill = local_18.x;
-      nDestY = local_18.y;
+      eSkill = sDestPoint.x;
+      nDestY = sDestPoint.y;
     } else {
       nResult = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame2, pUnit, &eSkill, &nDestY);
       if (!nResult) {
@@ -1569,13 +1488,12 @@ BOOL __fastcall SKILLBAR_SrvStFn40_Leap(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     uint32_t nDestYSaved = nDestY;
     pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, eSkill, nDestYSaved);
-    nCoordOrWidth = 0x80;
-    D2Common::Collision::AddCollision_Type(pRoom, eSkill, nDestY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), nCoordOrWidth);
+    D2Common::Collision::AddCollision_Type(pRoom, eSkill, nDestY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), 0x80);
     UNIT::SUnit::SetUninterruptableState(pUnit, 1);
     D2Common::DATATBLS::ItemStats::SetState(pUnit, STATE_skill_move, 1);
     D2Common::Skills::SKILL_SetParam1(pSkill, eSkill);
     D2Common::Skills::SKILL_SetParam2(pSkill, nDestY);
-    if (_bIsMonsterUnit) {
+    if (bIsMonsterUnit) {
       pTarget = UNIT::SUnit::GetTargetEx(pGame2, pUnit);
       if (pTarget) {
         D2Common::Skills::SKILL_SetParam3(pSkill, pTarget->eUnitType);
@@ -1626,20 +1544,20 @@ static BOOL __stdcall SKILL_InitTransportPath(D2SkillStrc * pSkill, D2UnitStrc *
 }
 
 // Computes the overshooting charge path for Barbarian Charge. Resolves the target unit from skill param3 (type) and param4 (GUID), sets skill flags to 1, forces sequence frame 0xC, snaps position to tile, then calculates an overshoot destination (3× caster origin − 2× target coords). Aborts if the overshoot lands in a town room. Sets path type 8, distance 5, and calls PATH_CalculatePath.
-static void __stdcall SKILLBAR_CalculateChargePath(::SGAMEDATA * pGame, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
+static BOOL __stdcall SKILLBAR_CalculateChargePath(::SGAMEDATA * pGame, int32_t nPosX, int32_t nPosY, D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
     if (!pSkill) {
-      return;
+      return 0;
     }
 
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
     if (!pDynamicPath) {
-      return;
+      return 0;
     }
 
     uint32_t nTargetGUID = D2Common::Skills::SKILL_GetParam4(pSkill);
     D2UnitStrc* pTarget = UNIT::SUnit::FindUnitFromTable(pGame, D2Common::Skills::SKILL_GetParam3(pSkill), nTargetGUID);
     if (!pTarget) {
-      return;
+      return 0;
     }
 
     D2Common::Skills::SKILL_SetFlags(pSkill, 1);
@@ -1650,9 +1568,9 @@ static void __stdcall SKILLBAR_CalculateChargePath(::SGAMEDATA * pGame, int32_t 
     D2Common::PATH::DynamicPath::SetStepNum(pDynamicPath, 1);
     D2Common::PATH::DynamicPath::SetTarget(pDynamicPath, nullptr);
     int32_t nTargetUnitCoord = D2Client::Units::GetXPosFromDynamicPathUnit(pTarget);
-    int nX = nParam1 * 3 + nTargetUnitCoord * -2;
+    int nX = nPosX * 3 + nTargetUnitCoord * -2;
     nTargetUnitCoord = D2Client::Units::GetYPosFromDynamicPathUnit(pTarget);
-    int nOvershootY = nParam2 * 3 + nTargetUnitCoord * -2;
+    int nOvershootY = nPosY * 3 + nTargetUnitCoord * -2;
     int nY = nOvershootY;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nY);
@@ -1660,7 +1578,7 @@ static void __stdcall SKILLBAR_CalculateChargePath(::SGAMEDATA * pGame, int32_t 
       BOOL bIsInTown;
       bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
       if (bIsInTown) {
-        return;
+        return 0;
       }
     }
 
@@ -1668,13 +1586,13 @@ static void __stdcall SKILLBAR_CalculateChargePath(::SGAMEDATA * pGame, int32_t 
     D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 8);
     D2Common::PATH::DynamicPath::SetDistance(pDynamicPath, 5);
     D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
+    return 1;
 }
 
 // Called each server tick while a charging unit (player or monster) is en route to its charge destination. Reads target (nX, nY) from skill params 1/2. If the unit has reached the target: removes old collision, restores normal collision type and path type, fires UNITEVENTCALLBACK_ENDANIM, schedules a follow-up event, and sends a 0xA5 packet with the current skill ID. Special cases: Baal (monBaseId 0x4E) calls SKILLBAR_CalculateChargePath instead; Iron Golem (0x21C) adjusts sequence frame based on remaining distance. If not yet at target, advances the sequence frame (monsters) or resets the anim timer (players). Returns 1 when arrival is processed, 0 otherwise.
 static BOOL __stdcall SKILLBAR_ArriveAtChargeTarget(::SGAMEDATA * pGame, D2SkillStrc * pSkill, D2UnitStrc * pUnit) {
     int nUnitX;
     int32_t nCollisionWidth;
-    eD2Skills eCurrentSkill;
     uint32_t nDist;
     int nMonBaseId;
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
@@ -1703,7 +1621,7 @@ static BOOL __stdcall SKILLBAR_ArriveAtChargeTarget(::SGAMEDATA * pGame, D2Skill
       nUnitX = 0;
     }
     if (nUnitX == nX) {
-      eD2CollisionShapeType eVar1;
+      eD2Skills eCurrentSkill;
       nCollisionWidth = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
       if (nCollisionWidth == nY) {
         if (!bIsNotMonster) {
@@ -1718,9 +1636,7 @@ static BOOL __stdcall SKILLBAR_ArriveAtChargeTarget(::SGAMEDATA * pGame, D2Skill
             pUnit->nFrameCount = (pUnit->nFrameCount & 0xffffff00U) - 0x100;
           }
         } else {
-          nCollisionWidth = 0x80;
-          eVar1 = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
-          D2Common::Collision::RemoveCollision_Type(pRoom, nX, nY, eVar1, nCollisionWidth);
+          D2Common::Collision::RemoveCollision_Type(pRoom, nX, nY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), 0x80);
           D2Common::PATH::DynamicPath::PATH_ChangeCollisionType(pDynamicPath, 0x80);
           D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pDynamicPath, 0x1c09);
           D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 7);
@@ -1757,12 +1673,8 @@ static BOOL __stdcall SKILLBAR_ArriveAtChargeTarget(::SGAMEDATA * pGame, D2Skill
 BOOL __fastcall Skills_SrvDoFunc_077_Leap(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     BOOL bArrived;
     D2DamageStrc sDamage;
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
-      return 0;
-    }
-
-    D2SkillsTxt* pDVar1 = sgptDataTable->pTxtSkills;
-    if (!(pDVar1 + eSkill)) {
+    D2SkillsTxt* pDVar1 = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pDVar1) {
       return 0;
     }
 
@@ -1784,7 +1696,7 @@ BOOL __fastcall Skills_SrvDoFunc_077_Leap(::SGAMEDATA * pGame, D2UnitStrc * pUni
       if (bArrived && eUnitType != UNIT_MONSTER) {
         memset(&sDamage, 0, 0x70);
         sDamage.wResultFlags = 9;
-        nAoeRange = D2Common::Skills::D2GetSkillCalc(pUnit, pDVar1[eSkill].calc[0], eSkill, nSkillLvl);
+        nAoeRange = D2Common::Skills::D2GetSkillCalc(pUnit, pDVar1->calc[0], eSkill, nSkillLvl);
         SkillsServer::SKILLS_ApplyAreaDamage(pGame, pUnit, 0, 0, nAoeRange, &sDamage, 0);
         return 1;
       }
@@ -1844,7 +1756,7 @@ static D2UnitStrc * __stdcall SKILLBAR_AcquireNextTarget(::SGAMEDATA * pGame, D2
 
 // Server skill-start function for Barbarian skill index 41 (Leap Attack). Looks up the skill, finds a teleport destination via SKILL_FindTeleportPosition. If a valid position is found, marks a collision tile, sets the unit uninterruptable, stores destination coords in skill params 1-2, sets SKILL_MOVE state, and optionally stuns the target. If no teleport pos is found but a target is in melee range, forces a direct attack instead. Returns 1 on success, 0 if the skill is not present.
 BOOL __fastcall SKILLBAR_SrvStFn41_LeapAttack(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    bool _bFoundTeleportPos;
+    uint32_t _bFoundTeleportPos;
     bool bFoundTeleportPos;
     D2RoomStrc* pRoom;
     eD2CollisionShapeType nWidth;
@@ -1883,16 +1795,13 @@ BOOL __fastcall SKILLBAR_SrvStFn41_LeapAttack(::SGAMEDATA * pGame, D2UnitStrc * 
 
         D2Common::Skills::SKILL_SetFlags(pSkill, 0x1080);
         D2Common::DATATBLS::ItemStats::SetState(pUnit, STATE_skill_move, 1);
-        if (!pUnit_00) {
-          return 1;
+        if (pUnit_00) {
+          eUnitState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit_00, STATE_uninterruptable);
+          if (eUnitState != STATE_none) {
+            SkillsServer::SKILL_ApplyStunState(pGame, pUnit_00, STATE_healthpot);
+          }
         }
 
-        eUnitState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit_00, STATE_uninterruptable);
-        if (eUnitState == STATE_none) {
-          return 1;
-        }
-
-        SkillsServer::SKILL_ApplyStunState(pGame, pUnit_00, STATE_healthpot);
         return 1;
       }
     }
@@ -1902,7 +1811,6 @@ BOOL __fastcall SKILLBAR_SrvStFn41_LeapAttack(::SGAMEDATA * pGame, D2UnitStrc * 
 
 // Server-side hit cycle for the Whirlwind skill. Acquires the next target in the spin arc via SKILLBAR_AcquireNextTarget, performs a to-hit check, and if it lands: calculates and applies physical + elemental damage, removes any stun state list from the target, and applies the skill's server overlay. Returns 1 if a target was hit, 0 if no valid target or skill entry found.
 static BOOL __stdcall SKILLBAR_WhirlwindHitCycle(::SGAMEDATA * pGame, eD2Skills eSkill, int32_t nSkillLvl, D2UnitStrc * pUnit) {
-    D2StatListExStrc* pStatList;
     D2DamageStrc sDamage;
     short int nHitOverlayId;
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
@@ -1925,44 +1833,40 @@ static BOOL __stdcall SKILLBAR_WhirlwindHitCycle(::SGAMEDATA * pGame, eD2Skills 
     }
 
     memset(&sDamage, 0, 0x70);
-    int32_t nHitFlags = 0;
-    uint32_t nHitResult = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
-    uint16_t uVar1 = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nHitResult, nHitFlags, nHitResult);
-    if (!(uVar1 & 1)) {
-      return 1;
-    }
+    uint16_t uVar1 = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl), 0);
+    if (uVar1 & 1) {
+      D2StatListExStrc* pStatList;
+      sDamage.wResultFlags = uVar1 | 8;
+      sDamage.dwHitClass = D2Common::Units::GetHitClassForPlayerOrMonster(pUnit);
+      sDamage.dwHitFlags |= 0x20;
+      sDamage.dwEnDmgPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[0], eSkill, nSkillLvl);
+      if ((uint8_t)pSkillsTxt->EType > ELEMENTAL_NONE) {
+        sDamage.dwConvPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[3], eSkill, nSkillLvl);
+        if (sDamage.dwConvPct > 0) {
+          sDamage.nConvType = pSkillsTxt->EType;
+        }
+      }
 
-    sDamage.wResultFlags = uVar1 | 8;
-    sDamage.dwHitClass = D2Common::Units::GetHitClassForPlayerOrMonster(pUnit);
-    sDamage.dwHitFlags |= 0x20;
-    sDamage.dwEnDmgPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[0], eSkill, nSkillLvl);
-    if (pSkillsTxt->EType != ELEMENTAL_NONE) {
-      sDamage.dwConvPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[3], eSkill, nSkillLvl);
-      if (sDamage.dwConvPct > 0) {
-        sDamage.nConvType = pSkillsTxt->EType;
+      SkillsServer::SetDamageOnEvent(pUnit, &sDamage, eSkill, nSkillLvl);
+      *(uint8_t*)(char*)&eSkill = pSkillsTxt->SrcDam;
+      if ((uint8_t)eSkill == SKILL_Attack) {
+        *(uint8_t*)(char*)&eSkill = SKILL_AxeMastery;
+      }
+
+      UNIT::SUnitDmg::DAMAGE_CalculateAndApplyDamage(pGame, pUnit, pTarget, &sDamage, (uint8_t)eSkill);
+      UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit, pTarget, 0);
+      nHitOverlayId = pSkillsTxt->srvoverlay;
+      if (nHitOverlayId > 0 && (int)nHitOverlayId <= sgptDataTable->nTxtOverlaySize) {
+        D2Common::Units::SetOverlay(pTarget, (int)nHitOverlayId, 0);
+      }
+
+      pStatList = D2Common::Stats::StatsEx::GetStatsByState(pTarget, STATE_stunned);
+      if (pStatList) {
+        D2Common::Stats::StatsEx::STATLIST_RemoveAndRecalc(pTarget, pStatList);
+        D2Common::Stats::StatsEx::FreeStatList(&pStatList->sStatList);
       }
     }
 
-    SkillsServer::SetDamageOnEvent(pUnit, &sDamage, eSkill, nSkillLvl);
-    *(uint8_t*)(char*)&eSkill = pSkillsTxt->SrcDam;
-    if ((uint8_t)eSkill == SKILL_Attack) {
-      *(uint8_t*)(char*)&eSkill = SKILL_AxeMastery;
-    }
-
-    UNIT::SUnitDmg::DAMAGE_CalculateAndApplyDamage(pGame, pUnit, pTarget, &sDamage, (uint8_t)eSkill);
-    UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit, pTarget, 0);
-    nHitOverlayId = pSkillsTxt->srvoverlay;
-    if (nHitOverlayId > 0 && (int)nHitOverlayId <= sgptDataTable->nTxtOverlaySize) {
-      D2Common::Units::SetOverlay(pTarget, (int)nHitOverlayId, 0);
-    }
-
-    pStatList = D2Common::Stats::StatsEx::GetStatsByState(pTarget, STATE_stunned);
-    if (!pStatList) {
-      return 1;
-    }
-
-    D2Common::Stats::StatsEx::STATLIST_RemoveAndRecalc(pTarget, pStatList);
-    D2Common::Stats::StatsEx::FreeStatList(&pStatList->sStatList);
     return 1;
 }
 

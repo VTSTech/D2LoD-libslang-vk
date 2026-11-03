@@ -14,10 +14,7 @@ struct D2UnitStrc;
 
 // Data types
 struct D2CubeInputStrc {
-    D2CubeInputStrc() = default;
-    D2CubeInputStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2CubeInputStrc(uint16_t a0, uint16_t a1, uint16_t a2, uint8_t a3, uint8_t a4) : wFlagsAndUpgrade(a0), nItemClassId(a1), nUniqueItemId(a2), nQuality(a3), nQuantity(a4) {}
 
     /* 0x00 */ uint16_t wFlagsAndUpgrade; // Packed word: low byte flags (useitem=1,usetype=2,nos=4,sock=8,eth=0x10,upg=0x80,bas=0x100,exc=0x200,eli=0x400,nru=0x800). Bit 0x40=unique/set. High byte is nUpgradeBase (class ID for upgrade type).
     /* 0x02 */ uint16_t nItemClassId;
@@ -46,11 +43,10 @@ struct D2CubeOutputStrc {
     /* 0x0B */ uint8_t nILvl;
     /* 0x0C */ uint16_t wPrefixId[3];
     /* 0x12 */ uint16_t wSuffixId[3];
-    /* 0x18 */ uint8_t unk0x18[60];
+    /* 0x18 */ uint8_t aMods[60];
 };
 
-#pragma pack(push, 1)
-struct D2CubeMainTxt {
+struct __attribute__((packed)) D2CubeMainTxt {
     /* 0x00 */ uint8_t nEnabled;
     /* 0x01 */ uint8_t nLadder;
     /* 0x02 */ uint8_t nMinDiff;
@@ -65,7 +61,6 @@ struct D2CubeMainTxt {
     /* 0x14 */ D2CubeInputStrc pInputItem[7];
     /* 0x4C */ D2CubeOutputStrc pOutputItem[3];
 };
-#pragma pack(pop)
 
 namespace D2Common::Txt::Cube {
 
@@ -83,10 +78,10 @@ void __stdcall CUBE_FreeCubeMainTable();
 struct D2CubeMainTxt * __stdcall CUBE_GetRecipeByIndex(int32_t nIndex);
 // Returns the total number of cube recipes loaded from CubMain.txt. Returns nTxtCubeMainSize global.
 int32_t __stdcall CUBE_GetRecipeCount();
-void __stdcall nullsub(struct D2UnitStrc * dwParam1, uint32_t dwParam2);
+void __stdcall nullsub(struct D2UnitStrc * pUnit, uint32_t dwParam2);
 void __stdcall FIELDTBLS_AllocPlayerData_NoOp(struct D2UnitStrc * dwUnused);
 void __fastcall FIELDTBLS_FreePlayerData_STUB(struct D2UnitStrc * pUnit);
-void __stdcall FIELDTBLS_InitTxtFiles_NoOp();
+void __fastcall FIELDTBLS_InitTxtFiles_NoOp(struct D2PoolManagerStrc * pMemory);
 void __stdcall FIELDTBLS_FreeTables_NoOp();
 // Body is only the halt at line 101.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.

@@ -9,6 +9,7 @@
 #include "D2Client/Seed.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/Path.h"
+#include "D2Client/UI/VanillaPlusCore.h" // VP: [issue #26 / R92] wide-layout guards
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -40,14 +41,13 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Panel.h"
-#include "D2Common/D2MissilesTxt.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
-namespace D2Client::Draw::Weather {
+static uint32_t gnBlizzardSoundPlayed = 0x1; D2_STATIC_GUARD(gnBlizzardSoundPlayed, "gnBlizzardSoundPlayed");
 
-static DC6 * DC6_UncompOverlays_Rain2[4] = { 0 }; D2_STATIC_GUARD(DC6_UncompOverlays_Rain2, "D2Client::Draw::Weather::DC6_UncompOverlays_Rain2");
+namespace D2Client::Draw::Weather {
 
 float __stdcall Abs(float fValue) {
     return std::fabs(fValue);
@@ -167,14 +167,14 @@ int __stdcall WEATHER_InitializeRngParams() {
     if (pPlayer) {
       D2SeedStrc sSeedUpdated;
       seed64 = (uint64_t)pPlayer->sSeed.nSeedLow * 0x6ac690c5 + (uint64_t)pPlayer->sSeed.nSeedHigh;
-      gnWeatherRngCountdown = (int)seed64 + (int)((seed64 & 0xffffffff) / 0x177) * -0x177 + 0x7d;
+      gnWeatherRngCountdown = (int)((uint32_t)seed64 % 0x177) + 0x7d;
       seed64 = (seed64 & 0xffffffff) * 0x6ac690c5 + (seed64 >> 0x20);
-      gnWeatherTransitionCountdown = (int)seed64 + (int)((seed64 & 0xffffffff) / 0x5dc) * -0x5dc + 500;
+      gnWeatherTransitionCountdown = (int)((uint32_t)seed64 % 0x5dc) + 500;
       sSeedUpdated = D2_SEED_NEXT_VAL(seed64);
       pPlayer->sSeed = sSeedUpdated;
       gnWeatherParticleOffsetYModulo = sSeedUpdated.nSeedLow % 0x47 + 0x5c;
       gnWeatherRngParam = gnWeatherParticleOffsetYModulo;
-      return (int)((uint64_t)sSeedUpdated.nSeedLow * 0xe6c2b449);
+      return (int)(sSeedUpdated.nSeedLow * 0xe6c2b449);
     }
 
     gnWeatherRngCountdown = 0x138;
@@ -261,8 +261,8 @@ void __fastcall MISC_PrepareWeatherOverlay(eD2LevelId eLevel) {
     static uint32_t gnWeatherSplashMaxCount; D2_STATIC_GUARD_BSS(gnWeatherSplashMaxCount, "D2Client::Draw::Weather::MISC_PrepareWeatherOverlay::gnWeatherSplashMaxCount");
     static int gbWeatherInitialized; D2_STATIC_GUARD_BSS(gbWeatherInitialized, "D2Client::Draw::Weather::MISC_PrepareWeatherOverlay::gbWeatherInitialized");
 
-    uint8_t _byTintComp;
-    int32_t iVar1;
+    uint32_t _byTintComp;
+    int32_t nFrameCount;
     uint8_t nRed;
     char szPath[260];
     uint32_t nDC6Size;
@@ -305,11 +305,11 @@ void __fastcall MISC_PrepareWeatherOverlay(eD2LevelId eLevel) {
       byTintComp = byColorComp;
       byColorComp = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(byColorComp, -cDayStep + 0x7b, byColorComp);
       gWeatherPaletteDayColors[nGradientIndex] = byColorComp;
-      cRainStep = -((char)(nRainGradient / 0xc) + (char)(nRainGradient >> 0x1f) - (char)((int64_t)nRainGradient * 0x2aaaaaab >> 0x3f));
+      cRainStep = -(char)(nRainGradient / 0xc);
       byTintComp = cRainStep + 0x2d;
       byColorComp = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(byTintComp, cRainStep + 0x37, byTintComp);
       gWeatherPaletteRain1Colors[nGradientIndex] = byColorComp;
-      cRainStep = -((char)(nMudGradient / 0xc) + (char)(nMudGradient >> 0x1f) - (char)((int64_t)nMudGradient * 0x2aaaaaab >> 0x3f));
+      cRainStep = -(char)(nMudGradient / 0xc);
       byTintComp = cRainStep + 0x19;
       byColorComp = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(byTintComp, cRainStep + 0x1e, byTintComp);
       byTintComp = cDayStep + 0x78;
@@ -336,8 +336,8 @@ void __fastcall MISC_PrepareWeatherOverlay(eD2LevelId eLevel) {
     DC6_UncompOverlays_Rain[3] = Core::Archive::IMAGE_LoadWeatherDC6ToPointer(szPath, &nDC6Size, nullptr);
     nGradientIndex = 0;
     do {
-      iVar1 = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(*(DC6**)((int)DC6_UncompOverlays_Rain + nGradientIndex));
-      *(int32_t*)((int)DC6_UncompOverlays_Rain_FrameCount + nGradientIndex) = iVar1;
+      nFrameCount = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(*(DC6**)((int)DC6_UncompOverlays_Rain + nGradientIndex));
+      *(int32_t*)((int)DC6_UncompOverlays_Rain_FrameCount + nGradientIndex) = nFrameCount;
       nGradientIndex += 4;
     } while (nGradientIndex < 0x10);
 
@@ -351,8 +351,8 @@ void __fastcall MISC_PrepareWeatherOverlay(eD2LevelId eLevel) {
     DC6_UncompOverlays_bubble[3] = Core::Archive::IMAGE_LoadWeatherDC6ToPointer(szPath, &nDC6Size, nullptr);
     nGradientIndex = 0;
     do {
-      iVar1 = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(*(DC6**)((int)DC6_UncompOverlays_bubble + nGradientIndex));
-      *(int32_t*)((int)DC6_UncompOverlays_bubble_FrameCount + nGradientIndex) = iVar1;
+      nFrameCount = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(*(DC6**)((int)DC6_UncompOverlays_bubble + nGradientIndex));
+      *(int32_t*)((int)DC6_UncompOverlays_bubble_FrameCount + nGradientIndex) = nFrameCount;
       nGradientIndex += 4;
     } while (nGradientIndex < 0x10);
 
@@ -407,7 +407,8 @@ void __fastcall WEATHER_InitBlizzardState(int nSpellId) {
     gnBlizzardSoundPlayed = nSpellId;
 }
 
-void __stdcall WEATHER_UpdateSplashes() {
+// Registers: pSeed (ECX) is passed by WeatherEffects but not read.
+void __fastcall WEATHER_UpdateSplashes(D2SeedStrc * pSeed) {
     uint32_t bPerspective = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
     short int* pSplashData = (short int*)pEnvironmentSplashes->pData;
     int nIndex = 0;
@@ -440,7 +441,8 @@ void __stdcall WEATHER_UpdateSplashes() {
     } while (nIndex <= pSplashArray->nHighestUsedIndex);
 }
 
-void __stdcall WEATHER_UpdateBubbles() {
+// Registers: pSeed (ECX) is passed by WeatherEffects but not read.
+void __fastcall WEATHER_UpdateBubbles(D2SeedStrc * pSeed) {
     uint32_t bPerspective = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
     short int* pBubbleData = (short int*)pEnvironmentBubbles->pData;
     int nIndex = 0;
@@ -485,7 +487,7 @@ void __fastcall WEATHER_SpawnSplash(int nScreenX, int nScreenY, int nWorldX, int
     }
 
     D2SeedStrc* pSeed = &pPlayer->sSeed;
-    uint32_t nSlot = Fog::Src::DataArrays::FOG_GetMissileField((D2MissilesTxt*)pEnvironmentSplashes);
+    uint32_t nSlot = Fog::Src::DataArrays::FOG_GetMissileField(pEnvironmentSplashes);
     if (nSlot == -1) {
       return;
     }
@@ -516,7 +518,7 @@ void __fastcall WEATHER_SpawnSplash(int nScreenX, int nScreenY, int nWorldX, int
     nSlot = (sSeedNew.nSeedLow & 1) + 2;
     *pSeed = sSeedNew;
     *(uint32_t*)((int)nYOffset + nSplashSlotIndex * 0x18 + 0xc) = nSlot;
-    if (false || 3 < nSlot) {
+    if (false || 3 < (int32_t)nSlot) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2ea);
       exit(-1);
     }
@@ -537,7 +539,7 @@ void __fastcall WEATHER_SpawnBubble(int nScreenX, int nScreenY, int nWorldX, int
     }
 
     D2SeedStrc* pSeed = &pPlayer->sSeed;
-    uint32_t nSlot = Fog::Src::DataArrays::FOG_GetMissileField((D2MissilesTxt*)pEnvironmentBubbles);
+    uint32_t nSlot = Fog::Src::DataArrays::FOG_GetMissileField(pEnvironmentBubbles);
     if (nSlot == -1) {
       return;
     }
@@ -551,7 +553,7 @@ void __fastcall WEATHER_SpawnBubble(int nScreenX, int nScreenY, int nWorldX, int
       nRollResult = Seed::RollBetweenMinAndMax(pSeed, 0, 5);
       nRange = (nRollResult - 2) * 0x10000 + nWorldY;
     } else {
-      int32_t iVar1;
+      int32_t nRollOffset;
       nRollResult = Seed::RollBetweenMinAndMax(pSeed, 0, 0x50);
       nRange = nRollResult - 0x28;
       if (nRange < 0) {
@@ -559,8 +561,8 @@ void __fastcall WEATHER_SpawnBubble(int nScreenX, int nScreenY, int nWorldX, int
       }
 
       nRange = nRange * -2 + 0x50;
-      iVar1 = Seed::RollBetweenMinAndMax(pSeed, -nRange, nRange * 2);
-      *(int32_t*)((int)nRoll + nBubbleIndex * 0x18 + 4) = iVar1 + nScreenX;
+      nRollOffset = Seed::RollBetweenMinAndMax(pSeed, -nRange, nRange * 2);
+      *(int32_t*)((int)nRoll + nBubbleIndex * 0x18 + 4) = nRollOffset + nScreenX;
       nRange = nRollResult - 0x1e + nScreenY;
     }
 
@@ -585,50 +587,53 @@ static void __stdcall WEATHER_GetLightingTint(uint8_t * pOutAlpha, int nIntensit
     D2RoomStrc* pCurrentRoom = UNIT::CUnit::GetCurrentRoom();
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pCurrentRoom);
     uint32_t nPeriodOfDay = D2Common::Environment::DRLGENV_GetPeriodOfDayFromAct(sgpDrlgAct, nullptr);
-    if (nPeriodOfDay > 3) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x356);
-      exit(-1);
-    }
-    if (pOutTint) {
-      *pOutTint = gaWeatherLightTintData[nPeriodOfDay * 2];
-    }
-    if (!pOutAlpha) {
-      return;
-    }
+    if (nPeriodOfDay <= 3) {
+      if (pOutTint) {
+        *pOutTint = gaWeatherLightTintData[nPeriodOfDay * 2];
+      }
+      if (!pOutAlpha) {
+        return;
+      }
 
-    int nScaled = nIntensity * 0xc + (nIntensity * 0xc >> 0x1f & 7U);
-    int nIndex = nScaled >> 3;
-    if (bUseSoftwareRenderer) {
-      *pOutAlpha = gWeatherPaletteLightingSoftwareColors[nIndex];
-      return;
-    }
+      int nScaled = nIntensity * 0xc + (nIntensity * 0xc >> 0x1f & 7U);
+      int nIndex = nScaled >> 3;
+      if (bUseSoftwareRenderer) {
+        *pOutAlpha = gWeatherPaletteLightingSoftwareColors[nIndex];
+        return;
+      }
 
-    uint32_t nSignBits = nScaled >> 0x1f;
-    switch (nPeriodOfDay) {
-      case 2:
-        {
-          *pOutAlpha = gWeatherPaletteLightingNightColors[(int)(nIndex + (nSignBits & 3)) >> 2];
-          return;
-        }
-      default:
-        {
-          *pOutAlpha = gWeatherPaletteLightingNightColors[nIndex];
-          return;
-        }
-      case 1:
-        case 3:
+      uint32_t nSignBits = nScaled >> 0x1f;
+      switch (nPeriodOfDay) {
+        case 2:
           {
-            nIndex = (int)(nIndex - nSignBits) >> 1;
+            *pOutAlpha = gWeatherPaletteLightingNightColors[(int)(nIndex + (nSignBits & 3)) >> 2];
+            return;
+          }
+        default:
+          {
             *pOutAlpha = gWeatherPaletteLightingNightColors[nIndex];
             return;
           }
+        case 1:
+          case 3:
+            {
+              nIndex = (int)(nIndex - nSignBits) >> 1;
+              *pOutAlpha = gWeatherPaletteLightingNightColors[nIndex];
+              return;
+            }
+      }
+
+      return;
     }
+
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x356);
+    exit(-1);
 }
 
 static void WEATHER_SpawnParticle(D2SeedStrc * pSeed) {
     bool bIsBlizzard;
     D2WeatherParticleStrc* pParticleSlot;
-    uint32_t nSlot = Fog::Src::DataArrays::FOG_GetMissileField((D2MissilesTxt*)pEnvironmentParticles);
+    uint32_t nSlot = Fog::Src::DataArrays::FOG_GetMissileField(pEnvironmentParticles);
     if (nSlot == -1) {
       return;
     }
@@ -646,13 +651,13 @@ static void WEATHER_SpawnParticle(D2SeedStrc * pSeed) {
     *pSeed = sNextSeed;
     int nLineIndex = pParticleArray[nParticleSlotIndex].nMaxY;
     pParticleArray[nParticleSlotIndex].nSinPhaseOffset = sNextSeed.nSeedLow & 0x1ff;
-    float fVar1 = (float)(nLineIndex - 0x28) / (float)(ScreenSizeY - 0x57);
+    float fDepthFactor = (float)(nLineIndex - 0x28) / (float)(ScreenSizeY - 0x57);
     if (nWeatherParticleCountAct5) {
       pParticleArray[nParticleSlotIndex].nAlpha = 0xff;
       *pSeed = D2_SEED_NEXT(*pSeed);
       pParticleArray[nParticleSlotIndex].nFadeCountdown = 1;
       nLineIndex = pParticleArray[nParticleSlotIndex].nMaxY;
-      pParticleArray[nParticleSlotIndex].nSpeed = 8 - (int)(fVar1 * -28.0);
+      pParticleArray[nParticleSlotIndex].nSpeed = 8 - (int)(fDepthFactor * -28.0);
       nLineIndex = (nLineIndex - 0x28) * 7 / (ScreenSizeY - 0x57);
       bIsBlizzard = gnWeatherAct5ParticleCount != 0;
       pParticleArray[nParticleSlotIndex].nLineIndex = nLineIndex;
@@ -691,8 +696,8 @@ static void WEATHER_SpawnParticle(D2SeedStrc * pSeed) {
       break;
     }
 
-    pParticleArray[nParticleSlotIndex].nLineIndex = 4 - (int)(fVar1 * -8.0);
-    pParticleArray[nParticleSlotIndex].nSpeed = 0xf - (int)(fVar1 * -15.0);
+    pParticleArray[nParticleSlotIndex].nLineIndex = 4 - (int)(fDepthFactor * -8.0);
+    pParticleArray[nParticleSlotIndex].nSpeed = 0xf - (int)(fDepthFactor * -15.0);
     pParticleArray[nParticleSlotIndex].nFadeCountdown = 3;
 }
 
@@ -701,8 +706,9 @@ void __stdcall WEATHER_UpdateParticles(D2SeedStrc * pSeed) {
     static uint32_t gnWeatherParticleSinPhase; D2_STATIC_GUARD_BSS(gnWeatherParticleSinPhase, "D2Client::Draw::Weather::WEATHER_UpdateParticles::gnWeatherParticleSinPhase");
 
     float fVar1;
-    float fVar2;
     float fDepthFactor;
+    float fSinOffset;
+    float fScaledSpeed;
     if (nWeatherParticleCountAct5) {
       fDepthFactor = Fog::MATH_sinTable_f32_LookupOffset(gnWeatherParticleOffsetYModulo);
       fDepthFactor = std::fabs(fDepthFactor);
@@ -719,11 +725,11 @@ void __stdcall WEATHER_UpdateParticles(D2SeedStrc * pSeed) {
       int nXDrift;
       do {
         if (pParticleData->nFlags) {
-          fVar2 = (float)(int)((float)pParticleData->nSpeed * fDepthFactor);
+          fScaledSpeed = (float)(int)((float)pParticleData->nSpeed * fDepthFactor);
           fVar1 = Fog::MATH_sinTable_f32_LookupOffset(gnWeatherParticleOffsetYModulo);
-          nXDrift = (int)(fVar1 * fVar2);
+          nXDrift = (int)(fVar1 * fScaledSpeed);
           fVar1 = Fog::MATH_sinTable_f32_Lookup(gnWeatherParticleOffsetYModulo);
-          pParticleData->nPosY += (int)(fVar1 * fVar2) - gnCameraWorldDeltaY;
+          pParticleData->nPosY += (int)(fVar1 * fScaledSpeed) - gnCameraWorldDeltaY;
           if (pParticleData->nPosY > pParticleData->nMaxY) {
             pParticleData->nDying = 1;
           }
@@ -741,8 +747,8 @@ void __stdcall WEATHER_UpdateParticles(D2SeedStrc * pSeed) {
           }
           if (pParticleData->nFlags) {
             if (nWeatherParticleCountAct5 && !pParticleData->nDying) {
-              fVar2 = Fog::MATH_sinTable_f32_Lookup((uint32_t)(gnWeatherParticleSinPhase << 9) / 0x19 + pParticleData->nSinPhaseOffset & 0x1ff);
-              nXDrift += (int)(fVar2 + fVar2);
+              fSinOffset = Fog::MATH_sinTable_f32_Lookup((uint32_t)(gnWeatherParticleSinPhase << 9) / 0x19 + pParticleData->nSinPhaseOffset & 0x1ff);
+              nXDrift += (int)(fSinOffset + fSinOffset);
             }
 
             pParticleData->nPosX += nXDrift - gnCameraWorldDeltaX;
@@ -836,7 +842,9 @@ void __stdcall WEATHER_DrawParticles() {
     }
 
     int nClipLeft = 0;
-    uint32_t eBorderType = UI::Path::DRAW_GetTypeOfBorder();
+    // VP: [issue #26 / R95] no-panel-shift - rain clip matches the unpanned
+    // world on the wide stops (border-0 clip) instead of the retail slide.
+    uint32_t eBorderType = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder());
     switch (eBorderType) {
       case 1:
         {
@@ -849,10 +857,17 @@ void __stdcall WEATHER_DrawParticles() {
           break;
         }
     }
+    if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+      // VP: [issue #26 / R92] wide-UI layouts keep weather unclipped - the
+      // visible outer margins render world, so the half-screen rain clamp
+      // would leave them dry.
+      nClipRight = ScreenSizeX;
+      nClipLeft = 0;
+    }
 
     D2WeatherParticleStrc* pParticleData = (D2WeatherParticleStrc*)pEnvironmentParticles->pData;
     int nIndex = 0;
-    if (-1 >= pEnvironmentParticles->nHighestUsedIndex) {
+    if (pEnvironmentParticles->nHighestUsedIndex < 0) {
       return;
     }
 
@@ -933,7 +948,7 @@ static int WEATHER_UpdateParticleCount(D2SeedStrc * pSeed) {
       WEATHER_SpawnParticle(pSeed);
     }
 
-    int nChangeRate = 2 - (uint32_t)(nWeatherParticleCountAct5 != 0);
+    int nChangeRate = nWeatherParticleCountAct5 != 0 ? 0x1U : 0x2U;
     if (gnWeatherRngParam < gnWeatherParticleOffsetYModulo) {
       gnWeatherParticleOffsetYModulo -= nChangeRate;
       if (gnWeatherRngParam > gnWeatherParticleOffsetYModulo) {
@@ -958,23 +973,20 @@ static int WEATHER_UpdateParticleCount(D2SeedStrc * pSeed) {
         gnWeatherRngParam = nChangeRate;
       } else {
         seed64 = (uint64_t)pSeed->nSeedLow * 0x6ac690c5 + (uint64_t)pSeed->nSeedHigh;
-        gnWeatherRngCountdown = (int)seed64 + (int)((seed64 & 0xffffffff) / 0x177) * -0x177 + 0x7d;
+        gnWeatherRngCountdown = (int)((uint32_t)seed64 % 0x177) + 0x7d;
         DVar1 = D2_SEED_NEXT_VAL(seed64);
-        nChangeRate = (int)((uint64_t)DVar1.nSeedLow * 0xe6c2b449);
+        nChangeRate = (int)(DVar1.nSeedLow * 0xe6c2b449);
         *pSeed = DVar1;
         gnWeatherRngParam = DVar1.nSeedLow % 0x47 + 0x5c;
       }
     }
-    if (!gnWeatherTransitionProgress) {
-      return nChangeRate;
+    if (gnWeatherTransitionProgress) {
+      gnWeatherTransitionCountdown--;
+      if (!gnWeatherTransitionCountdown) {
+        gbWeatherTransitionTriggered = 1;
+      }
     }
 
-    gnWeatherTransitionCountdown--;
-    if (gnWeatherTransitionCountdown) {
-      return nChangeRate;
-    }
-
-    gbWeatherTransitionTriggered = 1;
     return nChangeRate;
 }
 
@@ -983,17 +995,19 @@ void __stdcall DRAW_Overlay_Weather() {
     D2RoomStrc* pRoom;
     eD2LevelId eLevel;
     int nClipLeft;
+    int32_t nPosX;
     int nYEnd;
     int nXStart;
     int32_t nLineOrCoord;
+    int32_t nSoundPosZ;
     D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_Net();
-    bool bVar2 = false;
+    bool bIsRainLevel = false;
     if (pPlayer) {
-      uint8_t bVar1;
+      uint8_t bCanHaveRain;
       pRoom = D2Common::Units::UNITS_GetRoom(pPlayer);
       eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-      bVar1 = D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveRain(eLevel);
-      bVar2 = bVar1 != '\0';
+      bCanHaveRain = D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveRain(eLevel);
+      bIsRainLevel = bCanHaveRain != '\0';
       D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveMud(eLevel);
     }
 
@@ -1017,7 +1031,10 @@ void __stdcall DRAW_Overlay_Weather() {
             nLineOrCoord = Seed::RollBetweenMinAndMax(pSeed, 0x19, 0x32);
             nClipLeft = Sound::SOUND_PlaySound(SOUND_ITEM_BOOTSCHAIN, nullptr, nLineOrCoord, 0, 0);
             if (nClipLeft) {
-              Sound::SOUND_PlayEnvironmentSound(nClipLeft, Seed::RollBetweenMinAndMax(pSeed, -200, 400), Seed::RollBetweenMinAndMax(pSeed, -200, 400), 0);
+              nSoundPosZ = 0;
+              nLineOrCoord = Seed::RollBetweenMinAndMax(pSeed, -200, 400);
+              nPosX = Seed::RollBetweenMinAndMax(pSeed, -200, 400);
+              Sound::SOUND_PlayEnvironmentSound(nClipLeft, nPosX, nLineOrCoord, nSoundPosZ);
             }
           } else {
             gnBlizzardSoundPlayed = 1;
@@ -1029,7 +1046,8 @@ void __stdcall DRAW_Overlay_Weather() {
       if (fps >= 10) {
         nXStart = 0;
         nYEnd = ScreenSizeY - 0x2f;
-        eBorderType = UI::Path::DRAW_GetTypeOfBorder();
+        // VP: [issue #26 / R95] no-panel-shift (see the clip note above).
+        eBorderType = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder());
         switch (eBorderType) {
           case 1:
             {
@@ -1042,12 +1060,18 @@ void __stdcall DRAW_Overlay_Weather() {
               break;
             }
         }
+        if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+          // VP: [issue #26 / R92] the dark rain sheet spans the full width on
+          // wide-UI layouts (the outer margins are visible world).
+          nClipLeft = ScreenSizeX;
+          nXStart = 0;
+        }
 
         D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nXStart, 0, nClipLeft, nYEnd, 0xff, DRAW_SOLID);
         return;
       }
     }
-    if (!(bVar2 && pEnvironmentParticles->nUsedCount)) {
+    if (!(bIsRainLevel && pEnvironmentParticles->nUsedCount)) {
       return;
     }
 
@@ -1055,76 +1079,71 @@ void __stdcall DRAW_Overlay_Weather() {
 }
 
 void __fastcall WEATHER_DrawBubbles(D2DataArrayStrc * pBubbleArray, DC6 * * pDC6Table) {
-    // Frame slots -36..-4 are ONE object: &nScreenY is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nScreenY;
-      uint32_t bPerspective;
-      int nMaxY;
-      int nScreenX;
-      int nIndex;
-      int nMaxX;
-      int nMinX;
-      D2DataArrayStrc* pBubbleArraySaved;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 32, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     BOOL nDrawResult;
     int nPositionX;
     D2GfxDataStrc sGfxData;
-    __frame0.pBubbleArraySaved = pBubbleArray;
-    __frame0.bPerspective = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
+    int nScreenY;
+    int nScreenX;
+    D2DataArrayStrc* pBubbleArraySaved = pBubbleArray;
+    uint32_t bPerspective = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
     int nScreenWidth = ScreenSizeX;
     int nXOffset = 0;
-    __frame0.nMinX = 0;
-    __frame0.nMaxX = ScreenSizeX;
-    uint32_t eBorderType = UI::Path::DRAW_GetTypeOfBorder();
+    int nMinX = 0;
+    int nMaxX = ScreenSizeX;
+    // VP: [issue #26 / R95] no-panel-shift (see the clip note above).
+    uint32_t eBorderType = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder());
     switch (eBorderType) {
       case 1:
         {
           nPositionX = ScreenSizeX / 4;
           nXOffset = -nPositionX;
-          __frame0.nMaxX = nScreenWidth + nPositionX * -2;
+          nMaxX = nScreenWidth + nPositionX * -2;
           break;
         }
       case 2:
         {
           nXOffset = ScreenSizeX / 4;
-          __frame0.nMinX = nXOffset * 2;
+          nMinX = nXOffset * 2;
           break;
         }
     }
+    if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+      // VP: [issue #26 / R92] keep the bubble pan (nXOffset), drop the
+      // half-screen clamp - the outer margins render world on wide layouts.
+      nMinX = 0;
+      nMaxX = ScreenSizeX;
+    }
 
     memset(&sGfxData, 0, 0x48);
-    D2WeatherBubbleStrc* pEntry = (D2WeatherBubbleStrc*)__frame0.pBubbleArraySaved->pData;
-    __frame0.nIndex = 0;
-    if (__frame0.pBubbleArraySaved->nHighestUsedIndex < 0) {
+    D2WeatherBubbleStrc* pEntry = (D2WeatherBubbleStrc*)pBubbleArraySaved->pData;
+    int nIndex = 0;
+    if (pBubbleArraySaved->nHighestUsedIndex < 0) {
       return;
     }
 
-    for (; __frame0.nIndex <= __frame0.pBubbleArraySaved->nHighestUsedIndex; __frame0.nIndex++ , pEntry++) {
-      __frame0.nMaxY = ScreenSizeY - 0x2f;
+    for (; nIndex <= pBubbleArraySaved->nHighestUsedIndex; nIndex++ , pEntry++) {
+      int nMaxY = ScreenSizeY - 0x2f;
       if (pEntry->nFlags) {
-        if (__frame0.bPerspective) {
+        if (bPerspective) {
           eBorderType = D2gfx::D2GFX::D2GFX_IsInPerspectiveBounds(pEntry->nPosX, pEntry->nPosY);
           if (eBorderType) {
-            D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(pEntry->nPosX, pEntry->nPosY, 0, &__frame0.nScreenX, &__frame0.nScreenY);
-            __frame0.nScreenX += nXOffset;
-            if (__frame0.nScreenX >= __frame0.nMinX && __frame0.nScreenX < __frame0.nMaxX && __frame0.nScreenY >= 0 && __frame0.nScreenY < __frame0.nMaxY) {
+            D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(pEntry->nPosX, pEntry->nPosY, 0, &nScreenX, &nScreenY);
+            nScreenX += nXOffset;
+            if (nScreenX >= nMinX && nScreenX < nMaxX && nScreenY >= 0 && nScreenY < nMaxY) {
               sGfxData.pDC6 = pDC6Table[pEntry->nDC6Index];
               sGfxData.nFrameNumber = pEntry->nFrameNumber;
-              nDrawResult = D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, __frame0.nScreenX, __frame0.nScreenY, -1, DRAW_LIGHTTRANSPARENT, nullptr);
+              nDrawResult = D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nScreenX, nScreenY, -1, DRAW_LIGHTTRANSPARENT, nullptr);
               if (nDrawResult) {
                 continue;
               }
             }
           }
 
-          Fog::Src::DataArrays::FOG_ArrayFreeAtIndex(__frame0.pBubbleArraySaved, __frame0.nIndex << 0x10);
+          Fog::Src::DataArrays::FOG_ArrayFreeAtIndex(pBubbleArraySaved, nIndex << 0x10);
         } else {
           nScreenWidth = pEntry->nPosY;
           nPositionX = pEntry->nPosX + nXOffset;
-          if (nPositionX >= __frame0.nMinX && nPositionX < __frame0.nMaxX && nScreenWidth >= 0 && nScreenWidth < __frame0.nMaxY) {
+          if (nPositionX >= nMinX && nPositionX < nMaxX && nScreenWidth >= 0 && nScreenWidth < nMaxY) {
             sGfxData.pDC6 = pDC6Table[pEntry->nDC6Index];
             sGfxData.nFrameNumber = pEntry->nFrameNumber;
             D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nPositionX, nScreenWidth, -1, DRAW_LIGHTTRANSPARENT, nullptr);
@@ -1146,21 +1165,23 @@ void __stdcall DRAW_WORLD_RainEffectOnFloor() {
 }
 
 uint32_t __stdcall WEATHER_CanHaveRain() {
+    D2RoomStrc* pRoom;
+    eD2LevelId eLevel;
     if (nWeatherParticleCountAct5) {
       return 0;
     }
 
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_Net();
     uint32_t bCanRain = 0;
-    if (!pUnit) {
-      return bCanRain;
+    if (pUnit) {
+      uint8_t bCanRainResult;
+      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+      eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
+      bCanRainResult = D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveRain(eLevel);
+      bCanRain = (uint32_t)(bCanRainResult != '\0');
+      D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveMud(eLevel);
     }
 
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    eD2LevelId eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-    uint8_t bCanRainResult = D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveRain(eLevel);
-    bCanRain = (uint32_t)(bCanRainResult != '\0');
-    D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveMud(eLevel);
     return bCanRain;
 }
 
@@ -1275,7 +1296,7 @@ void __stdcall WEATHER_UpdateTransition(D2SeedStrc * pSeed) {
 
       gnWeatherTransitionTicksRemaining--;
       if (nCurrentState == 1) {
-        gnWeatherParticleState = (int)(((int64_t)(int)(gnWeatherTransitionDurationRolled - gnWeatherTransitionTicksRemaining) * (int64_t)gnWeatherOffsetXModulo & 0xffffffffU) / (uint64_t)gnWeatherTransitionDurationRolled);
+        gnWeatherParticleState = (int)((uint32_t)((uint32_t)(int)(gnWeatherTransitionDurationRolled - gnWeatherTransitionTicksRemaining) * gnWeatherOffsetXModulo) / gnWeatherTransitionDurationRolled);
       } else if (nCurrentState == 3) {
         gnWeatherParticleState = gnWeatherOffsetXModulo * gnWeatherTransitionTicksRemaining / gnWeatherTransitionDurationRolled;
       }
@@ -1353,7 +1374,7 @@ void __stdcall WeatherEffects() {
         WEATHER_UpdateParticles(pSeed);
       }
 
-      WEATHER_UpdateSplashes();
+      WEATHER_UpdateSplashes(pSeed);
       WEATHER_UpdateTransition(pSeed);
       WEATHER_UpdateParticleCount(pSeed);
     } else {
@@ -1363,7 +1384,7 @@ void __stdcall WeatherEffects() {
       return;
     }
 
-    WEATHER_UpdateBubbles();
+    WEATHER_UpdateBubbles(pSeed);
 }
 
 uint32_t __fastcall WEATHER_ApproximateDistance(uint32_t nDeltaX, uint32_t nDeltaY) {

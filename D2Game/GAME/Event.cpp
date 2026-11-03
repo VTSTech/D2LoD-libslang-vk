@@ -49,17 +49,12 @@ typedef void (__fastcall *fpTimerFunctionUnit)(::SGAMEDATA * pGame, D2UnitStrc *
 
 namespace D2Game::GAME::Event {
 
-D2TimerStrc * * __stdcall _UnusedGetFromList(eD2UnitType eUnitType, uint32_t nParam, ::SGAMEDATA * pGame) {
-    if (nParam == -1) {
+D2TimerStrc * * __stdcall EVENT_GetDispatchBucketForFrame(eD2UnitType eUnitType, uint32_t nUnitGUID, ::SGAMEDATA * pGame) {
+    if (nUnitGUID == -1) {
       return nullptr;
     }
 
-    uint32_t nBucketIndex = nParam & 0x8000003f;
-    if ((int)nBucketIndex >= 0) {
-      return pGame->pTimerQueue->pDispatchedTimersByType[Dispatch::aTimerIndexUnitTypeLookupTable[eUnitType]] + nBucketIndex;
-    }
-
-    nBucketIndex = (nBucketIndex - 1 | -64) + 1;
+    uint32_t nBucketIndex = (int)nUnitGUID % 64;
     return pGame->pTimerQueue->pDispatchedTimersByType[Dispatch::aTimerIndexUnitTypeLookupTable[eUnitType]] + nBucketIndex;
 }
 
@@ -129,11 +124,7 @@ static void EVENT_RemoveAndRecycleTimer(D2TimerStrc * pTimer, ::SGAMEDATA * pGam
       if (pTimer->nFrame == -1) {
         ppBucket = pGame->pTimerQueue->pTimerListByType + Dispatch::aTimerIndexUnitTypeLookupTable[pTimer->eUnitType];
       } else {
-        nFrameBucket = pTimer->nFrame & 0x8000003f;
-        if ((int)nFrameBucket < 0) {
-          nFrameBucket = (nFrameBucket - 1 | -64) + 1;
-        }
-
+        nFrameBucket = pTimer->nFrame % 64;
         ppBucket = pGame->pTimerQueue->pActiveTimersByType[Dispatch::aTimerIndexUnitTypeLookupTable[pTimer->eUnitType]] + nFrameBucket;
       }
 
@@ -143,11 +134,7 @@ static void EVENT_RemoveAndRecycleTimer(D2TimerStrc * pTimer, ::SGAMEDATA * pGam
       pTimer->pNextTimerList->pPrevTimerList = pTimer->pPrevTimerList;
     } else {
       if (pTimer->nFrame != -1) {
-        nFrame = pTimer->nFrame & 0x8000003f;
-        if ((int)nFrame < 0) {
-          nFrame = (nFrame - 1 | -64) + 1;
-        }
-
+        nFrame = pTimer->nFrame % 64;
         ppBucket = pGame->pTimerQueue->pDispatchedTimersByType[Dispatch::aTimerIndexUnitTypeLookupTable[pTimer->eUnitType]] + nFrame;
         if (ppBucket && *ppBucket == pTimer) {
           *ppBucket = pTimer->pPrevTimerList;
@@ -533,12 +520,8 @@ void __fastcall EVENT_AllocTimerQueue(::SGAMEDATA * pGame) {
 
 // Main timer dispatch loop called every game frame at 25 FPS. Iterates all 5 unit types (missile→player→monster→object→item) and processes both immediate timers (pTimerListByType) and frame-scheduled timers (pActiveTimersByType bucket hash). Each unit type calls its type-specific dispatcher which invokes default callbacks or custom fpTimerFunction handlers.
 void __fastcall EVENT_DispatchAllTimers(::SGAMEDATA * pGame) {
-    uint32_t nFrameBucket = pGame->dwGameFrame & 0x8000003f;
+    uint32_t nFrameBucket = pGame->dwGameFrame % 64;
     D2TimerQueueStrc* pTimerQueue = pGame->pTimerQueue;
-    if ((int)nFrameBucket < 0) {
-      nFrameBucket = (nFrameBucket - 1 | -64) + 1;
-    }
-
     pTimerQueue->nIndex = nFrameBucket;
     EVENT_DispatchMissileTimers(pTimerQueue, pGame, pTimerQueue->pTimerListByType[2], 0);
     EVENT_DispatchMissileTimers(pTimerQueue, pGame, pTimerQueue->pActiveTimersByType[2][pTimerQueue->nIndex], 1);
@@ -658,11 +641,7 @@ static void __stdcall SetEventInternal(eD2TimerTypeDWORD eTimerType, ::SGAMEDATA
     if (nFrame == -1) {
       ppDispatchBucket = 0;
     } else {
-      nFrameBucket = nFrame & 0x8000003f;
-      if ((int)nFrameBucket < 0) {
-        nFrameBucket = (nFrameBucket - 1 | -64) + 1;
-      }
-
+      nFrameBucket = nFrame % 64;
       ppDispatchBucket = pGame->pTimerQueue->pDispatchedTimersByType[Dispatch::aTimerIndexUnitTypeLookupTable[pNewTimer->eUnitType]] + nFrameBucket;
     }
 
@@ -677,11 +656,7 @@ static void __stdcall SetEventInternal(eD2TimerTypeDWORD eTimerType, ::SGAMEDATA
     if (pNewTimer->nFrame == -1) {
       ppDispatchBucket = pGame->pTimerQueue->pTimerListByType + Dispatch::aTimerIndexUnitTypeLookupTable[pNewTimer->eUnitType];
     } else {
-      nFrameBucket = pNewTimer->nFrame & 0x8000003f;
-      if ((int)nFrameBucket < 0) {
-        nFrameBucket = (nFrameBucket - 1 | -64) + 1;
-      }
-
+      nFrameBucket = pNewTimer->nFrame % 64;
       ppDispatchBucket = pGame->pTimerQueue->pActiveTimersByType[Dispatch::aTimerIndexUnitTypeLookupTable[pNewTimer->eUnitType]] + nFrameBucket;
     }
     if (*ppDispatchBucket) {

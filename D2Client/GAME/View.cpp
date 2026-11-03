@@ -31,12 +31,12 @@
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/D2DrlgStrc.h"
 #include "D2Common/Drlg/Transform.h"
-#include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Seed.h"
 #include "D2Common/Units.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
+#include "D2Hell/D2Hell.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinPalette.h"
@@ -45,10 +45,10 @@
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2Common/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
+#include "support/d2_boot.h" // [d2boot] issue #26 D3D perspective-toggle triage marks [R96]
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -67,84 +67,9 @@
 static_assert(sizeof(void*) != 4 || sizeof(::D2GameViewStrc) == 0xeabc, "D2_NEW_AT(D2GameViewStrc): the 32-bit layout must be the 0xeabc bytes 1.14d allocates");
 
 
+static D2SeedStrc * gpArcaneStarsSeed = (D2SeedStrc *)&gaSpriteArcaneStarYOffset; D2_STATIC_GUARD(gpArcaneStarsSeed, "gpArcaneStarsSeed");
+
 namespace D2Client::GAME::View {
-
-// Client-side light-map activation callback. Iterates the gpLightMap linked list looking for dynamic (nLightType==2) entries. For each, resolves the owning unit (client- or server-side lookup via bUnknown flag) and checks whether the light radius edge (±nRadiusX>>3 cells in X and Y) touches pRoom via DRLGROOM_FindBetterNearbyRoom. If the light bleeds into pRoom, marks bPixelMapReady=0 so the renderer will rebuild the pixel map for that room on the next frame.
-void __fastcall ACTCALLBACKFN(D2RoomStrc * pRoom) {
-    D2UnitStrc* pUnit;
-    D2RoomStrc* pUnitRoom;
-    int nUnitX;
-    int nUnitY;
-    D2RoomStrc* pNearbyRoom;
-    int nRadiusCells;
-    eD2UnitType eLightUnitType;
-    D2LightMapStrc* pLightMap = D2Client::Draw::LightMap::gpLightMap;
-    do {
-      if (!pLightMap) {
-        return;
-      }
-      if (pLightMap->nLightType == 2) {
-        eLightUnitType = pLightMap->eUnitType;
-        if (eLightUnitType == UNIT_COUNT) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x591);
-          exit(-1);
-        }
-        if (pLightMap->bUnknown != '\0') {
-          pUnit = UNIT::Player::UNITS_FindServerSideUnit(pLightMap->nUnitGUID, eLightUnitType);
-        } else {
-          pUnit = UNIT::Player::UNITS_FindClientSideUnit(pLightMap->nUnitGUID, eLightUnitType);
-        }
-        if (!pUnit) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x591);
-          exit(-1);
-        }
-
-        pUnitRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-        if (pUnitRoom != pRoom) {
-          eLightUnitType = pUnit->eUnitType;
-          if (eLightUnitType == UNIT_OBJECT || (int)eLightUnitType > 3 && (int)eLightUnitType <= 5) {
-            nUnitX = pUnit->pPath.pStaticPath->nPosX;
-          } else if (pUnit->pPath.pDynamicPath) {
-            nUnitX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
-          } else {
-            nUnitX = 0;
-          }
-
-          eLightUnitType = pUnit->eUnitType;
-          if (eLightUnitType == UNIT_OBJECT || (int)eLightUnitType > 3 && (int)eLightUnitType <= 5) {
-            nUnitY = pUnit->pPath.pStaticPath->nPosY;
-          } else if (pUnit->pPath.pDynamicPath) {
-            nUnitY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
-          } else {
-            nUnitY = 0;
-          }
-
-          nRadiusCells = pLightMap->nRadiusX >> 3;
-          pNearbyRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX + nRadiusCells, nUnitY);
-          if (pNearbyRoom == pRoom) {
-            pLightMap->bPixelMapReady = 0;
-          } else {
-            pNearbyRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX - nRadiusCells, nUnitY);
-            if (pNearbyRoom == pRoom) {
-              pLightMap->bPixelMapReady = 0;
-            } else {
-              pNearbyRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX, nUnitY + nRadiusCells);
-              if (pNearbyRoom == pRoom) {
-                pLightMap->bPixelMapReady = 0;
-              } else {
-                pUnitRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX, nUnitY - nRadiusCells);
-                if (pUnitRoom == pRoom) {
-                  pLightMap->bPixelMapReady = 0;
-                }
-              }
-            }
-          }
-        }
-      }
-
-      pLightMap = pLightMap->pPrev;
-    } while (true);
-}
 
 void __fastcall DRAW_CoordIsInCoord(int32_t nWorldX, int32_t nWorldY, uint8_t * pOutIntensity, uint8_t * pOutRed, uint8_t * pOutGreen, uint8_t * pOutBlue) {
     int nCellX = (nWorldX >> 3) - gnLightmapWorldRefreshFlag;
@@ -176,127 +101,128 @@ void __stdcall DrawLight() {
 }
 
 void __stdcall VIEW_Init() {
-    D2Common::DUNGEON::Dungeon::SetActCallbackFunc(sgpDrlgAct, (::ACTCALLBACKFN)ACTCALLBACKFN);
+    D2Common::DUNGEON::Dungeon::SetActCallbackFunc(sgpDrlgAct, (::ACTCALLBACKFN)D2Client::Draw::LightMap::ACTCALLBACKFN);
     gnLightmapInterpolationState[1] = 0;
     uint32_t nLoopIdx = 1;
     do {
-      uint64_t nDivisor;
-      nDivisor = (uint64_t)nLoopIdx;
+      uint32_t nDivisor;
+      nDivisor = nLoopIdx;
       nLoopIdx++;
       gnLightmapInterpolationState[nLoopIdx] = (uint32_t)(0x10000 / nDivisor);
     } while ((int)nLoopIdx < 0x100);
 }
 
 uint8_t * __stdcall VIEW_AllocByteTable(uint32_t nDim, int32_t nSteps) {
-    int nAccum;
     int nStepLeft;
+    uint8_t* pWrite;
+    uint32_t nMidLeft;
+    int nOuterScaled;
     int nMidScaled;
-    uint8_t* pTable = (uint8_t*)D2MEM_VirtualAlloc(nDim * nDim * nSteps + 3);
+    uint8_t* pTable = (uint8_t*)D2Hell::D2MEM_VirtualAlloc(nDim * nDim * nSteps + 3);
     uint32_t nOuter = 0;
-    if (nDim <= 0) {
-      return pTable;
-    }
-
-    int nOuterScaled = 0;
-    uint8_t* pWrite = pTable;
-    do {
-      uint32_t nMidLeft;
-      nMidScaled = nOuterScaled;
-      nMidLeft = nDim;
+    if (nDim > 0) {
+      int nAccum;
+      nOuterScaled = 0;
+      pWrite = pTable;
       do {
-        nAccum = nOuter << 0x10;
-        for (nStepLeft = nSteps; (uint32_t)nStepLeft > 0; nStepLeft--) {
-          *pWrite = (uint8_t)(nAccum + (nAccum >> 0x1f & 0xffffU) >> 0x10);
-          pWrite++;
-          nAccum += nMidScaled / nSteps;
-        }
+        nMidScaled = nOuterScaled;
+        nMidLeft = nDim;
+        do {
+          nAccum = nOuter << 0x10;
+          for (nStepLeft = nSteps; (uint32_t)nStepLeft > 0; nStepLeft--) {
+            *pWrite = (uint8_t)(nAccum + (nAccum >> 0x1f & 0xffffU) >> 0x10);
+            pWrite++;
+            nAccum += nMidScaled / nSteps;
+          }
 
-        nMidScaled += 0x10000;
-        nMidLeft--;
-      } while (nMidLeft);
+          nMidScaled += 0x10000;
+          nMidLeft--;
+        } while (nMidLeft);
 
-      nOuterScaled += -0x10000;
-      nOuter++;
-    } while (nOuter < nDim);
+        nOuterScaled += -0x10000;
+        nOuter++;
+      } while (nOuter < nDim);
+    }
 
     return pTable;
 }
 
 // Allocates a (nDim × nDim × (nSteps+1)) pointer table via D2MEM_VirtualAlloc and fills it with pointers into gPaletteTransitionTable for each interpolated palette entry. Used to build lighting/palette blend lookup tables for the game view renderer. Returns the base pointer of the allocated table.
 uint8_t * * __stdcall VIEW_AllocPalettePointerTable(uint32_t nDim, uint32_t nSteps) {
+    uint8_t** pWrite;
     int nAccum;
+    uint32_t nMidLeft;
     uint32_t nInnerLeft;
+    int nOuterScaled;
     int nMidScaled;
-    uint8_t** pTable = (uint8_t**)D2MEM_VirtualAlloc((nSteps + 1) * nDim * nDim * 4);
+    uint8_t** pTable = (uint8_t**)D2Hell::D2MEM_VirtualAlloc((nSteps + 1) * nDim * nDim * 4);
     uint32_t nOuter = 0;
-    if (nDim <= 0) {
-      return pTable;
-    }
-
-    int nOuterScaled = 0;
-    uint32_t nPaletteIdx = nSteps >> 0x18;
-    uint8_t** pWrite = pTable;
-    do {
-      uint32_t nMidLeft;
-      nMidScaled = nOuterScaled;
-      nMidLeft = nDim;
+    if (nDim > 0) {
+      uint32_t nPaletteIdx;
+      nOuterScaled = 0;
+      nPaletteIdx = nSteps >> 0x18;
+      pWrite = pTable;
       do {
-        if (nSteps > 0) {
-          nInnerLeft = nSteps;
-          nAccum = nOuter << 0x10;
-          do {
-            nPaletteIdx = nAccum / 65536;
-            *pWrite = gPaletteTransitionTable + (nPaletteIdx & 0xff) * 0x100;
-            pWrite++;
-            nAccum += nMidScaled / (int)nSteps;
-            nInnerLeft--;
-          } while (nInnerLeft);
-        }
+        nMidScaled = nOuterScaled;
+        nMidLeft = nDim;
+        do {
+          if (nSteps > 0) {
+            nInnerLeft = nSteps;
+            nAccum = nOuter << 0x10;
+            do {
+              nPaletteIdx = nAccum / 65536;
+              *pWrite = gPaletteTransitionTable + (nPaletteIdx & 0xff) * 0x100;
+              pWrite++;
+              nAccum += nMidScaled / (int)nSteps;
+              nInnerLeft--;
+            } while (nInnerLeft);
+          }
 
-        nMidScaled += 0x10000;
-        *pWrite = gPaletteTransitionTable + (nPaletteIdx & 0xff) * 0x100;
-        pWrite++;
-        nMidLeft--;
-      } while (nMidLeft);
+          nMidScaled += 0x10000;
+          *pWrite = gPaletteTransitionTable + (nPaletteIdx & 0xff) * 0x100;
+          pWrite++;
+          nMidLeft--;
+        } while (nMidLeft);
 
-      nOuterScaled += -0x10000;
-      nOuter++;
-    } while (nOuter < nDim);
+        nOuterScaled += -0x10000;
+        nOuter++;
+      } while (nOuter < nDim);
+    }
 
     return pTable;
 }
 
 uint8_t * * __stdcall VIEW_AllocPalettePointerTable2(uint32_t nDim, int32_t nSteps) {
-    int nAccum;
     int nStepLeft;
+    uint8_t** pWrite;
+    uint32_t nMidLeft;
+    int nOuterScaled;
     int nMidScaled;
-    uint8_t** pTable = (uint8_t**)D2MEM_VirtualAlloc(nDim * nDim * nSteps * 4);
+    uint8_t** pTable = (uint8_t**)D2Hell::D2MEM_VirtualAlloc(nDim * nDim * nSteps * 4);
     uint32_t nOuter = 0;
-    if (nDim <= 0) {
-      return pTable;
-    }
-
-    int nOuterScaled = 0;
-    uint8_t** pWrite = pTable;
-    do {
-      uint32_t nMidLeft;
-      nMidScaled = nOuterScaled;
-      nMidLeft = nDim;
+    if (nDim > 0) {
+      int nAccum;
+      nOuterScaled = 0;
+      pWrite = pTable;
       do {
-        nAccum = nOuter << 0x10;
-        for (nStepLeft = nSteps; (uint32_t)nStepLeft > 0; nStepLeft--) {
-          *pWrite = gPaletteTransitionTable + (nAccum / 65536 & 0xffU) * 0x100;
-          pWrite++;
-          nAccum += nMidScaled / nSteps;
-        }
+        nMidScaled = nOuterScaled;
+        nMidLeft = nDim;
+        do {
+          nAccum = nOuter << 0x10;
+          for (nStepLeft = nSteps; (uint32_t)nStepLeft > 0; nStepLeft--) {
+            *pWrite = gPaletteTransitionTable + (nAccum / 65536 & 0xffU) * 0x100;
+            pWrite++;
+            nAccum += nMidScaled / nSteps;
+          }
 
-        nMidScaled += 0x10000;
-        nMidLeft--;
-      } while (nMidLeft);
+          nMidScaled += 0x10000;
+          nMidLeft--;
+        } while (nMidLeft);
 
-      nOuterScaled += -0x10000;
-      nOuter++;
-    } while (nOuter < nDim);
+        nOuterScaled += -0x10000;
+        nOuter++;
+      } while (nOuter < nDim);
+    }
 
     return pTable;
 }
@@ -365,18 +291,18 @@ void __stdcall VIEW_FreeLookupTables() {
         exit(-1);
       }
 
-      D2MEM_VirtualFree(gpViewPalPointerTable32x8);
+      D2Hell::D2MEM_VirtualFree(gpViewPalPointerTable32x8);
       if (gpViewPalByteTable32x16) {
-        D2MEM_VirtualFree(gpViewPalByteTable32x16);
+        D2Hell::D2MEM_VirtualFree(gpViewPalByteTable32x16);
       }
       if (gpViewPalByteTable16x32) {
-        D2MEM_VirtualFree(gpViewPalByteTable16x32);
+        D2Hell::D2MEM_VirtualFree(gpViewPalByteTable16x32);
       }
       if (gpViewPalPointerTable32x32) {
-        D2MEM_VirtualFree(gpViewPalPointerTable32x32);
+        D2Hell::D2MEM_VirtualFree(gpViewPalPointerTable32x32);
       }
       if (gpViewPalByteTable32x40) {
-        D2MEM_VirtualFree(gpViewPalByteTable32x40);
+        D2Hell::D2MEM_VirtualFree(gpViewPalByteTable32x40);
       }
 
       gpViewPalPointerTable32x8 = 0;
@@ -401,7 +327,7 @@ void __fastcall SetFlag0x1(D2GameViewStrc * pGameView) {
 }
 
 void __fastcall SetViewRectangleSize(D2GameViewStrc * pGameView, int32_t xLeft, int32_t yTop, int32_t xRight, int32_t yBottom) {
-    bool _bPerspective;
+    uint32_t _bPerspective;
     bool bPerspective;
     if (!pGameView) {
       return;
@@ -412,12 +338,9 @@ void __fastcall SetViewRectangleSize(D2GameViewStrc * pGameView, int32_t xLeft, 
     tagRECT* lprc = &pGameView->rcExtendedView;
     /* LPRECT lprc for SetRect */ SetRect(lprc, -0x50, -0x50, ScreenSizeX + 0x50, ScreenSizeY - 0x2f);
     if (_bPerspective) {
-      LONG* pCoord;
-      pCoord = &pGameView->rcExtendedView.top;
-      *pCoord += -0x1e;
+      pGameView->rcExtendedView.top += -0x1e;
       lprc->left += -0x2d;
-      pCoord = &pGameView->rcExtendedView.right;
-      *pCoord += 0x1e;
+      pGameView->rcExtendedView.right += 0x1e;
     }
 
     pGameView->nFlags |= 1;
@@ -446,22 +369,21 @@ void __fastcall GetCenterXY(D2GameViewStrc * pGameView, int * nCenterX, int * nC
 }
 
 void __fastcall VIEW_ConvertViewCoordsToIsometric(D2GameViewStrc * pGameView, int32_t nOffsetX, int32_t nOffsetY, int * pOutX, int * pOutY) {
-    if (pGameView) {
-      if (!pOutX) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ce);
-        exit(-1);
-      } else {
-        if (!pOutY) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1cf);
-          exit(-1);
-        }
-
-        D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv32(pGameView->nCenterX + nOffsetX, pGameView->nCenterY + nOffsetY, pOutX, pOutY);
-        return;
-      }
-    } else {
+    if (!pGameView) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1cd);
       exit(-1);
+    }
+    if (!pOutX) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ce);
+      exit(-1);
+    } else {
+      if (!pOutY) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1cf);
+        exit(-1);
+      }
+
+      D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv32(pGameView->nCenterX + nOffsetX, pGameView->nCenterY + nOffsetY, pOutX, pOutY);
+      return;
     }
 }
 
@@ -476,6 +398,18 @@ void __fastcall GAMEVIEW_PrepareScene(D2GameViewStrc * pGameView, uint32_t nFlag
 
     uint32_t nBorderType = UI::Path::DRAW_GetTypeOfBorder();
     if (nBorderType != 3) {
+      Wall2::WALL2_BuildSceneDrawList(pGameView, nFlags);
+    } else if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+      // VP-BEGIN [issue #26 / R93]: wide-UI layouts build the scene draw list
+      // with both panels open too. Retail skips it when both panels are up
+      // because at 640x480/800x600 the two 320/400-px panels cover the whole
+      // window; the 800-class UI floats 240 px inboard at 1280x720, so the
+      // outer strips still show world and the skip rendered them as pure
+      // black backbuffer (issue #26: "Both panels. all black outside of
+      // panel"). Border 3's view rect is the full unpanned window (Path.cpp
+      // case 3), the light grids run at zero pan and every renderer falls
+      // through to its full-width no-pan clip, so the standard build is the
+      // whole fix. Retail modes keep the skip (byte-identical + fill rate).
       Wall2::WALL2_BuildSceneDrawList(pGameView, nFlags);
     }
 
@@ -625,12 +559,10 @@ static void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
     int nCloudIdx;
     uint32_t nFrameIdx;
     char* pStrSrc;
-    D2SeedStrc* pAncientsCloudSeed;
     char* pStrDst;
     uint32_t nTileFrame3;
     char szFilePath[260];
     D2GfxDataStrc sGfxData;
-    DC6* pSummitDC6;
     D2SeedStrc ullSeedValue;
     if (D2CLIENT_ExitVar3) {
       return;
@@ -648,11 +580,7 @@ static void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
     gnAncientsScrollDelta = nTargetX - gnAncientsScrollBaseX;
     int nScrollOffset = gnAncientsScrollDelta + (gnAncientsScrollDelta >> 0x1f & 7U);
     uint32_t nCloudFrame = nScrollOffset >> 3;
-    uint32_t nTileFrameX = nCloudFrame & 0x800000ff;
-    if ((int)nTileFrameX < 0) {
-      nTileFrameX = (nTileFrameX - 1 | -256) + 1;
-    }
-
+    uint32_t nTileFrameX = (int)nCloudFrame % 256;
     nCloudFrame = (int)(nCloudFrame + (nScrollOffset >> 0x1f & 0xffU)) >> 8 & 0x80000003;
     if ((int)nCloudFrame < 0) {
       nFrameIdx = nCloudFrame - 1 | -4;
@@ -662,11 +590,7 @@ static void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
       }
     }
 
-    nCloudFrame &= 0x80000003;
-    if ((int)nCloudFrame < 0) {
-      nCloudFrame = (nCloudFrame - 1 | -4) + 1;
-    }
-
+    nCloudFrame = (int)nCloudFrame % 4;
     nScrollOffset = -nTileFrameX;
     if (!gpAncientsBgDC6) {
       memcpy(szFilePath, "data\\global\\ui\\summit01", 0x18);
@@ -686,31 +610,19 @@ static void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
       gnDrawBackgroundRenderOffset = Core::Archive::IMAGE_LoadDC6Ex(szFilePath, 0);
     }
 
-    pSummitDC6 = gpAncientsBgDC6;
+    DC6* pSummitDC6 = gpAncientsBgDC6;
     memset(&sGfxData, 0, 0x48);
     if (pSummitDC6) {
       sGfxData.pDC6 = pSummitDC6;
       sGfxData.nFrameNumber = nCloudFrame;
       D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nScrollOffset, 0x100, -1, DRAW_SOLID, nullptr);
-      nTileFrameX = nCloudFrame + 1 & 0x80000003;
-      if ((int)nTileFrameX < 0) {
-        nTileFrameX = (nTileFrameX - 1 | -4) + 1;
-      }
-
+      nTileFrameX = (int)(nCloudFrame + 1) % 4;
       sGfxData.nFrameNumber = nTileFrameX;
       D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nScrollOffset + 0x100, 0x100, -1, DRAW_SOLID, nullptr);
-      nFrameIdx = nCloudFrame + 2 & 0x80000003;
-      if ((int)nFrameIdx < 0) {
-        nFrameIdx = (nFrameIdx - 1 | -4) + 1;
-      }
-
+      nFrameIdx = (int)(nCloudFrame + 2) % 4;
       sGfxData.nFrameNumber = nFrameIdx;
       D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nScrollOffset + 0x200, 0x100, -1, DRAW_SOLID, nullptr);
-      nTileFrame3 = nCloudFrame + 3 & 0x80000003;
-      if ((int)nTileFrame3 < 0) {
-        nTileFrame3 = (nTileFrame3 - 1 | -4) + 1;
-      }
-
+      nTileFrame3 = (int)(nCloudFrame + 3) % 4;
       sGfxData.nFrameNumber = nTileFrame3;
       D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nScrollOffset + 0x300, 0x100, -1, DRAW_SOLID, nullptr);
       if (nScrollOffset > 0) {
@@ -753,7 +665,7 @@ static void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
       return;
     }
 
-    pAncientsCloudSeed = gpAncientsCloudSeed;
+    D2SeedStrc* pAncientsCloudSeed = gpAncientsCloudSeed;
     if (gbAncientsCloudInitialized == '\0') {
       uint32_t nCloudSeedVal;
       D2Common::Seed::SEED_InitDefault(gpAncientsCloudSeed);
@@ -933,8 +845,20 @@ D2GameViewStrc * __stdcall AllocGameView() {
 void __fastcall ViewDraw2(D2GameViewStrc * pGameView) {
     // Static local variables (originally global data)
     static uint32_t gnFrameDrawCounter; D2_STATIC_GUARD_BSS(gnFrameDrawCounter, "D2Client::GAME::View::ViewDraw2::gnFrameDrawCounter");
+    // [d2boot] issue #26 D3D perspective-toggle death triage: 0 = no
+    // perspective frame seen yet, 1 = enter mark written, 2 = drawn mark
+    // written. A death with "enter" but no "drawn" pins the fault inside the
+    // world pass (floor/shadow/wall/roof/weather) on the first perspective
+    // frame after a runtime toggle; neither mark means the death happens
+    // before the world draw (menu/UI side). [R96]
+    static int gnVP96PerspectiveFrameProbe; D2_STATIC_GUARD_BSS(gnVP96PerspectiveFrameProbe, "D2Client::GAME::View::ViewDraw2::gnVP96PerspectiveFrameProbe");
+    // [d2boot] R97: transition tracker, re-armed on every flip (the R96
+    // first-frame probe is one-shot and was already spent when the owner's
+    // 1 -> 0 toggle died). One line per flip brackets the frame in the
+    // bootlog next to the R97 floor-pass and promote-guard marks. [R97]
+    static int gnVP97ViewLastPerspective; D2_STATIC_GUARD_BSS(gnVP97ViewLastPerspective, "D2Client::GAME::View::ViewDraw2::gnVP97ViewLastPerspective");
 
-    bool _bPerspective;
+    uint32_t _bPerspective;
     bool bPerspective;
     D2UnitStrc* pPlayerUnit_lcl;
     int32_t nYScale;
@@ -947,7 +871,16 @@ void __fastcall ViewDraw2(D2GameViewStrc * pGameView) {
     D2gfx::D2GFX::D2GFX_UpdateScaleFactor();
     nScaleFactor = D2gfx::D2GFX::D2GFX_GetScaleFactor();
     _bPerspective = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
+    if ((int)_bPerspective != gnVP97ViewLastPerspective) {
+      gnVP97ViewLastPerspective = (int)_bPerspective;
+      D2BOOT_MarkFmt("world: perspective now %d, view frame [R97]", (int)_bPerspective); // [d2boot]
+    }
     if (_bPerspective) {
+      if (!gnVP96PerspectiveFrameProbe) {
+        gnVP96PerspectiveFrameProbe = 1;
+        D2BOOT_MarkFmt("world: first perspective frame enter (renderer=%d) [R96]", (int)D2gfx::D2GFX::D2GFX_GetRendererMode()); // [d2boot]
+      }
+
       int32_t nXScale;
       pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
       nXScale = D2Common::Units::GetPrecisionX(pPlayerUnit_lcl);
@@ -1013,6 +946,10 @@ void __fastcall ViewDraw2(D2GameViewStrc * pGameView) {
     D2gfx::D2GFX::D2GFX_SetDefaultScaleFactor();
     D2Client::Draw::Weather::DRAW_Overlay_Weather();
     dSceneTransitionDraw();
+    if (gnVP96PerspectiveFrameProbe == 1) {
+      gnVP96PerspectiveFrameProbe = 2;
+      D2BOOT_Mark("world: first perspective frame drawn [R96]"); // [d2boot]
+    }
 }
 
 // Applies screen-shake offset to the camera center point. Computes shake magnitude from elapsed ticks using a three-phase envelope (fade-in over Arg3, sustain over Arg1, fade-out over Arg2). Rolls random X/Y offsets from the player unit seed and adds them to *pCenterX/*pCenterY. Updates the global shake-sound volume proportionally; zeros shake state when the envelope expires.
@@ -1044,7 +981,7 @@ void __fastcall SHAKE_AdjustCenterByShake(uint32_t * pCenterX, uint32_t * pCente
           goto update_sound;
         }
 
-        nShakeMagnitude = (uint32_t)(((int64_t)(int)(SHAKE_Arg2 - nTicks + SHAKE_Arg1 + SHAKE_Arg3) * (int64_t)(int)SHAKE_Amplitude & 0xffffffffU) / (uint64_t)SHAKE_Arg2);
+        nShakeMagnitude = (uint32_t)((uint32_t)((uint32_t)(int)(SHAKE_Arg2 - nTicks + SHAKE_Arg1 + SHAKE_Arg3) * (int)SHAKE_Amplitude) / SHAKE_Arg2);
       }
     }
 

@@ -2,6 +2,7 @@
 
 #include "D2Client/Engine.h"
 #include "D2Client/Core/Archive.h"
+#include "D2Client/Cursor.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2LightMapStrc.h"
@@ -60,8 +61,8 @@
 namespace D2Client::Engine {
 
 BOOL __stdcall UI_IsMouseInRect(int32_t nRectLeftX, int32_t nRectBottomY, int32_t nRectWidth, int32_t nRectHeight) {
-    int nMouseX = UI::ui::GetMouseX();
-    int nMouseY = UI::ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     if (nMouseX >= nRectLeftX && nMouseX <= nRectLeftX + nRectWidth && nMouseY >= nRectBottomY - nRectHeight && nMouseY <= nRectBottomY) {
       return 1;
     }
@@ -69,10 +70,10 @@ BOOL __stdcall UI_IsMouseInRect(int32_t nRectLeftX, int32_t nRectBottomY, int32_
     return 0;
 }
 
-void __stdcall DrawPopupOk(int32_t nParam) {
+void __stdcall DrawPopupOk(int32_t bDiscPrompt) {
     D2GfxDataStrc sGfxData;
     memset(&sGfxData, 0, 0x48);
-    if (nParam) {
+    if (bDiscPrompt) {
       sGfxData.pDC6 = (DC6*)IMG_popupok_DiscPrompt;
     } else {
       sGfxData.pDC6 = (DC6*)IMG_popupok_ConnLost;
@@ -86,12 +87,11 @@ void __stdcall DrawPopupOk(int32_t nParam) {
 }
 
 void __stdcall LOADER_CheckForInsertedDiscs() {
+    uint16_t* wszInsertMsg;
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
-    int32_t nColor_lcl = 0;
-    uint16_t* wszInsertMsg = D2Lang::StrTable::strtable::GetLocaleString(5168);
-    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 132, 190 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 452, wszInsertMsg, nColor_lcl);
+    /* Please Insert the Diablo II */ UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 132, 190 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 452, D2Lang::StrTable::strtable::GetLocaleString(5168), 0); // VP: [resolution site-6]
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
-    nColor_lcl = 0;
+    int32_t nColor_lcl = 0;
     if (bIsExpansion) {
       /* Expansion Disc */ wszInsertMsg = D2Lang::StrTable::strtable::GetLocaleString(21880);
     } else {
@@ -102,11 +102,11 @@ void __stdcall LOADER_CheckForInsertedDiscs() {
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
-void __stdcall DrawOkCancel(int32_t nParam) {
+void __stdcall DrawOkCancel(int32_t nFrameNumber) {
     D2GfxDataStrc sGfxData;
     memset(&sGfxData, 0, 0x48);
     sGfxData.pDC6 = (DC6*)IMG_okcancelbtn;
-    sGfxData.nFrameNumber = nParam;
+    sGfxData.nFrameNumber = nFrameNumber;
     sGfxData.nDirection = 0;
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x110, 0x13e - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr);
 }
@@ -136,7 +136,7 @@ void __fastcall LOADER_DrawInsertDiscScreen(int32_t nUnused) {
     LOADER_CheckForInsertedDiscs();
     DrawOkCancel(gnCharScreenOkButtonPressed);
     LOADER_DrawInsertDiscMessage();
-    UI::ui::DrawCursor();
+    Cursor::DrawCursor();
     D2gfx::D2GFX::D2GFX_EndScene();
 }
 
@@ -144,8 +144,8 @@ void __stdcall INPUT_CharScreenOkDown(D2UIMouseMsgStrc * pMsg) {
     int nBaseX = gnPanelOffsetX;
     int nBaseY = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
     int nLeftEdge = gnPanelOffsetX + 0x110;
-    int nMouseX = UI::ui::GetMouseX();
-    int nMouseY = UI::ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     if (nMouseX >= nLeftEdge && nMouseX <= nBaseX + 0x170 && nMouseY >= nBaseY + 0x116 && nMouseY <= nBaseY + 0x136) {
       gnCharScreenOkButtonPressed = 1;
       gnCharScreenInputState = 1;
@@ -172,8 +172,8 @@ void __stdcall INPUT_CharScreenOkUp(D2UIMouseMsgStrc * pMsg) {
       int nMouseX;
       nBaseY = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
       nLeftEdge = gnPanelOffsetX + 0x110;
-      nMouseX = UI::ui::GetMouseX();
-      nMouseY = UI::ui::GetMouseY();
+      nMouseX = Cursor::GetMouseX();
+      nMouseY = Cursor::GetMouseY();
       if (nMouseX >= nLeftEdge && nMouseX <= nBaseX + 0x170 && nMouseY >= nBaseY + 0x116 && nMouseY <= nBaseY + 0x136) {
         gbCharScreenOkPressed = 1;
         gnCharScreenInputState = 0;
@@ -259,7 +259,7 @@ void __fastcall LOADER_DrawConnectionLostScreen(int32_t nUnused) {
     LOADER_DrawConnectionLostMessage();
     LOADER_DrawOkCancelButtons(gnCharScreenOkButtonPressed, gnConnectionLostScreenState);
     DRAW_UI_OkCancel();
-    UI::ui::DrawCursor();
+    Cursor::DrawCursor();
     D2gfx::D2GFX::D2GFX_EndScene();
 }
 
@@ -267,14 +267,14 @@ void __stdcall INPUT_CharScreenDualButtonDown(D2UIMouseMsgStrc * pMsg) {
     int nBaseX = gnPanelOffsetX;
     int nBaseY = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
     int nLeftEdge = gnPanelOffsetX + 0xce;
-    int nMouseX = UI::ui::GetMouseX();
-    int nMouseY = UI::ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     if (nMouseX < nLeftEdge || nMouseX > nBaseX + 0x12e || nMouseY < nBaseY + 0x116 || nMouseY > nBaseY + 0x136) {
       int nBaseX2 = gnPanelOffsetX;
       nBaseY = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
       nMouseY = gnPanelOffsetX + 0x152;
-      nBaseX = UI::ui::GetMouseX();
-      nMouseX = UI::ui::GetMouseY();
+      nBaseX = Cursor::GetMouseX();
+      nMouseX = Cursor::GetMouseY();
       if (nBaseX < nMouseY || nBaseX > nBaseX2 + 0x1b2 || nMouseX < nBaseY + 0x116 || nMouseX > nBaseY + 0x136) {
         GAME::Game::GAMEDATA_ClearQueuedClicks();
         pMsg->bHandled = 1;
@@ -307,8 +307,8 @@ void __stdcall INPUT_CharScreenDualButtonUp(D2UIMouseMsgStrc * pMsg) {
       int nMouseX;
       nBaseY = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
       nLeftEdge = gnPanelOffsetX + 0xce;
-      nMouseX = UI::ui::GetMouseX();
-      nMouseY = UI::ui::GetMouseY();
+      nMouseX = Cursor::GetMouseX();
+      nMouseY = Cursor::GetMouseY();
       nBaseX2 = gnPanelOffsetX;
       if (nMouseX >= nLeftEdge && nMouseX <= nBaseX + 0x12e && nMouseY >= nBaseY + 0x116 && nMouseY <= nBaseY + 0x136) {
         gbCharScreenOkButtonConfirmed = 1;
@@ -317,8 +317,8 @@ void __stdcall INPUT_CharScreenDualButtonUp(D2UIMouseMsgStrc * pMsg) {
 
       nBaseX = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
       nMouseY = gnPanelOffsetX + 0x152;
-      nBaseY = UI::ui::GetMouseX();
-      nMouseX = UI::ui::GetMouseY();
+      nBaseY = Cursor::GetMouseX();
+      nMouseX = Cursor::GetMouseY();
       if (nBaseY >= nMouseY && nBaseY <= nBaseX2 + 0x1b2 && nMouseX >= nBaseX + 0x116 && nMouseX <= nBaseX + 0x136) {
         gbCharScreenCancelPressed = 1;
         gnCharScreenInputState = 0;
@@ -392,7 +392,7 @@ uint32_t __stdcall fpGameLoopFunction(uint32_t dwUnused) {
         LOADER_CheckForInsertedDiscs();
         DrawOkCancel(gnCharScreenOkButtonPressed);
         LOADER_DrawInsertDiscMessage();
-        UI::ui::DrawCursor();
+        Cursor::DrawCursor();
         D2gfx::D2GFX::D2GFX_EndScene();
       }
     }
@@ -401,7 +401,7 @@ uint32_t __stdcall fpGameLoopFunction(uint32_t dwUnused) {
     return (uint32_t)(gbCharScreenOkPressed != 0);
 }
 
-bool fpRequiredUserAction() {
+BOOL fpRequiredUserAction() {
     uint32_t dwActPalIdx;
     gbCharScreenOkPressed = 0;
     D2Win::Src::D2WinPalette::D2WINPALETTE_SetPaletteIndex(0);
@@ -415,7 +415,7 @@ bool fpRequiredUserAction() {
     _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIEngineFlagInit, 4);
     GAME::Game::GAMEDATA_SetDrawFunction(0);
     LOADER_FreePopupImages();
-    return true;
+    return 1;
 }
 
 // Sets draw function mode, registers event handlers, runs game loop with custom fpGameLoopFunction, then cleans up
@@ -509,6 +509,7 @@ void __stdcall CLIENT_SetAnimModeAndMoveToCurrentPos(eD2PlayerAnimMode nAnimMode
 
 void __stdcall CLIENT_PreloadMonsterCofsInAdjacentRooms() {
     eD2States eState;
+    uint32_t nCount;
     D2RoomStrc** pAdjacentRooms;
     uint32_t nRoomCount;
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_Net();
@@ -522,12 +523,7 @@ void __stdcall CLIENT_PreloadMonsterCofsInAdjacentRooms() {
     }
 
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &pAdjacentRooms, (int*)&nRoomCount);
-    uint32_t nCount = 0;
-    if (nRoomCount <= 0) {
-      return;
-    }
-
-    do {
+    for (nCount = 0; nCount < nRoomCount; nCount++) {
       for (pUnit = pAdjacentRooms[nCount]->pUnitList; pUnit; pUnit = pUnit->pRoomNext) {
         if (pUnit->eUnitType == UNIT_MONSTER) {
           eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_dopplezon);
@@ -536,9 +532,7 @@ void __stdcall CLIENT_PreloadMonsterCofsInAdjacentRooms() {
           }
         }
       }
-
-      nCount++;
-    } while (nCount < nRoomCount);
+    }
 }
 
 void __fastcall CLIENT_UpdateUnitLightRadius(D2UnitStrc * pUnit, int32_t nRadiusBonus) {

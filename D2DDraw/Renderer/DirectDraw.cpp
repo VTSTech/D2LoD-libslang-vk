@@ -6,9 +6,9 @@
 #include "D2CMP/SRC/FastCmp.h"
 #include "D2CMP/SRC/LRUCache.h"
 #include "D2CMP/SRC/SpriteCache.h"
+#include "D2CMP/SRC/SubTile.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/D2GfxDataStrc.h"
-#include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/D2GfxSettingsStrc.h"
 #include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Draw.h"
@@ -27,9 +27,9 @@
 #include "Fog/Src/DataArrays.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
-#include "Storm/SMem.h"
 #include "Storm/Source/SBMP.h"
 #include "Storm/Source/SFile.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SReg.h"
 #include "globals/globals.h"
 
@@ -56,6 +56,9 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2ddDebugFont) == 0x3000, "D2_NEW_A
 #define RECON_FPTD_fnBinkFrameCallback
 typedef void (__stdcall *fnBinkFrameCallback)();
 #endif
+
+static uint32_t gnDDrawSurfaceWidth = 0; D2_STATIC_GUARD(gnDDrawSurfaceWidth, "gnDDrawSurfaceWidth");
+static uint32_t gnDDrawDisplayModeIndex = 0; D2_STATIC_GUARD(gnDDrawDisplayModeIndex, "gnDDrawDisplayModeIndex");
 
 namespace D2DDraw::Renderer::DirectDraw {
 
@@ -108,11 +111,11 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
     return 1;
 }
 
-void ClearCaches() {
+void __fastcall ClearCaches() {
 
 }
 
-BOOL CheckCutScene() {
+BOOL __fastcall CheckCutScene() {
     return gnCutSceneActiveFlag;
 }
 
@@ -194,11 +197,11 @@ BOOL __fastcall SetGamma(int32_t nGamma) {
     return bResult;
 }
 
-int32_t CheckGamma() {
+int32_t __fastcall CheckGamma() {
     return 1;
 }
 
-void __fastcall SetGlobalLight(BYTE nRed, BYTE nGreen, BYTE nBlue) {
+void __fastcall SetGlobalLight(int nRed, int nGreen, int nBlue) {
 
 }
 
@@ -214,15 +217,15 @@ void __fastcall PerspectiveScalePosition(int32_t nPosX, int32_t nPosY, int32_t n
 
 }
 
-void SetDefaultPerspectiveFactor() {
+void __fastcall SetDefaultPerspectiveFactor() {
 
 }
 
-int * GetRenderStatistics() {
+int * __fastcall GetRenderStatistics() {
     return nullptr;
 }
 
-BOOL ActivateWindow() {
+BOOL __fastcall ActivateWindow() {
     return 0;
 }
 
@@ -819,7 +822,7 @@ BOOL __fastcall BeginScene(BOOL bClear, BYTE nRed, BYTE nGreen, BYTE nBlue) {
     return 1;
 }
 
-BOOL EndScene1() {
+BOOL __fastcall EndScene1() {
     HRESULT nHResult = pDirectDrawSurface->lpVtbl->Unlock(pDirectDrawSurface, (LPVOID)0x0);
     if (nHResult) {
       DirectDrawErrorHandler("Unlock failed!", nHResult);
@@ -837,7 +840,7 @@ BOOL EndScene1() {
     return 1;
 }
 
-BOOL EndScene2() {
+BOOL __fastcall EndScene2() {
     int32_t nHResult;
     RECT rcDestLeft;
     if (gnDDrawFlipState) {
@@ -882,11 +885,12 @@ BOOL EndScene2() {
 }
 
 BOOL __fastcall GetBackBuffer(BYTE * pBuffer) {
-    int iVar1;
     uint8_t* pbSrcPixel;
     int nX;
     DDSURFACEDESC ddSurfDescSize;
     int nY;
+    int nWindowWidth;
+    int nRemapIndex;
     ddSurfDescSize.dwSize = 0x6c;
     memset(&ddSurfDescSize.dwFlags, 0, 0x68);
     if (!gpDDrawBackBuffer) {
@@ -901,28 +905,28 @@ BOOL __fastcall GetBackBuffer(BYTE * pBuffer) {
 
     uint8_t* pbDstPixel;
     nY = 0;
-    iVar1 = RENDERER_nWindowWidth;
+    nWindowWidth = RENDERER_nWindowWidth;
     if (RENDERER_nWindowHeight > 0) {
       do {
         nX = 0;
         pbDstPixel = pBuffer;
         pbSrcPixel = (uint8_t*)ddSurfDescSize.lpSurface;
-        if (iVar1 > 0) {
+        if (nWindowWidth > 0) {
           do {
-            iVar1 = (uint32_t)*pbSrcPixel * 4;
+            nRemapIndex = (uint32_t)*pbSrcPixel * 4;
             *pbDstPixel = gaDirectDrawDitherPaletteRemap[(uint32_t)*pbSrcPixel * 4];
-            pbDstPixel[1] = gaDirectDrawDitherPaletteRemap[iVar1 + 1];
-            pbDstPixel[2] = gaDirectDrawDitherPaletteRemap[iVar1 + 2];
+            pbDstPixel[1] = gaDirectDrawDitherPaletteRemap[nRemapIndex + 1];
+            pbDstPixel[2] = gaDirectDrawDitherPaletteRemap[nRemapIndex + 2];
             nX++;
             pbDstPixel += 3;
-            iVar1 = RENDERER_nWindowWidth;
+            nWindowWidth = RENDERER_nWindowWidth;
             pbSrcPixel++;
           } while (nX < RENDERER_nWindowWidth);
         }
 
         ddSurfDescSize.lpSurface = (void*)((int)ddSurfDescSize.lpSurface + ddSurfDescSize.lPitch);
         nY++;
-        pBuffer += iVar1 * 3;
+        pBuffer += nWindowWidth * 3;
       } while (nY < RENDERER_nWindowHeight);
     }
 
@@ -1002,33 +1006,32 @@ BOOL Release() {
     // Static local variables (originally global data)
     static IUnknown * gpDDrawComObject; D2_STATIC_GUARD_BSS(gpDDrawComObject, "D2DDraw::Renderer::DirectDraw::Release::gpDDrawComObject");
 
-    if (!gnDDrawSurfaceHeight) {
-      return 1;
+    if (gnDDrawSurfaceHeight) {
+      InternalReleaseWindow();
+      if (pDirectDrawPalette) {
+        pDirectDrawPalette->lpVtbl->Release(pDirectDrawPalette);
+        pDirectDrawPalette = 0;
+      }
+
+      gnGlideWindowHandle = 0;
+      if (gpDDrawComObject) {
+        gpDDrawComObject->Release();
+        gpDDrawComObject = 0;
+      }
+      if (pWindowHandleBuffer) {
+        pWindowHandleBuffer->lpVtbl->Release((IDirectDraw*)pWindowHandleBuffer);
+        pWindowHandleBuffer = 0;
+      }
+      if (RENDERER_SelectedRendererCore) {
+        /* LPCRITICAL_SECTION lpCriticalSection for DeleteCriticalSection */ DeleteCriticalSection(&RENDERER_SelectedRendererCore->sLock);
+        D2_FREE_AT(RENDERER_SelectedRendererCore, ".\\Src\\ddCore.cpp", 0x125);
+        RENDERER_SelectedRendererCore = 0;
+      }
+
+      D2ddDebugFont_Free();
+      gnDDrawSurfaceHeight = 0;
     }
 
-    InternalReleaseWindow();
-    if (pDirectDrawPalette) {
-      pDirectDrawPalette->lpVtbl->Release(pDirectDrawPalette);
-      pDirectDrawPalette = 0;
-    }
-
-    gnGlideWindowHandle = 0;
-    if (gpDDrawComObject) {
-      gpDDrawComObject->Release();
-      gpDDrawComObject = 0;
-    }
-    if (pWindowHandleBuffer) {
-      pWindowHandleBuffer->lpVtbl->Release((IDirectDraw*)pWindowHandleBuffer);
-      pWindowHandleBuffer = 0;
-    }
-    if (RENDERER_SelectedRendererCore) {
-      /* LPCRITICAL_SECTION lpCriticalSection for DeleteCriticalSection */ DeleteCriticalSection(&RENDERER_SelectedRendererCore->sLock);
-      D2_FREE_AT(RENDERER_SelectedRendererCore, ".\\Src\\ddCore.cpp", 0x125);
-      RENDERER_SelectedRendererCore = 0;
-    }
-
-    D2ddDebugFont_Free();
-    gnDDrawSurfaceHeight = 0;
     return 1;
 }
 
@@ -1064,17 +1067,15 @@ BOOL thunk_Release() {
 
 // @sourcefile .\Src\ddCore.cpp
 BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc * pHelpers) {
-    GUID* pGlideConfig;
+    HRESULT nResult;
     pD2GFXRenderedDataStrc = pSettings;
     D2GfxRendereInitFunctionsStrc = pHelpers;
     D2ddDebugFont_Alloc();
     if (gdwDDrawInitFlags & gadwBitMasks[0]) {
-      pGlideConfig = 0;
+      nResult = DirectDrawCreate(0, &pWindowHandleBuffer, nullptr);
     } else {
-      pGlideConfig = &gGlideOpenWindowConfig;
+      nResult = DirectDrawCreate(&gGlideOpenWindowConfig, &pWindowHandleBuffer, nullptr);
     }
-
-    HRESULT nResult = DirectDrawCreate(pGlideConfig, &pWindowHandleBuffer, nullptr);
     if (nResult) {
       DirectDrawErrorHandler("DirectDrawCreate failed!", nResult);
       return 0;
@@ -1145,13 +1146,11 @@ uint32_t __stdcall RENDERER_DDRAW_IsDC6OffScreen(int32_t nX, int32_t nY, int32_t
     }
 
     int32_t nOffsetX = D2CMP::SRC::CelCmp::GetDC6OffsetX(pDC6Block);
-    if (!(nX + nOffsetX < RENDERER_nWindowWidth && -1 < nWidth + nX + nOffsetX)) {
-      return 1;
-    }
-
-    nWidth = D2CMP::SRC::CelCmp::GetDC6OffsetY(pDC6Block);
-    if (-1 < nY + nWidth && nY + nWidth - nHeight < RENDERER_nWindowHeight) {
-      return 0;
+    if (nX + nOffsetX < RENDERER_nWindowWidth && -1 < nWidth + nX + nOffsetX) {
+      nWidth = D2CMP::SRC::CelCmp::GetDC6OffsetY(pDC6Block);
+      if (-1 < nY + nWidth && nY + nWidth - nHeight < RENDERER_nWindowHeight) {
+        return 0;
+      }
     }
 
     return 1;
@@ -1199,12 +1198,11 @@ static BOOL __stdcall RENDERER_DDRAW_ComputeDC6ClipRect(int32_t nY, DC6Block * p
       } else {
         pOutClipRect[3] = nDrawBottom - pOutClipRect[2] - nClipTop + 1;
       }
-      if (!((int)pOutClipRect[3] > 0)) {
+      if ((int)pOutClipRect[3] <= 0) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xab);
         exit(-1);
       }
 
-      return 0;
       return 0;
     }
 
@@ -1303,7 +1301,8 @@ void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int32_t nPosX, int3
 
     int32_t pBlendTable = 0;
     nWidth = nDrawLines;
-    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, gnDDrawSurfaceXMin, gnDDrawRenderWidth, gpRenderBackBufferBits, bSpriteLoaded, RENDERER_nWindowWidth, 0, (int32_t)RENDERER_DIRECTDRAW_GetPalettePointer(nDrawMode, (uint32_t*)&nDrawLines), nSkipLines, nWidth, pBlendTable);
+    uint8_t* pPalettePtr = RENDERER_DIRECTDRAW_GetPalettePointer(nDrawMode, (uint32_t*)&nDrawLines);
+    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, gnDDrawSurfaceXMin, gnDDrawRenderWidth, gpRenderBackBufferBits, bSpriteLoaded, RENDERER_nWindowWidth, 0, (int32_t)pPalettePtr, nSkipLines, nWidth, pBlendTable);
 }
 
 void __fastcall DrawClippedImage(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, void * pCropRect, int32_t nDrawMode) {
@@ -1326,12 +1325,15 @@ void __fastcall DrawClippedImage(D2GfxDataStrc * pData, int32_t nPosX, int32_t n
       return;
     }
 
-    BOOL iVar1 = RENDERER_DDRAW_ComputeDC6ClipRect(nPosY, pData->pDC6Block, nPosX, &__frame0.nClipLeft, (uint32_t*)pCropRect);
-    if (iVar1) {
+    BOOL bClipResult = RENDERER_DDRAW_ComputeDC6ClipRect(nPosY, pData->pDC6Block, nPosX, &__frame0.nClipLeft, (uint32_t*)pCropRect);
+    if (bClipResult) {
       return;
     }
 
-    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, __frame0.nClipLeft, __frame0.nClipRight, gpRenderBackBufferBits, RENDERER_nWindowHeight, RENDERER_nWindowWidth, 0, (int32_t)RENDERER_DIRECTDRAW_GetPalettePointer(nDrawMode, (uint32_t*)&pCropRect), __frame0.nSkipTop, __frame0.nDrawHeight, iVar1);
+    int32_t nSkipTopCopy = __frame0.nSkipTop;
+    int32_t nDrawHeightCopy = __frame0.nDrawHeight;
+    uint8_t* pPalettePtr = RENDERER_DIRECTDRAW_GetPalettePointer(nDrawMode, (uint32_t*)&pCropRect);
+    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, __frame0.nClipLeft, __frame0.nClipRight, gpRenderBackBufferBits, RENDERER_nWindowHeight, RENDERER_nWindowWidth, 0, (int32_t)pPalettePtr, nSkipTopCopy, nDrawHeightCopy, bClipResult);
 }
 
 void __fastcall DrawShadow(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY) {
@@ -1503,15 +1505,11 @@ static LPINT __stdcall RENDERER_DDRAW_DrawDebugFontChar(int32_t nX, char cCharac
 }
 
 void __fastcall DrawString(int32_t nPosX, int32_t nPosY, char * szFormat, va_list va) {
+    int nCharIdx;
     char szBuf[512];
     int nCharCount = wvsprintfA(szBuf, szFormat, va);
-    int nCharIdx = 0;
     int nCurX = nPosX;
-    if (nCharCount <= 0) {
-      return;
-    }
-
-    do {
+    for (nCharIdx = 0; nCharIdx < nCharCount; nCharIdx++) {
       LPINT nCharWidth;
       nCharWidth = RENDERER_DDRAW_DrawDebugFontChar(nCurX, szBuf[nCharIdx], nPosY);
       nCurX += (int)nCharWidth;
@@ -1519,9 +1517,7 @@ void __fastcall DrawString(int32_t nPosX, int32_t nPosY, char * szFormat, va_lis
         nPosY += 0xc;
         nCurX = nPosX;
       }
-
-      nCharIdx++;
-    } while (nCharIdx < nCharCount);
+    }
 }
 
 void __fastcall DrawLight(DWORD * pLight, DWORD * pPlayerLight, int32_t nPosX, int32_t nPosY) {
@@ -1829,27 +1825,27 @@ void __fastcall DrawRect(RECT * pRect, BYTE nColor) {
       uint32_t nWidth;
       nMidX.y = pRect->bottom;
       nMidXSave.y = pRect->top;
-      if (nMidXSave.y <= nMidX.y) {
-        nWidth = pRect->right - nLeft.x;
-        if (!(nWidth && nMidX.y - nMidXSave.y)) {
-          return;
-        }
+      if (!(nMidXSave.y <= nMidX.y)) {
+        nLeft.y = nMidX.y;
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x12e);
+        exit(-1);
+      }
 
-        nRight.x = pRect->right;
-        nRight.y = pRect->top + ((uint32_t)(nMidX.y - nMidXSave.y) >> 1);
-        nMidXSave.x = (nWidth >> 1) + nLeft.x;
-        nMidX.x = nMidXSave.x;
-        nLeft.y = nRight.y;
-        RENDERER_DDRAW_DrawLine(&nRight, &nMidXSave, nColor);
-        RENDERER_DDRAW_DrawLine(&nMidX, &nRight, nColor);
-        RENDERER_DDRAW_DrawLine(&nLeft, &nMidX, nColor);
-        RENDERER_DDRAW_DrawLine(&nMidXSave, &nLeft, nColor);
+      nWidth = pRect->right - nLeft.x;
+      if (!(nWidth && nMidX.y - nMidXSave.y)) {
         return;
       }
 
-      nLeft.y = nMidX.y;
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x12e);
-      exit(-1);
+      nRight.x = pRect->right;
+      nRight.y = pRect->top + ((uint32_t)(nMidX.y - nMidXSave.y) >> 1);
+      nMidXSave.x = (nWidth >> 1) + nLeft.x;
+      nMidX.x = nMidXSave.x;
+      nLeft.y = nRight.y;
+      RENDERER_DDRAW_DrawLine(&nRight, &nMidXSave, nColor);
+      RENDERER_DDRAW_DrawLine(&nMidX, &nRight, nColor);
+      RENDERER_DDRAW_DrawLine(&nLeft, &nMidX, nColor);
+      RENDERER_DDRAW_DrawLine(&nMidXSave, &nLeft, nColor);
+      return;
     }
 }
 
@@ -1889,11 +1885,12 @@ void __fastcall DrawRectEx(RECT * pRect, BYTE nColor) {
 void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex) {
     uint32_t byPaletteHigh;
     size_t nFillWidth;
+    int nRowCount;
     int nBottom;
     int nTop;
-    int iVar1 = pRect->left;
+    int nRectLeft = pRect->left;
     int nLeft = pRect->right;
-    if (iVar1 <= nLeft) {
+    if (nRectLeft <= nLeft) {
       uint8_t* pRowDst;
       nTop = pRect->top;
       nBottom = pRect->bottom;
@@ -1901,10 +1898,10 @@ void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x166);
         exit(-1);
       }
-      if (!(nLeft >= 0 && iVar1 < RENDERER_nWindowWidth && nBottom >= 0 && nTop < RENDERER_nWindowHeight)) {
+      if (!(nLeft >= 0 && nRectLeft < RENDERER_nWindowWidth && nBottom >= 0 && nTop < RENDERER_nWindowHeight)) {
         return;
       }
-      if (iVar1 < 0) {
+      if (nRectLeft < 0) {
         pRect->left = 0;
       }
       if (nLeft >= RENDERER_nWindowWidth) {
@@ -1918,20 +1915,20 @@ void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex) {
       }
 
       nFillWidth = pRect->right - pRect->left;
-      iVar1 = pRect->bottom - pRect->top;
-      if (!(nFillWidth && iVar1)) {
+      nRowCount = pRect->bottom - pRect->top;
+      if (!(nFillWidth && nRowCount)) {
         return;
       }
 
       pRowDst = gpRenderBackBufferBits + pRect->top * RENDERER_nWindowWidth + pRect->left;
       do {
-        iVar1--;
+        nRowCount--;
         if (nFillWidth > 0) {
           memset(pRowDst, (uint32_t)((uint32_t)((uint32_t)byPaletteHigh & 0xffffffu) << 8 | (uint32_t)(uint8_t)nPaletteIndex), nFillWidth);
         }
 
         pRowDst += RENDERER_nWindowWidth;
-      } while (iVar1);
+      } while (nRowCount);
 
       return;
     } else {
@@ -1977,6 +1974,14 @@ void __fastcall ClearScreen(BOOL bPartial) {
     DirectDrawErrorHandler("Blit (screen clear) failed!", nDDrawResult);
 }
 
+// VP: [issue #26 / R93] TRUE on the Vanilla Plus wide-UI backbuffer sizes
+// (1280x720 / dormant 1344x700). Same dims test as the R92 renderer guards -
+// the renderer only knows its own backbuffer dims, no D2Client imports.
+static BOOL RENDERER_DDRAW_IsWideUiLayout(void) {
+    return (RENDERER_nWindowWidth == 1280 && RENDERER_nWindowHeight == 720)
+        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700);
+}
+
 BOOL __fastcall DrawShadowTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, int32_t nDrawMode, int32_t nScreenPanels) {
     int nSubtileY;
     BOOL bAnyDrawn = 0;
@@ -1990,14 +1995,26 @@ BOOL __fastcall DrawShadowTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, in
     int nClipRight = RENDERER_nWindowWidth;
     if (nScreenPanels != 1) {
       if (nScreenPanels == 2) {
+        // VP: [issue #26 / R93] wide-UI layouts keep the outer strip: the
+        // 800-class panel floats 240 px inboard at 1280x720, so the retail
+        // half cut (edge-hugging panels at 640x480/800x600) blacked out the
+        // visible margin beyond the open panel. The panel art overdraws its
+        // own rect afterwards, so the full-width clip is safe.
         nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
+        if (RENDERER_DDRAW_IsWideUiLayout()) {
+          nClipLeft = -0x20;
+        }
       }
     } else {
+      // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
       nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+      if (RENDERER_DDRAW_IsWideUiLayout()) {
+        nClipRight = RENDERER_nWindowWidth;
+      }
     }
 
     int nSubtileIndex = 0;
-    if (0 < pTile->nSubTiles) {
+    if (pTile->nSubTiles > 0) {
       int nSubtileX;
       do {
         nSubtileX = pTile->pSubTiles[nSubtileIndex].nOffsetX + nPosX;
@@ -2022,51 +2039,59 @@ BOOL __fastcall DrawShadowTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, in
 }
 
 BOOL __fastcall DrawTransWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, D2GfxLightStrc * pLight, int32_t nScreenPanels, int32_t nAlpha) {
-    int nLightIndex;
+    int iVar1;
+    int a3;
     int nSubtileX;
     short int* pSubtileEntry;
     uint32_t aCornerLight[4];
-    BOOL BVar2 = 0;
+    int nClipLeft;
+    int nClipRight;
+    BOOL bTileDrawn = 0;
     BOOL nSubtileY = D2CMP::SRC::SpriteCache::SPRITECACHE_AllocEntry(pTile, 1, 0);
-    if (!nSubtileY) {
-      return BVar2;
-    }
-
-    int iVar1 = RENDERER_nWindowHeight + 0x20;
-    int nClipLeft = -0x20;
-    int nClipRight = RENDERER_nWindowWidth;
-    if (nScreenPanels != 1) {
-      if (nScreenPanels == 2) {
-        nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
-      }
-    } else {
-      nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
-    }
-
-    nScreenPanels = 0;
-    if (0 >= pTile->nSubTiles) {
-      return BVar2;
-    }
-
-    do {
-      int a3;
-      a3 = pTile->pSubTiles[nScreenPanels].nOffsetY + nPosY;
-      nSubtileX = pTile->pSubTiles[nScreenPanels].nOffsetX + nPosX;
-      if (nSubtileX >= nClipLeft && nSubtileX < nClipRight && a3 >= -0x20 && a3 < iVar1) {
-        pSubtileEntry = &pTile->pSubTiles[nScreenPanels].nOffsetX;
-        nLightIndex = (int)*pSubtileEntry >> 5;
-        aCornerLight[0] = (uint32_t)pLight[nLightIndex].nIntensity;
-        aCornerLight[1] = (uint32_t)pLight[nLightIndex + 1].nIntensity;
-        aCornerLight[2] = aCornerLight[1];
-        aCornerLight[3] = aCornerLight[0];
-        D2GfxRendereInitFunctionsStrc->nfpDrawRoofTile(*(int*)(pSubtileEntry + 8), nSubtileX, a3, (int)aCornerLight, (uint8_t)nAlpha);
-        BVar2 = 1;
+    if (nSubtileY) {
+      int nLightIndex;
+      iVar1 = RENDERER_nWindowHeight + 0x20;
+      nClipLeft = -0x20;
+      nClipRight = RENDERER_nWindowWidth;
+      if (nScreenPanels != 1) {
+        if (nScreenPanels == 2) {
+          // VP: [issue #26 / R93] wide-UI layouts keep the left strip (see
+          // DrawShadowTile above for the geometry note).
+          nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
+          if (RENDERER_DDRAW_IsWideUiLayout()) {
+            nClipLeft = -0x20;
+          }
+        }
+      } else {
+        // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
+        nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+        if (RENDERER_DDRAW_IsWideUiLayout()) {
+          nClipRight = RENDERER_nWindowWidth;
+        }
       }
 
-      nScreenPanels++;
-    } while (nScreenPanels < pTile->nSubTiles);
+      nScreenPanels = 0;
+      if (pTile->nSubTiles > 0) {
+        do {
+          a3 = pTile->pSubTiles[nScreenPanels].nOffsetY + nPosY;
+          nSubtileX = pTile->pSubTiles[nScreenPanels].nOffsetX + nPosX;
+          if (nSubtileX >= nClipLeft && nSubtileX < nClipRight && a3 >= -0x20 && a3 < iVar1) {
+            pSubtileEntry = &pTile->pSubTiles[nScreenPanels].nOffsetX;
+            nLightIndex = (int)*pSubtileEntry >> 5;
+            aCornerLight[0] = (uint32_t)pLight[nLightIndex].nIntensity;
+            aCornerLight[1] = (uint32_t)pLight[nLightIndex + 1].nIntensity;
+            aCornerLight[2] = aCornerLight[1];
+            aCornerLight[3] = aCornerLight[0];
+            D2GfxRendereInitFunctionsStrc->nfpDrawRoofTile(*(int*)(pSubtileEntry + 8), nSubtileX, a3, (int)aCornerLight, (uint8_t)nAlpha);
+            bTileDrawn = 1;
+          }
 
-    return BVar2;
+          nScreenPanels++;
+        } while (nScreenPanels < pTile->nSubTiles);
+      }
+    }
+
+    return bTileDrawn;
 }
 
 BOOL __fastcall DrawWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, D2GfxLightStrc * pLight, int32_t nScreenPanels) {
@@ -2085,14 +2110,23 @@ BOOL __fastcall DrawWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int3
     int nClipRight = RENDERER_nWindowWidth;
     if (nScreenPanels != 1) {
       if (nScreenPanels == 2) {
+        // VP: [issue #26 / R93] wide-UI layouts keep the left strip (see
+        // DrawShadowTile above for the geometry note).
         nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
+        if (RENDERER_DDRAW_IsWideUiLayout()) {
+          nClipLeft = -0x20;
+        }
       }
     } else {
+      // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
       nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+      if (RENDERER_DDRAW_IsWideUiLayout()) {
+        nClipRight = RENDERER_nWindowWidth;
+      }
     }
 
     nScreenPanels = 0;
-    if (0 < pTile->nSubTiles) {
+    if (pTile->nSubTiles > 0) {
       int nLightIndex;
       do {
         a3 = pTile->pSubTiles[nScreenPanels].nOffsetY + nPosY;
@@ -2193,13 +2227,14 @@ static void __stdcall RENDERER_DDRAW_BlitSmackerFrame(int32_t nHeight, int32_t n
 void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, int32_t nVersion) {
     void* nResult;
     void* pImageBuffer;
-    uint32_t uVar2;
-    int iVar3;
+    uint32_t bLoaded;
     uint8_t aPaletteRgb[1024];
     uint32_t nImageHeight;
     uint32_t nBitDepth;
     uint32_t nImageWidth;
     DWORD nFileSize;
+    int bDecoded;
+    int nColorIdx;
     pBuffer->eMode = (char)nVersion;
     if ((char)nVersion != 'p') {
       if ((char)nVersion != 's') {
@@ -2225,17 +2260,17 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
       memset((void*)*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256), 0, 0x6db0);
       nVersion = 0;
       nFileSize = 0;
-      uVar2 = Storm::Source::SFile::SFileLoadFileEx(nullptr, (uint32_t*)szSmacker, (void**)&nVersion, &nFileSize, 0, 3, 0);
-      if (uVar2 && nVersion) {
-        iVar3 = Storm::Source::SBMP::SBmpDecodeImage(2, (void*)nVersion, nFileSize, aPaletteRgb, (uint8_t*)*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256), 0x6db0, &nImageHeight, &nImageWidth, &nBitDepth);
-        Storm::SMem::SMemFree((void*)nVersion, ".\\Src\\ddSmack.cpp", 0x78, 0);
-        if (iVar3 && nImageHeight == 0x1d4 && nImageWidth == 0x3c && nBitDepth == 8) {
-          iVar3 = 0;
+      bLoaded = Storm::Source::SFile::SFileLoadFileEx(nullptr, szSmacker, (void**)&nVersion, &nFileSize, 0, 3, 0);
+      if (bLoaded && nVersion) {
+        bDecoded = Storm::Source::SBMP::SBmpDecodeImage(2, (void*)nVersion, nFileSize, aPaletteRgb, (uint8_t*)*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256), 0x6db0, &nImageHeight, &nImageWidth, &nBitDepth);
+        Storm::Source::SMem::SMemFree((void*)nVersion, ".\\Src\\ddSmack.cpp", 0x78, 0);
+        if (bDecoded && nImageHeight == 0x1d4 && nImageWidth == 0x3c && nBitDepth == 8) {
+          nColorIdx = 0;
           do {
-            bVar1 = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete((LPPALETTEENTRY)gaDirectDrawDitherPaletteRemap, 0x100, (uint32_t)aPaletteRgb[iVar3 * 4], (uint32_t)aPaletteRgb[iVar3 * 4 + 1], (uint32_t)aPaletteRgb[iVar3 * 4 + 2]);
-            gaSmackerPaletteRemap[iVar3] = bVar1;
-            iVar3++;
-          } while (iVar3 < 0x100);
+            bVar1 = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete((LPPALETTEENTRY)gaDirectDrawDitherPaletteRemap, 0x100, (uint32_t)aPaletteRgb[nColorIdx * 4], (uint32_t)aPaletteRgb[nColorIdx * 4 + 1], (uint32_t)aPaletteRgb[nColorIdx * 4 + 2]);
+            gaSmackerPaletteRemap[nColorIdx] = bVar1;
+            nColorIdx++;
+          } while (nColorIdx < 0x100);
 
           return;
         }

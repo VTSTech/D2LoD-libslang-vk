@@ -15,7 +15,7 @@
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Storm/H/CCritSect.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 
@@ -33,11 +33,10 @@ template<> TSLink<::StringEntryNode>* TSLink<StringEntryNode>::NextLink(int32_t 
     if ((int)nNextOffset < 0) {
       return (TSLink<::StringEntryNode>*)~nNextOffset;
     }
-    if (nLinkOffset >= 0) {
-      return (TSLink<::StringEntryNode>*)(nNextOffset + nLinkOffset);
+    if (nLinkOffset < 0) {
+      nLinkOffset = (int)this - this->m_prevlink->m_next;
     }
 
-    nLinkOffset = (int)this - this->m_prevlink->m_next;
     return (TSLink<::StringEntryNode>*)(nNextOffset + nLinkOffset);
 }
 
@@ -73,11 +72,10 @@ template<> uint32_t TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>>
 }
 
 template<> uint32_t __stdcall TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>>::RoundToMultiple(uint32_t nValue, uint32_t nMultiple) {
-    if (!(nValue % nMultiple)) {
-      return nValue;
+    if (nValue % nMultiple) {
+      nValue += nMultiple - nValue % nMultiple;
     }
 
-    nValue += nMultiple - nValue % nMultiple;
     return nValue;
 }
 
@@ -119,12 +117,7 @@ template<> void TSExplicitList<StringEntryNode, -572662307>::LinkNode(::StringEn
     if (pDstSlot) {
       int* pPrevLink;
       pTailLink = pSrcSlot->m_next;
-      if ((int)pTailLink < 0) {
-        pPrevLink = (int*)~pTailLink;
-      } else {
-        pPrevLink = (int*)((int)pSrcSlot + (pTailLink - pDstSlot->m_next));
-      }
-
+      pPrevLink = (int*)D2_StormNextLink(pSrcSlot, -1);
       *pPrevLink = (int)pDstSlot;
       pSrcSlot->m_prevlink->m_next = pSrcSlot->m_next;
       pSrcSlot->m_prevlink = 0;
@@ -190,13 +183,7 @@ template<> void TSExplicitList<StringEntryNode, -572662307>::UnlinkNode(::String
       return;
     }
 
-    uint32_t nNextLink = pSlot->m_next;
-    if ((int)nNextLink < 0) {
-      pPrevLink = (int*)~nNextLink;
-    } else {
-      pPrevLink = (int*)((int)pSlot + (nNextLink - nHeadEntry->m_next));
-    }
-
+    pPrevLink = (int*)D2_StormNextLink(pSlot, -1);
     *pPrevLink = (int)nHeadEntry;
     pSlot->m_prevlink->m_next = pSlot->m_next;
     pSlot->m_prevlink = 0;
@@ -330,7 +317,7 @@ template<> void TSHashObject<StringEntryNode, HASHKEY_STRI>::Destructor() {
     uint32_t nNextLink;
     char* pObject = this->m_key.szString;
     if (pObject) {
-      Storm::SMem::SMemFree(pObject, "d:\\diablo2\\Diablo2\\3rdparty\\storm\\h\\stpl.h", 0x5e4, 0);
+      Storm::Source::SMem::SMemFree(pObject, "d:\\diablo2\\Diablo2\\3rdparty\\storm\\h\\stpl.h", 0x5e4, 0);
     }
 
     TSLink<::StringEntryNode>* nHeadEntry = this->m_linktofull.m_prevlink;
@@ -371,10 +358,10 @@ template<> void TSHashObject<StringEntryNode, HASHKEY_STRI>::Destructor() {
 template<> void TSHashTable<StringEntryNode, HASHKEY_STRI>::InternalClear(int32_t bUnlinkOnly) {
     TSExplicitList<::StringEntryNode, -572662307>* pTVar1;
     ::StringEntryNode* pNode;
-    int iVar2;
     int* pSlot;
     int* pPrevLink;
     int nHeadEntry;
+    int nLinkOffset;
     uint32_t nNextLink;
     this->nFullnessIndicator = 0;
     this->tFullList.UnlinkAll();
@@ -391,9 +378,9 @@ template<> void TSHashTable<StringEntryNode, HASHKEY_STRI>::InternalClear(int32_
           break;
         }
         if (bUnlinkOnly) {
-          iVar2 = pTVar1[iBucket].m_linkoffset;
-          nHeadEntry = *(int*)((uintptr_t)&pNode->m_hashval + iVar2);
-          pSlot = (int*)((uintptr_t)&pNode->m_hashval + iVar2);
+          nLinkOffset = pTVar1[iBucket].m_linkoffset;
+          nHeadEntry = *(int*)((uintptr_t)&pNode->m_hashval + nLinkOffset);
+          pSlot = (int*)((uintptr_t)&pNode->m_hashval + nLinkOffset);
           if (nHeadEntry) {
             nNextLink = pSlot[1];
             if ((int)nNextLink < 0) {
@@ -426,13 +413,7 @@ void __thiscall Destructor_Unreferenced(TSExplicitList<::StringEntryNode, -57266
       return;
     }
 
-    uint32_t nNextLink = pThis->m_terminator.m_next;
-    if ((int)nNextLink < 0) {
-      pPrevLink = (int*)~nNextLink;
-    } else {
-      pPrevLink = (int*)((int)pTVar1 + (nNextLink - nHeadEntry->m_next));
-    }
-
+    pPrevLink = (int*)D2_StormNextLink(pTVar1, -1);
     *pPrevLink = (int)nHeadEntry;
     pTVar1->m_prevlink->m_next = pThis->m_terminator.m_next;
     pTVar1->m_prevlink = 0;

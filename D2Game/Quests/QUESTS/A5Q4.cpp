@@ -80,8 +80,8 @@ int __fastcall Q34_NotifyQuestState(::SGAMEDATA * pGame, D2UnitStrc * pUnit, voi
 }
 
 // Q34_StatusFilter (Betrayal of Harrogath). Computes the quest-log icon/state byte (*nUnknown) shown to the client from the QuestRecord bits: 0=not-yet (intro), 0x0c=CannotComplete-in-this-game, else maps Step0x04 bit (+4) or the in-memory nStateFlagPrev. Read-only on quest state.
-bool __fastcall Q34_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown) {
-    *nUnknown = '\0';
+bool __fastcall Q34_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode) {
+    *pbyStatusCode = '\0';
     BOOL BVar1 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_BetrayalOfHaggorath, QUESTSTATE_Completed);
     if (BVar1) {
       return true;
@@ -97,25 +97,25 @@ bool __fastcall Q34_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
 
         BVar1 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_BetrayalOfHaggorath, QUESTSTATE_CannotCompleteQuestInGame);
         if (BVar1) {
-          *nUnknown = '\f';
+          *pbyStatusCode = '\f';
           return true;
         }
         if (pQuestData->nStateFlag >= 4) {
           return true;
         }
 
-        *nUnknown = pQuestData->nStateFlagPrev;
+        *pbyStatusCode = pQuestData->nStateFlagPrev;
         return true;
       }
     }
 
     BVar1 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_BetrayalOfHaggorath, QUESTSTATE_Step0x04);
-    *nUnknown = (BVar1 != 0) + '\x04';
+    *pbyStatusCode = BVar1 != 0 ? 5 : 4;
     return true;
 }
 
 // A5Q4 (Betrayal of Harrogath) helper. On first call when bPortalSpawned==0, spawns the red portal object (classId 0x3c) at pUnit's tile position +(10,5) leading to LEVEL_NihlathaksTemple via SERVER_SpawnPortal. Sets bPortalSpawned=1 and clears bNotifiedCompletion on success. Gated by A5Q4 specific-data flags; no QuestRecord access.
-bool __stdcall Q34_SpawnNihlathakPortal(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
+static bool __stdcall Q34_SpawnNihlathakPortal(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
     int nPosY;
     int nPosX;
     D2QuestDataA5Q4Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q4;
@@ -159,9 +159,6 @@ bool __stdcall Q34_SpawnNihlathakPortal(D2QuestDataStrc * pQuestData, D2UnitStrc
 
 // A5Q4 (Betrayal of Harrogath) quest-state-2 NPC callback. Fires when the target is Nihlathak (classId 0x200). If group0 prisoners are freed: clears eFlags, calls QUEST_SetStateAndBroadcast to state 1 via Q34_NotifyQuestState, clears group0 flag. If group1 freed but group2 not: inlines Q34_SpawnNihlathakPortal — spawns a portal to LEVEL_NihlathaksTemple (objectClass 0x3c) near Nihlathak's position (+10x, +5y), and advances group1->group2 on success.
 void __fastcall Q34_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    int nPosY;
-    int nPosX;
-    D2RoomStrc* pRoom;
     if (!(pQuestArgs->pTarget && (short int)pQuestArgs->pTarget->nClassId == 0x200)) {
       return;
     }
@@ -176,44 +173,7 @@ void __fastcall Q34_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
       return;
     }
 
-    D2UnitStrc* pUnit = pQuestArgs->pTarget;
-    D2QuestDataA5Q4Strc* pDVar1 = pQuestData->pQuestSpecificData.pA5Q4;
-    if (pDVar1->bPortalSpawned) {
-      return;
-    }
-
-    eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-      nPosY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (pUnit->pPath.pDynamicPath) {
-      nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
-    } else {
-      nPosY = 0;
-    }
-
-    eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-      nPosX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (pUnit->pPath.pDynamicPath) {
-      nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
-    } else {
-      nPosX = 0;
-    }
-
-    BOOL BVar2 = 1;
-    int32_t nClassId = 0x3c;
-    D2UnitStrc** ppPortal = 0;
-    eD2LevelId eLevel = LEVEL_NihlathaksTemple;
-    nPosY += 5;
-    nPosX += 10;
-    pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    BVar2 = SKILLS::SkillsServer::SERVER_SpawnPortal(pQuestData->pGame, nullptr, pRoom, nPosX, nPosY, eLevel, ppPortal, nClassId, BVar2);
-    if (!BVar2) {
-      return;
-    }
-
-    pDVar1->bPortalSpawned = 1;
-    pDVar1->bNotifiedCompletion = 0;
+    Q34_SpawnNihlathakPortal(pQuestData, pQuestArgs->pTarget);
 }
 
 // A5Q4 (Betrayal of Harrogath) per-player iterator callback. Requires Prison of Ice completed or reward-pending as a prerequisite. If Betrayal is not yet completed/rewarded, mirrors the shared in-memory nStateFlag (2→Step0x02, 3→Step0x03) into each player's QuestRecord so their quest log tracks the current step.
@@ -247,12 +207,11 @@ BOOL __fastcall Q34_UpdateQuestStep(::SGAMEDATA * pGame, D2UnitStrc * pUnit, voi
                          into player quest log */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_BetrayalOfHaggorath, QUESTSTATE_Step0x02);
       return 0;
     }
-    if (pQuestData->nStateFlag != 3) {
-      return 0;
+    if (pQuestData->nStateFlag == 3) {
+      /* SetQuestState(Betrayal q0x26, Step0x03=3): mirror in-memory nStateFlag==3
+                         into player quest log */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_BetrayalOfHaggorath, QUESTSTATE_Step0x03);
     }
 
-    /* SetQuestState(Betrayal q0x26, Step0x03=3): mirror in-memory nStateFlag==3
-                         into player quest log */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_BetrayalOfHaggorath, QUESTSTATE_Step0x03);
     return 0;
 }
 
@@ -260,24 +219,23 @@ BOOL __fastcall Q34_UpdateQuestStep(::SGAMEDATA * pGame, D2UnitStrc * pUnit, voi
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q4.cpp
 bool __fastcall Q34_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (pQuestData->nStateFlag < 4 && pQuestData->bIsNotIntroduction != '\0') {
-      if (pQuestData->nStateFlag) {
-        return true;
+      if (!pQuestData->nStateFlag) {
+        QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q4.cpp", 0xff);
       }
 
-      QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q4.cpp", 0xff);
       return true;
     }
 
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (pQuestData_00) {
-      BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-      if (BVar2) {
+      BOOL BVar1 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+      if (BVar1) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf6);
         exit(-1);
       }
 
-      bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
-      return bVar1;
+      bool bResult = pQuestData_00->fpSequenceFilter(pQuestData_00);
+      return bResult;
     }
 
     return false;
@@ -441,16 +399,11 @@ BOOL __fastcall Q34_CheckNearNihlathak(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     } else {
       uint32_t nAdjacentIdx;
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &ppAdjacentRooms, (int*)&nAdjacentRoomCount);
-      nAdjacentIdx = 0;
-      if (nAdjacentRoomCount > 0) {
-        do {
-          if (ppAdjacentRooms[nAdjacentIdx] == (D2RoomStrc*)pBetrayalQuest->pRoomTarget) {
-            bIsNearNihlathak = '\x01';
-            break;
-          }
-
-          nAdjacentIdx++;
-        } while (nAdjacentIdx < nAdjacentRoomCount);
+      for (nAdjacentIdx = 0; nAdjacentIdx < nAdjacentRoomCount; nAdjacentIdx++) {
+        if (ppAdjacentRooms[nAdjacentIdx] == (D2RoomStrc*)pBetrayalQuest->pRoomTarget) {
+          bIsNearNihlathak = '\x01';
+          break;
+        }
       }
     }
 
@@ -486,16 +439,14 @@ BOOL __fastcall Q34_CheckNearNihlathak(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 BOOL __fastcall Q34_PropagateCompleteToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_BetrayalOfHaggorath, QUESTSTATE_JustCompleted);
-    if (!BVar2) {
-      return 0;
+    if (BVar2) {
+      uint16_t nPartyId;
+      nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+      if (nPartyId != 0xffff) {
+        UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q34_SetCompleteForPartyMember, 0);
+      }
     }
 
-    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == 0xffff) {
-      return 0;
-    }
-
-    UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q34_SetCompleteForPartyMember, 0);
     return 0;
 }
 
@@ -504,23 +455,18 @@ BOOL __fastcall Q34_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BetrayalOfHaggorath, QUESTSTATE_Completed);
-    if (bQuestState == 1) {
-      return 0;
-    }
-
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BetrayalOfHaggorath, QUESTSTATE_RewardAwaits);
-    if (bQuestState == 1) {
-      return 0;
-    }
-
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BetrayalOfHaggorath, QUESTSTATE_JustCompleted);
-    if (bQuestState == 1) {
-      return 0;
-    }
-
-    /* SetQuestState(Betrayal q0x26, CannotCompleteQuestInGame=0xe): player absent
+    if (bQuestState != 1) {
+      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BetrayalOfHaggorath, QUESTSTATE_RewardAwaits);
+      if (bQuestState != 1) {
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BetrayalOfHaggorath, QUESTSTATE_JustCompleted);
+        if (bQuestState != 1) {
+          /* SetQuestState(Betrayal q0x26, CannotCompleteQuestInGame=0xe): player absent
                          at Nihlathak kill forfeits self game */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_BetrayalOfHaggorath, QUESTSTATE_CannotCompleteQuestInGame);
-    QUEST_SendQuestStatePacket(pUnit, 0x22, 0);
+          QUEST_SendQuestStatePacket(pUnit, 0x22, 0);
+        }
+      }
+    }
+
     return 0;
 }
 
@@ -528,11 +474,10 @@ BOOL __fastcall Q34_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 BOOL __fastcall Q34_PlayCompletionSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_BetrayalOfHaggorath, QUESTSTATE_JustCompleted);
-    if (!bQuestState) {
-      return 0;
+    if (bQuestState) {
+      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x52, pUnit);
     }
 
-    UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x52, pUnit);
     return 0;
 }
 
@@ -579,44 +524,43 @@ void __fastcall Q34_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 
 // A5Q4 (Betrayal of Harrogath) NPC active-filter predicate for Nihlathak (classId 0x200). When nStateFlag!=0: returns true if Prison of Ice is done and Betrayal is neither Completed nor RewardAwaits. When nStateFlag==0: returns true if JustCompleted is set and Step0x04 is NOT set. Read-only on QuestRecord; controls whether Nihlathak shows as an active quest NPC for this player.
 bool __fastcall Q34_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
-    BOOL BVar1;
     eD2Quests nQuestId;
     eD2QuestState eQuestState;
-    if (nTargetClassId != 0x200) {
-      return false;
-    }
-    if (pQuestData->nStateFlag == 1) {
-      BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_PrisonOfIce, QUESTSTATE_Completed);
-      if (!BVar1) {
-        BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_PrisonOfIce, QUESTSTATE_RewardAwaits);
+    if (nTargetClassId == 0x200) {
+      BOOL BVar1;
+      if (pQuestData->nStateFlag == 1) {
+        BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_PrisonOfIce, QUESTSTATE_Completed);
+        if (!BVar1) {
+          BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_PrisonOfIce, QUESTSTATE_RewardAwaits);
+          if (!BVar1) {
+            return false;
+          }
+        }
+
+        BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
+        if (BVar1) {
+          return false;
+        }
+
+        nQuestId = pQuestData->nQuestIdReal;
+        eQuestState = QUESTSTATE_RewardAwaits;
+      } else {
+        BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_JustCompleted);
         if (!BVar1) {
           return false;
         }
+
+        eQuestState = QUESTSTATE_Step0x04;
+        nQuestId = QUEST_BetrayalOfHaggorath;
       }
 
-      BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
-      if (BVar1) {
-        return false;
-      }
-
-      nQuestId = pQuestData->nQuestIdReal;
-      eQuestState = QUESTSTATE_RewardAwaits;
-    } else {
-      BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_JustCompleted);
+      BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, nQuestId, eQuestState);
       if (!BVar1) {
-        return false;
+        return true;
       }
-
-      eQuestState = QUESTSTATE_Step0x04;
-      nQuestId = QUEST_BetrayalOfHaggorath;
     }
 
-    BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, nQuestId, eQuestState);
-    if (BVar1) {
-      return false;
-    }
-
-    return true;
+    return false;
 }
 
 // Q34_SetAnyaTimerEvent (Betrayal of Harrogath). If the quest's bNotifiedCompletion flag is set, schedules a delayed event (type 7, +0xc frames) on the unit — drives the post-kill follow-up (Anya's reward / personalized item + Larzuk arrival). No QuestRecord access.
@@ -631,57 +575,19 @@ void __fastcall Q34_SetAnyaTimerEvent(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 
 // A5Q4 (Betrayal of Harrogath) timer/event variant of the portal spawn. Only fires when bNotifiedCompletion is set and bPortalSpawned is 0. Spawns the LEVEL_NihlathaksTemple red portal (classId 0x3c) at unit +(10,5) via SERVER_SpawnPortal; on success sets bPortalSpawned and clears bNotifiedCompletion. No QuestRecord access.
 void __fastcall Q34_SpawnNihlathakPortalTimer(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    int nPosY;
-    int nPosX;
-    D2RoomStrc* pRoom;
+    D2QuestDataA5Q4Strc* pQuestSpecificData;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_BetrayalOfHaggorath);
-    if (!pQuestData || !pQuestData->pQuestSpecificData.pA5Q4->bNotifiedCompletion) {
+    if (!(pQuestData && pQuestData->pQuestSpecificData.pA5Q4->bNotifiedCompletion)) {
       return;
     }
 
-    D2QuestDataA5Q4Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q4;
-    if (pQuestSpecificData->bPortalSpawned) {
-      return;
-    }
-
-    eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-      nPosY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (pUnit->pPath.pDynamicPath) {
-      nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
-    } else {
-      nPosY = 0;
-    }
-
-    eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-      nPosX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (pUnit->pPath.pDynamicPath) {
-      nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
-    } else {
-      nPosX = 0;
-    }
-
-    BOOL BVar1 = 1;
-    int32_t nClassId = 0x3c;
-    D2UnitStrc** ppPortal = 0;
-    eD2LevelId eLevel = LEVEL_NihlathaksTemple;
-    nPosY += 5;
-    nPosX += 10;
-    pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    BVar1 = SKILLS::SkillsServer::SERVER_SpawnPortal(pQuestData->pGame, nullptr, pRoom, nPosX, nPosY, eLevel, ppPortal, nClassId, BVar1);
-    if (!BVar1) {
-      return;
-    }
-
-    pQuestSpecificData->bPortalSpawned = 1;
-    pQuestSpecificData->bNotifiedCompletion = 0;
+    Q34_SpawnNihlathakPortal(pQuestData, pUnit);
 }
 
 // A5Q4 (Betrayal of Harrogath) quest-state-0xd handler. Intro path: forces nStateFlag=5 and, if the Halls of Pain waypoint is not yet found, flags field_0x89 for a deferred portal spawn. Active path: when not RewardAwaits, reads Step0x03/Step0x02 bits and advances group progression, broadcasting nStateFlag 2 or 3 via QUEST_SetStateAndBroadcast.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q4.cpp
 void __fastcall Q34_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    bool _bHasWaypoint;
+    uint32_t _bHasWaypoint;
     ::SGAMEDATA* pSVar1;
     D2BitBufferStrc* pBitBuffer;
     bool bHasWaypoint;
@@ -759,7 +665,7 @@ void __fastcall Q34_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q34_Callback02_NpcDeactivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q34_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q34_Callback13_PlayerStartedGame;
-    pQuestData->pNpcMessages = &A5Q4::aNpcGossipData;
+    pQuestData->pNpcMessages = A5Q4::aNpcGossipData;
     pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     D2QuestDataA5Q4Strc* pQuestSpecificData = D2_NEW_POOL_AT(pSVar1->pMemoryPool, D2QuestDataA5Q4Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q4.cpp", 0x30d);
@@ -839,8 +745,7 @@ void __fastcall Q34_NpcSpawnPortalInAct5(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     eLevelId = LEVEL_NihlathaksTemple;
     int nPortalY = nUnitPosY + 5;
     nUnitPosX += 10;
-    pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    bIgnoreSpawnLocation = SKILLS::SkillsServer::SERVER_SpawnPortal(pGame, nullptr, pRoom, nUnitPosX, nPortalY, eLevelId, ppPortalOut, nClassId, bIgnoreSpawnLocation);
+    bIgnoreSpawnLocation = SKILLS::SkillsServer::SERVER_SpawnPortal(pGame, nullptr, D2Common::Units::UNITS_GetRoom(pUnit), nUnitPosX, nPortalY, eLevelId, ppPortalOut, nClassId, bIgnoreSpawnLocation);
     if (!bIgnoreSpawnLocation) {
       return;
     }

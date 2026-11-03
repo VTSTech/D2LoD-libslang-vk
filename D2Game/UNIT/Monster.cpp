@@ -23,16 +23,16 @@
 namespace D2Game::UNIT::Monster {
 
 void __fastcall SetComponent(D2UnitStrc * pUnit, uint8_t nComponent, uint8_t nValue) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && nComponent < 0x10 && pUnit->pUnitData.pUnitDataPlayer)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && nComponent < 0x10 && pUnit->pUnitData.pUnitDataMonster)) {
       return;
     }
 
-    pUnit->pUnitData.pUnitDataPlayer->szCharName[nComponent + 4] = nValue;
+    pUnit->pUnitData.pUnitDataMonster->Components[nComponent] = nValue;
 }
 
 D2AiGeneralStrc * __fastcall GetAiGeneral(D2UnitStrc * pUnit) {
-    if (pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer) {
-      return (D2AiGeneralStrc*)pUnit->pUnitData.pUnitDataPlayer->unk0x28;
+    if (pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster) {
+      return pUnit->pUnitData.pUnitDataMonster->pAiGeneral;
     }
 
     return nullptr;

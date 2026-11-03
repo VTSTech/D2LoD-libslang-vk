@@ -193,7 +193,7 @@ static uint16_t PARTY_UpdateNextPartyId(::SGAMEDATA * pGame) {
 }
 
 // @sourcefile .\UNIT\Party.cpp
-int16_t __fastcall AllocPartyControlSub0x4(::SGAMEDATA * pGame) {
+int16_t __fastcall PARTY_CreateParty(::SGAMEDATA * pGame) {
     D2UnitPartyControlSub* pNewSub;
     D2UnitPartyControl* pPartyCtrl = pGame->pPartyControl;
     if (!pPartyCtrl) {
@@ -368,25 +368,25 @@ int __stdcall PARTY_AddUnitToParty(::SGAMEDATA * pGame, int16_t nPartyId, D2Unit
           }
 
           pNewSubSub = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitPartyControlSubSub, ".\\UNIT\\Party.cpp", 0x108);
-          if (pNewSubSub) {
-            pNewSubSub->pNext = 0;
-            pNewSubSub->nUnitGUID = nUnitGUID;
-            pNewSubSub->pNext = pFoundSub->pSub;
-            pFoundSub->pSub = pNewSubSub;
-            GAME::SCmd::NET_D2GS_SERVER_Send_0x8D_AssignPlayerToParty_Sender(pGame, pUnit);
-            for (pNewSubSub = pNewSubSub->pNext; pNewSubSub; pNewSubSub = pNewSubSub->pNext) {
-              pExistingMember = SUnit::FindUnitFromTable(pGame, UNIT_PLAYER, pNewSubSub->nUnitGUID);
-              if (pExistingMember) {
-                PLAYER::PlayerScreen::PARTYSCREEN_ClearHostileRelation(pGame, pUnit, pExistingMember);
-                PLAYER::PlayerScreen::PARTYSCREEN_ClearHostileRelation(pGame, pExistingMember, pUnit);
-              }
-            }
-
-            return 1;
-          } else {
+          if (!pNewSubSub) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x109);
             exit(-1);
           }
+
+          pNewSubSub->pNext = 0;
+          pNewSubSub->nUnitGUID = nUnitGUID;
+          pNewSubSub->pNext = pFoundSub->pSub;
+          pFoundSub->pSub = pNewSubSub;
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x8D_AssignPlayerToParty_Sender(pGame, pUnit);
+          for (pNewSubSub = pNewSubSub->pNext; pNewSubSub; pNewSubSub = pNewSubSub->pNext) {
+            pExistingMember = SUnit::FindUnitFromTable(pGame, UNIT_PLAYER, pNewSubSub->nUnitGUID);
+            if (pExistingMember) {
+              PLAYER::PlayerScreen::PARTYSCREEN_ClearHostileRelation(pGame, pUnit, pExistingMember);
+              PLAYER::PlayerScreen::PARTYSCREEN_ClearHostileRelation(pGame, pExistingMember, pUnit);
+            }
+          }
+
+          return 1;
         }
       } else {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfe);
@@ -426,12 +426,11 @@ int32_t __fastcall CountPartyControlSubSize(::SGAMEDATA * pGame, int16_t nPartyI
 
 BOOL __fastcall CountAliveUnitsLevelSum(int32_t nContext, D2UnitStrc * pUnit, int * pLevelSum) {
     BOOL bIsDead = SUnit::CheckForModeZeroDeath(pUnit);
-    if (bIsDead) {
-      return bIsDead;
+    if (!bIsDead) {
+      bIsDead = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
+      *pLevelSum += bIsDead;
     }
 
-    bIsDead = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-    *pLevelSum += bIsDead;
     return bIsDead;
 }
 
@@ -518,17 +517,17 @@ void __fastcall FindUnitWithFilter(::SGAMEDATA * pGame, D2UnitStrc * pUnit, pfnP
     }
 }
 
-static void __stdcall GoldCalculations(D2UnitStrc * pUnit, int * pnParam1, int * pnParam2, int32_t nParam) {
+static void __stdcall GoldCalculations(D2UnitStrc * pUnit, int * pnGoldAccepted, int * pnGoldOverflow, int32_t nGoldAmount) {
     uint32_t nGoldLimit = D2Common::Units::GetInventoryGoldLimit(pUnit);
     int nCurrentGold = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_gold, 0);
-    *pnParam2 = 0;
-    *pnParam1 = nParam;
-    if (!(nCurrentGold + nParam > (int)nGoldLimit)) {
+    *pnGoldOverflow = 0;
+    *pnGoldAccepted = nGoldAmount;
+    if (!(nCurrentGold + nGoldAmount > (int)nGoldLimit)) {
       return;
     }
 
-    *pnParam1 = nGoldLimit - nCurrentGold;
-    *pnParam2 = nParam - (nGoldLimit - nCurrentGold);
+    *pnGoldAccepted = nGoldLimit - nCurrentGold;
+    *pnGoldOverflow = nGoldAmount - (nGoldLimit - nCurrentGold);
 }
 
 // @sourcefile .\UNIT\Party.cpp
@@ -596,7 +595,7 @@ int16_t __fastcall GetPartyIdFromUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 void __fastcall PARTY_RemoveUnitFromParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     int16_t nPartyId;
     D2UnitPartyControlSub* pPartySub;
-    int32_t iVar1;
+    int32_t nMemberCount;
     int nUnitGUID;
     D2UnitPartyControlSubSub* pSubSub;
     D2UnitPartyControlSubSub* pPrevSubSub = 0;
@@ -622,10 +621,10 @@ void __fastcall PARTY_RemoveUnitFromParty(::SGAMEDATA * pGame, D2UnitStrc * pUni
             break;
           }
           if (pMemoryToFree->nUnitGUID == nUnitGUID) {
-            if (!pPrevSubSub) {
-              pPartySub->pSub = pMemoryToFree->pNext;
-            } else {
+            if (pPrevSubSub) {
               pPrevSubSub->pNext = pMemoryToFree->pNext;
+            } else {
+              pPartySub->pSub = pMemoryToFree->pNext;
             }
 
             PLAYER::PlayerScreen::SendAllPlayersPartyInfo(pGame, pUnit);
@@ -638,8 +637,8 @@ void __fastcall PARTY_RemoveUnitFromParty(::SGAMEDATA * pGame, D2UnitStrc * pUni
           pSubSub = pMemoryToFree->pNext;
         }
 
-        iVar1 = CountPartyControlSubSize(pGame, nPartyId);
-        if (iVar1 > 1) {
+        nMemberCount = CountPartyControlSubSize(pGame, nPartyId);
+        if (nMemberCount > 1) {
           return;
         }
 

@@ -4,14 +4,17 @@
 #include "Bnclient/BnMessQueue.h"
 #include "Bnclient/net_sid.h"
 #include "D2Client/D2IniConfigStrc.h"
-#include "Fog/Engine/Application.h"
 #include "Fog/Memory.h"
 #include "Storm/D2Srp.h"
-#include "Storm/SMem.h"
-#include "Storm/Source/SSComp.h"
-#include "Storm/_unnamespaced.h"
+#include "Storm/Source/SLog.h"
+#include "Storm/Source/SMem.h"
 #include "globals/globals.h"
+#include "Bnclient/BnDownload.h"
+#include "Bnclient/BnSend.h"
 #include "Bnclient/Bnet.h"
+#include "Bnclient/Cache.h"
+#include "Bnclient/Debug.h"
+#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -20,225 +23,81 @@
 #endif
 
 
+static D2BNetClientCallbacksStrc sgBNetClientCallbacks = {
+    /* .pfnSetLoggingFlag = */ (fnSetLoggingFlag)&Bnclient::Debug::DEBUG_SetLoggingFlag,
+    /* .pfnConnectToBattleNet = */ (fnConnectToBattleNet)&Bnclient::BnSend::ConnectingToBattleNet,
+    /* .pfnSendLogonRequest = */ &Bnclient::BnSend::BNCLIENT_SendLogonRequest,
+    /* .pfnWaitForLogonResponse = */ &Bnclient::BnSend::BNCLIENT_WaitForLogonResponse,
+    /* .pfnDisconnect = */ &Bnclient::BnSend::BNSEND_Disconnect,
+    /* .pfnSendChatCommand = */ &Bnclient::BnSend::NET_SID_CLIENT_Send_0x0E_ChatCommand,
+    /* .pfnGetChannelNamePtr = */ &Bnclient::_net_sid::NET_SID_CLIENT_GetChannelNamePtr,
+    /* .pfnSendJoinChannel = */ (fnSendJoinChannel)&Bnclient::BnSend::NET_SID_CLIENT_Send_0x0C_JoinChannel,
+    /* .pfnSendGetChannelList = */ (fnSendGetChannelList)&Bnclient::BnSend::NET_SID_CLIENT_Send_0x0B_GetChannelList,
+    /* .pfnDequeueMessage = */ (fnDequeueMessage)&Bnclient::BNMESSQUEUE_DequeueMessage,
+    /* .pfnGetStateAndClear = */ &Bnclient::_net_sid::NET_SID_CLIENT_GetStateAndClear,
+    /* .pfnSendGetFileTime = */ &Bnclient::BnSend::NET_SID_CLIENT_Send_0x33_GetFileTime,
+    /* .pfnSendCheckAd = */ &Bnclient::BnSend::NET_SID_CLIENT_Send_0x15_CheckAd,
+    /* .pfnSendStartAdvEx3 = */ (fnSendStartAdvEx3)&Bnclient::BnSend::NET_SID_CLIENT_Send_0x1C_StartAdVex3,
+    /* .pfnSendGetAdvListEx = */ &Bnclient::BnSend::NET_SID_CLIENT_Send_0x09_GetAdvListEx,
+    /* .pfnSendNotifyJoin = */ &Bnclient::BnSend::NET_SID_CLIENT_Send_0x22_NotifyJoin,
+    /* .pfnSendQueryRealms2 = */ &Bnclient::BnSend::NET_SID_CLIENT_Send_0x40_QueryRealms2,
+    /* .pfnSendLogonRealmEx = */ &Bnclient::BnSend::NET_SID_CLIENT_Send_0x3E_LogonRealmEx,
+    /* .pfnApplyPrepatch = */ (fnApplyPrepatch)&Bnclient::BnDownload::BNDOWNLOAD_ApplyPrepatch,
+    /* .pfnGetDownloadProgress = */ &Bnclient::BnDownload::BNDOWNLOAD_GetProgress,
+    /* .pfnInitiatePatchDownload = */ (fnInitiatePatchDownload)&Bnclient::BnDownload::BNDOWNLOAD_InitiatePatchDownload,
+    /* .pfnEnterChatAndJoinChannel = */ &Bnclient::BnSend::BNCLIENT_EnterChatAndJoinChannel,
+    /* .pfnSendLeaveChat = */ &Bnclient::BnSend::thunk_NET_SID_CLIENT_Send_0x10_LeaveChat,
+    /* .pfnGetGameVersion = */ (fnGetGameVersion)&Bnclient::BnSend::GET_GameVersion,
+    /* .pfnSendCreateAccountRequest = */ &Bnclient::BnSend::BNCLIENT_SendCreateAccountRequest,
+    /* .pfnWaitForCreateAccountResponse = */ &Bnclient::BnSend::BNCLIENT_WaitForCreateAccountResponse,
+    /* .pfnIsSocketConnected = */ &Bnclient::BnSend::BNCLIENT_IsSocketConnected,
+    /* .pfnSendClickAd = */ (fnSendClickAd)&Bnclient::BnSend::NET_SID_CLIENT_Send_0x16_ClickAd,
+    /* .pfnSetDownloadCancelFlag = */ &Bnclient::BnDownload::BNDOWNLOAD_SetCancelFlag,
+    /* .pfnSendWriteUserData = */ &Bnclient::BnSend::NET_SID_CLIENT_Send_0x27_WriteUserData,
+    /* .pfnSendReadUserData = */ &Bnclient::BnSend::NET_SID_CLIENT_Send_0x26_ReadUserData,
+    /* .pfnGetStoredReadUserData = */ (fnGetStoredReadUserData)&Bnclient::BnSend::BNSEND_GetStoredReadUserData,
+    /* .pfnGetConnectionState = */ (fnGetConnectionState)&Bnclient::BnSend::BNSEND_GetConnectionState,
+    /* .pfnLogWriteLine = */ &Bnclient::Bnet::BnetLog_WriteLine,
+    /* .pfnLogIndent = */ (fnLogIndent)&Bnclient::Bnet::BNET_LogIndent,
+    /* .pfnGetEnterChatResponseFlags = */ &Bnclient::BnSend::BNCLIENT_GetEnterChatResponseFlags,
+    /* .pfnSendKeepAlive = */ &Bnclient::BnSend::BNCLIENT_SendKeepAlive,
+    /* .pfnDecodeCDKeys = */ &Bnclient::BnSend::BNNEWS_DecodeCDKeys,
+    /* .pfnBnetLoadAndReturn = */ (fnBnetLoadAndReturn)&Bnclient::BnSend::BnetLoadAndReturn,
+    /* .pfnSendChangePasswordRequest = */ &Bnclient::BnSend::BNCLIENT_SendChangePasswordRequest,
+    /* .pfnWaitForChangePasswordResponse = */ &Bnclient::BnSend::BNCLIENT_WaitForChangePasswordResponse,
+    /* .pfnSendQueryAdURL = */ (fnSendQueryAdURL)&Bnclient::BnSend::NET_SID_CLIENT_Send_0x41_QueryAdURL,
+    /* .pfnSendNewsInfo = */ (fnSendNewsInfo)&Bnclient::BnSend::NET_SID_CLIENT_Send_0x46_NewsInfo,
+    /* .pfnNewsShutdown = */ &Bnclient::BnSend::BNNEWS_Shutdown,
+    /* .pfnGetProtocolVersionChar = */ &Bnclient::BnSend::BNCLIENT_GetProtocolVersionChar,
+    /* .pfnIsEmailRequested = */ &Bnclient::BnSend::BNSEND_GetBNetThreadInitFlag,
+    /* .pfnSendSetEmail = */ &Bnclient::BnSend::NET_SID_CLIENT_Send_0x59_SetEmail,
+    /* .pfnSendResetPassword = */ &Bnclient::BnSend::NET_SID_CLIENT_Send_0x5A_ResetPassword,
+    /* .pfnSendChangeEmail = */ &Bnclient::BnSend::NET_SID_CLIENT_Send_0x5B_ChangeEmail,
+    /* .pfnSendLeaveGame = */ &Bnclient::BnSend::NET_SID_CLIENT_Send_0x1F_LeaveGame,
+    /* .pfnCacheFreeMem = */ (fnCacheFreeMem)&Bnclient::Cache::CACHE_FreeMem,
+    /* .pfnCacheReadData = */ (fnCacheReadData)&Bnclient::Cache::CACHE_ReadData,
+    /* .pfnCacheWriteData = */ (fnCacheWriteData)&Bnclient::Cache::CACHE_WriteData,
+    /* .pfnReserved = */ nullptr
+}; D2_STATIC_GUARD(sgBNetClientCallbacks, "sgBNetClientCallbacks");
+
 namespace Bnclient {
 
-// NOTE: Return type changed void→char (1 callers, MEDIUM confidence)
-char __fastcall D2FILE_VerifyFileSignature(LPCSTR szText) {
-    // Static local variables (originally global data)
-    static LPCSTR gnFileSignatureResult = (LPCSTR)s_Blizzard_Entertainment__Inc__006deb80; D2_STATIC_GUARD(gnFileSignatureResult, "Bnclient::D2FILE_VerifyFileSignature::gnFileSignatureResult");
-
-    bool bVar1;
-    char cVar2;
-    int iVar3;
-    char szSignerOrg[512];
-    int32_t dwWinTrustResult = D2FILE_VerifySignatureWinTrust(szText);
-    if (dwWinTrustResult) {
-      cVar2 = '\0';
-    } else {
-      bVar1 = D2FILE_GetSignerOrganization(szText, szSignerOrg, 0x200);
-      cVar2 = '\0';
-      if (bVar1) {
-        iVar3 = _strnicmp(szSignerOrg, gnFileSignatureResult, 0x200);
-        cVar2 = '\x01' - (iVar3 != 0);
-      }
-    }
-
-    return cVar2;
-}
-
-int32_t __fastcall D2FILE_VerifySignatureWinTrust(LPCSTR szText) {
-    uint32_t nVerifyResult;
-    LPWSTR pWideStr;
-    LONG nTrustResult;
-    DWORD dwLastError;
-    D2WinTrustData sWvtData;
-    D2WinTrustFileInfo sWvtFileInfo;
-    GUID sActionGuid;
-    if (szText && *szText != '\0') {
-      /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ nVerifyResult = MultiByteToWideChar(0, 0, szText, -1, (LPWSTR)0x0, 0);
-      if ((int)nVerifyResult > 0) {
-        pWideStr = (LPWSTR)Fog::Engine::Application::MISC_OperatorNewShim(-(uint32_t)((int)((uint64_t)nVerifyResult * 2 >> 0x20) != 0) | (uint32_t)((uint64_t)nVerifyResult * 2));
-        /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ MultiByteToWideChar(0, 0, szText, -1, pWideStr, nVerifyResult);
-        memset(&sWvtFileInfo, 0, 0x10);
-        sWvtFileInfo.cbStruct = 0x10;
-        sWvtFileInfo.hFile = (HANDLE)0x0;
-        sWvtFileInfo.pgKnownSubject = 0;
-        sActionGuid.Data1 = 0xaac56b;
-        sActionGuid.Data2 = 0xcd44;
-        sActionGuid.Data3 = 0x11d0;
-        sActionGuid.Data4[0] = 0x8c;
-        sActionGuid.Data4[1] = 0xc2;
-        sActionGuid.Data4[2] = '\0';
-        sActionGuid.Data4[3] = 0xc0;
-        sActionGuid.Data4[4] = 'O';
-        sActionGuid.Data4[5] = 0xc2;
-        sActionGuid.Data4[6] = 0x95;
-        sActionGuid.Data4[7] = 0xee;
-        sWvtFileInfo.pcwszFilePath = pWideStr;
-        memset(&sWvtData, 0, 0x30);
-        sWvtData.pUnion = &sWvtFileInfo;
-        /* LPVOID pWVTData for WinVerifyTrust */ /* GUID * pgActionID for WinVerifyTrust */ /* HWND hwnd for WinVerifyTrust */ sWvtData.cbStruct = 0x30;
-        sWvtData.pPolicyCallbackData = 0;
-        sWvtData.pSIPClientData = 0;
-        sWvtData.dwUIChoice = 2;
-        sWvtData.fdwRevocationChecks = 0;
-        sWvtData.dwUnionChoice = 1;
-        sWvtData.dwStateAction = 0;
-        sWvtData.hWVTStateData = 0;
-        sWvtData.pwszURLReference = 0;
-        sWvtData.dwUIContext = 0;
-        nTrustResult = WinVerifyTrust((HWND)0x0, &sActionGuid, &sWvtData);
-        if (nTrustResult == -0x7ff6dfda || nTrustResult == -0x7ff4fffc) {
-          nVerifyResult = 3;
-        } else if (nTrustResult != -0x7ff4ff00) {
-          if (nTrustResult == -0x7ff4feef) {
-            nVerifyResult = 3;
-          } else {
-            nVerifyResult = nTrustResult ? 4 : 0;
-          }
-        } else {
-          dwLastError = GetLastError();
-          nVerifyResult = (dwLastError != 0x800b0100) + 1;
-        }
-
-        Fog::Engine::Application::MISC_OperatorDeleteShim(pWideStr);
-        return nVerifyResult;
-      }
-    }
-
-    nVerifyResult = 4;
-    return nVerifyResult;
-}
-
-// Extracts signer organization from signed file's certificate. Converts file path to wide char, queries certificate store, retrieves X.509 certificate, extracts organization field (OID 2.5.4.10), converts back to ANSI.
-bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, int32_t nOrgMaxLen) {
-    // Static local variables (originally global data)
-    static uint8_t gszFileSignerOrganizationAttribute[28] = {
-    0xfe,
-    0xff,
-    0xff,
-    0xff,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x40,
-    0xff,
-    0xff,
-    0xff,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0xfe,
-    0xff,
-    0xff,
-    0xff,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0xf3,
-    0x7d,
-    0x51,
-    0x0
-}; D2_STATIC_GUARD(gszFileSignerOrganizationAttribute, "Bnclient::D2FILE_GetSignerOrganization::gszFileSignerOrganizationAttribute");
-
-    DWORD nNameLen;
-    int nAnsiLen;
-    uint32_t dwSehUnused;
-    _CERT_INFO sCertInfo;
-    DWORD nMsgInfoSize;
-    uint32_t dwSehHandlerAddr;
-    uint8_t* local_8 = gszFileSignerOrganizationAttribute;
-    /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ if (!(szFilePath && *szFilePath != '\0')) {
-      return false;
-    }
-
-    int nWideCharLen = MultiByteToWideChar(0xfde9, 0, szFilePath, -1, (LPWSTR)0x0, 0);
-    if (nWideCharLen <= 0) {
-      return false;
-    }
-
-    LPWSTR pWideStr = (LPWSTR)Fog::Engine::Application::MISC_OperatorNewShim(-(uint32_t)((int)((uint64_t)(uint32_t)nWideCharLen * 2 >> 0x20) != 0) | (uint32_t)((uint64_t)(uint32_t)nWideCharLen * 2));
-    /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ MultiByteToWideChar(0xfde9, 0, szFilePath, -1, pWideStr, nWideCharLen);
-    bool bGotOrg = false;
-    HCERTSTORE hCertStore = (HCERTSTORE)0x0;
-    HCRYPTMSG hCryptMsg = (HCRYPTMSG)0x0;
-    PCCERT_CONTEXT pCertContext = (PCCERT_CONTEXT)0x0;
-    HLOCAL hMsgInfo = (HLOCAL)0x0;
-    local_8 = 0;
-    BOOL bSuccess = CryptQueryObject(1, pWideStr, 0x400, 2, 0, nullptr, nullptr, nullptr, &hCertStore, &hCryptMsg, nullptr);
-    /* DWORD * pcbData for CryptMsgGetParam */ /* void * pvData for CryptMsgGetParam */ /* DWORD dwIndex for CryptMsgGetParam */ /* DWORD dwParamType for CryptMsgGetParam */ /* HCRYPTMSG hCryptMsg for CryptMsgGetParam */ /* SIZE_T uBytes for LocalAlloc */ /* UINT uFlags for LocalAlloc */ /* DWORD * pcbData for CryptMsgGetParam */ /* void * pvData for CryptMsgGetParam */ /* DWORD dwIndex for CryptMsgGetParam */ /* DWORD dwParamType for CryptMsgGetParam */ /* HCRYPTMSG hCryptMsg for CryptMsgGetParam */ if (bSuccess) {
-      bSuccess = CryptMsgGetParam(hCryptMsg, 6, 0, nullptr, &nMsgInfoSize);
-      if (bSuccess) {
-        hMsgInfo = LocalAlloc(0x40, nMsgInfoSize);
-        if (hMsgInfo) {
-          bSuccess = CryptMsgGetParam(hCryptMsg, 6, 0, hMsgInfo, &nMsgInfoSize);
-          if (bSuccess) {
-            sCertInfo.Issuer.cbData = *(DWORD*)((int)hMsgInfo + 4);
-            sCertInfo.Issuer.pbData = *(uint8_t**)((int)hMsgInfo + 8);
-            sCertInfo.SerialNumber.cbData = *(DWORD*)((int)hMsgInfo + 0xc);
-            sCertInfo.SerialNumber.pbData = *(uint8_t**)((int)hMsgInfo + 0x10);
-            /* PCCERT_CONTEXT pPrevCertContext for CertFindCertificateInStore */ /* void * pvFindPara for CertFindCertificateInStore */ /* DWORD dwFindType for CertFindCertificateInStore */ /* DWORD dwFindFlags for CertFindCertificateInStore */ /* DWORD dwCertEncodingType for CertFindCertificateInStore */ /* HCERTSTORE hCertStore for CertFindCertificateInStore */ pCertContext = CertFindCertificateInStore(hCertStore, 0x10001, 0, 0xb0000, &sCertInfo, (PCCERT_CONTEXT)0x0);
-            /* DWORD cchNameString for CertGetNameStringW */ /* LPWSTR pszNameString for CertGetNameStringW */ /* void * pvTypePara for CertGetNameStringW */ /* DWORD dwFlags for CertGetNameStringW */ /* DWORD dwType for CertGetNameStringW */ /* PCCERT_CONTEXT pCertContext for CertGetNameStringW */ if (pCertContext) {
-              pWideStr = (LPWSTR)CertGetNameStringW(pCertContext, 3, 0, (void*)"2.5.4.10", (LPWSTR)0x0, 0);
-              if (pWideStr) {
-                nWideCharLen = (int)Fog::Engine::Application::MISC_OperatorNewShim(-(uint32_t)((int)((uint64_t)(uint32_t)(uintptr_t)pWideStr * 2 >> 0x20) != 0) | (uint32_t)((uint64_t)(uint32_t)(uintptr_t)pWideStr * 2));
-                /* DWORD cchNameString for CertGetNameStringW */ /* LPWSTR pszNameString for CertGetNameStringW */ /* void * pvTypePara for CertGetNameStringW */ /* DWORD dwFlags for CertGetNameStringW */ /* DWORD dwType for CertGetNameStringW */ /* PCCERT_CONTEXT pCertContext for CertGetNameStringW */ nNameLen = CertGetNameStringW(pCertContext, 3, 0, (void*)"2.5.4.10", (LPWSTR)nWideCharLen, (DWORD)pWideStr);
-                /* LPBOOL lpUsedDefaultChar for WideCharToMultiByte */ /* LPCSTR lpDefaultChar for WideCharToMultiByte */ /* int cbMultiByte for WideCharToMultiByte */ /* LPSTR lpMultiByteStr for WideCharToMultiByte */ /* int cchWideChar for WideCharToMultiByte */ /* LPCWSTR lpWideCharStr for WideCharToMultiByte */ /* DWORD dwFlags for WideCharToMultiByte */ /* UINT CodePage for WideCharToMultiByte */ if (nNameLen) {
-                  nAnsiLen = WideCharToMultiByte(0xfde9, 0, (LPCWSTR)nWideCharLen, -1, (LPSTR)0x0, 0, (LPCSTR)0x0, (LPBOOL)0x0);
-                  if (0 < nAnsiLen) {
-                    /* LPBOOL lpUsedDefaultChar for WideCharToMultiByte */ /* LPCSTR lpDefaultChar for WideCharToMultiByte */ /* int cbMultiByte for WideCharToMultiByte */ /* LPSTR lpMultiByteStr for WideCharToMultiByte */ /* int cchWideChar for WideCharToMultiByte */ /* LPCWSTR lpWideCharStr for WideCharToMultiByte */ /* DWORD dwFlags for WideCharToMultiByte */ /* UINT CodePage for WideCharToMultiByte */ WideCharToMultiByte(0xfde9, 0, (LPCWSTR)nWideCharLen, -1, szOrgOut, nOrgMaxLen, (LPCSTR)0x0, (LPBOOL)0x0);
-                    bGotOrg = true;
-                  }
-                }
-
-                Fog::Engine::Application::MISC_OperatorDeleteShim((void*)nWideCharLen);
-              }
-            }
-          }
-        }
-      }
-    }
-
-    local_8 = (uint8_t*)-2;
-    // The original runs its __finally block (1.14d 00517df5) here, which frees the four handles
-    // through fixed offsets of this MSVC frame. Under another compiler those offsets hold other
-    // locals, so the handles are freed by name instead, in the original order.
-    // Retire-When: the generator emits an MSVC __finally block as code in its own function.
-    if (hMsgInfo) {
-      LocalFree(hMsgInfo);
-    }
-    if (pCertContext) {
-      CertFreeCertificateContext(pCertContext);
-    }
-    if (hCertStore) {
-      CertCloseStore(hCertStore, 0);
-    }
-    if (hCryptMsg) {
-      CryptMsgClose(hCryptMsg);
-    }
-    return bGotOrg;
-}
-
 int * __thiscall BNCLIENT_InitFilestream(int * pStream, char * szFilePath) {
-    Storm::Source::SSComp::SLogCreate(szFilePath, 0, pStream);
+    Storm::Source::SLog::SLogCreate(szFilePath, 0, pStream);
     return pStream;
 }
 
 void * __thiscall BNCLIENT_DestroyCompressor(void * pCompressor, uint8_t bFreeMemory) {
-    Storm::Source::SSComp::SLogClose(*(uint32_t*)pCompressor);
-    if (!(bFreeMemory & 1)) {
-      return pCompressor;
+    Storm::Source::SLog::SLogClose(*(uint32_t*)pCompressor);
+    if (bFreeMemory & 1) {
+      Storm::Source::SMem::SMemFree(pCompressor, "delete", -1, 0);
     }
 
-    Storm::SMem::SMemFree(pCompressor, "delete", -1, 0);
     return pCompressor;
 }
 
 // Initializes the BNet lobby chat message queue via BNMESSQUEUE_Initialize, then returns a pointer to the global sgBNetClientCallbacks structure used for lobby chat callbacks.
-D2BNetClientCallbacksStrc * NET_InitAndGetLobbyChatQueue() {
+D2BNetClientCallbacksStrc * __fastcall NET_InitAndGetLobbyChatQueue() {
     BNMESSQUEUE_Initialize();
     return &sgBNetClientCallbacks;
 }
@@ -249,23 +108,13 @@ D2BNetClientCallbacksStrc * __stdcall NET_GetLobbyChatQueue() {
 }
 
 void * __stdcall BNCLIENT_GetBnetLogFilestream() {
-    if (gbBnetLogInitialized & 1) {
-      return &gnBnetLogFileHandle;
+    if (!(gbBnetLogInitialized & 1)) {
+      gbBnetLogInitialized |= 1;
+      Storm::Source::SLog::SLogCreate("BnetLog.txt", 0, &gnBnetLogFileHandle);
+      atexit(Bnet::StaticFini_gnBnetLogFileHandle);
     }
 
-    gbBnetLogInitialized |= 1;
-    Storm::Source::SSComp::SLogCreate("BnetLog.txt", 0, &gnBnetLogFileHandle);
-    atexit(Bnet::StaticFini_gnBnetLogFileHandle);
     return &gnBnetLogFileHandle;
-}
-
-// @sourcefile .\BnSend.cpp
-void BNSEND_FreeRealmQueryData() {
-    if (gpRealmQueryData) {
-      D2_FREE_AT(gpRealmQueryData, ".\\BnSend.cpp", 0x19a);
-    }
-
-    gpRealmQueryData = 0;
 }
 
 // @sourcefile .\BnSend.cpp
@@ -304,7 +153,7 @@ void __fastcall SRP_DestroyContext(D2Srp * * ppContext) {
       return;
     }
 
-    Storm::SMem::SMemFree(*ppContext, "delete", -1, 0);
+    Storm::Source::SMem::SMemFree(*ppContext, "delete", -1, 0);
 }
 
 } // namespace Bnclient

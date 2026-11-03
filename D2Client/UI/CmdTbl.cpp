@@ -14,10 +14,10 @@
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/UNIT/UnitMode.h"
 #include "D2Common/Stats/StatsEx.h"
+#include "D2Hell/D2Hell.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Win/Src/D2WinArchive.h"
 #include "D2gfx/D2GFX.h"
-#include "Fog/Archive.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Fog.h"
 #include "Fog/Memory.h"
@@ -48,11 +48,22 @@
 static_assert(sizeof(void*) != 4 || sizeof(::D2CmdTbl_Line0x50f) == 0x47a, "D2_NEW_AT(D2CmdTbl_Line0x50f): the 32-bit layout must be the 0x47a bytes 1.14d allocates");
 
 
-namespace D2Client::UI::CmdTbl {
+static pfnVoidNoArgCallback gpfnMouseLeftButtonHandler = (pfnVoidNoArgCallback)0; D2_STATIC_GUARD(gpfnMouseLeftButtonHandler, "gpfnMouseLeftButtonHandler");
+static pfnVoidNoArgCallback gpfnMouseRightButtonHandler = (pfnVoidNoArgCallback)0; D2_STATIC_GUARD(gpfnMouseRightButtonHandler, "gpfnMouseRightButtonHandler");
+static D2KeyBindStrc gaKeyBindingsBackup[114] = {}; D2_STATIC_GUARD(gaKeyBindingsBackup, "gaKeyBindingsBackup");
+static pfnVoidNoArgCallback gpfnMouseMiddleButtonHandler = (pfnVoidNoArgCallback)0; D2_STATIC_GUARD(gpfnMouseMiddleButtonHandler, "gpfnMouseMiddleButtonHandler");
+static D2KeyBindStrc g_KeyBindingsTable[114] = {}; D2_STATIC_GUARD(g_KeyBindingsTable, "g_KeyBindingsTable");
+static pfnVoidNoArgCallback gpfnScrollUpButtonHandler = (pfnVoidNoArgCallback)0; D2_STATIC_GUARD(gpfnScrollUpButtonHandler, "gpfnScrollUpButtonHandler");
+static pfnVoidNoArgCallback gpfnScrollDownButtonHandler = (pfnVoidNoArgCallback)0; D2_STATIC_GUARD(gpfnScrollDownButtonHandler, "gpfnScrollDownButtonHandler");
+static pfnVoidNoArgCallback gpKeyBindingsTableEnd = (pfnVoidNoArgCallback)0; D2_STATIC_GUARD(gpKeyBindingsTableEnd, "gpKeyBindingsTableEnd");
+static pfnVoidNoArgCallback gpfnMouseLeftButtonAltHandler = (pfnVoidNoArgCallback)0; D2_STATIC_GUARD(gpfnMouseLeftButtonAltHandler, "gpfnMouseLeftButtonAltHandler");
+static pfnVoidNoArgCallback gpfnMouseRightButtonAltHandler = (pfnVoidNoArgCallback)0; D2_STATIC_GUARD(gpfnMouseRightButtonAltHandler, "gpfnMouseRightButtonAltHandler");
+static pfnVoidNoArgCallback gpfnMouseMiddleButtonAltHandler = (pfnVoidNoArgCallback)0; D2_STATIC_GUARD(gpfnMouseMiddleButtonAltHandler, "gpfnMouseMiddleButtonAltHandler");
+static unsigned int gbKeyBindingsEnabled = {}; D2_STATIC_GUARD(gbKeyBindingsEnabled, "gbKeyBindingsEnabled");
+static uint16_t gwKeyNameBuffer[4] = {}; D2_STATIC_GUARD(gwKeyNameBuffer, "gwKeyNameBuffer");
+static unsigned int gbKeyConfigModeActive = {}; D2_STATIC_GUARD(gbKeyConfigModeActive, "gbKeyConfigModeActive");
 
-static D2CmdBindingStrc gaCmdHandlerTable[57] = { {} }; D2_STATIC_GUARD(gaCmdHandlerTable, "D2Client::UI::CmdTbl::gaCmdHandlerTable");
-static D2CmdBindingStrc gnCmdTableMax[57] = { {} }; D2_STATIC_GUARD(gnCmdTableMax, "D2Client::UI::CmdTbl::gnCmdTableMax");
-static pfnVoidNoArgCallback gpKeyBindingsTableEnd = (pfnVoidNoArgCallback)0; D2_STATIC_GUARD(gpKeyBindingsTableEnd, "D2Client::UI::CmdTbl::gpKeyBindingsTableEnd");
+namespace D2Client::UI::CmdTbl {
 
 void __stdcall CMD_ToggleRunMode() {
     GAME::Game::SetRunKeyDown(1);
@@ -265,9 +276,9 @@ void __stdcall CMDTBL_InvokeMouseMiddleButtonHandler() {
     (*gpfnMouseMiddleButtonHandler)();
 }
 
-void __fastcall CMD_InvokeCallbackByParam(int32_t nParam) {
+void __fastcall CMD_InvokeCallbackByParam(int32_t nScrollDirection) {
     BOOL bIsBadPtr;
-    if (nParam > 0) {
+    if (nScrollDirection > 0) {
       if (!gpfnScrollUpButtonHandler) {
         return;
       }
@@ -281,7 +292,7 @@ void __fastcall CMD_InvokeCallbackByParam(int32_t nParam) {
       (*gpfnScrollUpButtonHandler)();
       return;
     } else {
-      if (-1 < nParam) {
+      if (-1 < nScrollDirection) {
         return;
       }
       if (!gpfnScrollDownButtonHandler) {
@@ -302,11 +313,10 @@ void __fastcall CMD_InvokeCallbackByParam(int32_t nParam) {
 // Validates whether a command can be bound to mouse buttons (0x103-0x104). Returns false if command handler exists and button is left/right click, true otherwise. Used during key binding setup to prevent invalid mouse button assignments.
 static BOOL CMD_ValidateMouseButtonBinding(int32_t nCmdIndex, uint16_t * pErrorCode, uint32_t nMouseButton) {
     if ((nMouseButton & 0xffff) - 0x103 <= 1 && gaCmdBindings[nCmdIndex].pfnAltHandler) {
-      if (!pErrorCode) {
-        return 0;
+      if (pErrorCode) {
+        *pErrorCode = 0xf8a;
       }
 
-      *pErrorCode = 0xf8a;
       return 0;
     }
 
@@ -424,7 +434,6 @@ static HANDLE GetKeyFileHandle(DWORD dwCreationDisposition, DWORD dwDesiredAcces
 void __stdcall CMD_WriteKeyFile() {
     char* pEnd;
     char szBuffer[1142];
-    char cStack_115;
     char szInstallPath[260];
     D2KeyFileHeaderStrc sKeyFileHeader;
     HANDLE hFile = GetKeyFileHandle(2, 0x40000000);
@@ -446,17 +455,17 @@ void __stdcall CMD_WriteKeyFile() {
     } while (nCount);
 
     D2KeyBindStrc* pSrc = g_KeyBindingsTable;
-    int32_t* puVar5 = (int32_t*)(szBuffer + 2);
+    int32_t* pCopyDst = (int32_t*)(szBuffer + 2);
     for (nCount = 0x11d; nCount; nCount--) {
-      *puVar5 = pSrc->nCmdIndex;
+      *pCopyDst = pSrc->nCmdIndex;
       pSrc = (D2KeyBindStrc*)&pSrc->wKeyCode;
-      puVar5++;
+      pCopyDst++;
     }
 
     Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)szBuffer, 0x476, &nWritten, (LPOVERLAPPED)0x0);
     Fog::Source::SFile::SFILE_Win32CloseHandle(hFile);
     Fog::Source::SFile::SFILE_GetInstallPath(szInstallPath, 0xdc);
-    pDst = &cStack_115;
+    pDst = szInstallPath - 1;
     do {
       pEnd = pDst;
       pDst = pEnd + 1;
@@ -477,8 +486,7 @@ void __stdcall CMD_WriteKeyFile() {
 }
 
 // @sourcefile .\UI\CmdTbl.cpp
-void __stdcall CMD_LoadDefaultKeyBindings(DWORD dwParam) {
-    char* pEnd;
+void __stdcall CMD_LoadDefaultKeyBindings(DWORD bUseInstallDir) {
     HANDLE hFile;
     D2CmdTbl_Line0x50f* pKeyData;
     int nCount;
@@ -487,15 +495,15 @@ void __stdcall CMD_LoadDefaultKeyBindings(DWORD dwParam) {
     D2CmdTbl_Line0x50f* pDst;
     int* pDstDefault;
     uint8_t aKeyBindFileBuf[1146];
-    char cStack_10d;
     char szPath[260];
     char szLangAbbr[4];
     char* pScan;
+    uint16_t wVersion;
     D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(szLangAbbr, 0);
-    if (dwParam) {
-      uint16_t uVar1;
+    if (bUseInstallDir) {
+      char* pEnd;
       Fog::Source::SFile::SFILE_GetInstallPath(szPath, 0xdc);
-      pScan = &cStack_10d;
+      pScan = szPath - 1;
       do {
         pEnd = pScan;
         pScan = pEnd + 1;
@@ -504,16 +512,16 @@ void __stdcall CMD_LoadDefaultKeyBindings(DWORD dwParam) {
       memcpy(pEnd + 1, "default.key", 0xc);
       hFile = Fog::Source::SFile::thunk_CreateFileA(szPath, 0x80000000, 0, (LPSECURITY_ATTRIBUTES)0x0, 3, 0x80, (HANDLE)0x0);
       if (hFile != (HANDLE)-1) {
-        Fog::Source::SFile::thunk_ReadFile(hFile, aKeyBindFileBuf, 0x47a, &dwParam, (LPOVERLAPPED)0x0);
+        Fog::Source::SFile::thunk_ReadFile(hFile, aKeyBindFileBuf, 0x47a, &bUseInstallDir, (LPOVERLAPPED)0x0);
         Fog::Source::SFile::SFILE_Win32CloseHandle(hFile);
-        if (dwParam == 0x47a) {
+        if (bUseInstallDir == 0x47a) {
           pKeyData = D2_NEW_POOL_AT(nullptr, D2CmdTbl_Line0x50f, ".\\UI\\CmdTbl.cpp", 0x50f);
           pFileBufCursor = (uint16_t*)aKeyBindFileBuf;
           pDst = pKeyData;
           for (nCount = 0x11e; nCount; nCount--) {
-            uVar1 = pFileBufCursor[1];
+            wVersion = pFileBufCursor[1];
             pDst->wMagic = pFileBufCursor[0];
-            pDst->wVersion = uVar1;
+            pDst->wVersion = wVersion;
             pFileBufCursor += 2;
             pDst = (D2CmdTbl_Line0x50f*)&pDst->wSize;
           }
@@ -528,7 +536,7 @@ void __stdcall CMD_LoadDefaultKeyBindings(DWORD dwParam) {
     int nLine;
     nLine = 0x51e;
     pScan = ".\\UI\\CmdTbl.cpp";
-    pKeyData = (D2CmdTbl_Line0x50f*)Fog::Archive::D2FILE_AllocAndLoadD2File(D2Win::Src::D2WinArchive::ReturnZero(), szPath, 0, pScan, nLine);
+    pKeyData = (D2CmdTbl_Line0x50f*)D2Hell::D2FILE_AllocAndLoadD2File(D2Win::Src::D2WinArchive::ReturnZero(), szPath, 0, pScan, nLine);
     apply_key_data:
     if (pKeyData) {
       if (pKeyData->wMagic == 0x5357 && pKeyData->wVersion == 0x25 && pKeyData->wSize == 0x47a) {
@@ -548,9 +556,9 @@ void __stdcall CMD_LoadDefaultKeyBindings(DWORD dwParam) {
     }
 }
 
-void __fastcall CMD_ResetKeyBindingsToDefaults(DWORD dwParam) {
+void __fastcall CMD_ResetKeyBindingsToDefaults(DWORD bUseInstallDir) {
     int nCount;
-    CMD_LoadDefaultKeyBindings(dwParam);
+    CMD_LoadDefaultKeyBindings(bUseInstallDir);
     uint16_t* pWKeyCode = &g_KeyBindingsTable[0].wKeyCode;
     do {
       *pWKeyCode = 0xffff;
@@ -582,10 +590,10 @@ uint16_t __fastcall CMD_GetKeyForCommand(int32_t nCmdIndex, int32_t nSlot) {
     return g_KeyBindingsTable[nIndex].wKeyCode;
 }
 
-BOOL __fastcall CMD_IsBindableKey(uint16_t nParam) {
-    uint32_t nKeyCode = (uint32_t)nParam;
-    if (nKeyCode < 0x105) {
-      if (0xff < nKeyCode) {
+BOOL __fastcall CMD_IsBindableKey(uint16_t wKeyCode) {
+    uint32_t nKeyCode = (uint32_t)wKeyCode;
+    if ((int32_t)nKeyCode < 0x105) {
+      if (0xff < (int32_t)nKeyCode) {
         return 1;
       }
 
@@ -797,7 +805,7 @@ BOOL __fastcall CMD_IsBindableKey(uint16_t nParam) {
 BOOL __fastcall CMD_SetKeyBinding(int32_t nCmdIndex, int32_t nSlot, uint32_t nKeyCode, uint16_t * pErrorCode) {
     PD2KeyBindSlot pBinding2;
     int nIndex;
-    int iVar1;
+    int nClearedIndex;
     if (pErrorCode) {
       *pErrorCode = 0;
     }
@@ -813,12 +821,12 @@ BOOL __fastcall CMD_SetKeyBinding(int32_t nCmdIndex, int32_t nSlot, uint32_t nKe
         return 0;
       }
       if (wKeyCode != 0x2c || !gaCmdBindings[nCmdIndex].pfnHandler) {
-        iVar1 = 0x72;
+        nClearedIndex = 0x72;
         nIndex = 0;
         do {
           if (g_KeyBindingsTable[nIndex].wKeyCode == wKeyCode) {
             g_KeyBindingsTable[nIndex].wKeyCode = 0xffff;
-            iVar1 = nIndex;
+            nClearedIndex = nIndex;
             break;
           }
 
@@ -831,11 +839,11 @@ BOOL __fastcall CMD_SetKeyBinding(int32_t nCmdIndex, int32_t nSlot, uint32_t nKe
           pBinding2 = (PD2KeyBindSlot)((int)pBinding2 + 10);
           nIndex++;
           if ((int)pBinding2 >= (intptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 6)) {
-            if (iVar1 == 0x72) {
+            if (nClearedIndex == 0x72) {
               return 0;
             }
 
-            g_KeyBindingsTable[iVar1].wKeyCode = wKeyCode;
+            g_KeyBindingsTable[nClearedIndex].wKeyCode = wKeyCode;
             return 0;
           }
         }
@@ -844,11 +852,10 @@ BOOL __fastcall CMD_SetKeyBinding(int32_t nCmdIndex, int32_t nSlot, uint32_t nKe
         return 1;
       }
     }
-    if (!pErrorCode) {
-      return 0;
+    if (pErrorCode) {
+      *pErrorCode = 0xf8b;
     }
 
-    *pErrorCode = 0xf8b;
     return 0;
 }
 
@@ -1354,21 +1361,21 @@ uint16_t * __fastcall CMD_GetKeyDescForCommand(int32_t nCmdIndex, int32_t nSlot)
 }
 
 void __stdcall WindowsKeyPressedEvent(D2UIMouseMsgStrc * pMsg) {
-    int iVar1;
     SHORT sKeyState;
+    int nCmdIndex;
     if (pMsg->uLParam.nLParam & 0x40000000U) {
       return;
     }
 
     int nIndex = 0;
-    while ((uint32_t)g_KeyBindingsTable[nIndex].wKeyCode != pMsg->nWParam || (iVar1 = g_KeyBindingsTable[nIndex].nCmdIndex , iVar1 == 0xffff) || iVar1 >= 0x39 || iVar1 > 0xdf || !gaCmdBindings[iVar1].pfnHandler) {
+    while ((uint32_t)g_KeyBindingsTable[nIndex].wKeyCode != pMsg->nWParam || (nCmdIndex = g_KeyBindingsTable[nIndex].nCmdIndex , nCmdIndex == 0xffff) || nCmdIndex >= 0x39 || nCmdIndex > 0xdf || !gaCmdBindings[nCmdIndex].pfnHandler) {
       nIndex++;
       if ((int)&g_KeyBindingsTable[nIndex] >= (intptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable))) {
         return;
       }
     }
 
-    /* int nVirtKey for GetKeyState */ if (!((g_KeyBindingsTable[nIndex].wKeyCode != 0x73 || (sKeyState = GetKeyState(0x12) , -1 < sKeyState)) && (gbKeyBindingsEnabled != 2 || gaCmdBindings[g_KeyBindingsTable[nIndex].nCmdIndex].nHasParam))) {
+    /* int nVirtKey for GetKeyState */ if (!((g_KeyBindingsTable[nIndex].wKeyCode != 0x73 || (sKeyState = GetKeyState(0x12) , sKeyState >= 0)) && (gbKeyBindingsEnabled != 2 || gaCmdBindings[g_KeyBindingsTable[nIndex].nCmdIndex].nHasParam))) {
       return;
     }
 
@@ -1413,20 +1420,26 @@ void __stdcall INPUT_DispatchKeyCommand(D2UIMouseMsgStrc * pMsg) {
 
 void __fastcall CMD_ToggleKeyConfigMode(int32_t nEnable, int32_t bUpdateUIHandlers) {
     // Static local variables (originally global data)
-    static D2UIFlagInitStrc gUIFlagCmdTableInit = {
-    /* .eEventType = */ 0x0,
-    /* .nMessageOrKeyCode = */ 0x101,
-    /* .pfHandler = */ &D2Client::UI::CmdTbl::INPUT_DispatchKeyCommand
+    static D2UIFlagInitStrc gUIFlagCmdTableInit[2] = {
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x101,
+        /* .pfHandler = */ &D2Client::UI::CmdTbl::INPUT_DispatchKeyCommand
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x105,
+        /* .pfHandler = */ &D2Client::UI::CmdTbl::INPUT_DispatchKeyCommand
+    }
 }; D2_STATIC_GUARD(gUIFlagCmdTableInit, "D2Client::UI::CmdTbl::CMD_ToggleKeyConfigMode::gUIFlagCmdTableInit");
     static unsigned int gbNormalUIHandlersRegistered; D2_STATIC_GUARD_BSS(gbNormalUIHandlersRegistered, "D2Client::UI::CmdTbl::CMD_ToggleKeyConfigMode::gbNormalUIHandlersRegistered");
 
-    int32_t nHandlerCount;
     gbKeyBindingsEnabled = nEnable;
     if (nEnable) {
       if (!gbKeyConfigModeActive) {
         gbKeyConfigModeActive = 1;
         if (bUpdateUIHandlers && gbNormalUIHandlersRegistered) {
-          _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), &gUIFlagCmdTableInit, 2);
+          _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gUIFlagCmdTableInit, 2);
           gbNormalUIHandlersRegistered = 0;
         }
 
@@ -1434,16 +1447,13 @@ void __fastcall CMD_ToggleKeyConfigMode(int32_t nEnable, int32_t bUpdateUIHandle
         return;
       }
     } else {
-      HWND hWnd;
+      int32_t nHandlerCount;
       if (gbKeyConfigModeActive == 1) {
         nHandlerCount = 4;
         gbKeyConfigModeActive = 0;
-        hWnd = D2gfx::D2GFX::GetHwnd();
-        _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gsUICmdTblFlagInit, nHandlerCount);
+        _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUICmdTblFlagInit, nHandlerCount);
         if (bUpdateUIHandlers && !gbNormalUIHandlersRegistered) {
-          nHandlerCount = 2;
-          hWnd = D2gfx::D2GFX::GetHwnd();
-          _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, &gUIFlagCmdTableInit, nHandlerCount);
+          _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gUIFlagCmdTableInit, 2);
           gbNormalUIHandlersRegistered = 1;
         }
       }
@@ -1541,11 +1551,11 @@ void __stdcall CMD_LoadUserKeyBindings() {
       pDstTable += 5;
     } while ((int)pDstTable < (intptr_t)&g_KeyBindingsTable + 1144);
 
-    int* piVar1 = gaKeyBindingsDefault;
+    int* pDefaultSrc = gaKeyBindingsDefault;
     pBindingRow = g_KeyBindingsTable;
     for (nCmdIndex = 0x11d; nCmdIndex; nCmdIndex--) {
-      pBindingRow->nCmdIndex = *piVar1;
-      piVar1++;
+      pBindingRow->nCmdIndex = *pDefaultSrc;
+      pDefaultSrc++;
       pBindingRow = (D2KeyBindStrc*)&pBindingRow->wKeyCode;
     }
 
@@ -1596,6 +1606,10 @@ void __fastcall CMD_InitKeyConfigUI(int32_t nFadeInDuration, int32_t nHoldDurati
     gRoomLightPulse.nFadeInDuration = nFadeInDuration;
     gRoomLightPulse.nFadeOutDuration = nFadeOutDuration;
     gRoomLightPulse.nHoldDuration = nHoldDuration;
+}
+
+void StaticInit_gwKeyNameBuffer() {
+    memset(gwKeyNameBuffer, 0, 4 * sizeof(gwKeyNameBuffer[0]));
 }
 
 } // namespace D2Client::UI::CmdTbl

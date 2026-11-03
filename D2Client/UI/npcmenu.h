@@ -11,6 +11,7 @@
 // Forward declarations
 struct D2BitBufferStrc;
 struct D2GSPacketSrv0x2A;
+struct D2GSPacketSrv0x50;
 struct D2GSPacketSrv0x91;
 struct D2UnitStrc;
 struct EHExceptionRecord;
@@ -111,10 +112,10 @@ void __fastcall SubmitItem(DWORD dwItemId);
 void __fastcall NPCMENU_ValidateNpcForShop(struct D2UnitStrc * pUnit);
 void __stdcall NPCMENU_Initialize();
 void __stdcall NPCMENU_Cleanup();
-void __fastcall NPCMENU_SetTransactionMode(int32_t pMsg);
+void __fastcall NPCMENU_SetTransactionMode(struct D2GSPacketSrv0x50 * pMsg);
 void __fastcall QuestHandeling(char * szText);
 void __stdcall thunk_SetInventoryNeedsRefresh();
-void __stdcall NPCMENU_ExecuteShopTransaction(int32_t nParam, uint8_t bParam);
+void __stdcall NPCMENU_ExecuteShopTransaction(int32_t bSkipConfirm, uint8_t byMode);
 void __stdcall NPCMENU_CancelShopTransaction();
 void __stdcall NPCMENU_HandleTransactionComplete();
 void __fastcall NPCMENU_OnCursorItemRemoved(int32_t nUnitGUID);
@@ -158,17 +159,17 @@ int __stdcall NPCMENU_EnableAnyaPersonalizeOption();
 // Called when an NPC dialog or interaction ends (TEXT_ShowNpcDialog, TEXT_DrawMessageLogAndOverhead, NPCMENU_HandleMenuSelection, UI_HandleNpcInteractionPacket).
 void __fastcall NPCMENU_ClearHireListAndStopNpcSound(int32_t nNpcGuid);
 int __fastcall ShopAction(struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem, DWORD dwSell, DWORD unk, DWORD dwItemCost, DWORD dwMode, DWORD _2, DWORD _3);
-void __fastcall NPCMENU_OnItemEquip(int32_t nParam);
-void __fastcall NPCMENU_CloseNpcInteraction(int32_t nParam);
-void __fastcall NPCMENU_CloseScrollAndInteraction(int32_t nParam);
+void __fastcall NPCMENU_OnItemEquip(int32_t nItemGUID);
+void __fastcall NPCMENU_CloseNpcInteraction(int32_t nNpcGUID);
+void __fastcall NPCMENU_CloseScrollAndInteraction(int32_t nNpcGUID);
 int __stdcall NPCMENU_OpenNpcShop();
 void __stdcall NPCMENU_CloseAndResetAll();
 void __fastcall NPCMENU_HandlePlayerInteractionEnd(struct D2UnitStrc * pUnit);
 void __stdcall NPCMENU_CloseShopUI();
-void CloseNPCInteract();
+void __fastcall CloseNPCInteract();
 void __stdcall NPCMENU_CloseCubeUI();
 void __stdcall NPCMENU_CloseStashUI();
-int __stdcall NPCMENU_EmptyDrawCallback1();
+int __stdcall NPCMENU_CloseGossipDialog();
 // Returns 0 while gnNpcMenuActiveMode is set. Otherwise frees gpNpcActionConfirmDialog, sets the NPC UI state to none, resets inventory hover, closes the NPC interaction and resets UI_NPCMENU; returns 1. fpDialogFunc2 of the action-confirm dialog, also called by its OK handler.
 int __stdcall NPCMENU_CloseConfirmDialogAndInteraction();
 // A two-liner:
@@ -187,7 +188,8 @@ BOOL __stdcall NPCMENU_ConfirmDialogOkCallback();
 // "trade" (3396 NPCMenuTrade) and "trade/repair" (3334 NPCMenuTradeRepair) option callback: used by every vendor row; also used by NPCMENU_OpenInteractionDialog.
 // Stops the NPC sound and frees the interaction dialog. If the NPC unit exists and has an inventory: sets the NPC UI state to 3, gnNpcMenuShopMode = 0, sets UI_NPCSHOP and sends C->S 0x38 (action 1, NPC GUID, 0) to open the vendor; the player becomes gpNpcShopOwnerUnit. Otherwise closes the interaction. Returns 1.
 int __stdcall NPCMENU_TradeOptionCallback();
-void DRAW_UI_NPC_INTERACTION(short * nParam);
+// EDI is not an argument: saved at 004b4464 PUSH EDI before any read.
+void DRAW_UI_NPC_INTERACTION();
 int __stdcall NPCMENU_GambleDrawCallback();
 int __stdcall NPCMENU_GambleMouseCallback();
 int __stdcall NPCMENU_RepairDrawCallback();
@@ -212,7 +214,7 @@ int __stdcall NPCMENU_MeshifSailWestOptionCallback();
 // Warriv's (Act 2, monstats 175 warriv2) "go west" (3383 WarrivMenu1c) option callback: D2NpcMenuOptions row 14, slot 1.
 // Frees the NPC interaction dialog, resets the NPC UI state, closes the NPC interaction and the NPC menu UI flag, then sends C->S 0x38 (action 0, NPC GUID, level 1 = Rogue Encampment) to travel. Returns 1.
 int __stdcall NPCMENU_WarrivGoWestOptionCallback();
-void __fastcall NPCMENU_HandleQuestItemPacket(uint8_t bParam, int32_t nParam);
+void __fastcall NPCMENU_HandleQuestItemPacket(uint8_t byUnitType, int32_t nUnitGUID);
 void __stdcall NPCMENU_HandleTradeAccepted();
 void __stdcall NPCMENU_HandleTradeRejected();
 int __stdcall NPCMENU_MercDrawCallback1();
@@ -250,10 +252,10 @@ int __stdcall NPCMENU_EnableQualKehkHireOption();
 // Tyrael (monstats 367) menu row 21: if CLIENT_CheckExpansion, adds option string 22738 (Travel_To_Harrogath) with callback 004b5200. Always returns 1.
 // NPC quest table entry 8: quest 28, state flag 0.
 int __stdcall NPCMENU_EnableTyraelTravelToHarrogathOption();
-void __stdcall NPCMENU_HandleMenuSelection(int32_t nParam, struct D2UnitStrc * pUnit);
-void __fastcall SetPlayersMercInfo(uint16_t nParam, int32_t nParam2);
+void __stdcall NPCMENU_HandleMenuSelection(int32_t bReopenMenu, struct D2UnitStrc * pUnit);
+void __fastcall SetPlayersMercInfo(uint16_t wMercNameId, int32_t nReviveCost);
 void __stdcall NPCMENU_RefreshMenuDialog();
-int __fastcall NPCMENU_OnScrollComplete(void * dwParam, int32_t nParam, int32_t nScrollState);
+int __fastcall NPCMENU_OnScrollComplete(void * pUserParam, int32_t nReason, int32_t nScrollState);
 // "talk" (3381 TalkMenu) option callback: slot 0 of every NPC menu row that has a talk option; also used by NPCMENU_OpenInteractionDialog.
 // If the player is interacting with an NPC that still exists: frees the interaction dialog, sets the NPC UI state to 1, picks the NPC's D2NPCSpeech entry (CheckSpeachVersusInteractedUnit), stores it in g_nNpcTradeMenuState and opens the talk dialog (NPCMENU_ShowTalkDialog(3381, speech index)). Returns 1.
 // Otherwise closes the interaction and returns 0. Sends no packet.
@@ -265,6 +267,7 @@ int __stdcall NPCMENU_AkaraRespecOptionCallback();
 // NPC quest table entry 4: quest 1, state flag 0 (Den of Evil).
 int __stdcall NPCMENU_EnableAkaraRespecOption();
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca09b(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
+void StaticInit_gNpcMenuConfirmDialogStrings();
 // 6 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::npcmenu

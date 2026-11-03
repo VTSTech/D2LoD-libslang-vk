@@ -17,7 +17,6 @@ struct D2GfxSettingsStrc;
 struct D2RenderClipOutStrc;
 struct D2SmackerContextStrc;
 struct D2TileLibraryEntryStrc;
-struct D3DTextureCacheStrc;
 struct DDSURFACEDESC;
 struct IDirectDraw;
 struct IDirectDrawPalette;
@@ -531,10 +530,7 @@ struct D3DPRIMCAPS {
 };
 
 struct D3DTRANSFORMCAPS {
-    D3DTRANSFORMCAPS() = default;
-    D3DTRANSFORMCAPS(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D3DTRANSFORMCAPS(DWORD a0, DWORD a1) : dwSize(a0), dwCaps(a1) {}
 
     /* 0x00 */ DWORD dwSize;
     /* 0x04 */ DWORD dwCaps;
@@ -574,8 +570,6 @@ struct __attribute__((packed)) DDDEVICEIDENTIFIER2 {
 };
 
 struct DDSCAPS {
-    DDSCAPS() = default;
-    DDSCAPS(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
     operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
 
     /* 0x00 */ DWORD dwCaps;
@@ -1009,8 +1003,7 @@ struct __attribute__((packed)) D2D3DDeviceSlotStrc {
     /* 0x3BC */ int nModeCount;
 };
 
-#pragma pack(push, 1)
-struct D3DDEVICEDESC {
+struct __attribute__((packed)) D3DDEVICEDESC {
     /* 0x00 */ DWORD dwSize;
     /* 0x04 */ DWORD dwFlags;
     /* 0x08 */ DWORD dcmColorModel;
@@ -1046,10 +1039,8 @@ struct D3DDEVICEDESC {
     /* 0xF8 */ WORD wMaxTextureBlendStages;
     /* 0xFA */ WORD wMaxSimultaneousTextures;
 };
-#pragma pack(pop)
 
-#pragma pack(push, 1)
-struct DDCAPS_DX7 {
+struct __attribute__((packed)) DDCAPS_DX7 {
     /* 0x000 */ DWORD dwSize;
     /* 0x004 */ DWORD dwCaps;
     /* 0x008 */ DWORD dwCaps2;
@@ -1108,7 +1099,6 @@ struct DDCAPS_DX7 {
     /* 0x14C */ DWORD dwNLVBRops[8];
     /* 0x16C */ DDSCAPS2 ddsCaps;
 };
-#pragma pack(pop)
 
 namespace D2Direct3D::Renderer {
 
@@ -1118,9 +1108,9 @@ namespace D2Direct3D::Renderer {
 // D3DEnumPixelFormatsCallback. Parameter 1 is an LPDDPIXELFORMAT; parameter 2 is the device-caps flag word, and the 0x200 bit
 // it sets is the one Direct3DCallBack tests for "Supports 1555 textures".
 HRESULT __stdcall D3D_EnumTextureFormatsCallback(void * lpDDPixFmt, DWORD * pnDeviceFlags);
-void ClearCaches();
-uint32_t __fastcall PALETTE_GetColorByIndex(int nParam);
-void __fastcall RENDERER_D3D_ConvertPalettedTo16Bit(uint8_t * pSrc8Bit, uint16_t * pDest16Bit, int nWidth, int nHeight, int nDestPitchInPixels, uint32_t dwParam6);
+void __fastcall ClearCaches();
+uint32_t __fastcall PALETTE_GetColorByIndex(int nPaletteIndex);
+void __fastcall RENDERER_D3D_ConvertPalettedTo16Bit(uint8_t * pSrc8Bit, uint16_t * pDest16Bit, int nWidth, int nHeight, int nDestPitchInPixels, uint32_t dwUnused);
 void __fastcall RENDERER_D3D_SetBlendMode(int nBlendMode);
 // Sets Direct3D alpha blending mode. Mode 1=opaque, 2=additive, 3=modulate, 4=alpha blend. Caches current mode to avoid redundant state changes.
 void __fastcall SetBlendMode(int nBlendMode);
@@ -1138,7 +1128,7 @@ BOOL __fastcall GetBackBuffer(BYTE * pBuffer);
 int32_t __fastcall RENDERER_D3D_CreateSystemMemoryTexture(struct IDirectDrawSurface7 * * ppSurface, struct IDirect3DTexture2 * * ppTexture, int32_t nWidth, int32_t nHeight);
 void __stdcall RENDERER_D3D_ClearBackbuffer();
 void __fastcall RENDERER_D3D_CopySurfacePixels(struct IDirectDrawSurface7 * pSrcSurface, struct IDirectDrawSurface7 * pDestSurface, int nHeight);
-void __fastcall RENDERER_DIRECT3D_ErrorLog(char * szText, DWORD dwParam);
+void __fastcall RENDERER_DIRECT3D_ErrorLog(char * szText, DWORD dwHResult);
 HRESULT __stdcall RENDERER_D3D_EnumDisplayModeCallback(int * pDisplayModeDesc, int pModeList);
 BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char * lpDriverName, void * lpContext);
 void * __stdcall Catch_All_006b4c42();
@@ -1152,9 +1142,9 @@ BOOL __fastcall CreateWindow(HWND hWnd, int nResolutionMode);
 void __fastcall EndCutScene(HWND hWnd, int nResolutionMode, int nWindowState);
 void __fastcall PlayCutScene(char * szFile, int nResolutionMode, void * fpFrame);
 BOOL __fastcall BeginScene(BOOL bClear, BYTE nRed, BYTE nGreen, BYTE nBlue);
-BOOL EndScene1();
+BOOL __fastcall EndScene1();
 BOOL __fastcall ResizeWindow(HWND hWnd, BOOL bForceResize);
-BOOL __fastcall RENDERER_D3D_CreateSurfaceWithTexture(struct IDirectDrawSurface7 * * pdwParam, void * * dwParam, DWORD nWidth, DWORD nHeight);
+BOOL __fastcall RENDERER_D3D_CreateSurfaceWithTexture(struct IDirectDrawSurface7 * * ppSurface, void * * ppTexture, DWORD nWidth, DWORD nHeight);
 // @wasnamed Release - one name on two different functions.
 // @evidence Body is one instruction: JMP 0x006b5550 (e9 bb fb ff ff). A thunk sharing its target's name inside the same namespace - the emitter cannot disambiguate them.
 BOOL thunk_Release();
@@ -1167,6 +1157,7 @@ BOOL __fastcall DrawImage(struct D2GfxDataStrc * pData, int nPosX, int nPosY, DW
 void __fastcall DrawShiftedImage(struct D2GfxDataStrc * pData, int nPosX, int nPosY, DWORD dwGamma, int nDrawMode, int nGlobalPaletteShift);
 void __fastcall DrawVerticalCropImage(struct D2GfxDataStrc * pData, int nPosX, int nPosY, int nSkipLines, int nDrawLines, int nDrawMode);
 void __fastcall DrawClippedImage(struct D2GfxDataStrc * pData, int nPosX, int nPosY, void * pCropRect, int nDrawMode);
+// Draws the shadow sprite as one Direct3D quad through RENDERER_D3D_DrawShadowQuad, passing its D2D3DSpriteInfoStrc.
 void __fastcall DrawShadow(struct D2GfxDataStrc * pData, int nPosX, int nPosY);
 void __fastcall DrawImageFast(struct D2GfxDataStrc * pData, int nPosX, int nPosY, BYTE nPaletteIndex);
 void __fastcall DebugFillBackBuffer(int nPosX, int nPosY);
@@ -1188,9 +1179,9 @@ void __fastcall ClearScreen(BOOL bPartial);
 // Initializes perspective rendering system. Builds 3x6 vertex grid at 0x00971630 with texture coordinates for ground tile cache. Transforms coordinate lookup table at 0x0074c110 (shifts all entries left 16 bits for fixed-point math). Sets up identity matrices and default vertex colors.
 void __stdcall RENDERER_D3D_InitPerspectiveVertexBuffer();
 // NOTE: Register params: pTileLibraryEntryStrc (ECX): D2TileLibraryEntryStrc *, nTilePosX (EDX): int
-int32_t __fastcall RENDERER_D3D_BuildShadowTileVertices(struct D2TileLibraryEntryStrc * pTileLibraryEntryStrc, int nTilePosX, int32_t nTilePosY, uint8_t bParam4, uint32_t dwParam5, int32_t nScreenSplitIndex);
+int32_t __fastcall RENDERER_D3D_BuildShadowTileVertices(struct D2TileLibraryEntryStrc * pTileLibraryEntryStrc, int nTilePosX, int32_t nTilePosY, uint8_t byLightRow, uint32_t dwAlpha, int32_t nScreenSplitIndex);
 // Renders a shadow tile to texture with perspective projection in Direct3D. Calculates viewport bounds and renders textured quad with shadow blending.
-int __fastcall RENDERER_D3D_RenderShadowTileWithPerspective(struct D2TileLibraryEntryStrc * pTileEntry, int nTilePosX, int32_t nTilePosY, uint8_t bParam4, uint32_t dwParam5, int32_t nScreenSplitIndex);
+int __fastcall RENDERER_D3D_RenderShadowTileWithPerspective(struct D2TileLibraryEntryStrc * pTileEntry, int nTilePosX, int32_t nTilePosY, uint8_t byLightRow, uint32_t dwAlpha, int32_t nScreenSplitIndex);
 BOOL __fastcall DrawShadowTile(struct D2TileLibraryEntryStrc * pTile, int nPosX, int nPosY, int nDrawMode, int nScreenPanels);
 BOOL __thiscall RENDERER_D3D_BuildWallTileVerticesNoPerspective(void * pThis, struct D2TileLibraryEntryStrc * pTile, int nPosX, int nPosY, int pTexColorTable, uint8_t nParam4);
 BOOL __fastcall DrawTransWallTile(struct D2TileLibraryEntryStrc * pTile, int nPosX, int nPosY, struct D2GfxLightStrc * pLight, int nScreenPanels, BYTE nAlpha);
@@ -1201,16 +1192,16 @@ void __stdcall RENDERER_D3D_ReleaseGroundTileCache();
 void __fastcall DrawGroundTile(struct D2TileLibraryEntryStrc * pTile, struct D2GfxLightExStrc * pLight, int nPosX, int nPosY, int nWorldXpos, int nWorldYpos, uint32_t nAlpha, int nScreenPanels, void * pTileData);
 // Builds 256x256 lighting lookup table at 0x00971740 for color modulation. Each entry[row][col] = clamp((row+col) / 255, 0, 255). Used by RENDERER_D3D_ApplyShadowTextureCoords and RENDERER_D3D_SetTextureStageColor to apply dynamic lighting to vertices. Total table size: 64KB.
 void __stdcall RENDERER_D3D_InitLightingTable();
-void __fastcall SetGlobalLight(BYTE nRed, BYTE nGreen, BYTE nBlue);
-void __fastcall RENDERER_D3D_ApplyShadowTextureCoords(void * pVertex, uint8_t nParam2, uint8_t byParam);
-void __fastcall RENDERER_D3D_SetTextureStageColor(void * pVertex, uint32_t nParam2, uint8_t byParam);
+void __fastcall SetGlobalLight(int nRed, int nGreen, int nBlue);
+void __fastcall RENDERER_D3D_ApplyShadowTextureCoords(void * pVertex, uint8_t nLightIndex, uint8_t byAlpha);
+void __fastcall RENDERER_D3D_SetTextureStageColor(void * pVertex, uint32_t dwGamma, uint8_t byAlpha);
 // Initializes perspective Z-division table at 0x00981748 (8192 entries). For each Z coordinate in range [-4096, 4095], calculates perspective factor as 3059712 / (Z - 3000), clamped to range Z=[-2999, 2999] to prevent divide-by-zero. Used for depth-based vertex scaling in 3D tile rendering.
 void __stdcall RENDERER_D3D_InitPerspectiveTransformTable();
 BOOL __stdcall RENDERER_D3D_IsPerspectiveEnabled();
 void __fastcall SetPerspectiveScale(int nScaleX, int nScaleY);
 void __fastcall AdjustPerspectivePosition(int nPosX, int nPosY, int nBais, int * pXAdjust, int * pYAdjust);
 void __fastcall PerspectiveScalePosition(int nPosX, int nPosY, int nAngle, int * pXAdjust, int * pYAdjust, BOOL bOrder);
-void SetDefaultPerspectiveFactor();
+void __fastcall SetDefaultPerspectiveFactor();
 // Initializes Smacker video subsystem. Allocates 64KB decode buffer at pSmackerDecodeBuffer, clears it to zero. Sets 4 corner vertex colors to 0xFFFFFFFF (white with full alpha) at offsets 0x00989760, 0x00989780, 0x009897a0, 0x009897c0.
 void __stdcall RENDERER_D3D_InitSmackerVertexBuffer();
 int __fastcall RENDERER_D3D_CreateSmackerSurfaces(int nParam);
@@ -1221,9 +1212,6 @@ void __stdcall RENDERER_D3D_ResetSmackerSurfaces();
 void __stdcall RENDERER_D3D_PresentSmackerFrame();
 void __fastcall DecodeSmacker(char * szSmacker, struct D2SmackerContextStrc * pBuffer, int nVersion);
 void __fastcall PlayerSmacker(struct D2SmackerContextStrc * pContext);
-// Initializes a texture cache pool with doubly-linked free list. Allocates array of 32-byte cache entries (capped at 1024), creates surface+texture for each, links them via next/prev pointers. Returns updated memory usage.
-// @sourcefile .\Src\d3dTextureCache.cpp
-int __fastcall RENDERER_D3D_InitializeTextureCachePool(struct D3DTextureCacheStrc * pCache, int nBaseMemoryUsed, int nAvailableMemory, int nTextureWidth, int nTextureHeight);
 // 14 internal functions (defined in .cpp)
 
 } // namespace D2Direct3D::Renderer

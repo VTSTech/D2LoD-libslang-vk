@@ -299,19 +299,16 @@ BOOL __fastcall Q01_SetCannotCompleteInGame(::SGAMEDATA * pGame, D2UnitStrc * pU
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_DenOfEvil, QUESTSTATE_Completed);
-    if (bQuestState == 1) {
-      return 0;
-    }
-
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_DenOfEvil, QUESTSTATE_RewardAwaits);
-    if (bQuestState == 1) {
-      return 0;
-    }
-
-    /* SetQuestState DenOfEvil, CannotCompleteQuestInGame(0xe) -- this player wasn't
+    if (bQuestState != 1) {
+      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_DenOfEvil, QUESTSTATE_RewardAwaits);
+      if (bQuestState != 1) {
+        /* SetQuestState DenOfEvil, CannotCompleteQuestInGame(0xe) -- this player wasn't
                          credited for the kill, lock them out of the reward self game */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_DenOfEvil, QUESTSTATE_CannotCompleteQuestInGame);
-    QUEST_SendQuestStatePacket(pUnit, 1, 0);
-    QUEST_SendQuestInfoToUnit(pGame, pUnit);
+        QUEST_SendQuestStatePacket(pUnit, 1, 0);
+        QUEST_SendQuestInfoToUnit(pGame, pUnit);
+      }
+    }
+
     return 0;
 }
 
@@ -319,11 +316,10 @@ BOOL __fastcall Q01_SetCannotCompleteInGame(::SGAMEDATA * pGame, D2UnitStrc * pU
 BOOL __fastcall Q01_PlayCompletionSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL bIsJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_DenOfEvil, QUESTSTATE_JustCompleted);
-    if (!bIsJustCompleted) {
-      return 0;
+    if (bIsJustCompleted) {
+      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x23, pUnit);
     }
 
-    UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x23, pUnit);
     return 0;
 }
 
@@ -364,16 +360,14 @@ void __fastcall Q01_SetPartyMemberRewardStates(int32_t nParam, D2UnitStrc * pUni
 BOOL __fastcall Q01_PropagateRewardToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL bIsJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_DenOfEvil, QUESTSTATE_JustCompleted);
-    if (!bIsJustCompleted) {
-      return 0;
+    if (bIsJustCompleted) {
+      uint16_t nPartyId;
+      nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+      if (nPartyId != 0xffff) {
+        UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q01_SetPartyMemberRewardStates, 0);
+      }
     }
 
-    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == 0xffff) {
-      return 0;
-    }
-
-    UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q01_SetPartyMemberRewardStates, 0);
     return 0;
 }
 
@@ -437,8 +431,7 @@ void __fastcall Q01_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     }
 
     eD2LevelId eLevel = LEVEL_DenOfEvil;
-    eAct eDenAct = D2Common::Drlg::GetActNoFromLevelNumber(LEVEL_DenOfEvil);
-    nPopulatedRooms = D2Common::DUNGEON::Dungeon::GetNumberOfPopulatedRoomsInLevel(pQuestArgs->pGame->pAct[eDenAct], eLevel);
+    nPopulatedRooms = D2Common::DUNGEON::Dungeon::GetNumberOfPopulatedRoomsInLevel(pQuestArgs->pGame->pAct[D2Common::Drlg::GetActNoFromLevelNumber(LEVEL_DenOfEvil)], eLevel);
     int nMonsterRegionRoomCount = pMonsterRegion->nRoomsCount;
     if (nPopulatedRooms <= nMonsterRegionRoomCount) {
       if (pMonsterRegion->dwMonKillCount == pMonsterRegion->dwMonSpawnCount) {
@@ -533,12 +526,12 @@ void __fastcall Q01_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 
 // A1Q1 (Den of Evil) active-filter (Q01_ActiveFilter, fpActiveFilter) -- decides whether the quest icon/dialog is "active" for Akara (NPC 0x94). Reads the player's QUEST_DenOfEvil record. Returns false if QUESTSTATE_Completed. Returns true if the quest has been introduced (bIsNotIntroduction) and is in progress (nStateFlag != 0) and the reward is not yet awaiting; also returns true if QUESTSTATE_RewardAwaits (player should return to Akara). Otherwise / for any other NPC, returns false.
 bool __fastcall Q01_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
-    /* If target is Akara */ if (nTargetClassId != 0x94) {
-      /* Otherwise: inactive */ return false;
-    }
-
-    BOOL bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
-    if (bIsQuestInState != 1) {
+    /* If target is Akara */ if (nTargetClassId == 0x94) {
+      BOOL bIsQuestInState;
+      /* If quest state is completed: inactive */ bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
+      if (bIsQuestInState == 1) {
+        return false;
+      }
       /* If quest has been given by NPC (status 1) and reward is not yet available:
                          active */ if (pQuestData->bIsNotIntroduction == '\x01' && pQuestData->nStateFlag == 1) {
         bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
@@ -548,14 +541,12 @@ bool __fastcall Q01_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
       }
 
       /* If reward is available: active */ bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-      if (bIsQuestInState != 1) {
-        /* Otherwise: inactive */ return false;
+      if (bIsQuestInState == 1) {
+        return true;
       }
-
-      return true;
     }
 
-    return false;
+    /* Otherwise: inactive */ return false;
 }
 
 // A1Q1 (Den of Evil) sequence-filter (Q01_SequenceFilter, fpSequenceFilter) -- chains quest activation. Only proceeds once Den of Evil is finished (nStateFlag==5 or fully introduced); then looks up the next quest in the chain (nSequenceQuestId = QUEST_SistersBurialGrounds, set in Q01_InitData) and invokes its sequence filter, so completing the Den unlocks/advances A1Q2. No direct quest-record state ops; it drives quest progression via the chain.
@@ -572,8 +563,8 @@ bool __fastcall Q01_SequenceFilter(D2QuestDataStrc * pQuestData) {
         exit(-1);
       }
 
-      bool uVar1 = pNextQuestData->fpSequenceFilter(pNextQuestData);
-      return uVar1;
+      bool bResult = pNextQuestData->fpSequenceFilter(pNextQuestData);
+      return bResult;
     }
 
     return false;
@@ -636,7 +627,7 @@ void __fastcall Q01_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q01_Callback02_NpcDeactivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q01_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q01_Callback13_PlayerStartedGame;
-    pQuestData->pNpcMessages = A1Q1::aNpcGossipData; // [R54] array decays (table is now a 5-slot array, issue #13)
+    pQuestData->pNpcMessages = A1Q1::aNpcGossipData; // [R54->R87] array decays (retail-exact 8-slot table, issue #13; fork's 5-slot superseded by upstream bc47c6bc)
     pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 1;
     D2QuestDataA1Q1Strc** pQuestSpecificData = (D2QuestDataA1Q1Strc**)D2_ALLOC_POOL_AT(pGame->pMemoryPool, 0x8c, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q1.cpp", 0x2ee);

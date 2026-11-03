@@ -9,6 +9,7 @@
 #include "d2_platform.h"
 
 // Forward declarations
+struct D2SkillsTxt;
 struct D2UnitStrc;
 typedef uint32_t eD2Skills;
 
@@ -18,7 +19,7 @@ namespace D2Client::SKILLS {
 int32_t __fastcall GetSkilParam1(eD2Skills eSkill);
 int32_t __fastcall GetSkilParam2(eD2Skills eSkill);
 int32_t __fastcall GetSkilParam3(eD2Skills eSkill);
-int32_t __fastcall GetSkillParam4(int32_t nParam1, int32_t nParam2);
+int32_t __fastcall GetSkillParam4(int32_t nSkillId, int32_t nSkillLevel);
 // Client-side skill handler for Baal's Corpse Explosion (skill 0x11D). Finds all units within the explosion radius centred on pUnit using UnitFinds, then casts MISSILE_Baalcorpseexplodedelay at each corpse position. Randomises the missile start frame using the unit seed to stagger the visual burst. Returns TRUE always.
 BOOL __fastcall Skills_CltDoFunc_BaalCorpseExplosion(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 // Client-side do-function for multi-missile directed skills (e.g. Strafe, multi-shot variants). Validates skill id and txt row, checks room/town status, manages the progressive missile sound (plays if out of town, stops if in town). If not in town, evaluates cltcalc[0] for the repeat count and calls SKILLSCLT_CreateMultiMissileDirected three times per iteration for nSkillLvl calc rounds. Returns 0 if in town or skill invalid, 1 on success.
@@ -46,7 +47,7 @@ BOOL __fastcall Skills_CltDoFunc_AuraLevel_CastAttackAtCoords(struct D2UnitStrc 
 BOOL __fastcall Skills_CltDoFunc_AuraLevel_ProjectileMissile(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 uint32_t __fastcall SKILLSCLT_ValidateSkillAndMissile(struct D2UnitStrc * pUnit, int32_t nMonId, uint32_t nMissileId, uint32_t dwUnused);
 // Returns the sound duration (in frames) for a monster's charge-skill animation. Looks up the monster unit's MonStats entry, finds the matching skill slot among Skill1..Skill8, and reads the corresponding Skill[N] duration from MonSoundsTxt. Returns 0 if the monster, stats row, or sounds row are invalid; clamps negative durations to 0 via bitmask.
-uint32_t __fastcall SKILLSCLT_CalcChargeSkillDuration(int32_t pMonUnit, int32_t nSkillId);
+uint32_t __fastcall SKILLSCLT_CalcChargeSkillDuration(struct D2UnitStrc * pMonUnit, int32_t nSkillId);
 // 4 internal functions (defined in .cpp)
 
 } // namespace D2Client::SKILLS

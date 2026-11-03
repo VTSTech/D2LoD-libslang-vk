@@ -79,10 +79,7 @@ struct D2ClientGameDataStrc {
 };
 
 struct D2ClientTimerStrc {
-    D2ClientTimerStrc() = default;
-    D2ClientTimerStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2ClientTimerStrc(DWORD a0, DWORD a1) : dwStartTick(a0), dwDurationMs(a1) {}
 
     /* 0x00 */ DWORD dwStartTick; // GetTickCount at arm time; cleared on expiry
     /* 0x04 */ DWORD dwDurationMs; // 0 = timer idle
@@ -94,7 +91,7 @@ namespace D2Client::GAME::Game {
 void __thiscall GAMEDATA_TimerInitWithTickCount(uint32_t * pTimerStruct, uint32_t dwDurationMs);
 void __fastcall GAMEDATA_SetByteInUshort(uint16_t * pWord, uint8_t byteValue);
 // Setter for gRunKeyDown (run modifier).
-void __fastcall SetRunKeyDown(BOOL dwParam);
+void __fastcall SetRunKeyDown(BOOL bRunKeyDown);
 void __fastcall SetGlobalAlwaysRun(int32_t nValue);
 BOOL __stdcall GetGlobalAlwaysRun();
 void __fastcall GAMEDATA_SetClickModifier(int32_t bModifierDown);
@@ -127,7 +124,7 @@ void __stdcall INPUT_HandleScrollToEnd(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_HandleSysCommand(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_HandlePassthrough(struct D2UIMouseMsgStrc * pMsg);
 // Handle mouse button event: clear selection/UI, update run key, and normalize queued click state.
-void __stdcall HandleMouseButtonEvent(int32_t pMouseEvent);
+void __stdcall HandleMouseButtonEvent(struct D2UIMouseMsgStrc * pMouseEvent);
 void __stdcall GAMEDATA_CheckAutomapCenterOnLoad();
 void __stdcall NET_D2GS_CLIENT_HandleAllNonVariableSizePackets();
 // Client-side world tick: init room, missiles, and DenOfEvil lighting for current act.
@@ -151,7 +148,7 @@ int __stdcall GAMEDATA_GetCurrentLevelBlankScreen();
 // Main render entry point. Called per-frame from CLIENT_GameLoopFrame.
 // Flow: BeginScene -> Draw world (floor/units/roofs) -> Draw UI -> EndScene -> Present.
 // Viewport centered on player, supports shake, perspective, isometric transform.
-void __fastcall InGameDraw(int32_t nParam);
+void __fastcall InGameDraw(int32_t bSkipCursor);
 // Draw localized loading message (single or multi-line) centered on screen.
 void __stdcall DrawLoadingMessage();
 // Compute frame-skip level based on elapsed ticks and fps_drawn.
@@ -182,7 +179,7 @@ void __stdcall GAMEDATA_DrawLoadingScreenText();
 void __stdcall SetExitCutscenePlayed();
 void __stdcall D2CLIENT_SetExitVar3ToTrue();
 // Set pending exit cutscene id (quest/cutscene).
-void __fastcall SetPendingExitCutsceneId(int32_t nParam);
+void __fastcall SetPendingExitCutsceneId(int32_t nCutsceneId);
 struct D2BNetClientCallbacksStrc * __stdcall GetGameVersionInfo();
 // pfModes_ExitGame: cleanup view/UI/record/rosters, then return APPMODE_CONTINUE.
 eD2ClientAppMode __stdcall pfModes_ExitGame();
@@ -267,6 +264,8 @@ uint32_t __stdcall GetStepsOfMissileMovement();
 eD2GSGameType __stdcall CLIENT_GetD2GSGameType();
 void __fastcall GAMEDATA_ExtendTimeout(int32_t nDelayMs);
 void __stdcall GAMEDATA_LoadActTiles(uint32_t nAct);
+// ESI is not an argument: the body never reads it.
+void GAMEDATA_CheckColorTxtOverride();
 BOOL __stdcall GAMEDATA_GetBloodFlag();
 void __fastcall CLIENT_SetDifficulty(char nDifficulty);
 void __fastcall CLIENT_SetExpansion(bool bExpansion);
@@ -315,6 +314,5 @@ BOOL __stdcall RegisterCmdLineLngOption();
 void __stdcall FreeLanguage();
 void __stdcall thunk_GAMEDATA_CheckAutomapCenterOnLoad();
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca026(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
-// 1 internal function (defined in .cpp)
 
 } // namespace D2Client::GAME::Game

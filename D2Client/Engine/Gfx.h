@@ -7290,7 +7290,7 @@ void __fastcall GFX_PrecacheMonsterAllModes(int32_t nMonsterClassId, int32_t nFl
 int __stdcall GFX_GetCofCacheFlags();
 int __stdcall GFX_GetCofCacheMemUsage();
 int __stdcall GFX_GetGfxSystemFlags();
-int32_t __fastcall GFX_GetModeStatusEntry(int32_t nParam);
+int32_t __fastcall GFX_GetModeStatusEntry(int32_t nClassId);
 // @sourcefile .\ENGINE\Gfx.cpp
 struct D2GfxInfoUnkStrc * __fastcall GFX_EnsureUnitCofLoaded(struct D2UnitStrc * pUnit, int32_t nAnimMode, int nWeaponClass);
 // @sourcefile .\ENGINE\Gfx.cpp
@@ -7312,12 +7312,13 @@ void __fastcall GFX_AddOverlayToUnit(struct D2UnitStrc * pUnit, eOverlayId eOver
 // @sourcefile .\ENGINE\Gfx.cpp
 void __fastcall GFX_LoadUnitModeCof(struct D2UnitStrc * pUnit, int32_t nUnused);
 // @sourcefile .\ENGINE\Gfx.cpp
-void __fastcall GFX_GetUnitSpriteOffset(struct D2UnitStrc * pUnit, uint8_t byComponent, int32_t * pOffsetX, int32_t * pOffsetY);
+void __fastcall GFX_GetUnitSpriteOffset(struct D2UnitStrc * pUnit, int byComponent, int32_t * pOffsetX, int32_t * pOffsetY);
 // @sourcefile .\ENGINE\Gfx.cpp
 BOOL __fastcall GFX_IsUnitInsideBounds(struct D2UnitStrc * pUnit, int32_t nOriginX, int32_t nOriginY, int32_t nTestX, int32_t nTestY);
 // @sourcefile .\ENGINE\Gfx.cpp
-struct D2GfxInfoUnkStrc * __fastcall GFX_IsUnitOnScreen(struct D2UnitStrc * pUnit, int32_t nOriginX, int32_t nOriginY, uint32_t nUnused, int32_t bCenterAdjust);
-void __stdcall GFX_UpdateGfxThrottled();
+BOOL __fastcall GFX_IsUnitOnScreen(struct D2UnitStrc * pUnit, int32_t nOriginX, int32_t nOriginY, uint32_t nUnused, int32_t bCenterAdjust);
+// Registers: nAct (ECX) is passed by the caller but not read.
+void __fastcall GFX_UpdateGfxThrottled(int32_t nAct);
 // @sourcefile .\ENGINE\Gfx.cpp
 void __fastcall ANIM_ResetMonsterFrameCache(struct D2UnitStrc * pUnit);
 void __fastcall GFX_UpdateOverlayAnimations(struct D2UnitStrc * pUnit);
@@ -7331,7 +7332,7 @@ BOOL __fastcall GFX_DrawUnitColoredShape(struct D2UnitStrc * pUnit);
 // @sourcefile .\ENGINE\Gfx.cpp
 BOOL __fastcall GFX_DrawUnitSelectionShape(struct D2UnitStrc * pUnit);
 // @sourcefile .\ENGINE\Gfx.cpp
-struct D2GfxInfoUnkStrc * __fastcall DRAW_WORLD_Unit_1(struct D2UnitStrc * pUnit, uint32_t nGamma, uint32_t bIsSelected, DRAWMODE nScreenY, struct D2GamePalShiftGreenBloodStrc * pPalShift, int32_t bDrawStates);
+BOOL __fastcall DRAW_WORLD_Unit_1(struct D2UnitStrc * pUnit, uint32_t nGamma, uint32_t bIsSelected, DRAWMODE nScreenY, struct D2GamePalShiftGreenBloodStrc * pPalShift, int32_t bDrawStates);
 // 24 internal functions (defined in .cpp)
 
 } // namespace D2Client::Engine::Gfx

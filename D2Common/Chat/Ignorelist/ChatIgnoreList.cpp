@@ -2,7 +2,7 @@
 
 #include "D2Common/Chat/Ignorelist/ChatIgnoreList.h"
 #include "Fog/3rdparty/crashy/Report.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -16,11 +16,10 @@ void __thiscall Destructor(::ChatIgnoreList * pThis) {
 
 ::ChatIgnoreList * __thiscall ScalarDeletingDestructor(::ChatIgnoreList * pThis, uint32_t nFlags) {
     pThis->_vfptr = (ChatIgnoreListVtable*)(void*)ChatIgnoreList::vftable;
-    if (!(nFlags & 1)) {
-      return pThis;
+    if (nFlags & 1) {
+      Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     }
 
-    Storm::SMem::SMemFree(pThis, "delete", -1, 0);
     return pThis;
 }
 

@@ -9,12 +9,12 @@
 #include "D2Client/D2IniConfigStrc.h"
 #include "D2Client/Message.h"
 #include "D2Client/Sound/Sound.h"
+#include "D2Client/UI/VanillaPlusCore.h" // VP: [nointro] boot cutscene gates
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Launch/CharSel.h"
 #include "D2Launch/Launcher.h"
-#include "D2Launch/Source/SBig.h"
 #include "D2MCPClient/McpConnect.h"
 #include "D2Multi/McpConnect.h"
 #include "D2Multi/OOGUtilities.h"
@@ -50,9 +50,9 @@
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
 #include "Storm/Source/SFile.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
-#include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
 #include "D2Launch/D2Launch.h"
 #include "D2Win/D2WinEditBox.h"
@@ -92,8 +92,26 @@ typedef BOOL (*fpRequiredUserAction)();
 
 namespace D2Launch::MainMenus {
 
-static char dwIntroFrameRate_24_36[8] = { "640x146" }; D2_STATIC_GUARD(dwIntroFrameRate_24_36, "D2Launch::MainMenus::dwIntroFrameRate_24_36");
-static char dwIntroFrameRate_29_32[8] = { "640x292" }; D2_STATIC_GUARD(dwIntroFrameRate_29_32, "D2Launch::MainMenus::dwIntroFrameRate_29_32");
+void __fastcall CRYPTO_ByteSwap16Array(uint16_t * pArray, uint32_t nCount) {
+    uint32_t nIndex;
+    for (nIndex = 0; nIndex < nCount; nIndex++) {
+      pArray[nIndex] = pArray[nIndex] << 8 | (uint16_t)pArray[nIndex] >> 8;
+    }
+}
+
+void __thiscall CRYPTO_ByteSwap32Array(uint16_t * pwOut, uint16_t wValue) {
+    *pwOut = wValue;
+}
+
+void __thiscall CRYPTO_ByteSwap64Array(uint16_t * pwIn, uint16_t * pwOut) {
+    uint16_t wValue = *pwIn;
+    if (wValue < 0x100) {
+      *pwOut = D2Client::UI::ui::CharacterLookupTable[wValue];
+      return;
+    }
+
+    *pwOut = wValue;
+}
 
 void __fastcall MAINMENU_SetGlobalValue1(pfnUIMenuInstance pfnMenuInstance) {
     gpCurrentUIMenuInstance = pfnMenuInstance;
@@ -112,11 +130,12 @@ void __stdcall IMAGE_LoadPredefinedImages() {
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
     if (bIsExpansion) {
       szFormatString = "%s\\UI\\FrontEnd\\trademarkscreenEXP";
+      wsprintfA(szPathBuffer, "%s\\UI\\FrontEnd\\trademarkscreenEXP", "DATA\\GLOBAL");
     } else {
       /* LPCSTR param_2 for wsprintfA */ szFormatString = "%s\\UI\\FrontEnd\\trademark";
+      wsprintfA(szPathBuffer, "%s\\UI\\FrontEnd\\trademark", "DATA\\GLOBAL");
     }
 
-    wsprintfA(szPathBuffer, szFormatString, "DATA\\GLOBAL");
     DC6_FrontEnd_trademark = D2Win::Src::D2WinArchive::IMAGE_LoadDC6(szPathBuffer, 0);
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szPathBuffer, "%s\\UI\\CURSOR\\ohand", "DATA\\GLOBAL");
     DC6_CURSOR_ohand = D2Win::Src::D2WinArchive::IMAGE_LoadDC6(szPathBuffer, 0);
@@ -133,20 +152,22 @@ void __stdcall IMAGE_LoadPredefinedImages() {
     bIsExpansion = Fog::D2CheckExpansionGame();
     if (bIsExpansion) {
       szFormatString = "%s\\ui\\FrontEnd\\gameselectscreenEXP";
+      wsprintfA(szPathBuffer, "%s\\ui\\FrontEnd\\gameselectscreenEXP", "DATA\\GLOBAL");
     } else {
       /* LPCSTR param_2 for wsprintfA */ szFormatString = "%s\\ui\\FrontEnd\\TitleScreen";
+      wsprintfA(szPathBuffer, "%s\\ui\\FrontEnd\\TitleScreen", "DATA\\GLOBAL");
     }
 
-    wsprintfA(szPathBuffer, szFormatString, "DATA\\GLOBAL");
     DC6_FrontEnd_TitleScreen_or_gameselectscreenEXP = D2Win::Src::D2WinArchive::IMAGE_LoadDC6(szPathBuffer, 0);
     bIsExpansion = Fog::D2CheckExpansionGame();
     if (bIsExpansion) {
       szFormatString = "%s\\ui\\CharSelect\\creditsbckgexpand";
+      wsprintfA(szPathBuffer, "%s\\ui\\CharSelect\\creditsbckgexpand", "DATA\\GLOBAL");
     } else {
       /* LPCSTR param_2 for wsprintfA */ szFormatString = "%s\\ui\\CharSelect\\creditsbckg";
+      wsprintfA(szPathBuffer, "%s\\ui\\CharSelect\\creditsbckg", "DATA\\GLOBAL");
     }
 
-    wsprintfA(szPathBuffer, szFormatString, "DATA\\GLOBAL");
     DC6_CharSelect_creditsbckg = D2Win::Src::D2WinArchive::IMAGE_LoadDC6(szPathBuffer, 0);
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szPathBuffer, "%s\\ui\\FrontEnd\\WideButtonBlank", "DATA\\GLOBAL");
     DC6_FrontEnd_WideButtonBlank = D2Win::Src::D2WinArchive::IMAGE_LoadDC6(szPathBuffer, 0);
@@ -215,20 +236,22 @@ void __stdcall IMAGE_LoadPredefinedImages() {
     bIsExpansion = Fog::D2CheckExpansionGame();
     if (bIsExpansion) {
       szFormatString = "%s\\ui\\CharSelect\\Realmselect";
+      wsprintfA(szPathBuffer, "%s\\ui\\CharSelect\\Realmselect", "DATA\\GLOBAL");
     } else {
       /* LPCSTR param_2 for wsprintfA */ szFormatString = "%s\\ui\\FrontEnd\\CurRealm";
+      wsprintfA(szPathBuffer, "%s\\ui\\FrontEnd\\CurRealm", "DATA\\GLOBAL");
     }
 
-    wsprintfA(szPathBuffer, szFormatString, "DATA\\GLOBAL");
     DC6_FrontEnd_CurRealm_or_Realmselect = D2Win::Src::D2WinArchive::IMAGE_LoadDC6(szPathBuffer, 0);
     bIsExpansion = Fog::D2CheckExpansionGame();
     if (bIsExpansion) {
       szFormatString = "%s\\ui\\CharSelect\\RealmSelectbuttonthin";
+      wsprintfA(szPathBuffer, "%s\\ui\\CharSelect\\RealmSelectbuttonthin", "DATA\\GLOBAL");
     } else {
       /* LPCSTR param_2 for wsprintfA */ szFormatString = "%s\\ui\\FrontEnd\\NarrowButtonBlank02";
+      wsprintfA(szPathBuffer, "%s\\ui\\FrontEnd\\NarrowButtonBlank02", "DATA\\GLOBAL");
     }
 
-    wsprintfA(szPathBuffer, szFormatString, "DATA\\GLOBAL");
     DC6_FrontEnd_NarrowButtonBlank02_or_RealmSelectbuttonthin = D2Win::Src::D2WinArchive::IMAGE_LoadDC6(szPathBuffer, 0);
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szPathBuffer, "%s\\ui\\CharSelect\\password", "DATA\\GLOBAL");
     DC6_CharSelect_password = D2Win::Src::D2WinArchive::IMAGE_LoadDC6(szPathBuffer, 0);
@@ -239,11 +262,12 @@ void __stdcall IMAGE_LoadPredefinedImages() {
     bIsExpansion = Fog::D2CheckExpansionGame();
     if (bIsExpansion) {
       szFormatString = "%s\\UI\\FrontEnd\\tcpipscreen";
+      wsprintfA(szPathBuffer, "%s\\UI\\FrontEnd\\tcpipscreen", "DATA\\GLOBAL");
     } else {
       /* LPCSTR param_2 for wsprintfA */ szFormatString = "%s\\UI\\FrontEnd\\tcpipbckg";
+      wsprintfA(szPathBuffer, "%s\\UI\\FrontEnd\\tcpipbckg", "DATA\\GLOBAL");
     }
 
-    wsprintfA(szPathBuffer, szFormatString, "DATA\\GLOBAL");
     DC6_FrontEnd_tcpipbckg_or_tcpipscreen = D2Win::Src::D2WinArchive::IMAGE_LoadDC6(szPathBuffer, 0);
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szPathBuffer, "%s\\UI\\FrontEnd\\IPAddressBox", "DATA\\GLOBAL");
     DC6_FrontEnd_IPAddressBox = D2Win::Src::D2WinArchive::IMAGE_LoadDC6(szPathBuffer, 0);
@@ -446,13 +470,13 @@ void __stdcall FORMS_DestroyList() {
     FORMS_nListCount = 0;
 }
 
-D2ControlStrc * __fastcall FORMS_CreateAnyFormFromListExEx(int32_t nParam) {
+D2ControlStrc * __fastcall FORMS_CreateAnyFormFromListExEx(int32_t nFormIndex) {
     if (FORMS_nListExExCount >= 0x40) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x627);
       exit(-1);
     }
 
-    D2ControlStrc* pForm = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms + nParam);
+    D2ControlStrc* pForm = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms + nFormIndex);
     FORMS_pListExEx[FORMS_nListExExCount] = pForm;
     FORMS_nListExExCount++;
     return pForm;
@@ -478,7 +502,7 @@ void __stdcall FORMS_DestroyLists() {
     gbMainMenuStateTransition = 0;
     gbMainMenuFormsDestroyInProgress = 0;
     FORMS_nListExExCount = 0;
-    if (0 < FORMS_nListCount) {
+    if (FORMS_nListCount > 0) {
       ppForm = FORMS_pList;
       do {
         D2Win::Src::D2WinMain::FORMS_DestroyAnyForm(ppForm);
@@ -503,7 +527,7 @@ void __fastcall STRING_ZeroOneWCHAR(void * pBuffer) {
     *(uint16_t*)pBuffer = 0;
 }
 
-void __fastcall MAINMENU_CreateMessageBox(uint16_t * wszText1, uint16_t * wszText2, int32_t nButton1LabelId, int32_t nButton2LabelId, OnPress pfnOnPress1, OnPress pfnOnPress2, int32_t nParam1, int32_t nParam2) {
+void __fastcall MAINMENU_CreateMessageBox(uint16_t * wszText1, uint16_t * wszText2, int32_t nButton1LabelId, int32_t nButton2LabelId, OnPress pfnOnPress1, OnPress pfnOnPress2, int32_t bEnableHotkeys, int32_t bSingleButtonEscape) {
     D2ControlStrc* pForm;
     ::D2WinTextBox* pTextBox;
     int32_t nLine;
@@ -526,10 +550,10 @@ void __fastcall MAINMENU_CreateMessageBox(uint16_t * wszText1, uint16_t * wszTex
           D2Win::Src::D2WinMain::FORMS_SetGlobalFormImage(pForm, 1);
           D2Win::Src::D2WinMain::SetUnsetFlag0x08(pForm, 1);
           gaPredefinedForms[0x11a].nLabelAsLocaleStringId = nButton1LabelId;
-          if (nParam2) {
+          if (bSingleButtonEscape) {
             gaPredefinedForms[0x11a].nExtraParam = 0x1b;
           } else {
-            gaPredefinedForms[0x11a].nExtraParam = nParam1 ? 0xd : 0;
+            gaPredefinedForms[0x11a].nExtraParam = bEnableHotkeys ? 0xd : 0;
           }
 
           gaPredefinedForms[0x11a].fpOnPressCallback = pfnOnPress1;
@@ -545,12 +569,12 @@ void __fastcall MAINMENU_CreateMessageBox(uint16_t * wszText1, uint16_t * wszTex
           pForm = FORMS_CreateAnyFormFromList(0x119);
           D2Win::Src::D2WinMain::FORMS_SetGlobalFormImage(pForm, 1);
           D2Win::Src::D2WinMain::SetUnsetFlag0x08(pForm, 1);
-          gaPredefinedForms[0x11b].nExtraParam = nParam1 ? 0xd : 0;
+          gaPredefinedForms[0x11b].nExtraParam = bEnableHotkeys ? 0xd : 0;
           gaPredefinedForms[0x11b].fpOnPressCallback = pfnOnPress1;
           gaPredefinedForms[0x11b].nLabelAsLocaleStringId = nButton1LabelId;
           pForm = FORMS_CreateAnyFormFromList(0x11b);
           D2Win::Src::D2WinMain::SetUnsetFlag0x08(pForm, 1);
-          gaPredefinedForms[0x11c].nExtraParam = nParam1 ? 0x1b : 0;
+          gaPredefinedForms[0x11c].nExtraParam = bEnableHotkeys ? 0x1b : 0;
           gaPredefinedForms[0x11c].nLabelAsLocaleStringId = nButton2LabelId;
           gaPredefinedForms[0x11c].fpOnPressCallback = pfnOnPress2;
           nLine = 0x11c;
@@ -566,7 +590,7 @@ void __fastcall MAINMENU_CreateMessageBox(uint16_t * wszText1, uint16_t * wszTex
       D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pTextBox, 1);
       D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextW(pTextBox, wszText1);
     }
-    pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0x11f - (uint32_t)(wszText1 != 0));
+    pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(wszText1 != 0 ? 0x11eU : 0x11fU);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pTextBox, 1);
     D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextW(pTextBox, wszText2);
 }
@@ -622,7 +646,7 @@ BOOL __stdcall MAINMENU_OnPressShowBnetConnectFailedPopup(D2ControlMsg * pContro
     D2Win::Src::D2WinMain::SetUnsetFlag0x08(pDVar1, 1);
     ::D2WinTextBox* pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0xfe);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pTextBox, 1);
-    D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(pTextBox, "Can\'t connect to Battle.Net. Try again later.");
+    D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(pTextBox, "Can\'t connect to Battle.Net. Try again later.");
     return 1;
 }
 
@@ -661,18 +685,14 @@ void __stdcall UIMENU_DownloadingPatch() {
     }
 
     ::D2WinTextBox* pControl = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x114);
-    int nFrameCount = 0;
-    bool byTmp = false;
-    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x143a), 0, byTmp, nFrameCount);
+    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x143a), 0, false, 0);
     pControl = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x112);
-    nFrameCount = 0;
-    byTmp = false;
-    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x143b), 0, byTmp, nFrameCount);
+    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x143b), 0, false, 0);
     FORMS_CreateAnyFormFromListExEx(0x118);
-    nFrameCount = D2Win::Src::D2WinImage::D2WINIMAGE_StopAnimation((int*)gpCtlPatchProgressAnimImage);
+    int nFrameCount = D2Win::Src::D2WinImage::D2WINIMAGE_StopAnimation((int*)gpCtlPatchProgressAnimImage);
     D2Win::Src::D2WinImage::D2WINIMAGE_SetFrame(gpCtlPatchProgressAnimImage, nFrameCount * nProgressPercent / 100);
     sprintf(szPercentBuffer, "%d%%", nProgressPercent);
-    D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsi(gpPatchProgressTextBox, szPercentBuffer, 0);
+    D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsi(gpPatchProgressTextBox, szPercentBuffer, 0);
 }
 
 // Updates the progress bar display during patch download. Clears existing text, retrieves download percentage via revision check callback (capped at 100%), updates animation frame proportionally, formats "%d%%" into buffer with embedded color codes (\\r\\xFA B = blue), then sets textbox content.
@@ -691,7 +711,7 @@ void __stdcall MAINMENU_UpdateProgressBar() {
       return;
     }
 
-    D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsi(gpPatchProgressTextBox, szPercentBuffer, 0);
+    D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsi(gpPatchProgressTextBox, szPercentBuffer, 0);
 }
 
 void __stdcall LAUNCHER_ClearPatchDownloadFlag() {
@@ -711,32 +731,25 @@ BOOL __stdcall MAINMENU_ReadBattleNetRegistry() {
     }
 
     sprintf(szBuffer, "%d.%d.%d.%d", 0xd8, 0x94, 0xf6, 0x22);
-    Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Aux Battle.net", 0, szBuffer);
+    Storm::Source::SReg::SRegSaveString("Diablo II", "Aux Battle.net", 0, szBuffer);
     return 0;
 }
 
 // Reads "Aux Battle.net" IP from registry and validates it. Parses IP string into 4 octets via sscanf with "%ld.%ld.%ld.%ld" format. Checks if bit 0x10 is set in the 4th octet, returns inverted bit 7 if true (custom flag encoding), otherwise returns 0.
 uint32_t __stdcall MAINMENU_CheckBattleNetIPFlag() {
-    // Frame slots -20..-4 are ONE object: &nOctet1 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      long int nOctet1;
-      long int nOctet2;
-      long int nOctet3;
-      uint32_t nOctet4;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     char szIPBuffer[100];
+    long int nOctet1;
+    long int nOctet2;
+    long int nOctet3;
     int32_t nReadResult = Storm::Source::SReg::SRegLoadString("Diablo II", "Aux Battle.net", 0, szIPBuffer, 100);
     if (!nReadResult) {
       return 0;
     }
 
-    __frame0.nOctet4 = 0x22;
-    sscanf(szIPBuffer, "%ld.%ld.%ld.%ld", &__frame0.nOctet1, &__frame0.nOctet2, &__frame0.nOctet3, (long int*)&__frame0.nOctet4);
-    if (__frame0.nOctet4 & 0x10) {
-      return (uint32_t)((uint8_t)~(uint8_t)__frame0.nOctet4 >> 7);
+    uint32_t nOctet4 = 0x22;
+    sscanf(szIPBuffer, "%ld.%ld.%ld.%ld", &nOctet1, &nOctet2, &nOctet3, (long int*)&nOctet4);
+    if (nOctet4 & 0x10) {
+      return (uint32_t)((uint8_t)~(uint8_t)nOctet4 >> 7);
     }
 
     return 0;
@@ -750,10 +763,8 @@ void __stdcall UIMENU_MainScreenBeforeMenu() {
       uint16_t wszWideBuffer;
       uint16_t wszWideBufferRest[510];
       uint8_t __pad1022[2];
-      char szTempBuffer;
-      char szTempBufferRest[511];
-      char szUTF8Buffer;
-      char szUTF8BufferRest[511];
+      char szTempBuffer[512];
+      char szUTF8Buffer[512];
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 2048, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
@@ -761,7 +772,6 @@ void __stdcall UIMENU_MainScreenBeforeMenu() {
     int nBufferSize;
     char* szYearPosition;
     int32_t nSetTextParam2;
-    int32_t nMaxLength;
     FORMS_DestroyLists();
     FORMS_CreateAnyFormFromListExEx(2);
     FORMS_CreateAnyFormFromListExEx(3);
@@ -769,10 +779,10 @@ void __stdcall UIMENU_MainScreenBeforeMenu() {
     FORMS_CreateAnyFormFromListExEx(7);
     D2GFX_SetPaletteForDraw("palette\\sky\\pal.dat", "palette\\sky\\pal.pl2");
     ::D2WinTextBox* pTextControl = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(4);
-    __frame0.szTempBuffer = '\0';
-    memset(__frame0.szTempBufferRest, 0, 0x1ff);
-    __frame0.szUTF8Buffer = '\0';
-    memset(__frame0.szUTF8BufferRest, 0, 0x1ff);
+    __frame0.szTempBuffer[0] = '\0';
+    memset(__frame0.szTempBuffer + 1, 0, 0x1ff);
+    __frame0.szUTF8Buffer[0] = '\0';
+    memset(__frame0.szUTF8Buffer + 1, 0, 0x1ff);
     __frame0.wszWideBuffer = L'\0';
     uint16_t* pWidePtr = __frame0.wszWideBufferRest;
     for (nBufferSize = 0xff; nBufferSize; nBufferSize--) {
@@ -786,30 +796,25 @@ void __stdcall UIMENU_MainScreenBeforeMenu() {
     nBufferSize = 0x200;
     if (bIsExpansion) {
       wszLocaleString = D2Lang::StrTable::strtable::GetLocaleString(0x557a);
-      D2Lang::WideCharToUTF8(&__frame0.szUTF8Buffer, wszLocaleString, nBufferSize);
+      D2Lang::WideCharToUTF8(__frame0.szUTF8Buffer, wszLocaleString, nBufferSize);
       szYearPosition = "2001";
     } else {
       wszLocaleString = D2Lang::StrTable::strtable::GetLocaleString(0x13f0);
-      D2Lang::WideCharToUTF8(&__frame0.szUTF8Buffer, wszLocaleString, nBufferSize);
+      D2Lang::WideCharToUTF8(__frame0.szUTF8Buffer, wszLocaleString, nBufferSize);
       szYearPosition = "2000";
     }
 
     uint32_t nNewYearStrLen = Storm::Source::SSTR::SStrLen(szYearPosition);
-    szYearPosition = strstr(&__frame0.szUTF8Buffer, szYearPosition);
+    szYearPosition = strstr(__frame0.szUTF8Buffer, szYearPosition);
     if (szYearPosition) {
-      char* szBufferInput;
-      Storm::Source::SSTR::SStrCopy(&__frame0.szTempBuffer, szYearPosition + nNewYearStrLen, 0x7fffffff);
+      Storm::Source::SSTR::SStrCopy(__frame0.szTempBuffer, szYearPosition + nNewYearStrLen, 0x7fffffff);
       Storm::Source::SSTR::SStrCopy(szYearPosition, "2000 - 2016", 0x7fffffff);
-      nMaxLength = 0x7fffffff;
-      szBufferInput = &__frame0.szTempBuffer;
-      Storm::Source::SSTR::SStrCopy(szYearPosition + Storm::Source::SSTR::SStrLen("2000 - 2016"), szBufferInput, nMaxLength);
+      Storm::Source::SSTR::SStrCopy(szYearPosition + Storm::Source::SSTR::SStrLen("2000 - 2016"), __frame0.szTempBuffer, 0x7fffffff);
     }
 
-    D2Lang::UTF8_ConvertToWideChar(&__frame0.wszWideBuffer, &__frame0.szUTF8Buffer, 0x200);
+    D2Lang::UTF8_ConvertToWideChar(&__frame0.wszWideBuffer, __frame0.szUTF8Buffer, 0x200);
     D2Win::Src::D2WinTextBox::SetText(pTextControl, &__frame0.wszWideBuffer, 4, false, 0);
-    int32_t nSetTextParam3 = 0;
-    bool bySetTextParam = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextControl, D2Lang::StrTable::strtable::GetLocaleString(0x13f1), 4, bySetTextParam, nSetTextParam3);
+    D2Win::Src::D2WinTextBox::SetText(pTextControl, D2Lang::StrTable::strtable::GetLocaleString(0x13f1), 4, false, 0);
     D2Win::Src::D2WinMain::D2WINMAIN_SetCursorVisible(0);
     nBufferSize = D2Sound::Src::D2SoundFast::SOUND_GetOptionsMusic();
     if (!nBufferSize) {
@@ -889,11 +894,11 @@ int __stdcall MAINMENU_ValidateCharNameChar(::D2WinEditBox * pEditBox, int nText
         return 0;
     }
 
-    if (cVar1 > ' ') {
-      return (uint32_t)(cVar1 < '\x7f');
+    if (cVar1 <= ' ') {
+      return 0;
     }
 
-    return 0;
+    return (uint32_t)(cVar1 < '\x7f');
 }
 
 // Edit-box key filter installed via D2WINEDITBOX_SetMaxLength @004fdad0 into D2WinEditBox+0x268 (fpFilterCallback, fpD2WinEditBoxFilter). Body is MOV EAX,1 / RET 0xc - accepts every character. Signature proven by RET 0xc (3 stack args, callee cleans) and by the funcdef of the slot it is stored into.
@@ -926,17 +931,17 @@ int __stdcall MAINMENU_ValidateGameNameChar(::D2WinEditBox * pEditBox, int nText
         return 0;
     }
 
-    if (cVar1 > ' ') {
-      return (uint32_t)(cVar1 < '\x7f');
+    if (cVar1 <= ' ') {
+      return 0;
     }
 
-    return 0;
+    return (uint32_t)(cVar1 < '\x7f');
 }
 
 // Tail-JMP thunk to MAINMENU_ValidateCharNameChar @0042fde0; propagates that function's EAX result. Installed as the edit-box key filter (D2WinEditBox+0x268) for the char-select account and password fields. Return type was void, which discarded the accept/reject result.
 int __stdcall MAINMENUS_EditBoxFilter_ValidateCharName_ForBnetDisconnect(::D2WinEditBox * pEditBox, int nTextLen, char * pKeyChar) {
-    int iVar1 = MAINMENU_ValidateCharNameChar(pEditBox, nTextLen, pKeyChar);
-    return iVar1;
+    int nResult = MAINMENU_ValidateCharNameChar(pEditBox, nTextLen, pKeyChar);
+    return nResult;
 }
 
 // Edit-box key filter installed via D2WINEDITBOX_SetMaxLength @004fdad0 into D2WinEditBox+0x268 (fpFilterCallback, fpD2WinEditBoxFilter). Body is MOV EAX,1 / RET 0xc - accepts every character. Signature proven by RET 0xc (3 stack args, callee cleans).
@@ -944,8 +949,8 @@ int __stdcall MAINMENUS_EditBoxFilter_ReturnTrue_ForBnetAccountForms(::D2WinEdit
     return 1;
 }
 
-void __fastcall MAINMENU_SetGlobalValue3(uint32_t dwParam) {
-    gbMainMenuShowBNetRealmPanel = dwParam;
+void __fastcall MAINMENU_SetGlobalValue3(uint32_t bShowBNetRealmPanel) {
+    gbMainMenuShowBNetRealmPanel = bShowBNetRealmPanel;
 }
 
 void __stdcall MAINMENU_UpdateIPAddressDisplay() {
@@ -962,7 +967,7 @@ void __stdcall MAINMENU_UpdateIPAddressDisplay() {
       return;
     }
 
-    D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpCtlTcpIpLocalIpTextBox, szLocalIp);
+    D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpCtlTcpIpLocalIpTextBox, szLocalIp);
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(gpCtlTcpIpConnectButton, 1);
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(gpCtlTcpIpAddressButton, 1);
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gpCtlTcpIpConnectAddressLabel->sControl, 1);
@@ -999,33 +1004,33 @@ void __stdcall UIMENU_TCPIPOptions() {
     D2Win::Src::D2WinMain::D2WINMAIN_SetFormFourth(pFormFourth);
     gpMainMenuTcpIpTimerControl = (::D2WinTimer*)FORMS_CreateAnyFormFromListExEx(0x10b);
     D2Win::Src::D2WinTimer::D2WINTIMER_Start((int*)gpMainMenuTcpIpTimerControl);
-    D2Win::Src::D2WinEditBox::D2WINEDITBOX_Destroy((int*)gpMainMenuTcpIpTimerControl);
+    D2Win::Src::D2WinTimer::D2WINEDITBOX_Destroy((int*)gpMainMenuTcpIpTimerControl);
     gpCtlTcpIpLocalIpTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x105);
     MAINMENU_UpdateIPAddressDisplay();
 }
 
-void __stdcall MAINMENU_DisableControlIfDataNonZero(int32_t pControlData) {
+BOOL __stdcall MAINMENU_DisableControlIfDataNonZero(int32_t pControlData) {
     if (*(int*)(pControlData + 0xc)) {
       D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpAddress->sControl, 1);
-      return;
+      return 1;
     }
 
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpAddress->sControl, 0);
+    return 1;
 }
 
-void __stdcall MAINMENU_DisableControlIfDataNonZero2(int32_t nParam) {
-    if (*(int*)(nParam + 0xc)) {
+BOOL __stdcall MAINMENU_DisableControlIfDataNonZero2(int32_t pControlData) {
+    if (*(int*)(pControlData + 0xc)) {
       D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpPort->sControl, 1);
-      return;
+      return 1;
     }
 
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpPort->sControl, 0);
+    return 1;
 }
 
 // Shows BNet account creation UI. Clears gbPasswordChangeInProgress, creates form with username/password/confirmation fields. Entry point for new account flow from main menu.
 void __stdcall UIMENU_CreateBattleNetAccount() {
-    bool nSetTextArg2;
-    int nSetTextArg3;
     Launcher::UIMENU_MainMenuWithoutMenuButWithDiabloLogo();
     FORMS_CreateAnyFormFromListExEx(0x15);
     FORMS_CreateAnyFormFromListExEx(0x16);
@@ -1042,15 +1047,11 @@ void __stdcall UIMENU_CreateBattleNetAccount() {
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
     if (!bIsExpansion) {
       pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x1f);
-      nSetTextArg3 = 0;
-      nSetTextArg2 = false;
-      D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1466), 0, nSetTextArg2, nSetTextArg3);
+      D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1466), 0, false, 0);
     }
 
     pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x20);
-    nSetTextArg3 = 0;
-    nSetTextArg2 = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1467), 0, nSetTextArg2, nSetTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1467), 0, false, 0);
     gpBnetAccountEditBox = (::D2WinEditBox*)FORMS_CreateAnyFormFromListExEx(0x54);
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetFilterCallback(gpBnetAccountEditBox, MAINMENU_ValidateGameNameChar);
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetPasswordMode(gpBnetAccountEditBox, 0x10);
@@ -1087,9 +1088,9 @@ void __stdcall UIMENU_BackgroundAndExpansionText() {
     D2GFX_SetPaletteForDraw("palette\\sky\\pal.dat", "palette\\sky\\pal.pl2");
 }
 
-int16_t __stdcall MAINMENU_FilterNewlineKey(int16_t nParam) {
-    uint8_t byHighByte = (uint8_t)((uint16_t)nParam >> 8);
-    if (nParam != 0xd && nParam != 10) {
+int16_t __stdcall MAINMENU_FilterNewlineKey(int16_t wChar) {
+    uint8_t byHighByte = (uint8_t)((uint16_t)wChar >> 8);
+    if (wChar != 0xd && wChar != 10) {
       return (uint16_t)byHighByte << 8;
     }
 
@@ -1097,12 +1098,11 @@ int16_t __stdcall MAINMENU_FilterNewlineKey(int16_t nParam) {
 }
 
 int __stdcall MAINMENU_PollRevisionCheckPump(int nFrameIndex) {
-    int iVar1 = gpBNetCallbacks->pfnGetDownloadProgress();
-    if (!(iVar1 == 0x65 || gbTermsOfServiceCancelled)) {
-      return 1;
+    int nDownloadProgress = gpBNetCallbacks->pfnGetDownloadProgress();
+    if (nDownloadProgress == 0x65 || gbTermsOfServiceCancelled) {
+      D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
     }
 
-    D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
     return 1;
 }
 
@@ -1129,11 +1129,10 @@ BOOL __stdcall MAINMENU_ScrollListExUp(D2ControlMsg * pControlMsg) {
 
       if (ppForm) {
         nLine = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetScrollPosition(ppForm);
-        if (nLine <= 0) {
-          return 1;
+        if (nLine > 0) {
+          D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(ppForm, nLine - 1);
         }
 
-        D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(ppForm, nLine - 1);
         return 1;
       }
     }
@@ -1179,9 +1178,7 @@ void __stdcall UIMENU_AreYouSureToCreateHardcoreCharacter() {
     D2Win::Src::D2WinMain::SetUnsetFlag0x08(pControl, 1);
     ::D2WinTextBox* pControl2 = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0xd0);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pControl2, 1);
-    int nSetTextArg3 = 0;
-    bool nSetTextArg2 = false;
-    D2Win::Src::D2WinTextBox::SetText(pControl2, D2Lang::StrTable::strtable::GetLocaleString(0x14b7), 0, nSetTextArg2, nSetTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pControl2, D2Lang::StrTable::strtable::GetLocaleString(0x14b7), 0, false, 0);
 }
 
 // Validates character name input as user types. First character must be a-z or A-Z (rejects '-' and '_' at start). If nTextLen is 0 (first char position), rejects non-alpha. Also rejects consecutive '-' or '_' characters by checking if previous character was the same special char. Returns 1 if valid, 0 if invalid.
@@ -1230,7 +1227,7 @@ void __stdcall MAINMENU_ValidateCharacterNameCallback() {
       int32_t nNameLength;
       nNameLength = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszString);
       D2Lang::WideCharToUTF8(szNameBuffer, wszString, 0x20);
-      if (nNameLength - 2U <= 0xd && szNameBuffer[nNameLength - 1] != '_' && szNameBuffer[0] != '_' && szNameBuffer[nNameLength - 1] != '-' && szNameBuffer[0] != '-') {
+      if (nNameLength >= 0x2 && nNameLength <= 0xf && szNameBuffer[nNameLength - 1] != '_' && szNameBuffer[0] != '_' && szNameBuffer[nNameLength - 1] != '-' && szNameBuffer[0] != '-') {
         nSpecialCharCount = 0;
         nCharIndex = 0;
         if (nNameLength > 0) {
@@ -1266,7 +1263,7 @@ void __stdcall MAINMENU_ValidatePasswordChangeForm() {
       int32_t nAccountLen;
       nAccountLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszString);
       nPasswordLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszString_00);
-      if (nAccountLen - 1U <= 0x31 && nPasswordLen - 1U <= 0xc) {
+      if (nAccountLen >= 0x1 && nAccountLen <= 0x32 && nPasswordLen >= 0x1 && nPasswordLen <= 0xd) {
         bIsValid = 1;
       }
     }
@@ -1298,31 +1295,23 @@ BOOL __stdcall MAINMENU_OnPressToggleExpansionFlag(D2ControlMsg * pControlMsg) {
 }
 
 int __fastcall MAINMENU_SetClassDescriptionTooltip(int32_t bSetTooltip, int32_t nClassId, uint16_t wPrimaryStrId, uint16_t wSecondaryStrId) {
-    int32_t nSetTextArg3;
     int32_t nUnused;
-    bool nSetTextArg2;
     if (gnClassDescriptionTooltipState != -1) {
       return 1;
     }
     if (bSetTooltip) {
-      int nAlignment;
       D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gpCtlClassDescriptionTooltipPrimary);
-      nSetTextArg3 = 0;
-      nSetTextArg2 = false;
-      D2Win::Src::D2WinTextBox::SetText(gpCtlClassDescriptionTooltipPrimary, D2Lang::StrTable::strtable::GetLocaleString(wPrimaryStrId), 0, nSetTextArg2, nSetTextArg3);
+      D2Win::Src::D2WinTextBox::SetText(gpCtlClassDescriptionTooltipPrimary, D2Lang::StrTable::strtable::GetLocaleString(wPrimaryStrId), 0, false, 0);
       D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gpCtlClassDescriptionTooltipSecondary);
-      nAlignment = 0;
-      nSetTextArg2 = false;
-      D2Win::Src::D2WinTextBox::SetText(gpCtlClassDescriptionTooltipSecondary, D2Lang::StrTable::strtable::GetLocaleString(wSecondaryStrId), 0, nSetTextArg2, nAlignment);
+      D2Win::Src::D2WinTextBox::SetText(gpCtlClassDescriptionTooltipSecondary, D2Lang::StrTable::strtable::GetLocaleString(wSecondaryStrId), 0, false, 0);
       gnClassDescriptionTooltipClassId = nClassId;
       return 1;
     }
-    if (gnClassDescriptionTooltipClassId != nClassId) {
-      return 1;
+    if (gnClassDescriptionTooltipClassId == nClassId) {
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gpCtlClassDescriptionTooltipPrimary);
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gpCtlClassDescriptionTooltipSecondary);
     }
 
-    D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gpCtlClassDescriptionTooltipPrimary);
-    D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gpCtlClassDescriptionTooltipSecondary);
     return 1;
 }
 
@@ -1389,38 +1378,31 @@ void __stdcall LAUNCHER_SetExitAppModeResult() {
     gnSelectedCharGameState = 0;
 }
 
-void __stdcall MAINMENU_AddRealmToList(D2BNetRealmEntryStrc * pRealmEntry) {
+BOOL __stdcall MAINMENU_AddRealmToList(D2BNetRealmEntryStrc * pRealmEntry) {
+    int i;
     if (!g_pBNetRealmList) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x111f);
       exit(-1);
     }
 
-    int i = 0;
-    if (gnRealmListCount <= 0) {
-      return;
-    }
-
-    do {
+    for (i = 0; i < gnRealmListCount; i++) {
       if (!g_pBNetRealmList[i]) {
         g_pBNetRealmList[i] = pRealmEntry;
-        return;
+        return 1;
       }
+    }
 
-      i++;
-    } while (i < gnRealmListCount);
+    return 0;
 }
 
 // @sourcefile .\Src\MainMenus.cpp
 BOOL __stdcall MAINMENU_FreeRealmList() {
-    if (!g_pBNetRealmList) {
-      return 1;
-    }
-
-    int i = 0;
-    D2BNetRealmEntryStrc** pList = g_pBNetRealmList;
-    if (gnRealmListCount > 0) {
+    D2BNetRealmEntryStrc** pList;
+    int i;
+    if (g_pBNetRealmList) {
       char* pMemoryToFree;
-      do {
+      pList = g_pBNetRealmList;
+      for (i = 0; i < gnRealmListCount; i++) {
         if (pList[i]) {
           pMemoryToFree = pList[i]->szDescription;
           if (!pMemoryToFree) {
@@ -1438,13 +1420,12 @@ BOOL __stdcall MAINMENU_FreeRealmList() {
           D2_FREE_AT(g_pBNetRealmList[i], ".\\Src\\MainMenus.cpp", 0x113e);
           pList = g_pBNetRealmList;
         }
+      }
 
-        i++;
-      } while (i < gnRealmListCount);
+      D2_FREE_AT(pList, ".\\Src\\MainMenus.cpp", 0x1141);
+      g_pBNetRealmList = 0;
     }
 
-    D2_FREE_AT(pList, ".\\Src\\MainMenus.cpp", 0x1141);
-    g_pBNetRealmList = 0;
     return 1;
 }
 
@@ -1492,7 +1473,6 @@ char * __fastcall MAINMENU_GetRealmName(int32_t nIndex) {
     }
 
     return g_pBNetRealmList[nIndex]->szName;
-    return g_pBNetRealmList[nIndex]->szName;
 }
 
 // Returns the description string of realm entry nIndex (g_pBNetRealmList[nIndex][1], filled by MAINMENU_QueryAndBuildRealmList); halts (MainMenus.cpp line 4450) on an empty slot.
@@ -1503,7 +1483,6 @@ char * __fastcall MAINMENU_GetRealmDescription(int nIndex) {
       exit(-1);
     }
 
-    return g_pBNetRealmList[nIndex]->szDescription;
     return g_pBNetRealmList[nIndex]->szDescription;
 }
 
@@ -1544,11 +1523,11 @@ BOOL __stdcall Test(D2ControlMsg * pControlMsg) {
 void __stdcall MAINMENU_AppendCreditsEnd() {
     int i = 0x32;
     do {
-      D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsLineTextBox, "");
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsLineTextBox, "");
       i--;
     } while (i);
 
-    D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsLineTextBox, "The End");
+    D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsLineTextBox, "The End");
     gnMainMenuCreditsFrameIndex = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetScrollPosition(gpMainMenuCreditsLineTextBox);
 }
 
@@ -1556,7 +1535,7 @@ void __stdcall MAINMENU_AppendCreditsEnd() {
 uint16_t * __stdcall MAINMENU_LoadCreditsFile(uint32_t * pnCharCount) {
     int i;
     uint16_t* pwText;
-    char local_134[260];
+    char szFilePath[260];
     char szExpFileName[21];
     char szFileNameBase[12];
     char szLangAbbrev[4];
@@ -1570,8 +1549,8 @@ uint16_t * __stdcall MAINMENU_LoadCreditsFile(uint32_t * pnCharCount) {
       szFileName = szExpFileName;
     }
 
-    Storm::Source::SSTR::SStrPrintf(local_134, 0x104, "%s\\UI\\%s\\%s", "DATA\\LOCAL", szLangAbbrev, szFileName);
-    int32_t nOpenResult = Fog::Source::SFile::ARCHIVE_OpenD2FileWrap(local_134, &pArchive);
+    Storm::Source::SSTR::SStrPrintf(szFilePath, 0x104, "%s\\UI\\%s\\%s", "DATA\\LOCAL", szLangAbbrev, szFileName);
+    int32_t nOpenResult = Fog::Source::SFile::ARCHIVE_OpenD2FileWrap(szFilePath, &pArchive);
     if (!nOpenResult) {
       return nullptr;
     }
@@ -1601,7 +1580,7 @@ uint16_t * __stdcall MAINMENU_LoadCreditsFile(uint32_t * pnCharCount) {
         *pnCharCount = nCharCount;
         pwText = (uint16_t*)D2_ALLOC_AT(nCharCount * 2, ".\\Src\\MainMenus.cpp", 0x13bf);
         memcpy(pwText, pFileBuf + 1, *pnCharCount * 2);
-        Source::SBig::CRYPTO_ByteSwap16Array(pwText, *pnCharCount);
+        CRYPTO_ByteSwap16Array(pwText, *pnCharCount);
       } else {
         *pnCharCount = nFileSize;
         pwText = (uint16_t*)D2_ALLOC_AT(nFileSize * 2 + 1, ".\\Src\\MainMenus.cpp", 0x13c8);
@@ -1609,18 +1588,11 @@ uint16_t * __stdcall MAINMENU_LoadCreditsFile(uint32_t * pnCharCount) {
       }
 
       D2_FREE_AT(pFileBuf, ".\\Src\\MainMenus.cpp", 0x13cc);
-      i = 0;
-      if ((int)*pnCharCount <= 0) {
-        return pwText;
-      }
-
-      do {
+      for (i = 0; i < (int)*pnCharCount; i++) {
         if (pwText[i] == L'\n' || pwText[i] == L'\r') {
           pwText[i] = L'\0';
         }
-
-        i++;
-      } while (i < (int)*pnCharCount);
+      }
 
       return pwText;
     }
@@ -1632,33 +1604,34 @@ void __stdcall MAINMENU_SyncCreditsColumns() {
     int nPosCol2 = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetScrollPosition(gpMainMenuCreditsPairLeftTextBox);
     int nPosCol3 = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetScrollPosition(gpMainMenuCreditsPairRightTextBox);
     while (nPosCol2 > nPosCol3) {
-      D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairRightTextBox, "");
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairRightTextBox, "");
       nPosCol3 = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetScrollPosition(gpMainMenuCreditsPairRightTextBox);
     }
 
     while (nPosCol2 < nPosCol3) {
-      D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairLeftTextBox, "");
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairLeftTextBox, "");
       nPosCol2 = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetScrollPosition(gpMainMenuCreditsPairLeftTextBox);
     }
 
     while (nPosCol1 > nPosCol2) {
-      D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairLeftTextBox, "");
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairLeftTextBox, "");
       nPosCol2 = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetScrollPosition(gpMainMenuCreditsPairLeftTextBox);
-      D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairRightTextBox, "");
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairRightTextBox, "");
     }
 
     while (nPosCol1 < nPosCol2) {
-      D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsLineTextBox, "");
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsLineTextBox, "");
       nPosCol1 = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetScrollPosition(gpMainMenuCreditsLineTextBox);
     }
 
-    D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsLineTextBox, "");
-    D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairLeftTextBox, "");
-    D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairRightTextBox, "");
+    D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsLineTextBox, "");
+    D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairLeftTextBox, "");
+    D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairRightTextBox, "");
 }
 
 // @sourcefile .\Src\MainMenus.cpp
-int __stdcall MAINMENU_DisplayCredits() {
+// Registers: nReserved (ECX) is 0 at the only call site and not read.
+int __fastcall MAINMENU_DisplayCredits(int32_t nReserved) {
     int i;
     ::D2WinTextBox* pTargetBox;
     uint32_t nRemaining;
@@ -1683,9 +1656,9 @@ int __stdcall MAINMENU_DisplayCredits() {
 
     i = 0x32;
     do {
-      D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsLineTextBox, "");
-      D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairLeftTextBox, "");
-      D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairRightTextBox, "");
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsLineTextBox, "");
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairLeftTextBox, "");
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairRightTextBox, "");
       i--;
       nRemaining = nCharCount;
     } while (i);
@@ -1697,8 +1670,8 @@ int __stdcall MAINMENU_DisplayCredits() {
         return 1;
       }
       if (*pwCursor == L'*') {
-        D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairLeftTextBox, "");
-        D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairRightTextBox, "");
+        D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairLeftTextBox, "");
+        D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairRightTextBox, "");
         bCopied1 = D2Lang::Unicode::UNISYS::STRING_CopyWideString(awLineBuf, pwCursor + 1);
         if (bCopied1) {
           D2Win::Src::D2WinTextBox::SetText(gpMainMenuCreditsLineTextBox, awLineBuf, 1, false, 0);
@@ -1757,7 +1730,7 @@ int __stdcall MAINMENU_DisplayCredits() {
           }
 
           D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextW(pTargetBox, bCopied1);
-          D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsLineTextBox, "");
+          D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsLineTextBox, "");
         } while (*pwCursor != L'*');
       }
 
@@ -1769,7 +1742,7 @@ BOOL __stdcall MAINMENU_InitCreditsScreen(D2ControlMsg * pControlMsg) {
     // Static local variables (originally global data)
     static D2ControlStrc * gpMainMenuCreditTimerControl; D2_STATIC_GUARD_BSS(gpMainMenuCreditTimerControl, "D2Launch::MainMenus::MAINMENU_InitCreditsScreen::gpMainMenuCreditTimerControl");
 
-    int32_t nParam;
+    int32_t nFormIndex;
     FORMS_DestroyLists();
     D2GFX_SetPaletteForDraw("palette\\sky\\pal.dat", "palette\\sky\\pal.pl2");
     FORMS_CreateAnyFormFromListExEx(0x29);
@@ -1778,18 +1751,18 @@ BOOL __stdcall MAINMENU_InitCreditsScreen(D2ControlMsg * pControlMsg) {
     if (!BVar1) {
       gpMainMenuCreditsPairLeftTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x2b);
       gpMainMenuCreditsPairRightTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x2c);
-      nParam = 0x2d;
+      nFormIndex = 0x2d;
     } else {
       gpMainMenuCreditsPairLeftTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x2f);
       gpMainMenuCreditsPairRightTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x30);
-      nParam = 0x31;
+      nFormIndex = 0x31;
     }
 
-    gpMainMenuCreditsLineTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(nParam);
+    gpMainMenuCreditsLineTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(nFormIndex);
     gpMainMenuCreditTimerControl = FORMS_CreateAnyFormFromListExEx(0x2e);
     D2Win::Src::D2WinTimer::D2WINTIMER_Start((int*)gpMainMenuCreditTimerControl);
-    D2Win::Src::D2WinEditBox::D2WINEDITBOX_Destroy((int*)gpMainMenuCreditTimerControl);
-    MAINMENU_DisplayCredits();
+    D2Win::Src::D2WinTimer::D2WINEDITBOX_Destroy((int*)gpMainMenuCreditTimerControl);
+    MAINMENU_DisplayCredits(0);
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(gpMainMenuCreditsLineTextBox, 0x14);
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(gpMainMenuCreditsPairLeftTextBox, 0x14);
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(gpMainMenuCreditsPairRightTextBox, 0x14);
@@ -1848,10 +1821,8 @@ void __fastcall UIMENU_PleaseInsertExpansionCdWithNotWorkingCancelButton(int32_t
     D2Win::Src::D2WinMain::SetUnsetFlag0x08(pForm, 1);
     ::D2WinTextBox* pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0xd9);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pTextBox, 1);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1430), 0, (bool)0, 0);
     int nTextPadC = 0;
-    uint8_t byCentered = 0;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1430), 0, (bool)byCentered, nTextPadC);
-    nTextPadC = 0;
     bool bIndent = false;
     int32_t nTextPadB = 0;
     uint16_t wStrId = 0x5578;
@@ -1864,44 +1835,38 @@ void __fastcall UIMENU_PleaseInsertExpansionCdWithNotWorkingCancelButton(int32_t
 }
 
 BOOL __stdcall MAINMENU_ShowCinematicsMenu(D2ControlMsg * pControlMsg) {
-    // Frame slots -20..-4 are ONE object: &nVerMajor is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      long int nVerMajor;
-      long int nVerMinor;
-      D2ControlStrc* pForm4;
-      D2ControlStrc* nFlagsOrForm5;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint16_t* pwTitle;
     D2ControlStrc* pBtn1;
     D2ControlStrc* pBtn2;
     uint8_t byCineLevel;
     char szRegVersion[100];
+    long int nVerMajor;
+    long int nVerMinor;
+    D2ControlStrc* pForm4;
+    D2ControlStrc* nFlagsOrForm5;
     D2Sound::Src::D2SoundSmp::CleanupSoundBuffer(0xb4);
     D2Sound::Src::D2SoundFast::SOUND_StopMusic();
     D2Sound::Src::D2SoundSmp::SOUNDSMP_SetGlobalVolume(0xff);
     Launcher::UIMENU_MainMenuWithoutMenuButWithDiabloLogo();
     int32_t nReadResult = Storm::Source::SReg::SRegLoadString("Diablo II", "Aux Battle.net", 0, szRegVersion, 100);
     if (nReadResult) {
-      __frame0.nFlagsOrForm5 = (D2ControlStrc*)0x22;
-      sscanf(szRegVersion, "%ld.%ld.%ld.%ld", &__frame0.nVerMajor, &__frame0.nVerMinor, (long int*)&__frame0.pForm4, (long int*)&__frame0.nFlagsOrForm5);
-      if ((uint32_t)__frame0.nFlagsOrForm5 & 1) {
+      nFlagsOrForm5 = (D2ControlStrc*)0x22;
+      sscanf(szRegVersion, "%ld.%ld.%ld.%ld", &nVerMajor, &nVerMinor, (long int*)&pForm4, (long int*)&nFlagsOrForm5);
+      if ((uint32_t)nFlagsOrForm5 & 1) {
         byCineLevel = 7;
       } else {
-        if ((char)(uintptr_t)__frame0.nFlagsOrForm5 < '\0') {
+        if ((char)(uintptr_t)nFlagsOrForm5 < '\0') {
           byCineLevel = 6;
-        } else if ((uint32_t)__frame0.nFlagsOrForm5 & 0x10) {
+        } else if ((uint32_t)nFlagsOrForm5 & 0x10) {
           byCineLevel = 5;
         } else {
-          if ((uint32_t)__frame0.nFlagsOrForm5 & 8) {
+          if ((uint32_t)nFlagsOrForm5 & 8) {
             byCineLevel = 4;
           } else {
-            if ((uint32_t)__frame0.nFlagsOrForm5 & 0x40) {
+            if ((uint32_t)nFlagsOrForm5 & 0x40) {
               byCineLevel = 3;
             } else {
-              byCineLevel = (((uint32_t)__frame0.nFlagsOrForm5 & 4) != 0) + 1;
+              byCineLevel = ((uint32_t)nFlagsOrForm5 & 4) != 0 ? 2 : 1;
             }
           }
         }
@@ -1909,7 +1874,7 @@ BOOL __stdcall MAINMENU_ShowCinematicsMenu(D2ControlMsg * pControlMsg) {
     } else {
       byCineLevel = 1;
       sprintf(szRegVersion, "%d.%d.%d.%d", 0xd8, 0x94, 0xf6, 0x22);
-      Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Aux Battle.net", 0, szRegVersion);
+      Storm::Source::SReg::SRegSaveString("Diablo II", "Aux Battle.net", 0, szRegVersion);
     }
 
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
@@ -1922,17 +1887,17 @@ BOOL __stdcall MAINMENU_ShowCinematicsMenu(D2ControlMsg * pControlMsg) {
       FORMS_CreateAnyFormFromListExEx(0x34);
       pBtn1 = FORMS_CreateAnyFormFromListExEx(0x35);
       pBtn2 = FORMS_CreateAnyFormFromListExEx(0x36);
-      __frame0.nFlagsOrForm5 = FORMS_CreateAnyFormFromListExEx(0x37);
-      __frame0.pForm4 = FORMS_CreateAnyFormFromListExEx(0x38);
+      nFlagsOrForm5 = FORMS_CreateAnyFormFromListExEx(0x37);
+      pForm4 = FORMS_CreateAnyFormFromListExEx(0x38);
       switch (byCineLevel) {
         default:
           D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(pBtn1, 0);
         case 2:
           D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(pBtn2, 0);
         case 3:
-          D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(__frame0.nFlagsOrForm5, 0);
+          D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(nFlagsOrForm5, 0);
         case 4:
-          D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(__frame0.pForm4, 0);
+          D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(pForm4, 0);
         case 5:
 
         case 6:
@@ -2027,11 +1992,10 @@ BOOL __stdcall MAINMENU_ShowCinematicsMenuAndSetFlag(D2ControlMsg * pControlMsg)
 }
 
 int __stdcall MAINMENU_PollDisconnectFlagPump(int nFrameIndex) {
-    if (!(gbCinematicsMenuShown || ::fpInsertPlayCd)) {
-      return 1;
+    if (gbCinematicsMenuShown || ::fpInsertPlayCd) {
+      D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
     }
 
-    D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
     return 1;
 }
 
@@ -2046,12 +2010,8 @@ void __stdcall UIMENU_PleaseInsertCinematicDiscWithCancelAndNotWorkingOkButtons(
     D2Win::Src::D2WinMain::SetUnsetFlag0x08(pForm, 1);
     ::D2WinTextBox* pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0xd9);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pTextBox, 1);
-    int nTextPadC = 0;
-    uint8_t byCentered = 0;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1430), 0, (bool)byCentered, nTextPadC);
-    nTextPadC = 0;
-    bool bIndent = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1432), 0, bIndent, nTextPadC);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1430), 0, (bool)0, 0);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1432), 0, false, 0);
 }
 
 bool fpRequiredUserAction() {
@@ -2193,23 +2153,22 @@ BOOL __stdcall MAINMENU_OnPressStartTcpIpTimer(D2ControlMsg * pControlMsg) {
     FORMS_DestroyList();
     gpMainMenuTcpIpTimerControl = (::D2WinTimer*)FORMS_CreateAnyFormFromListExEx(0x10b);
     D2Win::Src::D2WinTimer::D2WINTIMER_Start((int*)gpMainMenuTcpIpTimerControl);
-    D2Win::Src::D2WinEditBox::D2WINEDITBOX_Destroy((int*)gpMainMenuTcpIpTimerControl);
+    D2Win::Src::D2WinTimer::D2WINEDITBOX_Destroy((int*)gpMainMenuTcpIpTimerControl);
     return 1;
 }
 
 int __stdcall MAINMENU_CreateGameServerThreadPump(int nFrameIndex) {
-    int iVar1 = D2Net::Game::Server::CreateThreadClientSocketOrSingleplayer();
-    if (!iVar1) {
-      gnTcpIpConnectionSuccessFlag = iVar1;
+    int nThreadResult = D2Net::Game::Server::CreateThreadClientSocketOrSingleplayer();
+    if (!nThreadResult) {
+      gnTcpIpConnectionSuccessFlag = nThreadResult;
       D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
       return 1;
     }
-    if (iVar1 != 2) {
-      return 1;
+    if (nThreadResult == 2) {
+      gnTcpIpConnectionSuccessFlag = 1;
+      D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
     }
 
-    gnTcpIpConnectionSuccessFlag = 1;
-    D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
     return 1;
 }
 
@@ -2273,11 +2232,10 @@ BOOL __stdcall MAINMENU_CheckCharacterSaveFileExists() {
 }
 
 BOOL __stdcall MAINMENU_OnPressInvokeCurrentMenuInstance(D2ControlMsg * pControlMsg) {
-    if (!gpCurrentUIMenuInstance) {
-      return 1;
+    if (gpCurrentUIMenuInstance) {
+      (*gpCurrentUIMenuInstance)();
     }
 
-    (*gpCurrentUIMenuInstance)();
     return 1;
 }
 
@@ -2325,9 +2283,7 @@ void __stdcall UIMENU_ChangePassword() {
     }
 
     pCheckboxCtl = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(nFormId);
-    int nTextArg3 = 0;
-    bool byTextArg1 = false;
-    D2Win::Src::D2WinTextBox::SetText(pCheckboxCtl, D2Lang::StrTable::strtable::GetLocaleString(0x2b2b), 0, byTextArg1, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pCheckboxCtl, D2Lang::StrTable::strtable::GetLocaleString(0x2b2b), 0, false, 0);
     gpBnetAccountEditBox = (::D2WinEditBox*)FORMS_CreateAnyFormFromListExEx(0x59);
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetFilterCallback(gpBnetAccountEditBox, MAINMENU_ValidateGameNameChar);
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetPasswordMode(gpBnetAccountEditBox, 0x10);
@@ -2388,30 +2344,28 @@ static BOOL MAINMENU_IsD2GSJoinErrorRecoverable(int32_t nErrorCode) {
 
 uint32_t __stdcall MAINMENU_PollMCPThreadStatus() {
     BOOL bRecoverable;
+    DWORD dwWaitResult;
     if (gnMCPConnectThreadHandle) {
       return 1;
     }
 
     HANDLE hHandle = D2Multi::McpConnect::GetMCPThread();
-    if (!hHandle) {
-      return 2;
-    }
-
-    DWORD dwWaitResult = 0;
-    hHandle = D2Multi::McpConnect::GetMCPThread();
-    /* HANDLE hHandle for WaitForSingleObject */ dwWaitResult = WaitForSingleObject(hHandle, dwWaitResult);
-    if (dwWaitResult) {
-      if (dwWaitResult != 0x102) {
-        return 2;
+    if (hHandle) {
+      int32_t nJoinResult;
+      /* DWORD dwMilliseconds for WaitForSingleObject */ dwWaitResult = 0;
+      hHandle = D2Multi::McpConnect::GetMCPThread();
+      /* HANDLE hHandle for WaitForSingleObject */ dwWaitResult = WaitForSingleObject(hHandle, dwWaitResult);
+      if (!dwWaitResult) {
+        nJoinResult = D2MCPClient::McpConnect::GetD2GSJoinResult();
+        bRecoverable = MAINMENU_IsD2GSJoinErrorRecoverable(nJoinResult);
+        return bRecoverable ? 2 : 0;
       }
-
-      return 3;
+      if (dwWaitResult == 0x102) {
+        return 3;
+      }
     }
 
-    int32_t nJoinResult;
-    nJoinResult = D2MCPClient::McpConnect::GetD2GSJoinResult();
-    bRecoverable = MAINMENU_IsD2GSJoinErrorRecoverable(nJoinResult);
-    return bRecoverable ? 2 : 0;
+    return 2;
 }
 
 int __stdcall MAINMENU_PollMCPThreadStatusPump(int nFrameIndex) {
@@ -2419,12 +2373,11 @@ int __stdcall MAINMENU_PollMCPThreadStatusPump(int nFrameIndex) {
       gnMCPConnectThreadHandle = 1;
     }
 
-    uint32_t uVar1 = MAINMENU_PollMCPThreadStatus();
-    if (uVar1 == 3) {
-      return 1;
+    uint32_t nMcpThreadStatus = MAINMENU_PollMCPThreadStatus();
+    if (nMcpThreadStatus != 3) {
+      D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
     }
 
-    D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
     return 1;
 }
 
@@ -2457,11 +2410,10 @@ uint32_t __fastcall MAINMENU_ConnectToRealm(uint8_t * pszRealmName, int32_t bSil
     if (!*pszRealmName) {
       D2IniData_launcher->szCharacterRealm[0] = '\0';
       D2IniData_launcher->szREALM[0] = '\0';
-      if (bSilent) {
-        return 0;
+      if (!bSilent) {
+        FORMS_DestroyList();
       }
 
-      FORMS_DestroyList();
       return 0;
     }
     if (gpBNetCallbacks) {
@@ -2471,21 +2423,19 @@ uint32_t __fastcall MAINMENU_ConnectToRealm(uint8_t * pszRealmName, int32_t bSil
         Storm::Source::SSTR::SStrCopy(D2IniData_launcher->szREALM, (char*)pszRealmName, 0x100);
         D2MCPClient::McpConnect::MCPCONNECT_CreateThread((uint32_t*)(pnLogonResult + 1));
         nResult = 3;
-        if (bSilent) {
-          return nResult;
+        if (!bSilent) {
+          D2Win::Src::D2WinMain::MessagePump(MAINMENU_PollMCPThreadStatusPump);
+          nResult = MAINMENU_PollMCPThreadStatus();
+          FORMS_DestroyList();
         }
 
-        D2Win::Src::D2WinMain::MessagePump(MAINMENU_PollMCPThreadStatusPump);
-        nResult = MAINMENU_PollMCPThreadStatus();
-        FORMS_DestroyList();
         return nResult;
       }
     }
-    if (bSilent) {
-      return 2;
+    if (!bSilent) {
+      FORMS_DestroyList();
     }
 
-    FORMS_DestroyList();
     return 2;
 }
 
@@ -2501,34 +2451,24 @@ void __stdcall UIMENU_PleaseReadAfterCreatingAccount() {
     FORMS_CreateAnyFormFromList(99);
     FORMS_CreateAnyFormFromList(100);
     ::D2WinTextBox* pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0x5f);
-    int nTextArg3 = 0;
-    bool byTextArgB1 = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x146b), 0, byTextArgB1, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x146b), 0, false, 0);
     pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0x60);
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(5);
     uint32_t nFontHeight = D2Win::Src::D2WinFont::D2WINFONT_GetCurrentFontHeight();
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
-    nTextArg3 = 0;
-    byTextArgB1 = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x146c), 0, byTextArgB1, nTextArg3);
-    nTextArg3 = (int)((uint64_t)((int64_t)(int)nFontHeight * -0x66666667) >> 0x20);
-    nTextArg3 = (nTextArg3 >> 2) - (nTextArg3 >> 0x1f);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x146c), 0, false, 0);
+    int nTextArg3 = (int)nFontHeight / -10;
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLinePadding(pTextBox, nTextArg3, 0);
     pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0x61);
-    int nTextArgB3 = 0;
-    byTextArgB1 = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x146d), 0, byTextArgB1, nTextArgB3);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x146d), 0, false, 0);
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLinePadding(pTextBox, nTextArg3, 0);
     pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0x62);
-    nTextArg3 = 0;
-    byTextArgB1 = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x2b77), 0, byTextArgB1, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x2b77), 0, false, 0);
 }
 
 // Extended image loader for additional UI assets beyond IMAGE_LoadPredefinedImages. Loads character selection screens, button graphics, and expansion-specific UI elements. Uses the same wsprintfA path construction pattern with expansion detection for conditional asset loading.
 void __stdcall IMAGE_LoadPredefinedImagesEx() {
     char szPathBuffer[260];
-    char* szFormatString;
     if (DC6_FrontEnd_CharacterCreate_or_charactercreationscreenEXP) {
       return;
     }
@@ -2537,12 +2477,11 @@ void __stdcall IMAGE_LoadPredefinedImagesEx() {
     DC6_FrontEnd_MediumSelButtonBlank = D2Win::Src::D2WinArchive::IMAGE_LoadDC6(szPathBuffer, 0);
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
     if (bIsExpansion) {
-      szFormatString = "%s\\ui\\FrontEnd\\charactercreationscreenEXP";
+      wsprintfA(szPathBuffer, "%s\\ui\\FrontEnd\\charactercreationscreenEXP", "DATA\\GLOBAL");
     } else {
-      /* LPCSTR param_2 for wsprintfA */ szFormatString = "%s\\ui\\FrontEnd\\CharacterCreate";
+      /* LPCSTR param_2 for wsprintfA */ wsprintfA(szPathBuffer, "%s\\ui\\FrontEnd\\CharacterCreate", "DATA\\GLOBAL");
     }
 
-    wsprintfA(szPathBuffer, szFormatString, "DATA\\GLOBAL");
     DC6_FrontEnd_CharacterCreate_or_charactercreationscreenEXP = D2Win::Src::D2WinArchive::IMAGE_LoadDC6(szPathBuffer, 0);
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szPathBuffer, "%s\\ui\\FrontEnd\\fire", "DATA\\GLOBAL");
     DC6_FrontEnd_fire = D2Win::Src::D2WinArchive::IMAGE_LoadDC6(szPathBuffer, 0);
@@ -2761,11 +2700,10 @@ static int __stdcall MAINMENU_SetMultilineText(uint16_t * wszText, ::D2WinTextBo
       pwszCursor++;
     } while (*pwszCursor != L'\0');
 
-    if (pwszLineStart >= pwszCursor) {
-      return 1;
+    if (pwszLineStart < pwszCursor) {
+      D2Win::Src::D2WinTextBox::SetText(pTextBox, pwszLineStart, nColor, (bool)bCentered, 0);
     }
 
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, pwszLineStart, nColor, (bool)bCentered, 0);
     return 1;
 }
 
@@ -2847,7 +2785,7 @@ void __fastcall MAINMENU_ShowPopupDialog(uint16_t * wszText, pfnUIMenuInstance p
     } else {
       pBgForm = FORMS_CreateAnyFormFromList(0xde);
       D2Win::Src::D2WinMain::FORMS_SetGlobalFormImage(pBgForm, 1);
-      pButtonForm = FORMS_CreateAnyFormFromList((uint32_t)(bHasCancel != 0) * 2 + 0xdf);
+      pButtonForm = FORMS_CreateAnyFormFromList(bHasCancel != 0 ? 0xe1U : 0xdfU);
       nTextFormId = 0xe0;
     }
 
@@ -2877,50 +2815,44 @@ void __fastcall UIMENU_CreateSmallPopup(uint16_t * wszTitle, pfnUIMenuInstance p
 }
 
 void __stdcall MAINMENU_PlayExpansionIntro() {
-    // Frame slots -36..-4 are ONE object: &nVerA is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int32_t nVerA;
-      int32_t nVerC;
-      int32_t nVerB;
-      D2MPQFileStrc* pVideoFile;
-      char szLangAbbrev[4];
-      char szVidSuffix[8];
-      uint32_t nVerD;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 32, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     char szVideoPath[260];
     char szRegValue[100];
+    int32_t nVerC;
+    int32_t nVerB;
+    D2MPQFileStrc* pVideoFile;
+    char szLangAbbrev[4];
+    char szVidSuffix[8];
+    uint32_t nVerD;
     GetAndDispatchAllPossible();
     int32_t nCutSceneFlags = 0;
     BOOL bLoggingEnabled = Fog::Src::LogManager::GetLoggerState_Stub();
     if (!bLoggingEnabled) {
-      memcpy(__frame0.szVidSuffix + 4, "292", 4);
+      memcpy(szVidSuffix + 4, "292", 4);
     } else {
       nCutSceneFlags = 2;
-      memcpy(__frame0.szVidSuffix + 4, "146", 4);
+      memcpy(szVidSuffix + 4, "146", 4);
     }
 
-    memcpy(__frame0.szVidSuffix, "640x", 4);
-    D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(__frame0.szLangAbbrev, 0);
-    sprintf(szVideoPath, "%s\\video\\%s\\D2x_Intro_%s.bik", "DATA\\LOCAL", __frame0.szLangAbbrev, __frame0.szVidSuffix);
-    int nIsHighRes = Storm::Source::SFile::SFileOpenFileEx(nullptr, szVideoPath, 0, (void**)&__frame0.pVideoFile);
+    memcpy(szVidSuffix, "640x", 4);
+    D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(szLangAbbrev, 0);
+    sprintf(szVideoPath, "%s\\video\\%s\\D2x_Intro_%s.bik", "DATA\\LOCAL", szLangAbbrev, szVidSuffix);
+    int nIsHighRes = Storm::Source::SFile::SFileOpenFileEx(nullptr, szVideoPath, 0, (void**)&pVideoFile);
     if (nIsHighRes) {
-      Storm::Source::SFile::SFileCloseFile(__frame0.pVideoFile);
+      Storm::Source::SFile::SFileCloseFile(pVideoFile);
     } else {
-      sprintf(szVideoPath, "%s\\video\\%s\\D2x_Intro%s.bik", "DATA\\LOCAL", "ENG", __frame0.szVidSuffix);
+      sprintf(szVideoPath, "%s\\video\\%s\\D2x_Intro%s.bik", "DATA\\LOCAL", "ENG", szVidSuffix);
     }
 
     D2gfx::D2GFX::D2GFX_PlayCutScene(szVideoPath, nCutSceneFlags, nullptr);
     nCutSceneFlags = Storm::Source::SReg::SRegLoadString("Diablo II", "Aux Battle.net", 0, szRegValue, 100);
     if (nCutSceneFlags) {
-      sscanf(szRegValue, "%ld.%ld.%ld.%ld", &__frame0.nVerA, &__frame0.nVerB, &__frame0.nVerC, (long int*)&__frame0.nVerD);
+      int32_t nVerA;
+      sscanf(szRegValue, "%ld.%ld.%ld.%ld", &nVerA, &nVerB, &nVerC, (long int*)&nVerD);
     }
 
-    __frame0.nVerD |= 0x80;
-    sprintf(szRegValue, "%d.%d.%d.%ld", 0xd8, 0x94, 0xf6, __frame0.nVerD);
-    Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Aux Battle.net", 0, szRegValue);
+    nVerD |= 0x80;
+    sprintf(szRegValue, "%d.%d.%d.%ld", 0xd8, 0x94, 0xf6, nVerD);
+    Storm::Source::SReg::SRegSaveString("Diablo II", "Aux Battle.net", 0, szRegValue);
 }
 
 void __stdcall MAINMENU_PlayD2Intro() {
@@ -2980,7 +2912,7 @@ void __stdcall UIMENU_MainMenu() {
       Storm::Source::SSTR::SStrPrintf(szVersionText + nVersionLen, 0x40 - nVersionLen, " %d", 0x47);
     }
 
-    D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsi(pCtlVersionText, szVersionText, 0);
+    D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsi(pCtlVersionText, szVersionText, 0);
     int bMusicEnabled = D2Sound::Src::D2SoundFast::SOUND_GetOptionsMusic();
     if (!bMusicEnabled) {
       return;
@@ -2991,17 +2923,6 @@ void __stdcall UIMENU_MainMenu() {
 
 // @sourcefile .\Src\MainMenus.cpp
 BOOL __stdcall UIMENU_ShowTermsOfService() {
-    // Frame slots -24..-4 are ONE object: &nBytesRead is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      DWORD nBytesRead;
-      ::D2WinTextBox* pCtlTextBox;
-      uint16_t* pFileBuffer;
-      int nCharOffset;
-      int nCharCount;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 20, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int32_t nLineWidth;
     int nDstIndex;
     int nSrcIndex;
@@ -3009,8 +2930,9 @@ BOOL __stdcall UIMENU_ShowTermsOfService() {
     short int sStack554;
     uint16_t wszLineBuffer[200];
     char szTosFileName[128];
+    DWORD nBytesRead;
+    int nCharCount;
     char byCh;
-    bool nTextPadC;
     uint16_t wch;
     uint16_t* pwszText;
     pwszText = 0;
@@ -3020,10 +2942,9 @@ BOOL __stdcall UIMENU_ShowTermsOfService() {
     Storm::Source::SSTR::SStrCopy(szTosFileName, "tos-unicode_", 0x80);
     Storm::Source::SSTR::SStrPack(szTosFileName, szLangAbbrev, 0x80);
     Storm::Source::SSTR::SStrPack(szTosFileName, ".txt", 0x80);
-    char* pszScan;
-    pszScan = szTosFileName;
-    pszScan = pszScan + strlen(pszScan) + 1;
-    gpBNetCallbacks->pfnInitiatePatchDownload((uint8_t*)szTosFileName, (int)pszScan - (int)(szTosFileName + 1));
+    int nLen;
+    nLen = (int)strlen(szTosFileName);
+    gpBNetCallbacks->pfnInitiatePatchDownload((uint8_t*)szTosFileName, nLen);
     D2Win::Src::D2WinMain::MessagePump(MAINMENU_PollRevisionCheckPump);
     if (gbTermsOfServiceCancelled) {
       FORMS_DestroyList();
@@ -3041,7 +2962,8 @@ BOOL __stdcall UIMENU_ShowTermsOfService() {
     FORMS_DestroyList();
     UIMENU_BackgroundAndExpansionText();
     FORMS_CreateAnyFormFromListExEx(0x4d);
-    __frame0.pCtlTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x4e);
+    ::D2WinTextBox* pCtlTextBox;
+    pCtlTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x4e);
     HANDLE hFile;
     hFile = Fog::Source::SFile::thunk_CreateFileA(szTosFileName, 0x80000000, 0, (LPSECURITY_ATTRIBUTES)0x0, 3, 0x8000000, (HANDLE)0x0);
     if (hFile == (HANDLE)-1) {
@@ -3052,56 +2974,54 @@ BOOL __stdcall UIMENU_ShowTermsOfService() {
 
     DWORD nAllocSize;
     nAllocSize = GetFileSize(hFile, (LPDWORD)0x0);
-    __frame0.pFileBuffer = (uint16_t*)D2_ALLOC_AT(nAllocSize, ".\\Src\\MainMenus.cpp", 0xc4d);
-    Fog::Source::SFile::thunk_ReadFile(hFile, __frame0.pFileBuffer, nAllocSize, &__frame0.nBytesRead, (LPOVERLAPPED)0x0);
+    uint16_t* pFileBuffer;
+    pFileBuffer = (uint16_t*)D2_ALLOC_AT(nAllocSize, ".\\Src\\MainMenus.cpp", 0xc4d);
+    Fog::Source::SFile::thunk_ReadFile(hFile, pFileBuffer, nAllocSize, &nBytesRead, (LPOVERLAPPED)0x0);
     Fog::Source::SFile::SFILE_Win32CloseHandle(hFile);
     Fog::Source::SFile::thunk_DeleteFileA(szTosFileName);
     uint16_t* pFileBufferSrc;
-    pFileBufferSrc = __frame0.pFileBuffer;
-    if (nAllocSize == __frame0.nBytesRead && nAllocSize > 2) {
-      if (*__frame0.pFileBuffer == L'\xfeff') {
-        pwszText = __frame0.pFileBuffer + 1;
-        __frame0.nCharCount = nAllocSize - 2 >> 1;
-      } else if (*__frame0.pFileBuffer == L'\xfffe') {
-        pwszText = __frame0.pFileBuffer + 1;
-        __frame0.nCharCount = nAllocSize - 2 >> 1;
-        Source::SBig::CRYPTO_ByteSwap16Array(pwszText, __frame0.nCharCount);
+    pFileBufferSrc = pFileBuffer;
+    if (nAllocSize == nBytesRead && nAllocSize > 2) {
+      if (*pFileBuffer == L'\xfeff') {
+        pwszText = pFileBuffer + 1;
+        nCharCount = nAllocSize - 2 >> 1;
+      } else if (*pFileBuffer == L'\xfffe') {
+        pwszText = pFileBuffer + 1;
+        nCharCount = nAllocSize - 2 >> 1;
+        CRYPTO_ByteSwap16Array(pwszText, nCharCount);
       } else {
         pwszText = (uint16_t*)D2_ALLOC_AT(nAllocSize * 2 + 1, ".\\Src\\MainMenus.cpp", 0xc6b);
         D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(pwszText, (char*)pFileBufferSrc, nAllocSize);
         D2_FREE_AT(pFileBufferSrc, ".\\Src\\MainMenus.cpp", 0xc6d);
-        __frame0.pFileBuffer = pwszText;
-        __frame0.nCharCount = nAllocSize;
+        pFileBuffer = pwszText;
+        nCharCount = nAllocSize;
       }
     } else {
-      __frame0.nCharCount = 0;
+      nCharCount = 0;
     }
 
-    __frame0.nCharOffset = 0;
-    if (__frame0.nCharCount <= 0) {
+    int nCharOffset;
+    nCharOffset = 0;
+    if (nCharCount <= 0) {
       ::D2WinTextBox* pCtlAcceptBtn;
       finish_tos_dialog:
-      D2_FREE_AT(__frame0.pFileBuffer, ".\\Src\\MainMenus.cpp", 0xcb4);
-      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(__frame0.pCtlTextBox, 0);
+      D2_FREE_AT(pFileBuffer, ".\\Src\\MainMenus.cpp", 0xcb4);
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(pCtlTextBox, 0);
       FORMS_CreateAnyFormFromListExEx(0x4f);
       FORMS_CreateAnyFormFromListExEx(0x50);
       pCtlAcceptBtn = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x51);
-      nSrcIndex = 0;
-      nTextPadC = false;
-      nLineWidth = 0;
-      pwszText = D2Lang::StrTable::strtable::GetLocaleString(0x143c);
-      D2Win::Src::D2WinTextBox::SetText(pCtlAcceptBtn, pwszText, nLineWidth, nTextPadC, nSrcIndex);
+      D2Win::Src::D2WinTextBox::SetText(pCtlAcceptBtn, D2Lang::StrTable::strtable::GetLocaleString(0x143c), 0, false, 0);
       FORMS_CreateAnyFormFromListExEx(0x52);
       FORMS_CreateAnyFormFromListExEx(0x53);
       return 1;
     }
 
     while (true) {
-      nSrcIndex = __frame0.nCharOffset;
+      nSrcIndex = nCharOffset;
       memset(wszLineBuffer, 0, 400);
       nDstIndex = 0;
       do {
-        if (nSrcIndex >= __frame0.nCharCount) {
+        if (nSrcIndex >= nCharCount) {
           break;
         }
 
@@ -3125,7 +3045,7 @@ BOOL __stdcall UIMENU_ShowTermsOfService() {
             goto cut_line;
           }
 
-          pFileBufferSrc = pwszText + __frame0.nCharOffset;
+          pFileBufferSrc = pwszText + nCharOffset;
           goto find_break_point;
         }
       } while (nDstIndex < 200);
@@ -3133,7 +3053,7 @@ BOOL __stdcall UIMENU_ShowTermsOfService() {
       goto add_line;
       find_break_point:
       while (true) {
-        bConnected = D2Lang::Unicode::UNISYS::UNICODE_CheckLineBreakPosition((int32_t)pFileBufferSrc, nLineWidth);
+        bConnected = D2Lang::Unicode::UNISYS::UNICODE_CheckLineBreakPosition(pFileBufferSrc, nLineWidth);
         if (bConnected) {
           break;
         }
@@ -3144,35 +3064,30 @@ BOOL __stdcall UIMENU_ShowTermsOfService() {
         }
       }
       cut_line:
-      nSrcIndex = nLineWidth + __frame0.nCharOffset;
+      nSrcIndex = nLineWidth + nCharOffset;
       wszLineBuffer[nLineWidth] = L'\0';
-      if (nLineWidth && (&sStack554)[nLineWidth] == 0x20) {
-        (&sStack554)[nLineWidth] = 0;
+      if (nLineWidth && wszLineBuffer[nLineWidth - 1] == 0x20) {
+        wszLineBuffer[nLineWidth - 1] = 0;
       }
 
       add_line:
       nLineWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszLineBuffer);
-      nDstIndex = 0;
-      if (nLineWidth > 0) {
-        do {
-          if (wszLineBuffer[nDstIndex] != L' ') {
-            D2Win::Src::D2WinTextBox::SetText(__frame0.pCtlTextBox, wszLineBuffer, 0, false, 0);
-            break;
-          }
-
-          nDstIndex++;
-        } while (nDstIndex < nLineWidth);
+      for (nDstIndex = 0; nDstIndex < nLineWidth; nDstIndex++) {
+        if (wszLineBuffer[nDstIndex] != L' ') {
+          D2Win::Src::D2WinTextBox::SetText(pCtlTextBox, wszLineBuffer, 0, false, 0);
+          break;
+        }
       }
 
-      __frame0.nCharOffset = nSrcIndex;
-      if (nSrcIndex >= __frame0.nCharCount) {
+      nCharOffset = nSrcIndex;
+      if (nSrcIndex >= nCharCount) {
         goto finish_tos_dialog;
       }
     }
 }
 
 // Edit-box change callback installed via D2WINEDITBOX_SetInputMode @004fdb00 into D2WinEditBox+0x26c (fpChangeCallback, fpD2WinEditBoxChange). Signature proven by RET 0x4 (1 stack arg, callee cleans) and MOV EAX,1.
-int __stdcall EDITBOX_Cb_MAINMENU_ValidateCharacterNameCallback(void * pUnknown) {
+int __stdcall EDITBOX_Cb_MAINMENU_ValidateCharacterNameCallback(void * pUnused) {
     MAINMENU_ValidateCharacterNameCallback();
     return 1;
 }
@@ -3215,10 +3130,10 @@ int __stdcall ClickOnClassCreate(D2ControlMsg * pControlMsg) {
     nPrevClassId = gnClassDescriptionTooltipState;
     int nNewClassId;
     nNewClassId = -1;
-    bool bVar1;
-    bVar1 = gnClassDescriptionTooltipState != -1;
+    bool bHadClassSelected;
+    bHadClassSelected = gnClassDescriptionTooltipState != -1;
     gnClassDescriptionTooltipState = -1;
-    if (bVar1) {
+    if (bHadClassSelected) {
       char* pszSoundFile;
       D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
       switch (nPrevClassId) {
@@ -3400,62 +3315,62 @@ void __stdcall MAINMENU_QueryAndBuildRealmList() {
     }
 
     FORMS_DestroyList();
-    if (gpRealmQueryResultBuffer) {
-      gnRealmListCount = *(int*)(gpRealmQueryResultBuffer + 4);
-      if (!(gnRealmListCount < 0x200)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1181);
-        exit(-1);
-      }
-
-      pszSrc = (char*)(gpRealmQueryResultBuffer + 8);
-      MAINMENU_FreeRealmList();
-      nRemaining = gnRealmListCount;
-      if (!gnRealmListCount) {
-        return;
-      }
-
-      nAllocSize = gnRealmListCount * 4;
-      pRealmArray = (D2BNetRealmEntryStrc**)D2_ALLOC_AT(nAllocSize, ".\\Src\\MainMenus.cpp", 0x118c);
-      g_pBNetRealmList = pRealmArray;
-      memset(pRealmArray, 0, nAllocSize);
-      if (nRemaining > 0) {
-        do {
-          pRealmEntry = D2_NEW_AT(D2BNetRealmEntryStrc, ".\\Src\\MainMenus.cpp", 0x1192);
-          pszNameSrc = pszSrc + 4;
-          pszDescDst = pszNameSrc;
-          pszDescDst = pszDescDst + strlen(pszDescDst) + 1;
-          pszDescDst += 1 - (int)(pszSrc + 5);
-          pszSrc = (char*)D2_ALLOC_AT((size_t)pszDescDst, ".\\Src\\MainMenus.cpp", 0x119f);
-          pRealmEntry->szName = pszSrc;
-          Storm::Source::SSTR::SStrCopy(pszSrc, pszNameSrc, (int32_t)pszDescDst);
-          pszNameSrc += (int)pszDescDst;
-          pszSrc = pszNameSrc;
-          pszSrc = pszSrc + strlen(pszSrc) + 1;
-          pszSrc += 1 - (int)(pszNameSrc + 1);
-          pszDescDst = (char*)D2_ALLOC_AT((size_t)pszSrc, ".\\Src\\MainMenus.cpp", 0x11a4);
-          pRealmEntry->szDescription = pszDescDst;
-          Storm::Source::SSTR::SStrCopy(pszDescDst, pszNameSrc, (int32_t)pszSrc);
-          pszSrc = pszNameSrc + (int)pszSrc;
-          MAINMENU_AddRealmToList(pRealmEntry);
-          nRemaining--;
-          pRealmArray = g_pBNetRealmList;
-        } while (nRemaining);
-      }
-
-      qsort(pRealmArray, gnRealmListCount, 4, MAINMENU_CompareRealmNames);
+    if (!gpRealmQueryResultBuffer) {
+      gnRealmListCount = -1;
       return;
     }
 
-    gnRealmListCount = -1;
+    gnRealmListCount = *(int*)(gpRealmQueryResultBuffer + 4);
+    if (!(gnRealmListCount < 0x200)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1181);
+      exit(-1);
+    }
+
+    pszSrc = (char*)(gpRealmQueryResultBuffer + 8);
+    MAINMENU_FreeRealmList();
+    nRemaining = gnRealmListCount;
+    if (!gnRealmListCount) {
+      return;
+    }
+
+    nAllocSize = gnRealmListCount * 4;
+    pRealmArray = (D2BNetRealmEntryStrc**)D2_ALLOC_AT(nAllocSize, ".\\Src\\MainMenus.cpp", 0x118c);
+    g_pBNetRealmList = pRealmArray;
+    memset(pRealmArray, 0, nAllocSize);
+    if (nRemaining > 0) {
+      do {
+        pRealmEntry = D2_NEW_AT(D2BNetRealmEntryStrc, ".\\Src\\MainMenus.cpp", 0x1192);
+        pszNameSrc = pszSrc + 4;
+        pszDescDst = pszNameSrc;
+        pszDescDst = pszDescDst + strlen(pszDescDst) + 1;
+        pszDescDst += 1 - (int)(pszSrc + 5);
+        pszSrc = (char*)D2_ALLOC_AT((size_t)pszDescDst, ".\\Src\\MainMenus.cpp", 0x119f);
+        pRealmEntry->szName = pszSrc;
+        Storm::Source::SSTR::SStrCopy(pszSrc, pszNameSrc, (int32_t)pszDescDst);
+        pszNameSrc += (int)pszDescDst;
+        pszSrc = pszNameSrc;
+        pszSrc = pszSrc + strlen(pszSrc) + 1;
+        pszSrc += 1 - (int)(pszNameSrc + 1);
+        pszDescDst = (char*)D2_ALLOC_AT((size_t)pszSrc, ".\\Src\\MainMenus.cpp", 0x11a4);
+        pRealmEntry->szDescription = pszDescDst;
+        Storm::Source::SSTR::SStrCopy(pszDescDst, pszNameSrc, (int32_t)pszSrc);
+        pszSrc = pszNameSrc + (int)pszSrc;
+        MAINMENU_AddRealmToList(pRealmEntry);
+        nRemaining--;
+        pRealmArray = g_pBNetRealmList;
+      } while (nRemaining);
+    }
+
+    qsort(pRealmArray, gnRealmListCount, 4, MAINMENU_CompareRealmNames);
+    return;
 }
 
 BOOL __stdcall MAINMENU_OnPressCreditsEndCheck(D2ControlMsg * pControlMsg) {
-    int32_t iVar1 = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetScrollPosition(gpMainMenuCreditsLineTextBox);
-    if (!(gnMainMenuCreditsFrameIndex <= iVar1 + 10)) {
-      return 1;
+    int32_t nScrollPos = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetScrollPosition(gpMainMenuCreditsLineTextBox);
+    if (gnMainMenuCreditsFrameIndex <= nScrollPos + 10) {
+      UIMENU_MainMenu();
     }
 
-    UIMENU_MainMenu();
     return 1;
 }
 
@@ -3468,12 +3383,8 @@ BOOL fpInsertPlayCd() {
     D2Win::Src::D2WinMain::SetUnsetFlag0x08(pForm, 1);
     ::D2WinTextBox* pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0xd9);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pTextBox, 1);
-    int nTextPadC = 0;
-    uint8_t byTextPadB = 0;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1430), 0, (bool)byTextPadB, nTextPadC);
-    nTextPadC = 0;
-    bool bIndent = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1431), 0, bIndent, nTextPadC);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1430), 0, (bool)0, 0);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1431), 0, false, 0);
     gbCinematicsMenuShown = 0;
     ::fpInsertPlayCd = 0;
     fpLoadAllMediaMpqCallback = (int)D2Win::Src::D2WinArchive::MPQ_LoadAllMediaMpqFiles;
@@ -3494,7 +3405,7 @@ BOOL fpInsertExpansionCd() {
     return ::fpInsertPlayCd;
 }
 
-BOOL __stdcall MAINMENU_Unused1(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressPlayIntroCinematic(D2ControlMsg * pControlMsg) {
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     BOOL bVideoMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadVideoMpqFiles((::fpRequiredUserAction)(bool (*)())MainMenus::fpRequiredUserAction, 0, 0);
     if (!bVideoMpqLoaded) {
@@ -3507,7 +3418,7 @@ BOOL __stdcall MAINMENU_Unused1(D2ControlMsg * pControlMsg) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused2(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressPlayAct2StartCinematic(D2ControlMsg * pControlMsg) {
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     BOOL bVideoMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadVideoMpqFiles((::fpRequiredUserAction)(bool (*)())MainMenus::fpRequiredUserAction, 0, 0);
     if (!bVideoMpqLoaded) {
@@ -3520,7 +3431,7 @@ BOOL __stdcall MAINMENU_Unused2(D2ControlMsg * pControlMsg) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused3(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressPlayAct3StartCinematic(D2ControlMsg * pControlMsg) {
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     BOOL bVideoMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadVideoMpqFiles((::fpRequiredUserAction)(bool (*)())MainMenus::fpRequiredUserAction, 0, 0);
     if (!bVideoMpqLoaded) {
@@ -3533,7 +3444,7 @@ BOOL __stdcall MAINMENU_Unused3(D2ControlMsg * pControlMsg) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused4(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressPlayAct4StartCinematic(D2ControlMsg * pControlMsg) {
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     BOOL bVideoMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadVideoMpqFiles((::fpRequiredUserAction)(bool (*)())MainMenus::fpRequiredUserAction, 0, 0);
     if (!bVideoMpqLoaded) {
@@ -3546,7 +3457,7 @@ BOOL __stdcall MAINMENU_Unused4(D2ControlMsg * pControlMsg) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused5(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressPlayAct4EndCinematic(D2ControlMsg * pControlMsg) {
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     BOOL bVideoMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadVideoMpqFiles((::fpRequiredUserAction)(bool (*)())MainMenus::fpRequiredUserAction, 0, 0);
     if (!bVideoMpqLoaded) {
@@ -3559,7 +3470,7 @@ BOOL __stdcall MAINMENU_Unused5(D2ControlMsg * pControlMsg) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused6(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressPlayExpansionIntroCinematic(D2ControlMsg * pControlMsg) {
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     BOOL bVideoMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadAllMediaMpqFiles((::fpRequiredUserAction)fpInsertPlayCd, (::fpRequiredUserAction)fpInsertExpansionCd, 0, D2IniData_launcher);
     if (!bVideoMpqLoaded) {
@@ -3570,7 +3481,7 @@ BOOL __stdcall MAINMENU_Unused6(D2ControlMsg * pControlMsg) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused7(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressPlayExpansionOutroCinematic(D2ControlMsg * pControlMsg) {
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     BOOL bVideoMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadAllMediaMpqFiles((::fpRequiredUserAction)fpInsertPlayCd, (::fpRequiredUserAction)fpInsertExpansionCd, 0, D2IniData_launcher);
     if (!bVideoMpqLoaded) {
@@ -3584,8 +3495,8 @@ BOOL __stdcall MAINMENU_Unused7(D2ControlMsg * pControlMsg) {
 BOOL __stdcall MAINMENU_OnPressReloadMediaMpqAndReturnToMainMenu(D2ControlMsg * pControlMsg) {
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     D2Win::Src::D2WinArchive::MPQ_LoadAllMediaMpqFiles((::fpRequiredUserAction)fpInsertPlayCd, (::fpRequiredUserAction)fpInsertExpansionCd, 0, D2IniData_launcher);
-    int iVar1 = D2Sound::Src::D2SoundFast::SOUND_GetOptionsMusic();
-    if (iVar1) {
+    int nMusicOption = D2Sound::Src::D2SoundFast::SOUND_GetOptionsMusic();
+    if (nMusicOption) {
       D2Sound::Src::D2SoundFast::SOUND_SetMusicEnabled(1);
     }
 
@@ -3593,7 +3504,7 @@ BOOL __stdcall MAINMENU_OnPressReloadMediaMpqAndReturnToMainMenu(D2ControlMsg * 
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused8(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressShowGatewaySelect(D2ControlMsg * pControlMsg) {
     Launcher::UIMENU_MainMenuWithoutMenuButWithDiabloLogo();
     FORMS_CreateAnyFormFromListExEx(0x47);
     uint16_t* pszLocaleMsg = D2Lang::StrTable::strtable::GetLocaleString(0x2b2f);
@@ -3612,7 +3523,7 @@ BOOL __stdcall MAINMENU_Unused8(D2ControlMsg * pControlMsg) {
       char* pszGatewayName;
       do {
         pszGatewayName = Bnclient::BNGatewayAccess::Name(pGatewayAccess, nGatewayIdx);
-        D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuGatewayListTextBox, pszGatewayName);
+        D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuGatewayListTextBox, pszGatewayName);
         nGatewayIdx++;
       } while (nGatewayIdx <= pGatewayAccess->nGatewayCount);
     }
@@ -3635,9 +3546,9 @@ BOOL __stdcall StorePreferedRealmAgain(D2ControlMsg * pControlMsg) {
     int32_t nSelectedLine = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetSelectedLine(gpMainMenuGatewayListTextBox);
     if (nSelectedLine != -1) {
       char* pszRealmName;
-      Bnclient::BNGatewayAccess::SetCurGateway((int32_t)pGatewayAccess, nSelectedLine + 1);
+      Bnclient::BNGatewayAccess::SetCurGateway(pGatewayAccess, nSelectedLine + 1);
       pszRealmName = Bnclient::BNGatewayAccess::Realm(pGatewayAccess, nSelectedLine + 1);
-      Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Preferred Realm", 0, pszRealmName);
+      Storm::Source::SReg::SRegSaveString("Diablo II", "Preferred Realm", 0, pszRealmName);
     }
 
     FORMS_DestroyLists();
@@ -3647,8 +3558,8 @@ BOOL __stdcall StorePreferedRealmAgain(D2ControlMsg * pControlMsg) {
 
 BOOL __stdcall MAINMENU_OnPressDestroyListsAndReturnToMainMenu(D2ControlMsg * pControlMsg) {
     FORMS_DestroyLists();
-    int iVar1 = D2Sound::Src::D2SoundFast::SOUND_GetOptionsMusic();
-    if (iVar1) {
+    int nMusicOption = D2Sound::Src::D2SoundFast::SOUND_GetOptionsMusic();
+    if (nMusicOption) {
       D2Sound::Src::D2SoundFast::SOUND_SetMusicEnabled(1);
     }
 
@@ -3657,19 +3568,11 @@ BOOL __stdcall MAINMENU_OnPressDestroyListsAndReturnToMainMenu(D2ControlMsg * pC
 }
 
 BOOL __stdcall UIMENU_ConnectToServerCallback(D2ControlStrc * pUnusedArg) {
-    // Frame slots -20..-4 are ONE object: &nOctet3 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nOctet3;
-      int nOctet1;
-      int nOctet4;
-      int nOctet2;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    char* pszResolvedIp;
     char acStack_414[1024];
-    char chCopy;
+    int nOctet3;
+    int nOctet1;
+    int nOctet4;
+    int nOctet2;
     uint16_t* pszEditValue = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gpMainMenuFormPtrs->sControl);
     D2Lang::WideCharToUTF8(acStack_414, pszEditValue, 0x100);
     if (acStack_414[0] == '\0') {
@@ -3678,32 +3581,20 @@ BOOL __stdcall UIMENU_ConnectToServerCallback(D2ControlStrc * pUnusedArg) {
 
     strncpy(gszLastTcpIpAddress, acStack_414, 0xff);
     gszLastTcpIpAddress[0xff] = '\0';
-    Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "LastTcpIp", 0, gszLastTcpIpAddress);
-    int nParsed = sscanf(acStack_414, "%d.%d.%d.%d", &__frame0.nOctet1, &__frame0.nOctet2, &__frame0.nOctet3, &__frame0.nOctet4);
+    Storm::Source::SReg::SRegSaveString("Diablo II", "LastTcpIp", 0, gszLastTcpIpAddress);
+    int nParsed = sscanf(acStack_414, "%d.%d.%d.%d", &nOctet1, &nOctet2, &nOctet3, &nOctet4);
     if (nParsed != 4) {
+      char* pszResolvedIp;
       pszResolvedIp = Fog::Src::Safesock::inet_nameToIp(acStack_414);
       if (!pszResolvedIp) {
         D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetTextFromAnsi(gpMainMenuFormPtrs, "");
         return 1;
       }
 
-      nParsed = -(int)pszResolvedIp;
-      do {
-        chCopy = *pszResolvedIp;
-        pszResolvedIp[(int)(acStack_414 + nParsed)] = chCopy;
-        pszResolvedIp++;
-      } while (chCopy != '\0');
+      strcpy(acStack_414, pszResolvedIp);
     }
 
-    pszResolvedIp = acStack_414;
-    char* pszServerIpDst = D2IniData_launcher->szSERVERIP;
-    do {
-      chCopy = *pszResolvedIp;
-      *pszServerIpDst = chCopy;
-      pszResolvedIp++;
-      pszServerIpDst++;
-    } while (chCopy != '\0');
-
+    strcpy(D2IniData_launcher->szSERVERIP, acStack_414);
     UIMENU_PleaseWaitWithCancelButton();
     D2Win::Src::D2WinMain::MessagePump(MAINMENU_ClearLoopFlagPump);
     gnTcpIpConnectionSuccessFlag = 0;
@@ -3722,16 +3613,15 @@ BOOL __stdcall UIMENU_ConnectToServerCallback(D2ControlStrc * pUnusedArg) {
     D2Win::Src::D2WinMain::MessagePump(MAINMENU_HandleNetworkPacket);
     D2Net::SRC::Client::NET_CLIENT_ShutdownConnection();
     FORMS_DestroyList();
-    if (gnMainMenuConnectFlag) {
-      return 1;
+    if (!gnMainMenuConnectFlag) {
+      OogCurrentCharSelectionMode = CHAR_SELECTION_TCP_IP;
+      D2IniData_launcher->nGAMETYPE = GAMETYPE_LAN_JOIN;
+      D2IniData_launcher->nJOINID = 1;
+      D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
+      FORMS_DestroyLists();
+      CharSel::UIMENU_CharacterSelectAllGameTypes();
     }
 
-    OogCurrentCharSelectionMode = CHAR_SELECTION_TCP_IP;
-    D2IniData_launcher->nGAMETYPE = GAMETYPE_LAN_JOIN;
-    D2IniData_launcher->nJOINID = 1;
-    D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
-    FORMS_DestroyLists();
-    CharSel::UIMENU_CharacterSelectAllGameTypes();
     return 1;
 }
 
@@ -3740,7 +3630,7 @@ BOOL __fastcall MAINMENU_DeleteCharacterOnRealm(D2CharSelStrc * pCharSel, uint8_
     if (!bHasPeer) {
       uint32_t nConnectResult;
       nConnectResult = MAINMENU_ConnectToRealm(pszRealm, 0);
-      if (nConnectResult - 1 <= 1) {
+      if (nConnectResult >= 0x1 && nConnectResult <= 0x2) {
         D2MCPClient::McpConnect::FreeMCP();
         return 0;
       }
@@ -3757,7 +3647,7 @@ uint32_t __fastcall MAINMENU_UpgradeCharacterToExpansion(D2CharSelStrc * pCharSe
     if (!bHasPeer) {
       uint32_t nConnectResult;
       nConnectResult = MAINMENU_ConnectToRealm(pszRealm, 0);
-      if (nConnectResult - 1 <= 1) {
+      if (nConnectResult >= 0x1 && nConnectResult <= 0x2) {
         D2MCPClient::McpConnect::FreeMCP();
         return 0;
       }
@@ -3770,13 +3660,12 @@ uint32_t __fastcall MAINMENU_UpgradeCharacterToExpansion(D2CharSelStrc * pCharSe
     return (uint32_t)!bHasPeer;
 }
 
-int __fastcall SelectedCharBnetSingleTcpIp(D2CharSelStrc * charName, eD2PlayerStatus pPlayerStatus, int32_t nClassId, char * pRealm) {
+int __fastcall SelectedCharBnetSingleTcpIp(D2CharSelStrc * charName, eD2PlayerStatus pPlayerStatus, eD2PlayerClassID nClassId, char * pRealm) {
     uint32_t nResult;
     int nEmailResult;
     int32_t bEmailOk;
     uint16_t* pszLocaleMsg;
     int32_t bHasPeer;
-    uint16_t* pszFmt;
     uint16_t nErrStringId;
     uint16_t wszPopupMsg[256];
     uint16_t wszCharName[256];
@@ -3804,7 +3693,7 @@ int __fastcall SelectedCharBnetSingleTcpIp(D2CharSelStrc * charName, eD2PlayerSt
     } while (chCopy != '\0');
 
     D2IniData_launcher->eCTEMP_eD2PlayerStatus = pPlayerStatus;
-    MAINMENU_SetSelectedClassInINI((eD2PlayerClassID)nClassId);
+    MAINMENU_SetSelectedClassInINI(nClassId);
     if (OogCurrentCharSelectionMode == CHAR_SELECTION_BNET || OogCurrentCharSelectionMode == CHAR_SELECTION_BNET_OPEN_Unsure) {
       BOOL bConnected;
       bConnected = gpBNetCallbacks->pfnIsSocketConnected();
@@ -3853,9 +3742,7 @@ int __fastcall SelectedCharBnetSingleTcpIp(D2CharSelStrc * charName, eD2PlayerSt
                     Fog::File::CONTAINER_InitializeBuffer(wszCharName, 2, 0x100, STRING_ZeroOneWCHAR);
                     D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszCharName, D2IniData_launcher->szNAME, 0x100);
                     D2MCPClient::McpConnect::FreeMCP();
-                    pszLocaleMsg = wszCharName;
-                    pszFmt = D2Lang::StrTable::strtable::GetLocaleString(0x2b89);
-                    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszPopupMsg, pszFmt, pszLocaleMsg);
+                    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszPopupMsg, D2Lang::StrTable::strtable::GetLocaleString(0x2b89), wszCharName);
                     FORMS_DestroyList();
                     pSavedFontParams = gaPredefinedForms[0xe0].pTypeArg2;
                     gaPredefinedForms[0xe0].pTypeArg2 = gaMenuFormFontParamsFont1;
@@ -3930,7 +3817,12 @@ int __fastcall SelectedCharBnetSingleTcpIp(D2CharSelStrc * charName, eD2PlayerSt
 }
 
 BOOL __stdcall UIMENU_PlayIntroAndReturnToMainScreen(D2ControlMsg * pControlMsg) {
-    DWORD bCutSceneStarted = D2Win::D2GFX::BeginCutSceneAtResolutionMode0();
+    // VP-BEGIN [nointro] R86: with -nointro the boot/title cutscene is never
+    // entered, so bCutSceneStarted reads 0 and the retail begin-failed
+    // fallthrough below (no videos, straight to the next screen) runs - the
+    // exact state path retail takes when BeginCutScene itself fails.
+    DWORD bCutSceneStarted = VPNOINTRO_IsRequested() ? 0 : D2Win::D2GFX::BeginCutSceneAtResolutionMode0();
+    // VP-END [nointro]
     if (bCutSceneStarted) {
       MAINMENU_PlayD2Intro();
     }
@@ -3952,16 +3844,6 @@ BOOL __stdcall MAINMENU_OnPressReturnToMainMenu(D2ControlMsg * pControlMsg) {
 
 // BNet login flow continuation. Checks gbPasswordChangeInProgress flag to determine if showing password change or normal login. Creates UI forms, validates credentials, dispatches to launcher subsystem.
 BOOL __stdcall UIMENU_AndOneMorePleaseWait(D2ControlMsg * pControlMsg) {
-    // Frame slots -20..-4 are ONE object: &dwTotalClusters is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      DWORD dwTotalClusters;
-      DWORD dwFreeClusters;
-      DWORD dwBytesPerSector;
-      DWORD dwSectorsPerCluster;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     D2ControlStrc* pBgForm;
     D2ControlStrc* pMidForm;
     BOOL nTosResult;
@@ -3981,12 +3863,16 @@ BOOL __stdcall UIMENU_AndOneMorePleaseWait(D2ControlMsg * pControlMsg) {
       nCharIdx++;
     } while (nCharIdx < 0x400);
 
-    __frame0.dwSectorsPerCluster = 0;
-    __frame0.dwBytesPerSector = 0;
-    __frame0.dwFreeClusters = 0;
-    __frame0.dwTotalClusters = 0;
-    GetDiskFreeSpaceA(szSavePath, &__frame0.dwSectorsPerCluster, &__frame0.dwBytesPerSector, &__frame0.dwFreeClusters, &__frame0.dwTotalClusters);
-    if (__frame0.dwFreeClusters * __frame0.dwBytesPerSector * __frame0.dwSectorsPerCluster >= 5000) {
+    DWORD dwSectorsPerCluster;
+    dwSectorsPerCluster = 0;
+    DWORD dwBytesPerSector;
+    dwBytesPerSector = 0;
+    DWORD dwFreeClusters;
+    dwFreeClusters = 0;
+    DWORD dwTotalClusters;
+    dwTotalClusters = 0;
+    GetDiskFreeSpaceA(szSavePath, &dwSectorsPerCluster, &dwBytesPerSector, &dwFreeClusters, &dwTotalClusters);
+    if (dwFreeClusters * dwBytesPerSector * dwSectorsPerCluster >= 5000) {
       nTosResult = UIMENU_ShowTermsOfService();
       return nTosResult;
     }
@@ -3995,7 +3881,7 @@ BOOL __stdcall UIMENU_AndOneMorePleaseWait(D2ControlMsg * pControlMsg) {
     wszWaitText = D2Lang::StrTable::strtable::GetLocaleString(0x141d);
     int nFormIdx;
     nFormIdx = 0;
-    if (0 < FORMS_nListCount) {
+    if (FORMS_nListCount > 0) {
       ppForm = FORMS_pList;
       do {
         D2Win::Src::D2WinMain::FORMS_DestroyAnyForm(ppForm);
@@ -4055,10 +3941,10 @@ BOOL __stdcall MAINMENUS_OnPressReturnToMainMenu_ForCreditsAndMainMenuAgain(D2Co
 }
 
 // Password change confirmation handler. Reads text inputs, compares new password fields, validates length (2-20 chars). Checks gbPasswordChangeInProgress state, calls launcher EnterEmailMessagePumper on success.
-BOOL __stdcall MAINMENU_HandlePasswordChange(D2ControlStrc * nParam) {
-    int iVar1;
+BOOL __stdcall MAINMENU_HandlePasswordChange(D2ControlStrc * pControl) {
+    int nPumpResult;
     uint16_t wErrorStringId;
-    if (!nParam) {
+    if (!pControl) {
       UIMENU_YouWereDisconnectedFromBattleNet2();
       return 1;
     }
@@ -4085,14 +3971,14 @@ BOOL __stdcall MAINMENU_HandlePasswordChange(D2ControlStrc * nParam) {
         } else {
           if (nLenOrCmp <= 0x14) {
             gnBNetBusyFlag = 0;
-            iVar1 = Launcher::EnterEmailMessagePumper(D2IniData_launcher, 0, 1);
-            if (!iVar1) {
+            nPumpResult = Launcher::EnterEmailMessagePumper(D2IniData_launcher, 0, 1);
+            if (!nPumpResult) {
               if (gnBNetBusyFlag) {
                 UIMENU_ChangePassword();
                 return 1;
               }
             } else {
-              Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Last BNet", 0, D2IniData_launcher->szLastBnetAccount);
+              Storm::Source::SReg::SRegSaveString("Diablo II", "Last BNet", 0, D2IniData_launcher->szLastBnetAccount);
               FORMS_DestroyList();
               MAINMENU_CloseAndLaunchCharSelect();
             }
@@ -4114,7 +4000,7 @@ void __fastcall UIMENU_AnotherSmallPopupWithContentAndSomeKindofTypeSelection(ui
     FORMS_DestroyList();
     D2ControlStrc* pBgForm = FORMS_CreateAnyFormFromList(0xde);
     D2Win::Src::D2WinMain::FORMS_SetGlobalFormImage(pBgForm, 1);
-    D2ControlStrc* pButtonForm = FORMS_CreateAnyFormFromList((uint32_t)(bTwoButtons != 0) * 2 + 0xdf);
+    D2ControlStrc* pButtonForm = FORMS_CreateAnyFormFromList(bTwoButtons != 0 ? 0xe1U : 0xdfU);
     ::D2WinTextBox* pTextForm = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0xe0);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08(pBgForm, 1);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08(pButtonForm, 1);
@@ -4136,7 +4022,6 @@ void __stdcall PlaysBlizzardNorthCutScene() {
     uint32_t bBnetIpFlag;
     D2ArchiveStrc* pVideoArchive;
     int32_t nLine;
-    char* szBlizNorthVideo;
     if (D2IniData_launcher->padding_0x35F[0]) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8d4);
       exit(-1);
@@ -4145,20 +4030,24 @@ void __stdcall PlaysBlizzardNorthCutScene() {
     D2Win::Src::D2WinMain::D2WINMAIN_SetCursorVisible(0);
     FORMS_DestroyLists();
     GetAndDispatchAllPossible();
-    DWORD bCutSceneStarted = D2Win::D2GFX::BeginCutSceneAtResolutionMode0();
+    // VP-BEGIN [nointro] R86: with -nointro the boot/title cutscene is never
+    // entered, so bCutSceneStarted reads 0 and the retail begin-failed
+    // fallthrough below (no videos, straight to the next screen) runs - the
+    // exact state path retail takes when BeginCutScene itself fails.
+    DWORD bCutSceneStarted = VPNOINTRO_IsRequested() ? 0 : D2Win::D2GFX::BeginCutSceneAtResolutionMode0();
+    // VP-END [nointro]
     if (bCutSceneStarted) {
       bIsExpansion = Fog::Src::LogManager::GetLoggerState_Stub();
       if (!bIsExpansion) {
         D2gfx::D2GFX::D2GFX_PlayCutScene("Data\\Local\\Video\\New_BLIZ640x480.bik", 0, nullptr);
         nLine = 0;
-        szBlizNorthVideo = "Data\\Local\\Video\\BlizNorth640x480.bik";
+        D2gfx::D2GFX::D2GFX_PlayCutScene("Data\\Local\\Video\\BlizNorth640x480.bik", 0, nullptr);
       } else {
         D2gfx::D2GFX::D2GFX_PlayCutScene("Data\\Local\\Video\\New_BLIZ640x240.bik", 2, nullptr);
         nLine = 2;
-        szBlizNorthVideo = "Data\\Local\\Video\\BlizNorth640x240.bik";
+        D2gfx::D2GFX::D2GFX_PlayCutScene("Data\\Local\\Video\\BlizNorth640x240.bik", 2, nullptr);
       }
 
-      D2gfx::D2GFX::D2GFX_PlayCutScene(szBlizNorthVideo, nLine, nullptr);
       pBnetRegEntry = (D2ArchiveStrc*)MAINMENU_ReadBattleNetRegistry();
       if (!pBnetRegEntry) {
         pVideoArchive = pBnetRegEntry;
@@ -4187,10 +4076,7 @@ void __stdcall PlaysBlizzardNorthCutScene() {
 
 // Main menu return after BNet flow. Clears gbPasswordChangeInProgress flags, destroys forms, reloads main menu. Handles return from password change, account creation, or login cancellation.
 void __stdcall UIMENU_MainMenuAgain() {
-    int32_t iVar1;
     char szLastBnetAccount[1024];
-    bool byTextArg;
-    int nTextArg;
     gbMainMenuUIActive = 1;
     BOOL bResult;
     bResult = gpBNetCallbacks->pfnIsSocketConnected();
@@ -4227,19 +4113,11 @@ void __stdcall UIMENU_MainMenuAgain() {
     bResult = Fog::D2CheckExpansionGame();
     if (!bResult) {
       pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x1f);
-      nTextArg = 0;
-      byTextArg = false;
-      iVar1 = 0;
-      wszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1454);
-      D2Win::Src::D2WinTextBox::SetText(pTextBox, wszLabel, iVar1, byTextArg, nTextArg);
+      D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1454), 0, false, 0);
     }
 
     pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x20);
-    nTextArg = 0;
-    byTextArg = false;
-    iVar1 = 0;
-    wszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1455);
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, wszLabel, iVar1, byTextArg, nTextArg);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1455), 0, false, 0);
     gpBnetAccountEditBox = (::D2WinEditBox*)FORMS_CreateAnyFormFromListExEx(0x22);
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetPasswordMode(gpBnetAccountEditBox, 0x10);
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetChangeCallback(gpBnetAccountEditBox, EDITBOX_Cb_MAINMENU_ValidatePasswordChangeForm);
@@ -4248,9 +4126,9 @@ void __stdcall UIMENU_MainMenuAgain() {
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetPasswordMode(gpBnetPasswordEditBox, 0xd);
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetChangeCallback(gpBnetPasswordEditBox, EDITBOX_Cb_MAINMENU_ValidatePasswordChangeForm);
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetFilterCallback(gpBnetPasswordEditBox, MAINMENUS_EditBoxFilter_ReturnTrue_ForMainMenuAgain);
-    iVar1 = Storm::Source::SReg::SRegLoadString("Diablo II", "Last BNet", 0, szLastBnetAccount, 0x400);
+    int32_t bHasLastAccount = Storm::Source::SReg::SRegLoadString("Diablo II", "Last BNet", 0, szLastBnetAccount, 0x400);
     ::D2WinEditBox* pFocusControl = gpBnetAccountEditBox;
-    if (iVar1) {
+    if (bHasLastAccount) {
       D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetTextFromAnsi(gpBnetAccountEditBox, szLastBnetAccount);
       pFocusControl = gpBnetPasswordEditBox;
     }
@@ -4269,7 +4147,7 @@ void __stdcall UIMENU_MainMenuAgain() {
       D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextW(pTextBox, wszLabel);
     }
 
-    nTextArg = D2Sound::Src::D2SoundFast::SOUND_GetOptionsMusic();
+    int nTextArg = D2Sound::Src::D2SoundFast::SOUND_GetOptionsMusic();
     if (!nTextArg) {
       return;
     }
@@ -4278,6 +4156,7 @@ void __stdcall UIMENU_MainMenuAgain() {
 }
 
 void __stdcall UIMENU_CreateHeroSinglePlayer() {
+    int32_t nTextAlign;
     IMAGE_LoadPredefinedImagesEx();
     FORMS_DestroyLists();
     gnClassDescriptionTooltipClassId = -1;
@@ -4289,28 +4168,12 @@ void __stdcall UIMENU_CreateHeroSinglePlayer() {
     gpCtlClassDescriptionTooltipSecondary = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0xc6);
     ::D2WinTextBox* pTitleTextBox;
     pTitleTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0xae);
-    int nTextArg3;
-    nTextArg3 = 0;
-    bool byTextArg2;
-    byTextArg2 = false;
-    int32_t nTextAlign;
-    nTextAlign = 0;
-    uint16_t* wszLabel;
-    wszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1407);
-    D2Win::Src::D2WinTextBox::SetText(pTitleTextBox, wszLabel, nTextAlign, byTextArg2, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pTitleTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1407), 0, false, 0);
     if (OogCurrentCharSelectionMode == CHAR_SELECTION_BNET) {
       gpCtlCharCreateBNetRealmTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(199);
       D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLinePadding(gpCtlCharCreateBNetRealmTextBox, -6, 0);
-      nTextArg3 = 0;
-      byTextArg2 = false;
-      nTextAlign = 1;
-      wszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x2b87);
-      D2Win::Src::D2WinTextBox::SetText(gpCtlCharCreateBNetRealmTextBox, wszLabel, nTextAlign, byTextArg2, nTextArg3);
-      nTextArg3 = 0;
-      byTextArg2 = false;
-      nTextAlign = 1;
-      wszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x2b88);
-      D2Win::Src::D2WinTextBox::SetText(gpCtlCharCreateBNetRealmTextBox, wszLabel, nTextAlign, byTextArg2, nTextArg3);
+      D2Win::Src::D2WinTextBox::SetText(gpCtlCharCreateBNetRealmTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x2b87), 1, false, 0);
+      D2Win::Src::D2WinTextBox::SetText(gpCtlCharCreateBNetRealmTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x2b88), 1, false, 0);
     }
 
     D2ControlStrc* pBottomForm;
@@ -4318,11 +4181,7 @@ void __stdcall UIMENU_CreateHeroSinglePlayer() {
     D2Win::Src::D2WinMain::D2WINMAIN_SetFormFourth(pBottomForm);
     gpCtlCreateCharCancelButton = FORMS_CreateAnyFormFromListExEx(200);
     gpCtlCreateCharOKButton = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0xc9);
-    nTextArg3 = 0;
-    byTextArg2 = false;
-    nTextAlign = 4;
-    wszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1405);
-    D2Win::Src::D2WinTextBox::SetText(gpCtlCreateCharOKButton, wszLabel, nTextAlign, byTextArg2, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(gpCtlCreateCharOKButton, D2Lang::StrTable::strtable::GetLocaleString(0x1405), 4, false, 0);
     gpaCharNameBuffers = (::D2WinEditBox*)FORMS_CreateAnyFormFromListExEx(0xcc);
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetPasswordMode(gpaCharNameBuffers, 0x10);
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetFilterCallback(gpaCharNameBuffers, MAINMENU_ValidateCharacterName);
@@ -4331,22 +4190,14 @@ void __stdcall UIMENU_CreateHeroSinglePlayer() {
     bIsExpansion = Fog::D2CheckExpansionGame();
     if (bIsExpansion) {
       gpCtlCreateCharExpClassPanel = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0xd3);
-      nTextArg3 = 0;
-      byTextArg2 = false;
-      nTextAlign = 4;
-      wszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x58cb);
-      D2Win::Src::D2WinTextBox::SetText(gpCtlCreateCharExpClassPanel, wszLabel, nTextAlign, byTextArg2, nTextArg3);
+      D2Win::Src::D2WinTextBox::SetText(gpCtlCreateCharExpClassPanel, D2Lang::StrTable::strtable::GetLocaleString(0x58cb), 4, false, 0);
       D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlCreateCharExpClassPanel->sControl, 0);
       gpCtlCreateCharExpansionCheckbox = (::D2WinButton*)FORMS_CreateAnyFormFromListExEx(0xd4);
       D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive((D2ControlStrc*)gpCtlCreateCharExpansionCheckbox, 0);
       gpCtlCreateCharExpansionCheckboxImage = FORMS_CreateAnyFormFromListExEx(0xd5);
       D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gpCtlCreateCharExpansionCheckboxImage, 0);
       gpCtlCreateCharHardcoreLabel = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0xbd);
-      nTextArg3 = 0;
-      byTextArg2 = false;
-      nTextAlign = 4;
-      wszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1406);
-      D2Win::Src::D2WinTextBox::SetText(gpCtlCreateCharHardcoreLabel, wszLabel, nTextAlign, byTextArg2, nTextArg3);
+      D2Win::Src::D2WinTextBox::SetText(gpCtlCreateCharHardcoreLabel, D2Lang::StrTable::strtable::GetLocaleString(0x1406), 4, false, 0);
       gpCtlCreateCharHardcoreCheckbox = FORMS_CreateAnyFormFromListExEx(0xbe);
       if (OogCurrentCharSelectionMode != CHAR_SELECTION_BNET) {
         goto add_class_portraits;
@@ -4360,11 +4211,7 @@ void __stdcall UIMENU_CreateHeroSinglePlayer() {
       }
     } else {
       gpCtlCreateCharHardcoreLabel = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0xca);
-      nTextArg3 = 0;
-      byTextArg2 = false;
-      nTextAlign = 4;
-      wszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1406);
-      D2Win::Src::D2WinTextBox::SetText(gpCtlCreateCharHardcoreLabel, wszLabel, nTextAlign, byTextArg2, nTextArg3);
+      D2Win::Src::D2WinTextBox::SetText(gpCtlCreateCharHardcoreLabel, D2Lang::StrTable::strtable::GetLocaleString(0x1406), 4, false, 0);
       gpCtlCreateCharHardcoreCheckbox = FORMS_CreateAnyFormFromListExEx(0xcb);
       if (OogCurrentCharSelectionMode != CHAR_SELECTION_BNET) {
         goto add_class_portraits;
@@ -4380,11 +4227,7 @@ void __stdcall UIMENU_CreateHeroSinglePlayer() {
 
     gpCtlCreateCharLadderCheckbox = (::D2WinButton*)FORMS_CreateAnyFormFromListExEx(nTextAlign);
     if (OogCurrentCharSelectionMode == CHAR_SELECTION_BNET) {
-      nTextArg3 = 0;
-      byTextArg2 = false;
-      nTextAlign = 4;
-      wszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x2aaf);
-      D2Win::Src::D2WinTextBox::SetText(gpCtlCreateCharLadderLabel, wszLabel, nTextAlign, byTextArg2, nTextArg3);
+      D2Win::Src::D2WinTextBox::SetText(gpCtlCreateCharLadderLabel, D2Lang::StrTable::strtable::GetLocaleString(0x2aaf), 4, false, 0);
     }
 
     add_class_portraits:
@@ -4434,10 +4277,8 @@ int32_t __fastcall fAPPMODE_launcher_ReturnAppMode_Caller(D2IniConfigStrc * pD2I
     D2Win::D2GFX::UI_Init();
     BOOL bIsExpansion;
     bIsExpansion = Fog::D2CheckExpansionGame();
-    D2PoolManagerStrc* pStringArchive;
-    pStringArchive = D2Win::Src::D2WinArchive::ReturnZero();
     int bSoundPlaying;
-    bSoundPlaying = D2Lang::StrTable::strtable::TABLES_LoadStrings(pStringArchive, nullptr, bIsExpansion);
+    bSoundPlaying = D2Lang::StrTable::strtable::TABLES_LoadStrings(D2Win::Src::D2WinArchive::ReturnZero(), nullptr, bIsExpansion);
     if (!bSoundPlaying) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x125a);
       exit(-1);
@@ -4550,7 +4391,7 @@ int32_t __fastcall fAPPMODE_launcher_ReturnAppMode_Caller(D2IniConfigStrc * pD2I
     return gnSelectedCharGameState;
 }
 
-BOOL __stdcall MAINMENU_Unused9(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressSinglePlayer(D2ControlMsg * pControlMsg) {
     OogCurrentCharSelectionMode = CHAR_SELECTION_SP;
     BOOL bHasSaveFiles = SAVEFILE_FindAllSaveFiles();
     if (bHasSaveFiles == 1) {
@@ -4570,13 +4411,13 @@ BOOL __stdcall MAINMENU_Unused10(D2ControlMsg * pControlMsg) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused11(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressSelectBattleNet(D2ControlMsg * pControlMsg) {
     OogCurrentCharSelectionMode = CHAR_SELECTION_BNET;
     UIMENU_MainMenuAgain();
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused12(D2ControlMsg * pMsg) {
+BOOL __stdcall MAINMENU_OnPressRealmList(D2ControlMsg * pMsg) {
     uint32_t bDoubleClick = MAINMENU_DetectDoubleClick(pMsg);
     if (bDoubleClick) {
       BOOL nResult;
@@ -4595,7 +4436,6 @@ uint32_t __stdcall thunk_UIMENU_CreateHeroSinglePlayer(D2ControlMsg * pControlMs
 void __stdcall NET_MCP_CLIENT_HandleCharCreation() {
     uint16_t* wszMessage;
     uint16_t wErrorStringId;
-    uint16_t wszPopupText[256];
     uint16_t wszErrorSuffix[256];
     uint16_t wszCharNameForMsg[256];
     uint16_t wszErrorMsg[256];
@@ -4603,21 +4443,21 @@ void __stdcall NET_MCP_CLIENT_HandleCharCreation() {
     char szCharName[80];
     uint8_t* pszPreferredRealm = (uint8_t*)CharSel::GetPreferedRealm();
     uint32_t nConnectResult = MAINMENU_ConnectToRealm(pszPreferredRealm, 0);
-    if (nConnectResult - 1 <= 1) {
+    if (nConnectResult >= 0x1 && nConnectResult <= 0x2) {
       UIMENU_CreateHeroSinglePlayer();
       return;
     }
 
     int32_t nJoinResult = D2MCPClient::McpConnect::GetD2GSJoinResult();
     if (!nJoinResult) {
-      uint16_t* wszFormat;
+      uint16_t wszPopupText[256];
       nJoinResult = D2MCPClient::McpConnect::HasPeerName();
       if (nJoinResult) {
         nJoinResult = D2MCPClient::McpConnect::HasPeerName();
         if (nJoinResult) {
           D2IniData_launcher->padding_0x35F[0x62] = 1;
-          Storm::Source::SSystem::SMemCopy(D2IniData_launcher->padding_0x35F + 0x42, gaNewCharDefaultEquipTemplate, 0x10);
-          Storm::Source::SSystem::SMemZero(D2IniData_launcher->padding_0x35F + 0x52, 0x10);
+          Storm::Source::SMem::SMemCopy(D2IniData_launcher->padding_0x35F + 0x42, gaNewCharDefaultEquipTemplate, 0x10);
+          Storm::Source::SMem::SMemZero(D2IniData_launcher->padding_0x35F + 0x52, 0x10);
           D2IniData_launcher->isLadder = (bool)((uint8_t)(char)D2IniData_launcher->eCTEMP_eD2PlayerStatus >> 6 & 1);
           D2IniData_launcher->neD2PlayerStatus = D2IniData_launcher->eCTEMP_eD2PlayerStatus;
           D2MCPClient::McpConnect::MCPCONNECT_SendCharCreate(D2IniData_launcher->szNAME, (uint32_t)D2IniData_launcher->eCTEMP_eD2PlayerClassID, (uint32_t)D2IniData_launcher->eCTEMP_eD2PlayerStatus);
@@ -4653,9 +4493,7 @@ void __stdcall NET_MCP_CLIENT_HandleCharCreation() {
             Fog::File::CONTAINER_InitializeBuffer(wszPopupText, 2, 0x100, STRING_ZeroOneWCHAR);
             Fog::File::CONTAINER_InitializeBuffer(wszCharNameForMsg, 2, 0x100, STRING_ZeroOneWCHAR);
             D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszCharNameForMsg, D2IniData_launcher->szNAME, 0x100);
-            wszMessage = wszCharNameForMsg;
-            wszFormat = D2Lang::StrTable::strtable::GetLocaleString(0x2b33);
-            D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszPopupText, wszFormat, wszMessage);
+            D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszPopupText, D2Lang::StrTable::strtable::GetLocaleString(0x2b33), wszCharNameForMsg);
             MAINMENU_ShowPopupDialog(wszPopupText, UIMENU_CreateHeroSinglePlayer, 1);
             return;
           }
@@ -4688,6 +4526,13 @@ void __stdcall NET_MCP_CLIENT_HandleCharCreation() {
         wszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x145d);
       MAINMENU_ShowPopupDialog(wszMessage, UIMENU_CreateHeroSinglePlayer, 1);
       return;
+      case 71:
+        {
+          wErrorStringId = 0x145c;
+          wszMessage = D2Lang::StrTable::strtable::GetLocaleString(wErrorStringId);
+          MAINMENU_ShowPopupDialog(wszMessage, MAINMENU_CloseAndLaunchCharSelect, 1);
+          return;
+        }
     }
 
     wErrorStringId = 0x145c;
@@ -4696,8 +4541,8 @@ void __stdcall NET_MCP_CLIENT_HandleCharCreation() {
 }
 
 // BNet login submit handler. Reads account/password from gbPasswordChangeInProgress-related inputs, calls launcher authentication. On success, transitions to char select or creates hero.
-BOOL __stdcall MAINMENU_Unused13(D2ControlStrc * nParam) {
-    if (!nParam) {
+BOOL __stdcall MAINMENU_Unused13(D2ControlStrc * pControl) {
+    if (!pControl) {
       UIMENU_MainMenu();
       return 1;
     }
@@ -4709,25 +4554,24 @@ BOOL __stdcall MAINMENU_Unused13(D2ControlStrc * nParam) {
 
     MAINMENU_SaveAccountAndPasswordToINI(&gpBnetAccountEditBox->sControl, &gpBnetPasswordEditBox->sControl);
     int nAuthResult = Launcher::EnterEmailMessagePumper(D2IniData_launcher, 0, 0);
-    if (!nAuthResult) {
-      return 1;
+    if (nAuthResult) {
+      Storm::Source::SReg::SRegSaveString("Diablo II", "Last BNet", 0, D2IniData_launcher->szLastBnetAccount);
+      if (OogCurrentCharSelectionMode == CHAR_SELECTION_BNET) {
+        D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
+        FORMS_DestroyLists();
+        CharSel::UIMENU_CharacterSelectAllGameTypes();
+        return 1;
+      }
+
+      bVisibleOrSave = SAVEFILE_FindAllSaveFiles();
+      if (bVisibleOrSave) {
+        MAINMENU_CloseAndLaunchCharSelect();
+        return 1;
+      }
+
+      UIMENU_CreateHeroSinglePlayer();
     }
 
-    Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Last BNet", 0, D2IniData_launcher->szLastBnetAccount);
-    if (OogCurrentCharSelectionMode == CHAR_SELECTION_BNET) {
-      D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
-      FORMS_DestroyLists();
-      CharSel::UIMENU_CharacterSelectAllGameTypes();
-      return 1;
-    }
-
-    bVisibleOrSave = SAVEFILE_FindAllSaveFiles();
-    if (bVisibleOrSave) {
-      MAINMENU_CloseAndLaunchCharSelect();
-      return 1;
-    }
-
-    UIMENU_CreateHeroSinglePlayer();
     return 1;
 }
 
@@ -4738,17 +4582,17 @@ BOOL __stdcall MAINMENU_OnPressReturnToMainMenuAgain(D2ControlMsg * pControlMsg)
 
 BOOL __stdcall MAINMENU_Unused14(D2ControlMsg * pControlMsg) {
     gnBNetBusyFlag = 0;
-    int iVar1 = Launcher::EnterEmailMessagePumper(D2IniData_launcher, 1, 0);
-    if (!iVar1) {
+    int nPumpResult = Launcher::EnterEmailMessagePumper(D2IniData_launcher, 1, 0);
+    if (!nPumpResult) {
       if (gnBNetBusyFlag) {
         UIMENU_MainMenuAgain();
         return 1;
       }
     } else {
-      BOOL BVar2;
-      Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Last BNet", 0, D2IniData_launcher->szLastBnetAccount);
-      BVar2 = SAVEFILE_FindAllSaveFiles();
-      if (BVar2) {
+      BOOL BVar1;
+      Storm::Source::SReg::SRegSaveString("Diablo II", "Last BNet", 0, D2IniData_launcher->szLastBnetAccount);
+      BVar1 = SAVEFILE_FindAllSaveFiles();
+      if (BVar1) {
         D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
         FORMS_DestroyLists();
         CharSel::UIMENU_CharacterSelectAllGameTypes();
@@ -4818,11 +4662,10 @@ BOOL __stdcall MAINMENU_OnPressCommitNewCharacterAndStartGame(D2ControlMsg * pCo
       D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
       return 1;
     }
-    if (OogCurrentCharSelectionMode != CHAR_SELECTION_BNET) {
-      return 1;
+    if (OogCurrentCharSelectionMode == CHAR_SELECTION_BNET) {
+      NET_MCP_CLIENT_HandleCharCreation();
     }
 
-    NET_MCP_CLIENT_HandleCharCreation();
     return 1;
 }
 
@@ -4902,8 +4745,8 @@ void __stdcall UIMENU_ConfirmCreateCharacter() {
       Launcher::LAUNCHER_InitNewCharacterSaveFile(D2IniData_launcher->szNAME, D2IniData_launcher->eCTEMP_eD2PlayerClassID, (uint8_t*)&D2IniData_launcher->CharSelSaveDataStrc, D2IniData_launcher->eCTEMP_eD2PlayerStatus);
       Launcher::LAUNCHER_WriteSaveFileToD2s(D2IniData_launcher->szNAME);
       D2IniData_launcher->padding_0x35F[0x62] = 1;
-      Storm::Source::SSystem::SMemCopy(D2IniData_launcher->padding_0x35F + 0x42, gaNewCharDefaultEquipTemplate, 0x10);
-      Storm::Source::SSystem::SMemZero(D2IniData_launcher->padding_0x35F + 0x52, 0x10);
+      Storm::Source::SMem::SMemCopy(D2IniData_launcher->padding_0x35F + 0x42, gaNewCharDefaultEquipTemplate, 0x10);
+      Storm::Source::SMem::SMemZero(D2IniData_launcher->padding_0x35F + 0x52, 0x10);
       D2IniData_launcher->isLadder = (bool)((uint8_t)(char)D2IniData_launcher->eCTEMP_eD2PlayerStatus >> 6 & 1);
       D2IniData_launcher->neD2PlayerStatus = D2IniData_launcher->eCTEMP_eD2PlayerStatus;
       D2IniData_launcher->nScreenToShow = 4;
@@ -4929,9 +4772,9 @@ void __stdcall UIMENU_ConfirmCreateCharacter() {
 }
 
 // BNet account creation handler. Validates username/password from gbPasswordChangeInProgress inputs (2-15 chars, matching confirmation), shows please-read dialog on success or error popup on validation failure.
-BOOL __stdcall MAINMENU_Unused15(D2ControlStrc * nParam) {
+BOOL __stdcall MAINMENU_OnSubmitCreateBattleNetAccount(D2ControlStrc * pControl) {
     uint16_t wErrorStringId;
-    if (!nParam) {
+    if (!pControl) {
       UIMENU_MainMenuAgain();
       return 1;
     }
@@ -4969,17 +4812,7 @@ BOOL __stdcall MAINMENU_Unused15(D2ControlStrc * nParam) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused16(D2ControlStrc * nParam) {
-    // Frame slots -20..-4 are ONE object: &dwTotalClusters is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      DWORD dwTotalClusters;
-      DWORD dwFreeClusters;
-      DWORD dwBytesPerSector;
-      DWORD dwSectorsPerCluster;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+BOOL __stdcall MAINMENU_OnPressCreateCharacterOk(D2ControlStrc * pControl) {
     char szSavePath[1024];
     BOOL bIsVisible = D2Win::Src::D2WinMain::D2WINMAIN_GetControlVisible(bCharacterCreationInProgress);
     if (!bIsVisible) {
@@ -4987,22 +4820,22 @@ BOOL __stdcall MAINMENU_Unused16(D2ControlStrc * nParam) {
     }
 
     Fog::Source::SFile::GetAndCreateSavePath(szSavePath, 0x400);
-    uint32_t uVar1 = 0;
+    uint32_t nIndex = 0;
     do {
-      if (szSavePath[uVar1] == '\\') {
-        szSavePath[uVar1 + 1] = '\0';
+      if (szSavePath[nIndex] == '\\') {
+        szSavePath[nIndex + 1] = '\0';
         break;
       }
 
-      uVar1++;
-    } while (uVar1 < 0x400);
+      nIndex++;
+    } while (nIndex < 0x400);
 
-    __frame0.dwSectorsPerCluster = 0;
-    __frame0.dwFreeClusters = 0;
-    __frame0.dwBytesPerSector = 0;
-    __frame0.dwTotalClusters = 0;
-    /* LPDWORD lpBytesPerSector for GetDiskFreeSpaceA */ /* LPDWORD lpSectorsPerCluster for GetDiskFreeSpaceA */ /* LPCSTR lpRootPathName for GetDiskFreeSpaceA */ GetDiskFreeSpaceA(szSavePath, &__frame0.dwSectorsPerCluster, &__frame0.dwFreeClusters, &__frame0.dwBytesPerSector, &__frame0.dwTotalClusters);
-    if (__frame0.dwBytesPerSector * __frame0.dwFreeClusters * __frame0.dwSectorsPerCluster < 5000) {
+    DWORD dwSectorsPerCluster = 0;
+    DWORD dwFreeClusters = 0;
+    DWORD dwBytesPerSector = 0;
+    DWORD dwTotalClusters = 0;
+    /* LPDWORD lpBytesPerSector for GetDiskFreeSpaceA */ /* LPDWORD lpSectorsPerCluster for GetDiskFreeSpaceA */ /* LPCSTR lpRootPathName for GetDiskFreeSpaceA */ GetDiskFreeSpaceA(szSavePath, &dwSectorsPerCluster, &dwFreeClusters, &dwBytesPerSector, &dwTotalClusters);
+    if (dwBytesPerSector * dwFreeClusters * dwSectorsPerCluster < 5000) {
       uint16_t* wszPopupText;
       wszPopupText = D2Lang::StrTable::strtable::GetLocaleString(0x141d);
       UIMENU_CreateSmallPopup(wszPopupText, MAINMENU_CloseAndLaunchCharSelect);
@@ -5017,7 +4850,6 @@ BOOL __stdcall MAINMENU_Unused16(D2ControlStrc * nParam) {
 void __stdcall MAINMENU_BnetConnectionProgress() {
     char szDots[256];
     int nConnectionState;
-    int nTextArg3;
     if (!gpCtlBnetProgressBar) {
       return;
     }
@@ -5051,51 +4883,43 @@ void __stdcall MAINMENU_BnetConnectionProgress() {
 
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gpCtlBnetProgressBar);
     if (gbBnetProgressActive >= 0) {
-      bool nTextArg2;
-      nTextArg3 = 0;
-      nTextArg2 = false;
-      D2Win::Src::D2WinTextBox::SetText(gpCtlBnetProgressBar, D2Lang::StrTable::strtable::GetLocaleString((uint16_t)gbBnetProgressActive), 0, nTextArg2, nTextArg3);
+      D2Win::Src::D2WinTextBox::SetText(gpCtlBnetProgressBar, D2Lang::StrTable::strtable::GetLocaleString((uint16_t)gbBnetProgressActive), 0, false, 0);
     }
 
     DWORD dwTickCount = GetTickCount();
     sprintf(szDots, "%.*s", (int)((dwTickCount - gbBNetConnectionProgressFlag) / 0xfa % 0x14) + 1, "....................");
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gbBnetConnectionTimerActive);
-    D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gbBnetConnectionTimerActive, szDots);
+    D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gbBnetConnectionTimerActive, szDots);
 }
 
-static BOOL MAINMENU_Unused17(char * szText) {
-    bool _bIsValidEmail;
-    bool bIsValidEmail;
+static BOOL MAINMENU_IsValidEmailAddress(char * szText) {
+    uint32_t nTextLen;
     if (!szText) {
       return 0;
     }
 
-    _bIsValidEmail = 0;
+    BOOL bIsValidEmail = 0;
     char* pszAtSign = Storm::Source::SSTR::SStrChr(szText, '@');
-    if (!pszAtSign) {
-      return _bIsValidEmail;
+    if (pszAtSign) {
+      char* pszDot;
+      pszDot = Storm::Source::SSTR::SStrChr(pszAtSign, '.');
+      if (pszDot && pszAtSign > szText && pszDot > pszAtSign + 1) {
+        nTextLen = Storm::Source::SSTR::SStrLen(szText);
+        if ((int)nTextLen > (int)(pszDot + (1 - (int)szText))) {
+          bIsValidEmail = 1;
+        }
+      }
     }
 
-    char* pszDot = Storm::Source::SSTR::SStrChr(pszAtSign, '.');
-    if (!(pszDot && pszAtSign > szText && pszDot > pszAtSign + 1)) {
-      return _bIsValidEmail;
-    }
-
-    uint32_t uVar1 = Storm::Source::SSTR::SStrLen(szText);
-    if ((int)uVar1 <= (int)(pszDot + (1 - (int)szText))) {
-      return _bIsValidEmail;
-    }
-
-    _bIsValidEmail = 1;
-    return _bIsValidEmail;
+    return bIsValidEmail;
 }
 
 BOOL __stdcall MAINMENU_OnPressConfirmSkipEmailPopup(D2ControlMsg * pControlMsg) {
-    int32_t nParam2 = 1;
-    int32_t nParam1 = 0;
+    int32_t bSingleButtonEscape = 1;
+    int32_t bEnableHotkeys = 0;
     OnPress pfnOnPress2 = (OnPress)MAINMENU_DismissPopup;
-    OnPress pfnOnPress1 = (OnPress)MAINMENU_Unused18;
-    MAINMENU_CreateMessageBox(nullptr, D2Lang::StrTable::strtable::GetLocaleString(0x2b5e), 0x2b61, 0x13ef, pfnOnPress1, pfnOnPress2, nParam1, nParam2);
+    OnPress pfnOnPress1 = (OnPress)MAINMENU_OnPressSkipEmailAddress;
+    MAINMENU_CreateMessageBox(nullptr, D2Lang::StrTable::strtable::GetLocaleString(0x2b5e), 0x2b61, 0x13ef, pfnOnPress1, pfnOnPress2, bEnableHotkeys, bSingleButtonEscape);
     return 1;
 }
 
@@ -5123,13 +4947,9 @@ void __stdcall UIMENU_EnterEmailAddress() {
     gbEmailAddressScreenReady = 0;
     Launcher::UIMENU_MainMenuWithoutMenuButWithDiabloLogo();
     ::D2WinTextBox* pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x122);
-    int nTextArg3 = 0;
-    bool nTextArg2 = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x2b55), 0, nTextArg2, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x2b55), 0, false, 0);
     pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x123);
-    nTextArg3 = 0;
-    nTextArg2 = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x2b56), 0, nTextArg2, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x2b56), 0, false, 0);
     FORMS_CreateAnyFormFromListExEx(0x120);
     pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x124);
     uint16_t* wszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x2b57);
@@ -5167,7 +4987,7 @@ void __stdcall MAINMENU_ShowDisconnectMessage() {
       char szPassword[256];
       pwszText = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gpCtlDisconnectDialog->sControl);
       D2Lang::WideCharToUTF8(szPassword, pwszText, 0x100);
-      bEnableOk = MAINMENU_Unused17(szPassword);
+      bEnableOk = MAINMENU_IsValidEmailAddress(szPassword);
     }
 
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(gpCtlBnetPasswordOkButton, bEnableOk);
@@ -5190,13 +5010,9 @@ void __stdcall UIMENU_YouWereDisconnectedFromBattleNet() {
 
     Launcher::UIMENU_MainMenuWithoutMenuButWithDiabloLogo();
     ::D2WinTextBox* pControl = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(299);
-    int nTextArg3 = 0;
-    bool byTmp = false;
-    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b6a), 0, byTmp, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b6a), 0, false, 0);
     pControl = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x12e);
-    nTextArg3 = 0;
-    byTmp = false;
-    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b5f), 0, byTmp, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b5f), 0, false, 0);
     FORMS_CreateAnyFormFromListExEx(0x12f);
     pControl = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x130);
     pwszText = D2Lang::StrTable::strtable::GetLocaleString(0x1468);
@@ -5231,21 +5047,13 @@ void __stdcall UIMENU_YouWereDisconnectedFromBattleNet2() {
 
     Launcher::UIMENU_MainMenuWithoutMenuButWithDiabloLogo();
     ::D2WinTextBox* pControl = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x135);
-    int nTextArg3 = 0;
-    bool byTmp = false;
-    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b65), 0, byTmp, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b65), 0, false, 0);
     pControl = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x136);
-    nTextArg3 = 0;
-    byTmp = false;
-    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b66), 0, byTmp, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b66), 0, false, 0);
     pControl = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x137);
-    nTextArg3 = 0;
-    byTmp = false;
-    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b67), 0, byTmp, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b67), 0, false, 0);
     pControl = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x138);
-    nTextArg3 = 0;
-    byTmp = false;
-    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b68), 0, byTmp, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b68), 0, false, 0);
     FORMS_CreateAnyFormFromListExEx(0x139);
     FORMS_CreateAnyFormFromListExEx(0x13a);
     FORMS_CreateAnyFormFromListExEx(0x13b);
@@ -5268,7 +5076,7 @@ BOOL __stdcall MAINMENU_OnPressReturnToMainMenuAgain_ForBnetDisconnected2(D2Cont
 }
 
 void __stdcall MAINMENU_ShowDisconnectMessage2() {
-    bool _bFieldValid;
+    BOOL _bFieldValid;
     bool bFieldValid;
     char szField1[256];
     char szField3[256];
@@ -5279,17 +5087,17 @@ void __stdcall MAINMENU_ShowDisconnectMessage2() {
       char szField2[256];
       pwszText = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gpCtlDisconnectMessage1->sControl);
       D2Lang::WideCharToUTF8(szField1, pwszText, 0x100);
-      _bFieldValid = MAINMENU_Unused17(szField1);
+      _bFieldValid = MAINMENU_IsValidEmailAddress(szField1);
       bVisible = 0;
       if (_bFieldValid) {
         pwszText = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gpCtlDisconnectMessage3->sControl);
         D2Lang::WideCharToUTF8(szField3, pwszText, 0x100);
-        _bFieldValid = MAINMENU_Unused17(szField3);
+        _bFieldValid = MAINMENU_IsValidEmailAddress(szField3);
         bVisible = 0;
         if (_bFieldValid) {
           pwszText = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gpCtlDisconnectMessage2->sControl);
           D2Lang::WideCharToUTF8(szField2, pwszText, 0x100);
-          bVisible = MAINMENU_Unused17(szField2);
+          bVisible = MAINMENU_IsValidEmailAddress(szField2);
         }
       }
     }
@@ -5314,13 +5122,9 @@ void __stdcall UIMENU_YouWereDisconnectedFromBattleNet3() {
 
     Launcher::UIMENU_MainMenuWithoutMenuButWithDiabloLogo();
     ::D2WinTextBox* pControl = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x13d);
-    int nTextArg3 = 0;
-    bool byTmp = false;
-    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b6c), 0, byTmp, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b6c), 0, false, 0);
     pControl = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x13e);
-    nTextArg3 = 0;
-    byTmp = false;
-    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b70), 0, byTmp, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pControl, D2Lang::StrTable::strtable::GetLocaleString(0x2b70), 0, false, 0);
     FORMS_CreateAnyFormFromListExEx(0x13f);
     pControl = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x140);
     pwszText = D2Lang::StrTable::strtable::GetLocaleString(0x1468);
@@ -5402,9 +5206,7 @@ void __stdcall UIMENU_ConnectinToBattleNetWitProgressDots() {
     D2Win::Src::D2WinMain::SetUnsetFlag0x08(pBackgroundControl, 1);
     ::D2WinTextBox* pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0xe4);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pTextBox, 1);
-    int nTextArg3 = 0;
-    bool nTextArg4 = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1433), 0, nTextArg4, nTextArg3);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1433), 0, false, 0);
     gpCtlBnetProgressBar = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0xe5);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)gpCtlBnetProgressBar, 1);
     gbBnetConnectionTimerActive = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0xe6);
@@ -5420,7 +5222,7 @@ void __stdcall UIMENU_ConnectinToBattleNetWitProgressDots() {
 // so the slot has one and only one stored value and that value is an OnPress. Without a
 // declared variable the slot surfaces as an untyped pointer and renders as code *, which no
 // OnPress parameter will accept. Do not delete it to silence the warning.
-BOOL __stdcall MAINMENU_Unused19(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressSubmitEmailAddress(D2ControlMsg * pControlMsg) {
     char szEmail[256];
     OnPress pfnOnPress1;
     int32_t nMsgBoxArg5;
@@ -5435,7 +5237,7 @@ BOOL __stdcall MAINMENU_Unused19(D2ControlMsg * pControlMsg) {
     uint32_t nEmailCmp = D2Lang::Unicode::UNISYS::STRING_CompareWideStrings(pwszEmail1, pwszEmail2);
     if (!nEmailCmp) {
       D2Lang::WideCharToUTF8(szEmail, pwszEmail1, 0x100);
-      pAccountResult = (OnPress)MAINMENU_Unused17(szEmail);
+      pAccountResult = (OnPress)MAINMENU_IsValidEmailAddress(szEmail);
       if (!pAccountResult) {
         OnPress pfnBtn1Press;
         nMsgBoxArg5 = 1;
@@ -5458,10 +5260,7 @@ BOOL __stdcall MAINMENU_Unused19(D2ControlMsg * pControlMsg) {
     nMsgBoxArg7 = 1;
     pAccountResult = 0;
     pfnOnPress1 = (OnPress)MAINMENU_DismissPopup;
-    nMsgBoxArg5 = 0;
-    nMsgBoxTitleId = 0x13ee;
-    pwszEmail1 = D2Lang::StrTable::strtable::GetLocaleString(0x2b5b);
-    MAINMENU_CreateMessageBox(nullptr, pwszEmail1, nMsgBoxTitleId, nMsgBoxArg5, pfnOnPress1, pAccountResult, nMsgBoxArg7, nMsgBoxArg8);
+    MAINMENU_CreateMessageBox(nullptr, D2Lang::StrTable::strtable::GetLocaleString(0x2b5b), 0x13ee, 0, pfnOnPress1, pAccountResult, nMsgBoxArg7, nMsgBoxArg8);
     return 1;
 }
 
@@ -5475,7 +5274,7 @@ BOOL __stdcall thunk_UIMENU_YouWereDisconnectedFromBattleNet3(D2ControlMsg * pCo
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused20(int32_t bSubmit) {
+BOOL __stdcall MAINMENU_HandleEmailChange(int32_t bSubmit) {
     uint16_t* pwszOldEmail;
     uint16_t* pwszNewEmail1;
     uint16_t* pwszNewEmail2;
@@ -5546,7 +5345,7 @@ BOOL __stdcall MAINMENU_Unused20(int32_t bSubmit) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused21(int32_t bSubmit) {
+BOOL __stdcall MAINMENU_OnSubmitResetPassword(int32_t bSubmit) {
     uint16_t* pwszPassword;
     BOOL bResult;
     char szAccount[256];
@@ -5613,11 +5412,11 @@ uint32_t __fastcall MAINMENU_GetFlagBits8To12(uint32_t dwFlags) {
 // Returns MAINMENU_GetRealmName(nIndex) when nIndex < MAINMENU_GetRealmCount(), else NULL (tail-jumps to 00430b50).
 // Provenance: asm 00437a00..00437a12; unreferenced in 1.14d.
 char * __stdcall MAINMENU_GetRealmNameIfValid(int nIndex) {
-    int iVar1 = MAINMENU_GetRealmCount();
-    if (nIndex < iVar1) {
-      char* pcVar2;
-      pcVar2 = MAINMENU_GetRealmName(nIndex);
-      return pcVar2;
+    int nRealmCount = MAINMENU_GetRealmCount();
+    if (nIndex < nRealmCount) {
+      char* szRealmName;
+      szRealmName = MAINMENU_GetRealmName(nIndex);
+      return szRealmName;
     }
 
     return nullptr;

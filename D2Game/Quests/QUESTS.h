@@ -52,19 +52,6 @@ struct D2GSPacketClt0x89 {
     /* 0x01 */ uint8_t nEventType;
 };
 
-struct D2GSPacketSrv0x29 {
-    /* 0x00 */ uint8_t nPacketId;
-    /* 0x01 */ uint8_t szQuestBits[96]; // game quest record, raw copy of pQuestControl->pQuestFlags
-};
-
-struct D2GSPacketSrv0x5D {
-    /* 0x00 */ uint8_t nPacketId; // 0x5D
-    /* 0x01 */ uint8_t nQuestId;
-    /* 0x02 */ uint8_t nAlertFlags;
-    /* 0x03 */ uint8_t nFilterStatus;
-    /* 0x04 */ uint16_t nExtra;
-};
-
 struct D2NPCMessageStrc {
     /* 0x00 */ int nMonStatsId;
     /* 0x04 */ short nStringIndex;
@@ -193,29 +180,29 @@ void __fastcall QUEST_SendQuestUpdateToPlayer(::SGAMEDATA * pGame, struct D2Unit
 void __stdcall QUEST_SendQuestUpdateToPlayer_HaltTail(int nLine);
 void __fastcall QUEST_SetStateAndBroadcast(struct D2QuestDataStrc * pQuestData, int nPrevStateFlag, struct D2UnitStrc * pUnit, ::fpExecuteOnUnitFunction fpFunction, bool bExecute);
 void __fastcall QUEST_SetStateFlag(struct D2QuestDataStrc * pQuestData, int32_t nState, char * szSourceFile, uint32_t nSourceLine);
-void __fastcall QUEST_OnNpcGossip(::SGAMEDATA * pGame, struct D2UnitStrc * pPlayer, uint32_t nNpcGUID, uint32_t nGossipIndex);
+void __fastcall QUEST_OnNpcGossip(::SGAMEDATA * pGame, struct D2UnitStrc * pPlayer, uint32_t nNpcGUID, uint16_t nGossipIndex);
 int32_t __stdcall QUEST_GetQuestSpecificDataPtr(::SGAMEDATA * pGame);
 uint32_t __stdcall CheckIntroductionFlagByInternalQuestId(::SGAMEDATA * pGame, eD2QuestsInternal nQuestNoInternal);
 void __fastcall NET_D2GS_SERVER_Send_0x29_GAMEQUESTRECORD_Prepare(::SGAMEDATA * pGame, struct D2ClientStrc * pClient);
 // Server-side handler that determines whether an NPC wants to initiate a quest interaction with a player unit. Validates that pUnit is a player and that the target NPC's MonStats.interact flag is set. Iterates the game's quest list for the player's current act; for each quest calls fpActiveFilter to check eligibility against the player's quest record. On first match, sends packet 0x8A (NpcWantsInteract) to the client and returns 1. Triggers fatal error if called with bad state (null quest-set, bad function pointer, null player data, null quest record).
 // @sourcefile .\QUESTS\QUESTS.CPP
-uint32_t __fastcall QUEST_NpcWantsInteract(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nNpcClassId);
+uint32_t __fastcall QUEST_NpcWantsInteract(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * nNpcClassId);
 // Sets a quest record state in the game quest tracking system. Validates quest control pointer and updates the quest state via the quest record interface.
 void __fastcall QUEST_SetQuestRecordState(::SGAMEDATA * pGame, eD2Quests eQuest, eD2QuestState eState);
 int __fastcall QUEST_GetQuestRecordState(::SGAMEDATA * pGame, eD2Quests eQuestId, int32_t nUnused);
-void __stdcall QUEST_DispatchMonsterDeathToQ12(int32_t nMonsterClassId, int32_t nBossType, int32_t nUnused);
+void __fastcall QUEST_DispatchMonsterDeathToQ12(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t nMonsterClassId);
 // Finds the QUESTINT_SistersToTheSlaughter entry in pGame's quest list (pPrev chain) and returns Q06_GetQuestSpecificFlag for it; halts (line 2140) when there is none.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 uint32_t __fastcall QUEST_GetSistersToTheSlaughterSpecificFlag(::SGAMEDATA * pGame);
 void __fastcall QUEST_HandleClientQuestMessage(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nQuestItemCode);
-void __fastcall Objects_InitFn18(struct D2ObjectInitFnArg * pInitArg);
-void __fastcall Objects_InitFn19(struct D2ObjectInitFnArg * pInitArg);
-void __fastcall Objects_InitFn20(struct D2ObjectInitFnArg * pInitArg);
-void __fastcall Objects_InitFn15(struct D2ObjectInitFnArg * pInitArg);
-void __fastcall Objects_InitFn07(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn18_JerhynPosition(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn19_JerhynPosition(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn20_TaintedSunAltar(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn15_Malus(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn07_CainGibbet(struct D2ObjectInitFnArg * pInitArg);
 // Quest dispatcher keyed on a unit's monster/object class id. Given pGame and the triggering pUnit, looks up the unit's nClassId and routes to the matching act-quest timer/callback (e.g. Khalim's Will compelling orb 0x16f, Cain/Tower 0xbd by level, Countess 0x173, Hell's Forge 0x178, Anya/Nihlathak act-5 0x1cb-0x1cd, Ancients 0x1da-0x1dc). Walks pGame->pQuestControl->pQuestData list to find the relevant quest record before invoking its handler. No return; pure side-effecting quest progression.
 void __fastcall SetTimerByMonsterId(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
-void __fastcall Objects_InitFn23(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn23_LamEsenTome(struct D2ObjectInitFnArg * pInitArg);
 void __fastcall QUEST_CheckGoldenBirdDrop(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // NOTE: Register param types inferred (medium confidence): pGameStrc (ECX): SGAMEDATA *, pUnit (EDX): D2UnitStrc *
 void __fastcall QUEST_OnGoldenBirdCouncilKilled(::SGAMEDATA * pGameStrc, struct D2UnitStrc * pUnit);
@@ -255,7 +242,8 @@ BOOL __fastcall PORTAL_ActivateOrDeactivatePortalObject(::SGAMEDATA * * ppGame);
 void __fastcall SendQuestState(struct D2UnitStrc * pUnit, int32_t nQuestId);
 // @sourcefile .\QUESTS\QUESTS.CPP
 void __fastcall QUEST_SendQuestStatePacket(struct D2UnitStrc * pUnit, int bQuestId, uint8_t bReasoned);
-void __stdcall QUEST_StubEmpty(uint32_t nUnused);
+// Registers: pQuestData (ECX) and pQuestArgs (EDX) are passed by the quest callbacks but not read.
+void __fastcall QUEST_StubEmpty(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs, uint32_t nUnused);
 // Quest helper that spawns a monster (nMonstatClassId) at or near a desired tile (nSpawnX,nSpawnY) in pRoom. First nudges the point inward if it lies outside the room's DRLG bounds (up to 0x15 diagonal steps), then FindSpawnableLocation searches for a collision-free spot (COLLIDE_MONSTER) and SpawnMonsters as Neutral. On failure it retries with a wider search radius, optionally relocating to a better nearby room (DRLGROOM_FindBetterNearbyRoom), up to ~0x14 attempts, finally falling back to the original coords. If bSetResurrectFlag is set, ORs UNITFLAG_ISRESURRECT|UNITFLAG_ISINIT onto the spawned monster. No return; side effect is the created monster unit.
 struct D2UnitStrc * __fastcall QUEST_SpawnMonsterNearCoords(::SGAMEDATA * pGame, int32_t nSpawnX, int32_t nSpawnY, struct D2RoomStrc * pRoom, int32_t bSetResurrectFlag, uint32_t nMonstatClassId);
 void __fastcall QUEST_OnUniqueMonsterSpawned(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
@@ -263,7 +251,7 @@ uint32_t __fastcall QUEST_CheckSpecialLevelCondition(::SGAMEDATA * pGame, struct
 struct D2UnitStrc * __fastcall QUEST_SpawnSuperUniqueAtPoint(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, POINT * pPoint, int32_t nAct, int32_t nSuperUnique);
 void __fastcall QUEST_DispatchPresetObjectLoad(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2MapAIStrc * pMapAI);
 void __fastcall AttachToUnit(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2RoomStrc * pRoom, BOOL bExpectedResult);
-void __stdcall QUEST_InitializeQuestDataStruct(uint32_t dwParam1, uint32_t dwParam2, bool bIsNotIntroduction, struct D2QuestDataStrc * pQuestData);
+void __stdcall QUEST_InitializeQuestDataStruct(uint32_t pGame, uint32_t nQuestNoInternal, bool bIsNotIntroduction, struct D2QuestDataStrc * pQuestData);
 // Builds the game's quest-state object graph at game creation. Allocates one 0xF8-byte D2QuestDataStrc per entry in aQuestInitDataExtended (the real act quests) and per entry in QuestInitDataSimple (sub-quests/QUESTINT_SimpleQuest1+), linking them into a singly-linked list via pPrev, stamping nAct/nQuestNoInternal/pGame and calling each entry's fpQuestInit/fpQuestData callback (validated with IsBadCodePtr). Then allocates the 0x24-byte D2QuestControlStrc head (pQuestData=list, fresh seed derived from the game seed with nSeedHigh=0x29A, a quest-flag BitBuffer) and stores it in pGame->pQuestControl. Halts via ERROR_UnrecoverableInternalError on a bad callback pointer.
 // @sourcefile .\QUESTS\QUESTS.CPP
 void __fastcall AllocQuestControl(::SGAMEDATA * pGame);
@@ -284,7 +272,7 @@ struct D2UnitStrc * __fastcall ITEM_RewardItemInInventory(::SGAMEDATA * pGame, s
 void __fastcall QUEST_ProcessActTransition(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pMonster, int32_t nDestinationAct, int32_t nUnused);
 // Handles the two completion paths for A3Q7 Khalim's Will. For event code 0x66 (player assembled the flail): if not already allowed into Act 4, marks QUEST_KhalimsWill Completed+JustCompleted, removes all five Khalim's-body-part quest items from inventory, grants the Act 3 transition reward, and sends a 0x28 quest-info packet plus a 0x61 CanGoToAct(4) packet to the client. For any other code delegates to Q24_HandleKhalimsWillCompletion (game-wide broadcast path).
 // @sourcefile .\QUESTS\QUESTS.CPP
-void __fastcall QUEST_HandleKhalimsWillCompletion(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t param_1, uint32_t nEventCode);
+void __fastcall QUEST_HandleKhalimsWillCompletion(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nLevelId, uint32_t nEventCode);
 BOOL __fastcall Q32_CheckNearbyPrisoners(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnitFallback);
 // Quest item drop and callback functions for A1Q4 (Search for Cain), A1Q5 (Forgotten Tower), and A1Q6 (Sisters to the Slaughter)
 void __stdcall QUEST_AddPlayerGUIDToTrackingList(uint32_t nPlayerGUID, int32_t nParam1, int32_t nParam2);
@@ -294,11 +282,11 @@ void __fastcall Q12_Callback03_ChangedLevel(struct D2QuestDataStrc * pQuestData,
 void __fastcall Q12_InitData(struct D2QuestDataStrc * pQuestData);
 void __fastcall PlaceJerhyn(struct D2QuestDataStrc * pQuestData, struct D2ObjectInitFnArg * pObjectInitArg);
 void __fastcall PlaceGuardInFrontOfJerhyn(struct D2QuestDataStrc * pQuestData, struct D2ObjectInitFnArg * pObjectInitArg);
-bool __fastcall QUEST_CheckJerhynShouldBlock(::SGAMEDATA * pGame);
+BYTE __fastcall QUEST_CheckJerhynShouldBlock(::SGAMEDATA * pGame);
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
 BOOL __fastcall QUEST_ShouldBlockJerhyn(::SGAMEDATA * pGame);
 // A2Q7 server AI logic for the Jerhyn NPC, gating his movement to the palace and the Duriel reveal. Out-params *pdwParam1/*pdwParam2 tell the caller the desired idle/move outcome. Bails (idle: 1,0) unless the Arcane Sanctuary quest is in progress and Seven Tombs is appropriately staged. When conditions hold it walks Jerhyn toward the recorded target coords (WalkToCoords), and once close locates the Duriel-tomb portal object, finds free neighbouring-room coordinates and relocates Jerhyn there (SUNIT_RelocateUnit), updating the A2Q4 quest-specific data flag bytes that track his progress.
-void __fastcall QUEST_JerhynNpcAILogic(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, uint32_t * pdwParam1, uint32_t * pdwParam2);
+void __fastcall QUEST_JerhynNpcAILogic(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, uint32_t * pbRunDefaultAi, uint32_t * pbDelayNextMove);
 BOOL __fastcall OBJOP_A4Q2_DiabloSealCreateGlow1(struct D2ObjectOperateFnArg * pOperation);
 BOOL __fastcall OBJOP_A4Q2_DiabloSealCreateGlow2(struct D2ObjectOperateFnArg * pOperation);
 BOOL __fastcall OBJOP_A4Q2_DiabloSealCreateGlow3(struct D2ObjectOperateFnArg * pOperation);

@@ -139,8 +139,8 @@ void __fastcall Q38_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     AddGossipMessageOnMonster(pQuestData, sTextMessage, nMonStatsId, 0);
 }
 
-bool __fastcall Q38_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown) {
-    *nUnknown = '\0';
+bool __fastcall Q38_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode) {
+    *pbyStatusCode = '\0';
     return false;
 }
 
@@ -153,7 +153,7 @@ void __fastcall Q38_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q38_Callback00_NpcActivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q38_Callback11_ScrollMessage;
-    pQuestData->pNpcMessages = &Quest38::aNpcGossipData;
+    pQuestData->pNpcMessages = Quest38::aNpcGossipData;
     pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;

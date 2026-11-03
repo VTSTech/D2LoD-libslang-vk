@@ -5,6 +5,7 @@
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/UI/Text.h"
 #include "D2Common/Stats/StatsEx.h"
+#include "D2Hell/D2Hell.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
@@ -13,12 +14,10 @@
 #include "D2Win/Src/D2WinArchive.h"
 #include "D2Win/Src/D2WinPalette.h"
 #include "D2gfx/D2GFX.h"
-#include "Fog/Archive.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Panel.h"
 
@@ -38,6 +37,11 @@
 
 static_assert(sizeof(void*) != 4 || sizeof(::D2TextLineStrc) == 0x8, "D2_NEW_AT(D2TextLineStrc): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
 
+
+static int32_t gnLastUsedFontId = 0x1; D2_STATIC_GUARD(gnLastUsedFontId, "gnLastUsedFontId");
+static uint32_t gnFontIdSmall = 0x10; D2_STATIC_GUARD(gnFontIdSmall, "gnFontIdSmall");
+static uint32_t gnFontIdLarge = 0x11; D2_STATIC_GUARD(gnFontIdLarge, "gnFontIdLarge");
+static uint32_t gnFontIdBody = 0x3; D2_STATIC_GUARD(gnFontIdBody, "gnFontIdBody");
 
 namespace D2Win::Src::D2WinFont {
 
@@ -96,7 +100,7 @@ static void InitFontCache(int32_t nFontIndex) {
 
     int32_t nAllocLine = 0xb5;
     char* szAllocFile = ".\\Src\\D2WinFont.cpp";
-    D2FontTableHeaderStrc* pFontTable = (D2FontTableHeaderStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(D2WinArchive::ReturnZero(), szFontTablePath, 0, szAllocFile, nAllocLine);
+    D2FontTableHeaderStrc* pFontTable = (D2FontTableHeaderStrc*)D2Hell::D2FILE_AllocAndLoadD2File(D2WinArchive::ReturnZero(), szFontTablePath, 0, szAllocFile, nAllocLine);
     gaFontCache[nFontIndex].pFontTable = pFontTable;
     gaFontCache[nFontIndex].pFontTableHeader = pFontTable;
     gaFontCache[nFontIndex].pGlyphs = (D2FontGlyphStrc*)(pFontTable + 1);
@@ -135,7 +139,7 @@ D2FontGlyphStrc * __fastcall D2WINFONT_LookupGlyphEntry(uint16_t wCharCode) {
     int nIterations = 0;
     int nLo = 0;
     int nHi = gaFontCache[gnLastUsedFontId].pFontTableHeader->nGlyphCount - 1;
-    if (-1 >= nHi) {
+    if (nHi < 0) {
       return gaFontCache[gnLastUsedFontId].pGlyphs + 0x1f;
     }
 
@@ -235,48 +239,45 @@ static int32_t TEXT_CalculateTextWidth(uint16_t * szBuffer) {
     nStrLen = 0;
     int nMaxLineWidth = 0;
     int32_t nLineWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(szBuffer);
-    if (nLineWidth <= 0) {
-      return nStrLen;
-    }
-
-    do {
+    if (nLineWidth > 0) {
       uint16_t wCharCode;
-      wCharCode = *szBuffer;
-      if (wCharCode == L'\0') {
-        break;
-      }
-      if (wCharCode == L'\n') {
-        if (nStrLen > nMaxLineWidth) {
-          nMaxLineWidth = nStrLen;
+      do {
+        wCharCode = *szBuffer;
+        if (wCharCode == L'\0') {
+          break;
         }
-
-        nStrLen = 0;
-        szBuffer++;
-      } else {
-        if ((uint16_t)wCharCode >= 0x100 || wCharCode != L'ÿ') {
-          pGlyphEntry = (*gpfnFontGetCharWidth)(wCharCode);
-          nStrLen += (uint32_t)pGlyphEntry->abUnverified[1];
-          szBuffer++;
-        } else {
-          nColorCmpResult = D2Lang::Unicode::UNISYS::UNICODE_CompareWideStringsNNoCase((uint16_t*)(szBuffer + 1), gnFontTableCharWidthCache, 1);
-          if (!nColorCmpResult) {
-            pGlyphEntry = (*gpfnFontGetCharWidth)(gnFontTableCharWidthCache[0]);
-            nStrLen += (uint32_t)pGlyphEntry->abUnverified[1];
+        if (wCharCode == L'\n') {
+          if (nStrLen > nMaxLineWidth) {
+            nMaxLineWidth = nStrLen;
           }
 
-          szBuffer += 3;
-          nCharPos += 2;
+          nStrLen = 0;
+          szBuffer++;
+        } else {
+          if ((uint16_t)wCharCode >= 0x100 || wCharCode != L'\xff') {
+            pGlyphEntry = (*gpfnFontGetCharWidth)(wCharCode);
+            nStrLen += (uint32_t)pGlyphEntry->abUnverified[1];
+            szBuffer++;
+          } else {
+            nColorCmpResult = D2Lang::Unicode::UNISYS::UNICODE_CompareWideStringsNNoCase((uint16_t*)(szBuffer + 1), gnFontTableCharWidthCache, 1);
+            if (!nColorCmpResult) {
+              pGlyphEntry = (*gpfnFontGetCharWidth)(gnFontTableCharWidthCache[0]);
+              nStrLen += (uint32_t)pGlyphEntry->abUnverified[1];
+            }
+
+            szBuffer += 3;
+            nCharPos += 2;
+          }
         }
+
+        nCharPos++;
+      } while (nCharPos < nLineWidth);
+
+      if (nMaxLineWidth > nStrLen) {
+        nStrLen = nMaxLineWidth;
       }
-
-      nCharPos++;
-    } while (nCharPos < nLineWidth);
-
-    if (nMaxLineWidth <= nStrLen) {
-      return nStrLen;
     }
 
-    nStrLen = nMaxLineWidth;
     return nStrLen;
 }
 
@@ -290,31 +291,31 @@ static int32_t D2WINFONT_GetFirstLinePixelWidth(uint16_t * pwszString) {
       exit(-1);
     }
 
-    int32_t iVar1 = 0;
+    int32_t nPixelWidth = 0;
     nLineWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength((uint16_t*)pwszString);
     for (nCharPos = 0; nCharPos < nLineWidth; nCharPos++) {
       uint16_t wCharCode;
       wCharCode = *pwszString;
       if (wCharCode == 10) {
-        return iVar1;
+        return nPixelWidth;
       }
       if (wCharCode < 0x100 && wCharCode == 0xff) {
         nColorCmpResult = D2Lang::Unicode::UNISYS::UNICODE_CompareWideStringsNNoCase(pwszString + 1, gnFontTableCharWidthCache, 1);
         if (!nColorCmpResult) {
           pGlyphEntry = (*gpfnFontGetCharWidth)(gnFontTableCharWidthCache[0]);
-          iVar1 += (uint32_t)pGlyphEntry->abUnverified[1];
+          nPixelWidth += (uint32_t)pGlyphEntry->abUnverified[1];
         }
 
         nCharPos += 2;
         pwszString += 3;
       } else {
         pGlyphEntry = (*gpfnFontGetCharWidth)(wCharCode);
-        iVar1 += (uint32_t)pGlyphEntry->abUnverified[1];
+        nPixelWidth += (uint32_t)pGlyphEntry->abUnverified[1];
         pwszString++;
       }
     }
 
-    return iVar1;
+    return nPixelWidth;
 }
 
 static int32_t TEXT_CalculateTextHeight(uint16_t * szBuffer) {
@@ -325,18 +326,16 @@ static int32_t TEXT_CalculateTextHeight(uint16_t * szBuffer) {
 
     int nLineCount = 1;
     int nStrLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(szBuffer);
-    if (nStrLen <= 0) {
-      return (int)((uint32_t)gaFontCache[gnLastUsedFontId].pFontTableHeader->nLineHeight * gnFontIdLarge * nLineCount) / 10;
+    if (nStrLen > 0) {
+      do {
+        if (*szBuffer == L'\n') {
+          nLineCount++;
+        }
+
+        szBuffer++;
+        nStrLen--;
+      } while (nStrLen);
     }
-
-    do {
-      if (*szBuffer == L'\n') {
-        nLineCount++;
-      }
-
-      szBuffer++;
-      nStrLen--;
-    } while (nStrLen);
 
     return (int)((uint32_t)gaFontCache[gnLastUsedFontId].pFontTableHeader->nLineHeight * gnFontIdLarge * nLineCount) / 10;
 }
@@ -369,7 +368,7 @@ static void __stdcall D2WINFONT_DrawWideString(uint16_t * wszText, int32_t nX, i
     sGfxData.pDC6 = *gppDC6FontCache;
     sGfxData.nDirection = 0;
     int iVar1 = 0;
-    if (0 >= nTotalStrLen) {
+    if (nTotalStrLen <= 0) {
       return;
     }
 
@@ -378,7 +377,7 @@ static void __stdcall D2WINFONT_DrawWideString(uint16_t * wszText, int32_t nX, i
       wCharCode = *wszText;
       pwszNext = wszText + 1;
       nStrLen = iVar1 + 1;
-      if ((uint16_t)*wszText < 0x100 && *wszText == L'ÿ') {
+      if ((uint16_t)*wszText < 0x100 && *wszText == L'\xff') {
         wszColorMarker[0] = *pwszNext;
         nStrLen = iVar1 + 2;
         pwszNext = wszText + 2;
@@ -414,8 +413,7 @@ static void __stdcall D2WINFONT_DrawWideString(uint16_t * wszText, int32_t nX, i
           nPositionX = (nWidth - nLineWidth >> 1) + nX;
         }
 
-        iVar1 = (int)((uint64_t)((int64_t)(int)((uint32_t)gaFontCache[gnLastUsedFontId].pFontTableHeader->nLineHeight * gnFontIdSmall) * -0x66666667) >> 0x20);
-        nY += (iVar1 >> 2) - (iVar1 >> 0x1f);
+        nY += (int)((uint32_t)gaFontCache[gnLastUsedFontId].pFontTableHeader->nLineHeight * gnFontIdSmall) / -10;
       }
 
       iVar1 = nStrLen;
@@ -430,7 +428,7 @@ static void * __stdcall D2WINFONT_DrawWideStringWithDrawMode(int32_t nX, uint16_
     D2FontGlyphStrc* pNextChar;
     D2FontGlyphStrc* pColorArgChar;
     D2GfxDataStrc sGfxData;
-    uint16_t local_8[2];
+    uint16_t wszColorMarker[2];
     int32_t nStrLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
     int nCharIndex = 0;
     int nPositionX = nX;
@@ -443,62 +441,60 @@ static void * __stdcall D2WINFONT_DrawWideStringWithDrawMode(int32_t nX, uint16_
     sGfxData.pDC6 = *gppDC6FontCache;
     sGfxData.nDirection = 0;
     D2FontGlyphStrc* pCurGlyphEntry = (D2FontGlyphStrc*)gppDC6FontCache;
-    if (nStrLen <= 0) {
-      return pCurGlyphEntry;
-    }
-
-    do {
+    if (nStrLen > 0) {
       uint16_t wCharCode;
-      wCharCode = ((D2FontGlyphStrc*)wszText)->wCharCode;
-      pNextChar = (D2FontGlyphStrc*)((D2FontGlyphStrc*)wszText)->abUnverified;
-      if (((D2FontGlyphStrc*)wszText)->wCharCode < 0x100 && ((D2FontGlyphStrc*)wszText)->wCharCode == 0xff) {
-        local_8[0] = *(uint16_t*)pNextChar;
-        pColorArgChar = (D2FontGlyphStrc*)(((D2FontGlyphStrc*)wszText)->abUnverified + 2);
-        nLineWidth = D2Lang::Unicode::UNISYS::UNICODE_CompareWideStringsN(local_8, gwFontHeightDefault, 1);
-        if (!nLineWidth) {
-          if (!(nCharIndex + 2 < nStrLen)) {
-            eGlobalPalette = 0;
-            pCurGlyphEntry = 0;
-            pNextChar = pColorArgChar;
-            nCharIndex += 2;
-          } else {
-            nCharIndex += 3;
-            eGlobalPalette = pColorArgChar->wCharCode - 0x30;
-            pNextChar = (D2FontGlyphStrc*)(((D2FontGlyphStrc*)wszText)->abUnverified + 4);
-            pCurGlyphEntry = pColorArgChar;
-            if ((int)eGlobalPalette >= 0xd) {
+      do {
+        wCharCode = ((D2FontGlyphStrc*)wszText)->wCharCode;
+        pNextChar = (D2FontGlyphStrc*)((D2FontGlyphStrc*)wszText)->abUnverified;
+        if (((D2FontGlyphStrc*)wszText)->wCharCode < 0x100 && ((D2FontGlyphStrc*)wszText)->wCharCode == 0xff) {
+          wszColorMarker[0] = *(uint16_t*)pNextChar;
+          pColorArgChar = (D2FontGlyphStrc*)(((D2FontGlyphStrc*)wszText)->abUnverified + 2);
+          nLineWidth = D2Lang::Unicode::UNISYS::UNICODE_CompareWideStringsN(wszColorMarker, gwFontHeightDefault, 1);
+          if (!nLineWidth) {
+            if (!(nCharIndex + 2 < nStrLen)) {
               eGlobalPalette = 0;
+              pCurGlyphEntry = 0;
+              pNextChar = pColorArgChar;
+              nCharIndex += 2;
+            } else {
+              nCharIndex += 3;
+              eGlobalPalette = pColorArgChar->wCharCode - 0x30;
+              pNextChar = (D2FontGlyphStrc*)(((D2FontGlyphStrc*)wszText)->abUnverified + 4);
+              pCurGlyphEntry = pColorArgChar;
+              if ((int)eGlobalPalette >= 0xd) {
+                eGlobalPalette = 0;
+              }
             }
+          } else {
+            pNextChar = (D2FontGlyphStrc*)((D2FontGlyphStrc*)wszText)->abUnverified;
+            pCurGlyphEntry = (*gpfnFontGetCharWidth)(wCharCode);
+            sGfxData.nFrameNumber = (int)*(uint16_t*)(pCurGlyphEntry->abUnverified + 6);
+            D2gfx::D2GFX::D2GFX_DrawShiftedImage(&sGfxData, nPositionX, nY, -1, eDrawMode, eGlobalPalette);
+            nPositionX += (uint32_t)pCurGlyphEntry->abUnverified[1];
+            nCharIndex++;
           }
-        } else {
-          pNextChar = (D2FontGlyphStrc*)((D2FontGlyphStrc*)wszText)->abUnverified;
+        } else if (wCharCode != 10) {
           pCurGlyphEntry = (*gpfnFontGetCharWidth)(wCharCode);
           sGfxData.nFrameNumber = (int)*(uint16_t*)(pCurGlyphEntry->abUnverified + 6);
           D2gfx::D2GFX::D2GFX_DrawShiftedImage(&sGfxData, nPositionX, nY, -1, eDrawMode, eGlobalPalette);
           nPositionX += (uint32_t)pCurGlyphEntry->abUnverified[1];
           nCharIndex++;
-        }
-      } else if (wCharCode != 10) {
-        pCurGlyphEntry = (*gpfnFontGetCharWidth)(wCharCode);
-        sGfxData.nFrameNumber = (int)*(uint16_t*)(pCurGlyphEntry->abUnverified + 6);
-        D2gfx::D2GFX::D2GFX_DrawShiftedImage(&sGfxData, nPositionX, nY, -1, eDrawMode, eGlobalPalette);
-        nPositionX += (uint32_t)pCurGlyphEntry->abUnverified[1];
-        nCharIndex++;
-      } else {
-        nPositionX = nX;
-        if (bCenterHorizontally) {
-          nLineWidth = D2WINFONT_GetFirstLinePixelWidth((uint16_t*)pNextChar);
-          nPositionX = (nWidth - nLineWidth >> 1) + nX;
+        } else {
+          nPositionX = nX;
+          if (bCenterHorizontally) {
+            nLineWidth = D2WINFONT_GetFirstLinePixelWidth((uint16_t*)pNextChar);
+            nPositionX = (nWidth - nLineWidth >> 1) + nX;
+          }
+
+          nFontHeight = (uint32_t)gaFontCache[gnLastUsedFontId].pFontTableHeader->nLineHeight;
+          pCurGlyphEntry = (D2FontGlyphStrc*)(nFontHeight * -0x66666670);
+          nY += (int)(nFontHeight * -0x10) / 10;
+          nCharIndex++;
         }
 
-        nFontHeight = (uint32_t)gaFontCache[gnLastUsedFontId].pFontTableHeader->nLineHeight;
-        pCurGlyphEntry = (D2FontGlyphStrc*)(nFontHeight * -0x66666670);
-        nY += (int)(nFontHeight * -0x10) / 10;
-        nCharIndex++;
-      }
-
-      wszText = (uint16_t*)pNextChar;
-    } while (nCharIndex < nStrLen);
+        wszText = (uint16_t*)pNextChar;
+      } while (nCharIndex < nStrLen);
+    }
 
     return pCurGlyphEntry;
 }
@@ -531,26 +527,26 @@ void __fastcall D2WINFONT_DrawVerticalCroppedText(uint16_t * wszText, int32_t nX
     nPositionY = nY;
     uint16_t* pCurChar;
     pCurChar = wszText - 1;
-    int iVar1;
-    iVar1 = 0;
+    int nCharIndex;
+    nCharIndex = 0;
     int nPositionX;
     nPositionX = nX;
     do {
       pNextChar = pCurChar + 1;
-      nNextIdx = iVar1 + 1;
-      if ((uint16_t)pCurChar[1] < 0x100 && pCurChar[1] == L'ÿ') {
+      nNextIdx = nCharIndex + 1;
+      if ((uint16_t)pCurChar[1] < 0x100 && pCurChar[1] == L'\xff') {
         nY = (uint32_t)((uint32_t)(uint16_t)*(uint16_t*)((char*)&nY + 2) << 16 | (uint32_t)(uint16_t)wszText[nNextIdx]);
-        nNextIdx = iVar1 + 2;
+        nNextIdx = nCharIndex + 2;
         pNextChar = pCurChar + 2;
         nCmpResult = D2Lang::Unicode::UNISYS::UNICODE_CompareWideStringsN((uint16_t*)&nY, gwFontHeightDefault, 1);
         if (!nCmpResult) {
-          nNextIdx = iVar1 + 3;
+          nNextIdx = nCharIndex + 3;
           pNextChar = pCurChar + 3;
         } else {
           nCmpResult = D2Lang::Unicode::UNISYS::UNICODE_CompareWideStringsN((uint16_t*)&nY, gnFontTableCharWidthCache, 1);
           if (!nCmpResult) {
             wCharCode = *pNextChar;
-            nNextIdx = iVar1 + 3;
+            nNextIdx = nCharIndex + 3;
             pNextChar = pCurChar + 3;
             pGlyphEntry = (*gpfnFontGetCharWidth)(wCharCode);
             sGfxData.pDC6 = gpMonsterIndicatorDC6;
@@ -560,8 +556,8 @@ void __fastcall D2WINFONT_DrawVerticalCroppedText(uint16_t * wszText, int32_t nX
             nPositionY += (int)(nFontHeightVal << 4) / 10;
           }
         }
-      } else if (wszText[iVar1] != L'\n') {
-        pGlyphEntry = (*gpfnFontGetCharWidth)(wszText[iVar1]);
+      } else if (wszText[nCharIndex] != L'\n') {
+        pGlyphEntry = (*gpfnFontGetCharWidth)(wszText[nCharIndex]);
         if (eRendererModeVal != RENDERER_Direct3D) {
           sGfxData.pDC6 = *gppDC6FontCache;
           sGfxData.nFrameNumber = (int)*(uint16_t*)(pGlyphEntry->abUnverified + 6);
@@ -585,7 +581,7 @@ void __fastcall D2WINFONT_DrawVerticalCroppedText(uint16_t * wszText, int32_t nX
 
       next_char:
       pCurChar = pNextChar;
-      iVar1 = nNextIdx;
+      nCharIndex = nNextIdx;
     } while (nNextIdx < nTotalStrLen);
 }
 
@@ -617,7 +613,7 @@ void * __fastcall D2WINFONT_DrawWideStringRightToLeft(uint16_t * wszText, int32_
       wCharCode = *wszText;
       pNextChar = wszText + 1;
       nRightBound = (uint32_t)((uint32_t)(uint16_t)*(uint16_t*)((char*)&nRightBound + 2) << 16 | (uint32_t)(uint16_t)wCharCode);
-      if ((uint16_t)*wszText < 0x100 && *wszText == L'ÿ') {
+      if ((uint16_t)*wszText < 0x100 && *wszText == L'\xff') {
         nLeftBound = (uint32_t)((uint32_t)(uint16_t)*(uint16_t*)((char*)&nLeftBound + 2) << 16 | (uint32_t)(uint16_t)*pNextChar);
         pCurGlyph = wszText + 2;
         nGlyphCmp = D2Lang::Unicode::UNISYS::UNICODE_CompareWideStringsN((uint16_t*)&nLeftBound, gwFontHeightDefault, 1);
@@ -688,7 +684,7 @@ static void D2WINFONT_DrawWideStringSimple(uint16_t * wszText, int32_t nX, int32
     do {
       while (true) {
         wCharCode = *pCurChar;
-        if ((uint16_t)wCharCode >= 0x100 || wCharCode != L'ÿ') {
+        if ((uint16_t)wCharCode >= 0x100 || wCharCode != L'\xff') {
           break;
         }
 
@@ -775,41 +771,33 @@ void __fastcall D2WINFONT_DrawWideStringSimpleThunk(uint16_t * wszText, int32_t 
 
 // Draws text with background rectangle. Calculates text dimensions, clamps to screen bounds, draws solid rect, then renders centered text. Used for tooltips and popups.
 void __fastcall D2WINFONT_DrawTextWithBackgroundRect(uint16_t * wszText, uint32_t nX, int32_t nY, DWORD dwBackgroundColor, DRAWMODE eDrawMode, GLOBALPALLETE eGlobalPalette) {
-    // Frame slots -20..-4 are ONE object: &nPaddedY is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nPaddedY;
-      int nScreenHeight;
-      int nScreenWidth;
-      uint32_t nOrigX;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    __frame0.nOrigX = nX;
+    int nPaddedY;
+    int nScreenWidth;
+    uint32_t nOrigX = nX;
     int32_t nTextWidth = TEXT_CalculateTextWidth(wszText);
     int nWidth = nTextWidth + 8;
-    __frame0.nScreenHeight = TEXT_CalculateTextHeight(wszText);
+    int nScreenHeight = TEXT_CalculateTextHeight(wszText);
     int nTextHeight = nY + 2;
-    D2gfx::D2GFX::D2GFX_GetScreenSize(&__frame0.nScreenWidth, &__frame0.nPaddedY);
-    uint32_t nXStart = (int)__frame0.nOrigX <= 0 ? 0 : __frame0.nOrigX;
-    if ((int)nXStart >= __frame0.nScreenWidth - nWidth) {
-      nXStart = __frame0.nScreenWidth - nWidth;
+    D2gfx::D2GFX::D2GFX_GetScreenSize(&nScreenWidth, &nPaddedY);
+    uint32_t nXStart = (int)nOrigX <= 0 ? 0 : nOrigX;
+    if ((int)nXStart >= nScreenWidth - nWidth) {
+      nXStart = nScreenWidth - nWidth;
     }
 
     int nClampedY = nTextHeight;
-    if (nTextHeight <= __frame0.nScreenHeight) {
-      nClampedY = __frame0.nScreenHeight;
+    if (nTextHeight <= nScreenHeight) {
+      nClampedY = nScreenHeight;
     }
 
-    int nYEnd = __frame0.nPaddedY - 0x1f;
+    int nYEnd = nPaddedY - 0x1f;
     if (nClampedY < nYEnd) {
       nYEnd = nTextHeight;
-      if (nTextHeight <= __frame0.nScreenHeight) {
-        nYEnd = __frame0.nScreenHeight;
+      if (nTextHeight <= nScreenHeight) {
+        nYEnd = nScreenHeight;
       }
     }
 
-    D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nXStart, nYEnd - __frame0.nScreenHeight, nXStart + nWidth, nYEnd, dwBackgroundColor, eDrawMode);
+    D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nXStart, nYEnd - nScreenHeight, nXStart + nWidth, nYEnd, dwBackgroundColor, eDrawMode);
     D2WINFONT_DrawWideString(wszText, nXStart, nYEnd - (uint32_t)gaFontCache[gnLastUsedFontId].pFontTableHeader->nLineHeight * 3 / 10, nWidth, eGlobalPalette, 1);
 }
 
@@ -856,44 +844,35 @@ BOOL __fastcall D2WINFONT_IsFontCharacterValid(uint8_t nCharCode) {
       exit(-1);
     }
 
-    return gaFontCharValidBits[nCharCode >> 5] >> (nCharCode & 0x1f) & 1;
-    return gaFontCharValidBits[nCharCode >> 5] >> (nCharCode & 0x1f) & 1;
+    return gaFontCharValidBits[nCharCode >> 5] >> D2_SHIFT_COUNT(nCharCode) & 1;
 }
 
 // Draws text with background rect offset by -4px horizontally. Calculates text height, clamps to screen, draws inset rectangle, renders text. Used for UI tooltips with padding.
 void __fastcall D2WINFONT_DrawTextWithOffsetBackground(uint16_t * wszText, int32_t nX, int32_t nY, int32_t nWidth, DWORD dwBackgroundColor, DRAWMODE eDrawMode, GLOBALPALLETE eGlobalPalette) {
-    // Frame slots -20..-4 are ONE object: &nScreenHeight is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nScreenHeight;
-      int32_t nSavedX;
-      int nScreenWidth;
-      int nTextHeightLines;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    __frame0.nTextHeightLines = TEXT_CalculateTextHeight(wszText);
+    int nScreenHeight;
+    int nScreenWidth;
+    int nTextHeightLines = TEXT_CalculateTextHeight(wszText);
     uint8_t byFontHeight = gaFontCache[gnLastUsedFontId].pFontTableHeader->nLineHeight;
-    __frame0.nSavedX = nX;
-    D2gfx::D2GFX::D2GFX_GetScreenSize(&__frame0.nScreenWidth, &__frame0.nScreenHeight);
-    int nTextHeight = __frame0.nSavedX;
-    if (nX + nWidth > __frame0.nScreenWidth) {
-      nTextHeight = __frame0.nScreenWidth - nWidth;
+    int32_t nSavedX = nX;
+    D2gfx::D2GFX::D2GFX_GetScreenSize(&nScreenWidth, &nScreenHeight);
+    int nTextHeight = nSavedX;
+    if (nX + nWidth > nScreenWidth) {
+      nTextHeight = nScreenWidth - nWidth;
     }
 
     int nYEnd = nY + 2;
-    if (nY + 2 > __frame0.nScreenHeight - 0x1f) {
-      nYEnd = __frame0.nScreenHeight - 0x1f;
+    if (nY + 2 > nScreenHeight - 0x1f) {
+      nYEnd = nScreenHeight - 0x1f;
     }
-    if (nYEnd - __frame0.nTextHeightLines < 0) {
+    if (nYEnd - nTextHeightLines < 0) {
       nYEnd *= 2;
     }
 
-    D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nTextHeight - 4, (uint32_t)byFontHeight * 4 / 10 - __frame0.nTextHeightLines + nYEnd, nWidth + nTextHeight - 4, nYEnd, dwBackgroundColor, eDrawMode);
+    D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nTextHeight - 4, (uint32_t)byFontHeight * 4 / 10 - nTextHeightLines + nYEnd, nWidth + nTextHeight - 4, nYEnd, dwBackgroundColor, eDrawMode);
     D2WINFONT_DrawWideString(wszText, nTextHeight, nYEnd - 2, 0, eGlobalPalette, 0);
 }
 
-void __fastcall IMAGE_DrawDC6ImageOnScreen(DC6 * pDC6, int32_t nPosX, int32_t nPoxY, int32_t nParam, DRAWMODE eDrawMode, GLOBALPALLETE nGlobalPaletteShift) {
+void __fastcall IMAGE_DrawDC6ImageOnScreen(DC6 * pDC6, int32_t nPosX, int32_t nPoxY, int32_t nAlignment, DRAWMODE eDrawMode, GLOBALPALLETE nGlobalPaletteShift) {
     int32_t nFrameWidthPx;
     uint32_t nFrameIdx;
     D2GfxDataStrc sGfxData;
@@ -903,7 +882,7 @@ void __fastcall IMAGE_DrawDC6ImageOnScreen(DC6 * pDC6, int32_t nPosX, int32_t nP
     memset(&sGfxData, 0, 0x48);
     sGfxData.pDC6 = pDC6;
     sGfxData.nDirection = 0;
-    if (nParam == 1 || (nDrawX = nPosX , nParam == 2)) {
+    if (nAlignment == 1 || (nDrawX = nPosX , nAlignment == 2)) {
       DC6Block* pBlock;
       nFrameIdx = 0;
       if (nFrameCount > 0) {
@@ -915,7 +894,7 @@ void __fastcall IMAGE_DrawDC6ImageOnScreen(DC6 * pDC6, int32_t nPosX, int32_t nP
           nTotalWidth += nFrameWidthPx;
         } while (nFrameIdx < nFrameCount);
       }
-      if (nParam == 1) {
+      if (nAlignment == 1) {
         nDrawX = nPosX + (-1 - (nTotalWidth >> 1));
       } else {
         nDrawX = nPosX - nTotalWidth;
@@ -942,17 +921,10 @@ void __fastcall IMAGE_DrawDC6ImageOnScreen(DC6 * pDC6, int32_t nPosX, int32_t nP
 
 // Draws text with background progress bar. If nProgressPercent is non-zero, draws filled portion in dark color. Calculates text dimensions, clamps to screen, draws layered rectangles (filled + unfilled), renders centered text.
 void __fastcall D2WINFONT_DrawTextWithProgressBar(uint16_t * wszText, uint32_t nX, int32_t nY, GLOBALPALLETE eGlobalPalette, uint32_t nAlignMode, int32_t nProgressPercent) {
-    // Frame slots -16..-4 are ONE object: &nScreenHeight is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nScreenHeight;
-      int nScreenWidth;
-      int nTextHeight;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint32_t extraout_var;
     uint32_t nXEnd;
+    int nScreenHeight;
+    int nScreenWidth;
     int32_t nStrLen;
     nStrLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
     if (!nStrLen) {
@@ -962,36 +934,37 @@ void __fastcall D2WINFONT_DrawTextWithProgressBar(uint16_t * wszText, uint32_t n
     nStrLen = TEXT_CalculateTextWidth(wszText);
     int nWidth;
     nWidth = nStrLen + 8;
-    __frame0.nTextHeight = TEXT_CalculateTextHeight(wszText);
+    int nTextHeight;
+    nTextHeight = TEXT_CalculateTextHeight(wszText);
     if (nAlignMode == 1) {
       nX -= nWidth >> 1;
     }
 
     int nFilledWidth;
     nFilledWidth = nY + 2;
-    D2gfx::D2GFX::D2GFX_GetScreenSize(&__frame0.nScreenWidth, &__frame0.nScreenHeight);
+    D2gfx::D2GFX::D2GFX_GetScreenSize(&nScreenWidth, &nScreenHeight);
     nAlignMode = (int)nX <= 0 ? 0 : nX;
-    if ((int)nAlignMode >= __frame0.nScreenWidth - nWidth) {
-      nAlignMode = __frame0.nScreenWidth - nWidth;
+    if ((int)nAlignMode >= nScreenWidth - nWidth) {
+      nAlignMode = nScreenWidth - nWidth;
     }
 
     int nYStart;
     nYStart = nFilledWidth;
-    if (nFilledWidth <= __frame0.nTextHeight) {
-      nYStart = __frame0.nTextHeight;
+    if (nFilledWidth <= nTextHeight) {
+      nYStart = nTextHeight;
     }
 
     int nYEnd;
-    nYEnd = __frame0.nScreenHeight - 0x1f;
+    nYEnd = nScreenHeight - 0x1f;
     if (nYStart < nYEnd) {
       nYEnd = nFilledWidth;
-      if (nFilledWidth <= __frame0.nTextHeight) {
-        nYEnd = __frame0.nTextHeight;
+      if (nFilledWidth <= nTextHeight) {
+        nYEnd = nTextHeight;
       }
     }
     if (nProgressPercent) {
       DWORD dwColor;
-      dwColor = (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)__frame0.nTextHeight >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gcTooltipBarColor);
+      dwColor = (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)nTextHeight >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gcTooltipBarColor);
       if (!gcTooltipBarColor) {
         gcTooltipBarColor = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x50, 0, 0);
         dwColor = (uint32_t)((uint32_t)((uint32_t)extraout_var & 0xffffffu) << 8 | (uint32_t)(uint8_t)gcTooltipBarColor);
@@ -999,7 +972,7 @@ void __fastcall D2WINFONT_DrawTextWithProgressBar(uint16_t * wszText, uint32_t n
 
       nFilledWidth = nWidth * nProgressPercent >> 7;
       nXEnd = nFilledWidth + nAlignMode;
-      nYStart = nYEnd - __frame0.nTextHeight;
+      nYStart = nYEnd - nTextHeight;
       D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nAlignMode, nYStart, nXEnd, nYEnd, dwColor, DRAW_TRANSPARENT);
       nFilledWidth = nWidth - nFilledWidth;
       if (!nFilledWidth) {
@@ -1009,7 +982,7 @@ void __fastcall D2WINFONT_DrawTextWithProgressBar(uint16_t * wszText, uint32_t n
       nFilledWidth += nXEnd;
     } else {
       nFilledWidth = nAlignMode + nWidth;
-      nYStart = nYEnd - __frame0.nTextHeight;
+      nYStart = nYEnd - nTextHeight;
       nXEnd = nAlignMode;
     }
 
@@ -1021,11 +994,11 @@ void __fastcall D2WINFONT_DrawTextWithProgressBar(uint16_t * wszText, uint32_t n
 // @sourcefile .\Src\D2WinFont.cpp
 void __fastcall D2WINFONT_FreeWordWrapList(void * * ppNodeList) {
     while (ppNodeList) {
-      void** ppvVar1;
-      ppvVar1 = (void**)ppNodeList[1];
+      void** ppNextNode;
+      ppNextNode = (void**)ppNodeList[1];
       D2_FREE_AT(*ppNodeList, ".\\Src\\D2WinFont.cpp", 0x579);
       D2_FREE_AT(ppNodeList, ".\\Src\\D2WinFont.cpp", 0x57a);
-      ppNodeList = ppvVar1;
+      ppNodeList = ppNextNode;
     }
 }
 
@@ -1085,21 +1058,16 @@ D2TextLineStrc * __fastcall D2WINFONT_WordWrapString(uint16_t * wszText, int * p
     nSegStart = 0;
     while (true) {
       nFitPixelWidth = 0;
-      nSegEnd = nStrLen;
-      if (nStrLen > nSegStart) {
-        do {
-          nFitPixelWidth = D2WINFONT_GetStringPixelWidthN((uint16_t*)(wszText + nSegStart), 1 - nSegStart + nSegEnd);
-          if (nFitPixelWidth <= nMaxWidth) {
-            if (nSegEnd > nSegStart) {
-              nBreakPos = nSegEnd - nSegStart + 1;
-              goto find_break_position;
-            }
-
-            break;
+      for (nSegEnd = nStrLen; nSegEnd > nSegStart; nSegEnd--) {
+        nFitPixelWidth = D2WINFONT_GetStringPixelWidthN((uint16_t*)(wszText + nSegStart), 1 - nSegStart + nSegEnd);
+        if (nFitPixelWidth <= nMaxWidth) {
+          if (nSegEnd > nSegStart) {
+            nBreakPos = nSegEnd - nSegStart + 1;
+            goto find_break_position;
           }
 
-          nSegEnd--;
-        } while (nSegEnd > nSegStart);
+          break;
+        }
       }
 
       goto choose_line_break;
@@ -1109,7 +1077,7 @@ D2TextLineStrc * __fastcall D2WINFONT_WordWrapString(uint16_t * wszText, int * p
           break;
         }
 
-        bCanBreak = D2Lang::Unicode::UNISYS::UNICODE_CheckLineBreakPosition((int32_t)(wszText + nSegStart), nBreakPos);
+        bCanBreak = D2Lang::Unicode::UNISYS::UNICODE_CheckLineBreakPosition(wszText + nSegStart, nBreakPos);
         if (bCanBreak) {
           break;
         }
@@ -1122,16 +1090,11 @@ D2TextLineStrc * __fastcall D2WINFONT_WordWrapString(uint16_t * wszText, int * p
       }
       choose_line_break:
       if (nSegEnd == nSegStart) {
-        nSegEnd = nStrLen;
-        if (nStrLen > nSegStart) {
-          do {
-            nSegPixelWidth = D2WINFONT_GetStringPixelWidthN((uint16_t*)(wszText + nSegStart), 1 - nSegStart + nSegEnd);
-            if (nSegPixelWidth <= nMaxWidth) {
-              break;
-            }
-
-            nSegEnd--;
-          } while (nSegEnd > nSegStart);
+        for (nSegEnd = nStrLen; nSegEnd > nSegStart; nSegEnd--) {
+          nSegPixelWidth = D2WINFONT_GetStringPixelWidthN((uint16_t*)(wszText + nSegStart), 1 - nSegStart + nSegEnd);
+          if (nSegPixelWidth <= nMaxWidth) {
+            break;
+          }
         }
 
         pNode = D2_NEW_AT(D2TextLineStrc, ".\\Src\\D2WinFont.cpp", 0x588);
@@ -1163,21 +1126,16 @@ D2TextLineStrc * __fastcall D2WINFONT_WordWrapString(uint16_t * wszText, int * p
         goto next_segment;
       }
       if (nFitPixelWidth > nMaxWidth) {
-        nSegEnd = nStrLen;
-        if (nStrLen > nSegStart) {
-          do {
-            nSegPixelWidth = D2WINFONT_GetStringPixelWidthN((uint16_t*)(wszText + nSegStart), 1 - nSegStart + nSegEnd);
-            if (nSegPixelWidth <= nMaxWidth) {
-              if (nSegEnd > nSegStart) {
-                nBreakPos = nSegEnd - nSegStart + 1;
-                goto check_break_position;
-              }
-
-              break;
+        for (nSegEnd = nStrLen; nSegEnd > nSegStart; nSegEnd--) {
+          nSegPixelWidth = D2WINFONT_GetStringPixelWidthN((uint16_t*)(wszText + nSegStart), 1 - nSegStart + nSegEnd);
+          if (nSegPixelWidth <= nMaxWidth) {
+            if (nSegEnd > nSegStart) {
+              nBreakPos = nSegEnd - nSegStart + 1;
+              goto check_break_position;
             }
 
-            nSegEnd--;
-          } while (nSegEnd > nSegStart);
+            break;
+          }
         }
 
         goto fall_back_to_fit_width;
@@ -1210,7 +1168,7 @@ D2TextLineStrc * __fastcall D2WINFONT_WordWrapString(uint16_t * wszText, int * p
       }
 
       check_break_position:
-      if (nSegEnd == nStrLen || (bCanBreak = D2Lang::Unicode::UNISYS::UNICODE_CheckLineBreakPosition((int32_t)(wszText + nSegStart), nBreakPos) , bCanBreak != 0)) {
+      if (nSegEnd == nStrLen || (bCanBreak = D2Lang::Unicode::UNISYS::UNICODE_CheckLineBreakPosition(wszText + nSegStart, nBreakPos) , bCanBreak != 0)) {
         break;
       }
     }
@@ -1371,37 +1329,26 @@ int32_t __fastcall SetAndReturnLastFont(int32_t nFontId) {
     }
 
     gppDC6FontCache = (DC6**)&pNewCacheEntry->pFontDC6;
-    if (gbFontIsKoreanChatMode == '\0') {
-      return pReturnFont;
+    if (gbFontIsKoreanChatMode != '\0') {
+      gpfnFontGetCharWidth = D2WINFONT_LookupGlyphEntry;
+      if (nFontId != 0xd) {
+        gpfnFontGetCharWidth = FONT_GetCharWidthCallback;
+      }
     }
 
-    gpfnFontGetCharWidth = D2WINFONT_LookupGlyphEntry;
-    if (nFontId == 0xd) {
-      return pReturnFont;
-    }
-
-    gpfnFontGetCharWidth = FONT_GetCharWidthCallback;
     return pReturnFont;
 }
 
 void __stdcall Draw_UnitNameUnderCursor() {
-    // Frame slots -24..-4 are ONE object: &nScreenWidth is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nScreenWidth;
-      int nScreenHeight;
-      int nCalcTextHeight;
-      void* pPrevFont;
-      uint32_t nClampedX;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 20, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint32_t nDrawX;
     uint32_t extraout_var;
     int nFilledWidth;
     int nWidth;
+    int nScreenWidth;
+    int nScreenHeight;
+    int nCalcTextHeight;
     int32_t pSavedFont = gnLastUsedFontId;
-    __frame0.pPrevFont = (void*)gnLastUsedFontId;
+    void* pPrevFont = (void*)gnLastUsedFontId;
     int32_t nStrLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(DisplayedTooltip.wszString);
     if (!nStrLen) {
       return;
@@ -1410,43 +1357,43 @@ void __stdcall Draw_UnitNameUnderCursor() {
     while (true) {
       nStrLen = TEXT_CalculateTextWidth(DisplayedTooltip.wszString);
       nWidth = nStrLen + 8;
-      __frame0.nCalcTextHeight = TEXT_CalculateTextHeight(DisplayedTooltip.wszString);
+      nCalcTextHeight = TEXT_CalculateTextHeight(DisplayedTooltip.wszString);
       nDrawX = DisplayedTooltip.nX;
       if (DisplayedTooltip.nCenterFlag == 1) {
         nDrawX = DisplayedTooltip.nX - (nWidth >> 1);
       }
 
       nFilledWidth = DisplayedTooltip.nY + 2;
-      D2gfx::D2GFX::D2GFX_GetScreenSize(&__frame0.nScreenWidth, &__frame0.nScreenHeight);
-      if (__frame0.nCalcTextHeight <= __frame0.nScreenHeight - 10) {
+      D2gfx::D2GFX::D2GFX_GetScreenSize(&nScreenWidth, &nScreenHeight);
+      if (nCalcTextHeight <= nScreenHeight - 10) {
         break;
       }
-      if (__frame0.pPrevFont == (void*)0x1) {
+      if (pPrevFont == (void*)0x1) {
         SetAndReturnLastFont(0);
-        __frame0.pPrevFont = 0;
+        pPrevFont = 0;
       } else {
         if (gnLastUsedFontId) {
           break;
         }
 
         SetAndReturnLastFont(6);
-        __frame0.pPrevFont = (void*)0x6;
+        pPrevFont = (void*)0x6;
       }
     }
 
     nDrawX = (int)nDrawX <= 0 ? 0 : nDrawX;
-    uint32_t nXStart = __frame0.nScreenWidth - nWidth;
+    uint32_t nXStart = nScreenWidth - nWidth;
     if ((int)nDrawX < (int)nXStart) {
       nXStart = nDrawX;
     }
 
-    int nBarTextHeight = __frame0.nCalcTextHeight - 5;
+    int nBarTextHeight = nCalcTextHeight - 5;
     int nTextWidth = nFilledWidth;
     if (nFilledWidth <= nBarTextHeight) {
       nTextWidth = nBarTextHeight;
     }
 
-    int nYEnd = __frame0.nScreenHeight - 5;
+    int nYEnd = nScreenHeight - 5;
     if (nTextWidth < nYEnd) {
       nYEnd = nFilledWidth;
       if (nFilledWidth <= nBarTextHeight) {
@@ -1454,7 +1401,7 @@ void __stdcall Draw_UnitNameUnderCursor() {
       }
     }
 
-    __frame0.nClampedX = nXStart;
+    uint32_t nClampedX = nXStart;
     if (DisplayedTooltip.nLoadProgress) {
       DWORD dwColor;
       dwColor = (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)nBarTextHeight >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gcTooltipBarColor);
@@ -1465,24 +1412,44 @@ void __stdcall Draw_UnitNameUnderCursor() {
 
       nFilledWidth = DisplayedTooltip.nLoadProgress * nWidth >> 7;
       nBarTextHeight = nFilledWidth + nXStart;
-      nTextWidth = nYEnd - __frame0.nCalcTextHeight;
-      D2gfx::D2GFX::D2GFX_DrawSolidRectEx(__frame0.nClampedX, nTextWidth, nBarTextHeight, nYEnd, dwColor, DRAW_TRANSPARENT);
+      nTextWidth = nYEnd - nCalcTextHeight;
+      D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nClampedX, nTextWidth, nBarTextHeight, nYEnd, dwColor, DRAW_TRANSPARENT);
       nFilledWidth = nWidth - nFilledWidth;
-      nXStart = __frame0.nClampedX;
+      nXStart = nClampedX;
       if (nFilledWidth) {
         D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nBarTextHeight, nTextWidth, nBarTextHeight + nFilledWidth, nYEnd, 0, DRAW_LESSTRANSPARENT);
-        nXStart = __frame0.nClampedX;
+        nXStart = nClampedX;
       }
     } else {
-      D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nXStart, nYEnd - __frame0.nCalcTextHeight, nXStart + nWidth, nYEnd, 0, DRAW_LESSTRANSPARENT);
+      D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nXStart, nYEnd - nCalcTextHeight, nXStart + nWidth, nYEnd, 0, DRAW_LESSTRANSPARENT);
     }
 
     D2WINFONT_DrawWideString(DisplayedTooltip.wszString, nXStart, nYEnd - (int)((uint32_t)gaFontCache[gnLastUsedFontId].pFontTableHeader->nLineHeight * gnFontIdBody) / 10, nWidth, DisplayedTooltip.nColor, 1);
-    if (__frame0.pPrevFont == (void*)pSavedFont) {
+    if (pPrevFont == (void*)pSavedFont) {
       return;
     }
 
     SetAndReturnLastFont(pSavedFont);
+}
+
+void StaticInit_DisplayedTooltip() {
+    int i;
+    D2TooltipTextStrc* pDVar1 = &DisplayedTooltip;
+    for (i = 0x200; i; i--) {
+      pDVar1->wszString[0] = L'\0';
+      pDVar1->wszString[1] = L'\0';
+      pDVar1 = (D2TooltipTextStrc*)(pDVar1->wszString + 2);
+    }
+}
+
+void StaticInit_gwFontHeightDefault() {
+    gwFontHeightDefault[0] = 0;
+    gwFontHeightDefault[1] = 0;
+}
+
+void StaticInit_gnFontTableCharWidthCache() {
+    gnFontTableCharWidthCache[0] = 0;
+    gnFontTableCharWidthCache[1] = 0;
 }
 
 } // namespace D2Win::Src::D2WinFont

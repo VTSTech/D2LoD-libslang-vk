@@ -6,7 +6,6 @@
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/npcmenu/Merc.h"
 #include "D2Client/UNIT.h"
@@ -26,7 +25,6 @@
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/Preset.h"
-#include "D2Common/Game.h"
 #include "D2Common/Merc.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Common/Text.h"
@@ -98,35 +96,35 @@ void __fastcall SendMercPackets(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, int32
     }
 
     uint32_t nStatVal = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pMerc, UNITSTAT_level, 0);
-    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, UNITSTAT_level, nStatVal);
+    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, 0xc, nStatVal);
     nStatVal = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pMerc, UNITSTAT_strength, 0);
-    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, UNITSTAT_strength, nStatVal);
+    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, 0, nStatVal);
     nStatVal = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pMerc, UNITSTAT_dexterity, 0);
-    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, UNITSTAT_dexterity, nStatVal);
+    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, 2, nStatVal);
     nStatVal = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pMerc, UNITSTAT_maxhp, 0);
-    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, UNITSTAT_maxhp, nStatVal);
+    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, 7, nStatVal);
     nStatVal = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pMerc, UNITSTAT_hitpoints, 0);
-    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, UNITSTAT_hitpoints, nStatVal);
+    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, 6, nStatVal);
     nStatVal = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pMerc, UNITSTAT_armorclass, 0);
-    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, UNITSTAT_armorclass, nStatVal);
+    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, 0x1f, nStatVal);
     nStatVal = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pMerc, UNITSTAT_experience, 0);
-    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, UNITSTAT_experience, nStatVal);
+    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, 0xd, nStatVal);
     nStatVal = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pMerc, UNITSTAT_nextexp, 0);
-    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, UNITSTAT_nextexp, nStatVal);
+    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, 0x1e, nStatVal);
     int32_t nStatTmp = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pMerc, UNITSTAT_secondary_mindamage, 0);
     int32_t nSecondaryStatVal = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pMerc, UNITSTAT_mindamage, 0);
-    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, UNITSTAT_mindamage, nStatTmp + nSecondaryStatVal);
+    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, 0x15, nStatTmp + nSecondaryStatVal);
     nStatTmp = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pMerc, UNITSTAT_secondary_maxdamage, 0);
     nSecondaryStatVal = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pMerc, UNITSTAT_maxdamage, 0);
-    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, UNITSTAT_maxdamage, nStatTmp + nSecondaryStatVal);
+    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, 0x16, nStatTmp + nSecondaryStatVal);
     nStatVal = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pMerc, UNITSTAT_fireresist, 0);
-    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, UNITSTAT_fireresist, nStatVal);
+    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, 0x27, nStatVal);
     nStatVal = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pMerc, UNITSTAT_lightresist, 0);
-    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, UNITSTAT_lightresist, nStatVal);
+    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, 0x29, nStatVal);
     nStatVal = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pMerc, UNITSTAT_coldresist, 0);
-    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, UNITSTAT_coldresist, nStatVal);
+    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, 0x2b, nStatVal);
     nStatVal = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pMerc, UNITSTAT_poisonresist, 0);
-    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, UNITSTAT_poisonresist, nStatVal);
+    UNIT::SUnitMsg::UnitQueuePacket0x9E(pMerc, 0x2d, nStatVal);
 }
 
 // Recomputes a hireling/mercenary's stats for a target level. Resolves the player's merc pet (PETTYPE_hireable) if pMerc is null; if nLevel==0 uses merc level+1. Sets UNITSTAT_level, looks up the hireling.txt row for the merc type/level, and derives nextexp/experience, str/dex (min 10), maxhp/hitpoints (min 0x2800), armorclass, secondary min/max damage, tohit, the four resistances, and hpregen by interpolating the txt base + per-level columns over (level - row.level). Finally grants up to 6 innate skills (clamped 1..0x20) gated by reqlevel/skill mode. Asserts pGame/pPlayer non-null and pPlayer is UNIT_PLAYER (halts otherwise).
@@ -136,7 +134,7 @@ void __fastcall MERC_ApplyLevelStats(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, 
     int32_t nCalc;
     int nLevelDiff;
     uint32_t nUnsignedStatVal;
-    uint32_t uVar1;
+    uint32_t nStatValue;
     D2SkillsTxt* pSkillTxt;
     int* pSkillEntry;
     eD2Skills eSkill;
@@ -210,8 +208,8 @@ void __fastcall MERC_ApplyLevelStats(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, 
         nUnsignedStatVal = pHirelingTxt->defPerlvl * nTmp + pHirelingTxt->defense;
         D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_armorclass, (int)nUnsignedStatVal < 0 ? 0 : nUnsignedStatVal, 0);
         nLevelDiff = pHirelingTxt->dmgPerlvl * nTmp;
-        uVar1 = nLevelDiff / 8 + pHirelingTxt->dmgMin;
-        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_secondary_mindamage, (int)uVar1 < 0 ? 0 : uVar1, 0);
+        nStatValue = nLevelDiff / 8 + pHirelingTxt->dmgMin;
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_secondary_mindamage, (int)nStatValue < 0 ? 0 : nStatValue, 0);
         nLevelDiff = pHirelingTxt->dmgPerlvl * nTmp;
         nCalc = nLevelDiff / 8 + pHirelingTxt->dmgMax;
         if (nCalc < 1) {
@@ -219,15 +217,15 @@ void __fastcall MERC_ApplyLevelStats(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, 
         }
 
         D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_secondary_maxdamage, nCalc, 0);
-        uVar1 = pHirelingTxt->arPerlvl * nTmp + pHirelingTxt->ar;
-        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_tohit, (int)uVar1 < 0 ? 0 : uVar1, 0);
+        nStatValue = pHirelingTxt->arPerlvl * nTmp + pHirelingTxt->ar;
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_tohit, (int)nStatValue < 0 ? 0 : nStatValue, 0);
         nLevelDiff = pHirelingTxt->resistPerlvl * nTmp;
-        uVar1 = nLevelDiff / 4 + pHirelingTxt->resist;
-        uVar1 = (int)uVar1 < 0 ? 0 : uVar1;
-        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_fireresist, uVar1, 0);
-        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_lightresist, uVar1, 0);
-        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_coldresist, uVar1, 0);
-        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_poisonresist, uVar1, 0);
+        nStatValue = nLevelDiff / 4 + pHirelingTxt->resist;
+        nStatValue = (int)nStatValue < 0 ? 0 : nStatValue;
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_fireresist, nStatValue, 0);
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_lightresist, nStatValue, 0);
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_coldresist, nStatValue, 0);
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_poisonresist, nStatValue, 0);
         nCalc = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pMerc, UNITSTAT_maxhp, 0);
         D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_hpregen, nCalc / 2000 < 0 ? 0 : nCalc / 2000, 0);
         pSkillEntry = pHirelingTxt->nSkillId;
@@ -245,17 +243,17 @@ void __fastcall MERC_ApplyLevelStats(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, 
 
           pSkillTxt = D2Client::GAME::SCmd::TXT_Skills_GetLine(eSkill);
           if (pSkillTxt && nLevel >= pSkillTxt->reqlevel) {
-            uVar1 = ((char)pHirelingTxt->nSkillLvlPerLvl[nLevelDiff] * nTmp >> 5) + (int)(char)pHirelingTxt->nSkillLevel[nLevelDiff];
-            uVar1 = (int)uVar1 <= 0 ? 0 : uVar1;
-            if ((int)uVar1 < 0x20) {
-              if ((int)uVar1 <= 0) {
+            nStatValue = ((char)pHirelingTxt->nSkillLvlPerLvl[nLevelDiff] * nTmp >> 5) + (int)(char)pHirelingTxt->nSkillLevel[nLevelDiff];
+            nStatValue = (int)nStatValue <= 0 ? 0 : nStatValue;
+            if ((int)nStatValue >= 0x20) {
+              nStatValue = 0x20;
+            } else {
+              if ((int)nStatValue <= 0) {
                 continue;
               }
-            } else {
-              uVar1 = 0x20;
             }
 
-            SKILLS::SkillsServer::SetSkill(pMerc, *pSkillEntry, uVar1, 0);
+            SKILLS::SkillsServer::SetSkill(pMerc, *pSkillEntry, nStatValue, 0);
           }
         }
 
@@ -287,7 +285,7 @@ void __fastcall FreeMonsterAi(::SGAMEDATA * pGame, D2MonsterAiStrc * pMonster) {
 // Initiates a player-NPC interaction on the server. Guards against double-interaction (checks existing pAiSub list and GetInteractedNpc), verifies the NPC is interactable (MonStats interact flag) and not in Death/Kick mode, and that the player is not already trading. Allocates a D2MonsterAiSubStrc to track the interaction participant, sends the mercenary hire list (SendMercForHireList, first-time flag), sets the interact info on the player unit, then sends 0x27 NPC-info and 0x28 player-quest-info packets. Also triggers QUEST_OnNpcInteraction for quest dialogue and 0x29 quest-log prep.
 // @sourcefile .\MONSTER\MonsterAI.cpp
 static uint32_t __stdcall NPC_BeginInteraction(::SGAMEDATA * pGame, D2MonsterAiStrc * pAi, uint8_t questActionType, D2UnitStrc * pPlayer, D2UnitStrc * pNpcUnit) {
-    bool _bFirstInteraction;
+    uint32_t _bFirstInteraction;
     bool bIsTrading;
     uint32_t dwTmp;
     bool bFirstInteraction;
@@ -333,12 +331,12 @@ static uint32_t __stdcall NPC_BeginInteraction(::SGAMEDATA * pGame, D2MonsterAiS
     UNIT::SUNITNPC::SendMercForHireList(GAME::Clients::CLIENT_GetGame(pClient), pClient, pNpcUnitTmp, _bFirstInteraction);
     UNIT::SUnit::SetInteractInfo(pPlayer, UNIT_MONSTER, pNpcUnit->nUnitGUID);
     pNewAiSub->nState = 0;
-    D2GSPacketSrv0x27_TextStrc* pTxtMsg = D2Common::Game::STRUCT_AllocTxtMessageForPacket0x27(pGame->pMemoryPool);
+    D2GSPacketSrv0x27_TextStrc* pTxtMsg = D2Common::Text::STRUCT_AllocTxtMessageForPacket0x27(pGame->pMemoryPool);
     Quests::QUESTS::QUEST_OnNpcInteraction(pClient, pPlayer, pNpcUnit, pTxtMsg);
     npcInfoPkt.nUnitGUID = pNpcUnit->nUnitGUID;
     npcInfoPkt.nId = 0x27;
     npcInfoPkt.eUnitType = (uint8_t)pNpcUnit->eUnitType;
-    D2Common::Game::BuildPacket0x27Messages(pTxtMsg, (uint32_t*)&npcInfoPkt.nMessageCount);
+    D2Common::Text::BuildPacket0x27Messages(pTxtMsg, (uint32_t*)&npcInfoPkt.nMessageCount);
     // VP-BEGIN [quest-gossip-mark]: issue #13 — the gossip batch leaving for the client (Akara's reward line rides this); msgs=0 here = nothing for the client to echo
     D2BOOT_MarkFmt("quest: npc interact 0x27 send npc=0x%04x type=%u msgs=%u", (unsigned)pNpcUnit->nClassId, (unsigned)npcInfoPkt.eUnitType, (unsigned)pTxtMsg->nCount);
     // VP-END [quest-gossip-mark]
@@ -346,7 +344,7 @@ static uint32_t __stdcall NPC_BeginInteraction(::SGAMEDATA * pGame, D2MonsterAiS
     D2Common::Text::STRUCT_FreeTxtMessageForPacket0x27(pTxtMsg);
     Quests::QUESTS::NET_D2GS_SERVER_Send_0x29_GAMEQUESTRECORD_Prepare(pGame, pClient);
     dwTmp = pNpcUnit->nUnitGUID;
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x28_PlayerQuestInfo(pClient, 0x28, 1, dwTmp, Quests::QUESTS::GetQuestBitBuffer(pGame, pPlayer), questActionType);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x28_PlayerQuestInfo(pClient, 0x28, '\x01', dwTmp, Quests::QUESTS::GetQuestBitBuffer(pGame, pPlayer), questActionType);
     return 0;
 }
 
@@ -452,7 +450,7 @@ void __fastcall NpcState_MoveState0To1(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 }
 
 void __fastcall NpcState_MoveState1To2(D2UnitStrc * pNpc, D2UnitStrc * pUnit) {
-    D2MonsterAiStrc* pMonsterAi = !pNpc || pNpc->eUnitType != UNIT_MONSTER || !pNpc->pUnitData.pUnitDataMissile ? 0 : (D2MonsterAiStrc*)pNpc->pUnitData.pUnitDataMissile->unk0x30;
+    D2MonsterAiStrc* pMonsterAi = !pNpc || pNpc->eUnitType != UNIT_MONSTER || !pNpc->pUnitData.pUnitDataMissile ? 0 : (D2MonsterAiStrc*)pNpc->pUnitData.pUnitDataMissile->pStream;
     D2MonsterAiSubStrc* pAiSub = (D2MonsterAiSubStrc*)((D2MissileStreamStrc*)pMonsterAi)->pStream;
     if (!pAiSub) {
       return;
@@ -473,7 +471,7 @@ void __fastcall NpcState_MoveState1To2(D2UnitStrc * pNpc, D2UnitStrc * pUnit) {
 }
 
 uint32_t __fastcall NpcStateIs2(D2UnitStrc * pNpc, D2UnitStrc * pPlayer) {
-    D2MonsterAiStrc* pMonsterAi = !pNpc || pNpc->eUnitType != UNIT_MONSTER || !pNpc->pUnitData.pUnitDataMissile ? 0 : (D2MonsterAiStrc*)pNpc->pUnitData.pUnitDataMissile->unk0x30;
+    D2MonsterAiStrc* pMonsterAi = !pNpc || pNpc->eUnitType != UNIT_MONSTER || !pNpc->pUnitData.pUnitDataMissile ? 0 : (D2MonsterAiStrc*)pNpc->pUnitData.pUnitDataMissile->pStream;
     D2MonsterAiSubStrc* pAiSub = (D2MonsterAiSubStrc*)((D2MissileStreamStrc*)pMonsterAi)->pStream;
     while (true) {
       if (!pAiSub) {
@@ -492,7 +490,7 @@ uint32_t __fastcall NpcStateIs2(D2UnitStrc * pNpc, D2UnitStrc * pPlayer) {
 // Removes a specific unit (pUnit) from a monster's AI sub-list (pMonsterAi->pAiSub), frees the D2MonsterAiSubStrc from the game memory pool, and clears any interact-info on pUnit if it was targeting a monster. If the sub-list becomes empty after removal, also strips the player's proxy inventory via SUNITPROXY_RemovePlayerProxyInventory. Fires QUEST_OnNpcDeactivate on entry. Handles both active (nState > 0) and pending (nState == 0) sub-AI records.
 // @sourcefile .\MONSTER\MonsterAI.cpp
 void __fastcall FreeAndResetAiSub(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pMonster, D2MonsterAiStrc * pMonsterAi) {
-    bool _bHasInteractInfo;
+    BOOL _bHasInteractInfo;
     bool bHasInteractInfo;
     uint32_t dwInteractUnitGUID;
     eD2UnitType eInteractUnitType;
@@ -552,25 +550,26 @@ void __fastcall FreeAndResetAiSub(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Uni
     } while (true);
 }
 
-void __fastcall NPC_BeginInteractionFromUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pMonster, D2MonsterAiStrc * pMonsterAi, uint8_t bUnknown) {
-    NPC_BeginInteraction(pGame, pMonsterAi, bUnknown, pUnit, pMonster);
+void __fastcall NPC_BeginInteractionFromUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pMonster, D2MonsterAiStrc * pMonsterAi, uint8_t nQuestActionType) {
+    NPC_BeginInteraction(pGame, pMonsterAi, nQuestActionType, pUnit, pMonster);
 }
 
 static BOOL __stdcall UnitHasSwitchAiSet(D2UnitStrc * pMonster) {
-    if (pMonster && pMonster->eUnitType == UNIT_MONSTER) {
-      int32_t nClassId;
-      nClassId = pMonster->nClassId;
-      if (nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId && (uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[nClassId] + 0xe) & gadwBitMasks[0]) {
-        return 1;
-      }
+    if ((pMonster ? pMonster->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
+      return 0;
     }
 
-    return 0;
+    int32_t nClassId = pMonster->nClassId;
+    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId && (uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[nClassId] + 0xe) & gadwBitMasks[0])) {
+      return 0;
+    }
+
+    return 1;
 }
 
 // nParam arrives in EDX, survives the UnitHasSwitchAiSet call (that callee clobbers only EAX/ECX) and is stored to nAiRelated2.
-BOOL __fastcall AI_SetSwitchAiTargetParams(D2UnitStrc * pUnit, int32_t nParam, uint32_t nTargetGUID) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && nParam < 5)) {
+BOOL __fastcall AI_SetSwitchAiTargetParams(D2UnitStrc * pUnit, int32_t nSwitchAiMode, uint32_t nTargetGUID) {
+    if (!((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && nSwitchAiMode < 5)) {
       return 0;
     }
 
@@ -579,7 +578,7 @@ BOOL __fastcall AI_SetSwitchAiTargetParams(D2UnitStrc * pUnit, int32_t nParam, u
       D2UnitDataMonsterStrc* pMonsterData;
       pMonsterData = pUnit->pUnitData.pUnitDataMonster;
       if (pMonsterData) {
-        pMonsterData->nAiRelated2 = nParam;
+        pMonsterData->nAiRelated2 = nSwitchAiMode;
         pMonsterData->nAiRelated1 = nTargetGUID;
         return 1;
       }
@@ -589,7 +588,7 @@ BOOL __fastcall AI_SetSwitchAiTargetParams(D2UnitStrc * pUnit, int32_t nParam, u
 }
 
 D2UnitPlayerListStrc * __fastcall AI_GetSwitchAiParam1(D2UnitStrc * pUnit) {
-    if (pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer) {
       return pUnit->pUnitData.pUnitDataPlayer->pPlayerList;
     }
 
@@ -597,7 +596,7 @@ D2UnitPlayerListStrc * __fastcall AI_GetSwitchAiParam1(D2UnitStrc * pUnit) {
 }
 
 D2UnitDataPlayerArenaStrc * __fastcall AI_GetSwitchAiParam2(D2UnitStrc * pUnit) {
-    if (pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer) {
       return pUnit->pUnitData.pUnitDataPlayer->pArena;
     }
 
@@ -605,7 +604,7 @@ D2UnitDataPlayerArenaStrc * __fastcall AI_GetSwitchAiParam2(D2UnitStrc * pUnit) 
 }
 
 void __fastcall AI_ClearSwitchAiTargetParams(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
@@ -618,14 +617,8 @@ void __fastcall AI_ClearSwitchAiTargetParams(D2UnitStrc * pUnit) {
     pMonsterData->nAiRelated1 = 0;
 }
 
-uint32_t __fastcall NpcStateIsntZero(D2UnitStrc * pUnit, int32_t nParam) {
-    if (!pUnit) {
-      return 0;
-    }
-    if (pUnit->eUnitType != UNIT_MONSTER) {
-      return 0;
-    }
-    if (!pUnit->pUnitData.pUnitDataMonster) {
+uint32_t __fastcall NpcStateIsntZero(D2UnitStrc * pUnit, D2UnitStrc * pPlayer) {
+    if (!((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
       return 0;
     }
 
@@ -639,7 +632,7 @@ uint32_t __fastcall NpcStateIsntZero(D2UnitStrc * pUnit, int32_t nParam) {
       if (!pSubAi) {
         return 1;
       }
-      if (pSubAi->pUnit == (D2UnitStrc*)nParam) {
+      if (pSubAi->pUnit == pPlayer) {
         break;
       }
 
@@ -652,15 +645,11 @@ uint32_t __fastcall NpcStateIsntZero(D2UnitStrc * pUnit, int32_t nParam) {
 // Tears down a monster's D2MonsterAiSubStrc list. For each sub-AI node: sends 0x62 MakeUnitTargetable packet to the interacting client, optionally clears that client's interact-info (if bClientSide and the client was interacting with this monster), calls an optional fpFunction cleanup callback, then frees the node. Sets pMonsterAi->pAiSub to NULL when done.
 // @sourcefile .\MONSTER\MonsterAI.cpp
 void __fastcall ClearAISub(::SGAMEDATA * pGame, D2UnitStrc * pUnit, fpAiClear fpFunction, bool bClientSide) {
-    D2ClientStrc* pClient;
-    BOOL bHasInteractInfo;
     uint32_t nMonsterGUID2;
     uint32_t nUnitGUID;
     eD2UnitType eUnitType;
-    char byMonsterUnitType;
     D2MonsterAiSubStrc* pNext;
-    uint32_t uVar6;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
       return;
     }
 
@@ -671,13 +660,9 @@ void __fastcall ClearAISub(::SGAMEDATA * pGame, D2UnitStrc * pUnit, fpAiClear fp
 
     D2MonsterAiSubStrc* pAiSub = pMonsterAi->pAiSub;
     while (pAiSub) {
-      int32_t nMonsterGUID;
+      BOOL bHasInteractInfo;
       pNext = pAiSub->pNext;
-      uVar6 = 0;
-      nMonsterGUID = D2Client::UNIT::GetGUID(pUnit);
-      byMonsterUnitType = '\x01';
-      pClient = UNIT::SUnit::SUNIT_GetClient(pAiSub->pUnit, ".\\MONSTER\\MonsterAI.cpp", 0x35c);
-      GAME::SCmd::NET_D2GS_SERVER_Send_0x62_INTERACTION_STOP(pClient, 'b', byMonsterUnitType, nMonsterGUID, uVar6);
+      GAME::SCmd::NET_D2GS_SERVER_Send_0x62_INTERACTION_STOP(UNIT::SUnit::SUNIT_GetClient(pAiSub->pUnit, ".\\MONSTER\\MonsterAI.cpp", 0x35c), 'b', '\x01', D2Client::UNIT::GetGUID(pUnit), 0);
       if (!bClientSide || (bHasInteractInfo = UNIT::SUnit::GetInteractInfo(pAiSub->pUnit, &eUnitType, &nUnitGUID) , bHasInteractInfo && eUnitType == UNIT_MONSTER) && (nMonsterGUID2 = D2Client::UNIT::GetGUID(pUnit) , nUnitGUID == nMonsterGUID2)) {
         UNIT::SUnit::ClearInteractInfo(pAiSub->pUnit);
       }
@@ -728,6 +713,12 @@ void __fastcall MERC_HireAndReplaceMerc(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     nAct = D2Common::Merc::GetMercAct(pGame->bExpansion, 0, pHireInfo->nNameStringId);
     BVar1 = D2Common::Merc::RollMercStats(pGame->bExpansion, pUnit, pHireInfo->nSeed, nAct, (uint32_t)pGame->nDifficulty, &sMercHireData);
     if (!BVar1) {
+      // [R60 issue #19] visibility: this early-out leaves the already-flagged merc
+      // unit WITHOUT a pet-data node (RecastPetAndAssign below is skipped) - the
+      // state whose next SaveMercData was an unguarded NULL deref, now guarded.
+      // If this mark fires, send the log: it names the load-time merc re-creation
+      // as the petdata-less site.
+      D2BOOT_Mark("merc: RollMercStats FALSE - petdata not registered [R60]");
       return;
     }
 

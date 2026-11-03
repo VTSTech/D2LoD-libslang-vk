@@ -69,6 +69,34 @@ rule in it was learned the hard way (see "War stories" at the bottom).
     #    regen inverted the branch shape (decompiler-equivalent) and the port
     #    matched by text. Flags any VP-marked store nulled out on the next
     #    line: a dead store, never the intended placement.
+    python3 scripts/d2boot_visibility_audit.py
+    #    [d2boot] INCLUDE-VISIBILITY audit (added Rev 76, after the 1781 sync
+    #    compile break): presence gates cannot see a lost #include. The 1781
+    #    merge re-planted SCmd.cpp's srv state-cmd mark but dropped the fork's
+    #    include of support/d2_boot.h (last include-block line) - fatal at
+    #    compile: "D2BOOT_MarkFmt was not declared in this scope". This walks
+    #    every D2BOOT_* user TU and proves it still reaches the declaration
+    #    (direct include or transitively). Mandatory when the merge touched
+    #    include blocks; cheap enough to always run.
+    bash scripts/merge_site_syntax_sweep.sh "$(git log --merges -1 --format=%h)"
+    #    MERGE-SITE SYNTAX SWEEP (added Rev 92, reworked Rev 93 - baseline
+    #    diffing): every audit above is grep-based, and a merge that keeps
+    #    BOTH sides' local declarations, double-splices one function from
+    #    both parents' shapes, or drops a brace is textually plausible and
+    #    semantically fatal. This compiles every TU that differs from BOTH
+    #    merge parents (the true merge sites) THREE ways with the host shims
+    #    - merge result + both parents' bodies against the same headers -
+    #    and flags only errors unique to the merge result (plus the parse
+    #    danger classes unconditionally). Pre-existing host noise (undeclared
+    #    Win32 surface, shim overlaps, 64-bit precision casts) cancels out
+    #    against the parents' own compile results; no SDK allowlist to
+    #    maintain. Rev 92's name-allowlist version missed nothing it saw but
+    #    needed a name per Win32 API; v2 borrows the parents as the baseline
+    #    instead. Negative-tested on the 1792 merge: caught Inv.cpp pNpc,
+    #    SpellSel.cpp pPlayerUnit_lcl x4, Direct3D.cpp double-splice x2 and
+    #    SFile.cpp double-case (all pre-fix), clean post-fix. Takes minutes,
+    #    not seconds - mandatory after every merge, skippable for
+    #    overlay-only rounds.
 
     # 5) build locally (Win11):
     powershell -File tools/build-local-win11.ps1
@@ -151,3 +179,142 @@ PR) so acceptance is frictionless.
   is not placement - when a merge resolves around braces, diff each marked
   block's context against the last field-verified tree, not just its
   existence (step 4 now runs both instruments).
+- **Rev 77 DrawSolidRectEx undefined reference:** the `d6affdd` port's
+  renderer resfix lived on BOTH sides of a signature pair - `DWORD dwColor`
+  in `D2Gdi/Renderer/Windowed.h` AND `Windowed.cpp` for `DrawSolidRectEx`.
+  The 1776-1781 merge absorbed upstream's regen header (`BYTE`) and dropped
+  the header-side resfix while the .cpp side survived: declaration and
+  definition silently became two overloads, every caller bound the
+  declared-but-undefined one, and d2.exe died at LINK (not compile) with an
+  undefined reference. Nothing was VP-marked (the resfix predates the marker
+  convention), so the marker/placement/visibility audits were all blind -
+  only the paired signature tripwires (`resfix: gdi DrawSolidRectEx sig *`
+  gate rows) cover this class. Rule: when a fork edit pairs a header
+  declaration with an implementation, gate BOTH sides; when a regen
+  legitimately retypes one side, move both gates in the same commit.
+- **Rev 92 double-declared locals (the 1792 merge):** the merge kept BOTH
+  sides' `D2UnitStrc* pNpc;` in `D2Client/UI/Inv.cpp` - upstream's flattened
+  shape declares it at the top of `InitializeiInventoryPages` (line 182),
+  the fork side at the use site (line 202) - and dropped the declaration
+  line under `SPELLSEL_RenderAllSkillGrids` that the fork-side body's four
+  `pPlayerUnit_lcl` uses still needed (upstream's shape inlines
+  `GetPlayerUnit_UI()` into every call). Both files are textually plausible:
+  every line existed in a parent, no marker lost, no gate count changed -
+  and the merge round's 4-TU fork battery was green because neither file is
+  fork-owned. The owner's Win11 build died on the first one. Fix (R73):
+  Inv.cpp keeps upstream's top declaration and drops the use-site duplicate;
+  SpellSel.cpp re-expresses the four VP-marked calls on upstream's inlined
+  receiver (zero future merge surface); the R45 gate rows re-pin the new
+  call shape with unchanged counts. Rule: a resolution that merges
+  declaration blocks from both parents must be COMPILED, not diffed - the
+  redeclaration class is invisible to every grep instrument and only the
+  merge-site syntax sweep (step 4e) sees it.
+- **Rev 93 double-spliced regions (the same 1792 merge, second and third
+  classes):** the owner's next build died in `D2Direct3D/Renderer/
+  Direct3D.cpp` with `a function-definition is not allowed here` x20. TWO
+  more artifacts, both in the same resolution style as Rev 92's:
+  (1) `RENDERER_D3D_RenderWallTileWithPerspective` contained the whole
+  subtile do-loop TWICE - the fork-resolved shape AND upstream's flat shape
+  concatenated inside one `if (nTileType <= 9) {` wrapper whose closing
+  brace the splice consumed, so the FUNCTION never closed and every later
+  signature parsed inside it; (2) `Direct3DCallBack` had the same
+  double-splice (upstream's `iVar4` rename dropped with it, `expected '}'
+  before 'else'`); (3) `Fog/Source/SFile.cpp` `LOGFILE_StoreGameStartupInfo`
+  had `case 9:`/`case 10:` TWICE inside one switch - fork-side (`szOsName`)
+  and upstream-side (`__frame0.szOsName`, a local the merge tree does not
+  declare) concatenated. All three regions carry ZERO VP marks - pure
+  decompiled code - so the fix per house policy was upstream's shape
+  VERBATIM (zero future merge surface; RenderWallTileWithPerspective is now
+  byte-identical to upstream's). Why the Rev 92 sweep passed them: its
+  30-line per-TU error cap cut the parse errors off behind precision-cast
+  noise, and its SDK allowlist chased names the decompiled TUs would never
+  stop needing. Fixes: `tools/syntax-check.sh` grew `VP_SYNTAX_FULL=1`
+  (cap off), the sweep switched to baseline diffing (compile each TU's
+  parent bodies too; only errors unique to the merge result are real), and
+  the parse danger classes surface unconditionally. Rules: a region whose
+  conflict resolution touches BOTH parents' shapes must be diffed against
+  BOTH parents, not one; and an audit's output cap is part of its blind
+  spot - truncation is how a clean sweep lies.
+- **The 1794 convergence conflict (ea0b84d4):** upstream independently implemented
+  a feature the fork already carried - the 1794 regen added the health-orb
+  `DrawVerticalCropImage` calls while the fork's resfix already drew the same
+  fill with the wide-X offset baked into `nValue`. Two different spellings of
+  the same behavior collided in one conflict hunk; resolving EITHER side alone
+  silently loses the other's contribution (the fork's offset, or upstream's new
+  in-arm call site), and every instrument stays green on the wrong pick:
+  markers present, gate counts unchanged, sweep clean. Resolution: upstream's
+  structure, fork's variable - the calls keep upstream's in-arm placement and
+  take `nValue` (the offset-carrying local) as the argument, mirroring what the
+  auto-merge produced for the mana orb 40 lines below. Rule: when both parents
+  changed the same lines with different intent, ask what each delta MEANT
+  before picking a side - this class is invisible to presence, placement,
+  branch and syntax audits by construction. The same round validated the
+  verbatim-upstream policy: upstream shapes taken whole (QuestLog.cpp's
+  variable-role swap, Direct3D.cpp's `gadwBitMasks[]` regen) with only the VP
+  terms re-planted cut the conflict surface 39 -> 10 and needed zero
+  compile-fix rounds.
+- **The 1801 convergence repeat (f518fda0):** the same class fired again, in
+  the opposite direction - upstream independently restructured
+  `RENDERER_D3D_CreateSurfaceWithTexture`'s QueryInterface branch (inverted
+  guard, typed `ppTexture` out-param, `ErrorLog`) into the shape the fork's
+  fix already produced semantically (success -> 1, failure -> log + release +
+  0). Here the fork's branch was a stylistic inversion of the same behavior,
+  not an offset carrier, so the resolution was upstream verbatim with nothing
+  re-planted - and the merged signature already required upstream's `ppTexture`
+  (the fork's `dwParam` no longer existed as a parameter). Validates the rule's
+  second half: when the fork delta carries no feature content, upstream's
+  structure wins whole; the offset-carrying-variable half (Panel.cpp 1794,
+  Glide.cpp's clamped `nContrastWeight` this round) is for deltas that MEAN
+  something.
+
+- **The 1806 shim-name handoff (f427f962):** `globals.h` gained
+  `#include "Fog/Engine/Application.h"`, whose non-Windows path declares
+  `struct IMAGE_DATA_DIRECTORY` / `struct IMAGE_OPTIONAL_HEADER32` — names the
+  host shim had typedef'd since its first cut. The collision is the
+  typedef-name/struct-keyword kind, so coexistence is impossible; the
+  reconciliation renames the shim's layout-identical copies to
+  `IMAGE_DATA_DIRECTORY_SHIM` / `IMAGE_OPTIONAL_HEADER_SHIM` (d2_crash.cpp's PE
+  walk reads members, never those type names; the real winnt.h still wins under
+  `_WIN32`). Rule: when upstream's tree starts DECLARING an SDK form the shim
+  carried, the shim yields the canonical name and keeps its copy under an alias
+  — never the reverse. Also the lightest round yet: 8 unmerged paths of 46
+  two-sided files, and QuestLog.cpp's site-5 hunk was a zero-edit replant — the
+  fork line was already spelled in upstream's new variable shape.
+
+- **The 1839/1851 supersession syncs (`b2937091`, `1d401785`):** upstream
+  recovered the retail forms of two fixes the fork had hand-built — the quest
+  gossip tables (R54/R85, issues #13/#22; upstream's `bc47c6bc` restored every
+  table verbatim, sizes AND the flavor string ids the fork had left empty rather
+  than invent) and the SFX float model (vanilla-plus fix 16, Defect 13; upstream's
+  `D2FloatIntUnion` is the same root cause in the retail-faithful shape). Both
+  were taken whole: the hand-builds are gone, each old fix site keeps a dated
+  supersession note, the `VP-BEGIN [gossip-table-fix history]` markers keep the
+  root-cause lineage, and the gate rows were re-pinned to the NEW state (never
+  deleted — the gates now assert the superseding form). Checked at the same merge
+  and NOT superseded: issue #11's `[glide fix 11]` hook (still fork-side; the
+  glide3x.dll wrapper ships from the `Glide3xVK` branch, which upstream does not
+  carry — "superseded" requires upstream to actually carry the surface). Rules:
+  when upstream ships the retail-exact form of a fork fix, take it whole and
+  record the supersession in the old site's comment (two spellings of one
+  behavior is exactly the 1794 convergence-conflict class); re-pin, never delete,
+  the affected gate rows; and before accepting "upstream superseded X", verify
+  upstream actually touched X's file.
+- **The 1851/1855 ground-tile supersession (`77e87e02`, fresh-clone round):** the
+  repo was re-cloned from origin at the owner's R89 tip (the local-only R88 docs
+  commit rode in a bundle and was re-applied from a backup patch), then upstream
+  `bc47c6bc..57380e21` merged. Upstream's regen rebuilt the D3D ground-tile index
+  buffers in retail form (stack `aStripIndices` prefill into a properly-extent
+  `gpD3DGroundTileVertexBuffer`; low-quality fan `gdwRendererMode = {0,5,0x23,0x1e}`
+  — note the retail fan's 4th vertex is 30, not the fork's hand-derived 28),
+  superseding vanilla-plus fixes 24/25. Two instruments mattered: the auto-merge
+  had silently spliced the fork's fix-25 loop into `InitGroundTileCache` BESIDE
+  upstream's (both paths in one function, one referencing a static the resolution
+  had already retired) — a dangling-reference class the conflict markers never
+  showed; the per-function diff against upstream's file caught it, and the whole
+  function was realigned to upstream's byte-verified body. And the R51 gate fired
+  raw=2 — not a regression but the owner's own R89 skeleton-class palshift site;
+  the expectation was re-pinned with the reason, not relaxed blindly. Rules: after
+  resolving supersession hunks, DIFF EVERY touched function against the winning
+  side whole (the splice class hides between hunks); grep the retired symbols'
+  names file-wide before staging; and when a gate count changes, diff the new site
+  against the owner's own recent commits before treating it as merge damage.

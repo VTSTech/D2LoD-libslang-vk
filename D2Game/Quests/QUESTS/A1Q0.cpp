@@ -67,19 +67,19 @@ void __fastcall Q00_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 }
 
 // Q00_StatusFilter (QUEST_SpokeToWarriv). Always returns false — this pseudo-quest has no status/journal entry to display. Stub.
-bool __fastcall Q00_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown) {
+bool __fastcall Q00_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode) {
     return false;
 }
 
 // Q00_ActiveFilter (QUEST_SpokeToWarriv). Returns true (gossip/quest active) only for Warriv (class 0x9b) while the "spoke to Warriv" flag is still unset; false once greeted or for any other NPC. Gates whether Warriv's intro gossip is offered.
 bool __fastcall Q00_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
-    /* If target is Wariv (Act 1) */ if (nTargetClassId != 0x9b) {
-      /* Otherwise: inactive */ return false;
-    }
-
-    BOOL bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SpokeToWarriv, QUESTSTATE_Completed);
-    if (!bIsQuestInState) {
-      return true;
+    /* If target is Wariv (Act 1) */ if (nTargetClassId == 0x9b) {
+      BOOL bIsQuestInState;
+      /* GetQuestState(QUEST_SpokeToWarriv, QUESTSTATE_Completed): Warriv's intro
+                         gossip stays active only while self "greeted" bit is clear. */ /* If state 0 (completed): active */ bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SpokeToWarriv, QUESTSTATE_Completed);
+      if (!bIsQuestInState) {
+        return true;
+      }
     }
 
     /* Otherwise: inactive */ return false;
@@ -94,7 +94,7 @@ void __fastcall Q00_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->pQuestSpecificData.pA1Q0 = 0;
     pQuestData->nQuestIdReal = QUEST_SpokeToWarriv;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q00_Callback11_ScrollMessage;
-    pQuestData->pNpcMessages = &A1Q0::aNpcGossipData;
+    pQuestData->pNpcMessages = A1Q0::aNpcGossipData;
     pQuestData->bIsActive = '\x01';
     pQuestData->fpStatusFilter = Q00_StatusFilter;
     pQuestData->fpActiveFilter = Q00_ActiveFilter;

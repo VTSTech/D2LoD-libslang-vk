@@ -10,6 +10,7 @@
 
 // Forward declarations
 struct D2BooksTableStrc;
+struct D2BooksTxt;
 struct D2GambleTableStrc;
 struct D2GemsTxt;
 struct D2ItemRatioTxt;
@@ -24,7 +25,19 @@ struct D2QualityItemsTableStrc;
 struct D2QualityItemsTxt;
 struct D2RareAffixTableStrc;
 struct D2RareAffixTxt;
+struct D2RunesTxt;
 struct D2RunesTxtTableStrc;
+
+// Data types
+struct D2ItemStatCostDescPriorityStrc {
+    D2ItemStatCostDescPriorityStrc() = default;
+    D2ItemStatCostDescPriorityStrc(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
+    operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
+    D2ItemStatCostDescPriorityStrc(short a0, short a1) : nStatId(a0), nDescPriority(a1) {}
+
+    /* 0x00 */ short nStatId; // ItemStatCost row index
+    /* 0x02 */ short nDescPriority; // descpriority column; qsort key (SORT_ItemDescPriority)
+};
 
 namespace D2Common::DATATBLS::ItemTbls {
 
@@ -91,7 +104,7 @@ void __stdcall thunk_UnloadBin_LvlWarp();
 // ITEMMOD_GetScrollBookIndex reads both members off the returned pointer: 005c256f MOV EAX,[ESI] is the count it returns when nothing matches, 005c2575 MOV EDX,[ESI+0x4] with a TEST is the null-check on the table base, and 005c2584 ADD EDX,0x1c reaches the first row's code field. With only nSize named the emitter produced two independent globals whose order the linker chooses, so [1] was whatever it placed next.
 struct D2BooksTableStrc * __stdcall TXT_Books_GetTableInfo();
 // Returns book table line for given index (32 bytes/entry). Used for scroll/book skill ID lookup.
-void * __stdcall TXT_Books_GetLine(int32_t nIndex);
+struct D2BooksTxt * __stdcall TXT_Books_GetLine(int32_t nIndex);
 void __fastcall TXT_AllocTxt_lowqualityitems(struct D2PoolManagerStrc * pMemory);
 void __stdcall thunk_UnloadBin_LvlPrest();
 // Returns pointer to nTxtLowQualityItemsSize global. Used for crude/damaged quality item lookup.
@@ -103,7 +116,7 @@ void __fastcall TXT_AllocTxt_itemratio(struct D2PoolManagerStrc * pMemory);
 void __stdcall thunk_UnloadBin_LvlMaze();
 // QualityRatio.txt row lookup. Returns quality upgrade chance ratios for treasure class calculations. Used by ITEM_RollItemQuality to apply TC quality bonuses during quality cascade.
 struct D2ItemRatioTxt * __stdcall TXT_QualityRatio_GetLine(uint32_t nItemClassId, uint32_t dwUnused, uint16_t nQualityTier);
-int SORT_ItemDescPriority(LPCVOID pParam1, LPCVOID pParam2);
+int SORT_ItemDescPriority(LPCVOID pEntry1, LPCVOID pEntry2);
 // Builds the itemstatcost.txt field-descriptor array (52 columns) and compiles it into the in-memory ItemStatCost table via DataTbls::CompileTxt (record size 0x144), enforcing a max of 0x1FF stats (fatal error otherwise). Then post-processes op-relationships: clears each stat's aOpBaseDependents arrays to -1, derives the charged-skill-level bit count (clamped 1..8, default 6) and its mask, and for every stat with an op walks its op-base/op-stat references to populate the dependency graph (aOpBaseDependents, aOpRelations, bHasOpBaseDependencies/bHasOp4Or5Dependency flags) plus special-case stat flag bits. Finally collects stats with a nonzero descpriority, qsorts them via SORT_ItemDescPriority, and allocates/stores the sorted pItemStatCostDescPriority list. __fastcall, pMemory in ECX.
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __fastcall TXT_AllocTxt_itemstatcost(struct D2PoolManagerStrc * pMemory);
@@ -113,7 +126,7 @@ void __stdcall ITEMTBLS_FreeItemStatCost();
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __fastcall TXT_AllocTxt_properties(struct D2PoolManagerStrc * pMemory);
 void __stdcall ITEMTBLS_FreeProperties();
-int TXT_Gamble_SortFunction(LPCVOID pParam1, LPCVOID pParam2);
+int TXT_Gamble_SortFunction(LPCVOID pEntry1, LPCVOID pEntry2);
 // One-time loader for gamble.txt. Compiles the binary "gamble" table (code field only), resolves each item code to a class id via the items link, then sorts the entries by level and builds two side-tables: GambleTable (sorted class-id array) and gnItemTblsCacheSize (per-level upper-bound cache for [1..99]).
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __fastcall TXT_AllocTxt_gamble(struct D2PoolManagerStrc * pMemory);
@@ -134,7 +147,7 @@ void __stdcall ITEMTBLS_FreeRunes();
 struct D2RunesTxtTableStrc * __stdcall TXT_GetRuneTableSize();
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __stdcall ITEMTBLS_CopyRunewordRecord(int32_t nRunewordId, char * pSourceRecord);
-int32_t __stdcall ITEMTBLS_GetRunewordTxtRecord(int32_t nRunewordId);
+struct D2RunesTxt * __stdcall ITEMTBLS_GetRunewordTxtRecord(int32_t nRunewordId);
 // 1 internal function (defined in .cpp)
 
 } // namespace D2Common::DATATBLS::ItemTbls

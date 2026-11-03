@@ -8,6 +8,9 @@
 #include <cstdarg>
 #include "d2_platform.h"
 
+// Forward declarations
+struct D2UnitStrc;
+
 // Data types
 struct D2LinkNodeStrc {
     /* 0x00 */ struct D2LinkNodeStrc * pNext;
@@ -60,6 +63,7 @@ void __stdcall TASK_MoveTasksToSlotAndLinkSlot(struct D2TaskQueueSlotStrc * pSlo
 // Scheduled-task callback that drives one game's server tick. Looks up+locks the game by token (pTaskNode->dwUserData), runs ServerGameLoop and FlushAllClientPackets, then either reschedules itself in the per-bucket task queue (nParam&0x1f) for the next tick, or — if the game is empty/expired (idle >300s or frame in the shutdown window) — disconnects all clients (0xB0 ConnectionTerminated + cleanup), destroys the game by token, and unlinks/frees its task node. Uses the task-queue critical sections; halts via Fog ErrorManager on queue-invariant violations.
 // @sourcefile .\GAME\Task.cpp
 void __stdcall TASK_GameTickCallback(uint32_t nParam, struct D2TaskNodeStrc * pTaskNode);
+void __stdcall thunk_QueryPerformanceFrequency_B();
 // @sourcefile .\GAME\Task.cpp
 void __stdcall TASK_FreeAllSlots();
 // @sourcefile .\GAME\Task.cpp
@@ -73,7 +77,10 @@ BOOL __fastcall TASK_EnqueueGameTask(struct D2TaskNodeStrc * pTaskNode, uint32_t
 int32_t __fastcall TASK_DequeueReadyTask(uint32_t nSlotToken, struct D2TaskNodeStrc * * ppTaskOut);
 void __fastcall TASK_Dispatch(uint32_t nParam, struct D2TaskNodeStrc * pTaskNode);
 BOOL __stdcall TASK_ReturnTrue();
-void __stdcall TASK_Nop();
+// Registers: pItem (ECX) is passed by the callers but not read.
+void __fastcall TASK_Nop(struct D2UnitStrc * pItem);
+void StaticInit_CriticalSection_0088caa8();
+void StaticInit_aTaskQueueCriticalSections();
 void StaticFini_CriticalSection_0088caa8();
 void StaticFini_aTaskQueueCriticalSections();
 // 1 internal function (defined in .cpp)

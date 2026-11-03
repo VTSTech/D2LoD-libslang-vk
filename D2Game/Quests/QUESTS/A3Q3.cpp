@@ -151,10 +151,10 @@ void __fastcall Q20_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
     short int nTargetClassId = !pQuestArgs->pTarget ? -1 : (short int)pQuestArgs->pTarget->nClassId;
     D2QuestDataA2Q3Strc* pA3Q3Data = pQuestData->pQuestSpecificData.pA2Q3;
     if (nTargetClassId == 0xfd) {
-      if (pA3Q3Data->field_0x01 == 1) {
+      if (pA3Q3Data->bDarknessTimerArmed == 1) {
         pQuestData->nQuestPacketFlags = '\0';
         QUEST_SetStateAndBroadcast(pQuestData, 2, nullptr, (::fpExecuteOnUnitFunction)Q20_PlayerNotifyCompleted, true);
-        pA3Q3Data->field_0x01 = 0;
+        pA3Q3Data->bDarknessTimerArmed = 0;
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q20_PlayerUpdateBladeState);
         return;
       }
@@ -172,10 +172,10 @@ void __fastcall Q20_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
 // Step0x06 not set branch (still gathering): Step0x04->2(+field_0x00), Step0x03->2, Step0x02->1.
 // Step0x06 set branch (Will assembled, smashing orb): not Step0x08 ->6, not Step0x07 ->5.
 // The Step0x07/0x08 pair tracks the two outcomes after smashing the Compelling Orb.
-bool __fastcall Q20_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown) {
+bool __fastcall Q20_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode) {
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_AbleGoToAct3, QUESTSTATE_Completed);
     if (!bQuestState) {
-      *nUnknown = '\0';
+      *pbyStatusCode = '\0';
       return true;
     }
 
@@ -183,19 +183,19 @@ bool __fastcall Q20_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
     if (bQuestState) {
       /* GetQuestState JustCompleted(0xd): if fresh, +2 -> display code 0x0d
                          (completion glow) else 0x0b */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_BladeOfTheOldReligion, QUESTSTATE_JustCompleted);
-      *nUnknown = (bQuestState != 0) * '\x02' + '\v';
+      *pbyStatusCode = bQuestState != 0 ? 13 : 11;
       return true;
     }
 
     D2QuestDataA3Q3Strc* pQuestSpecific = pQuestData->pQuestSpecificData.pA3Q3;
-    *nUnknown = '\0';
+    *pbyStatusCode = '\0';
     D2UnitStrc* pQuestItem = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x20333367);
     if (pQuestItem) {
-      *nUnknown = '\x04';
+      *pbyStatusCode = '\x04';
       return true;
     }
-    if (pQuestSpecific->field_0x20 != '\0') {
-      *nUnknown = (pQuestData->pGame->nGameType == SGAMETYPE_SINGLEPLAYER) + '\a';
+    if (pQuestSpecific->bQuestItemLost != '\0') {
+      *pbyStatusCode = pQuestData->pGame->nGameType == SGAMETYPE_SINGLEPLAYER ? 8 : 7;
       return true;
     }
 
@@ -203,30 +203,30 @@ bool __fastcall Q20_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
     if (bQuestState) {
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x08);
       if (!bQuestState) {
-        *nUnknown = '\x06';
+        *pbyStatusCode = '\x06';
       }
 
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x07);
       if (!bQuestState) {
-        *nUnknown = '\x05';
+        *pbyStatusCode = '\x05';
         return true;
       }
     } else {
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x04);
       if (bQuestState) {
-        *nUnknown = (pQuestSpecific->bSerpentItemDropped == '\x01') + '\x02';
+        *pbyStatusCode = pQuestSpecific->bSerpentItemDropped == '\x01' ? 3 : 2;
         return true;
       }
 
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x03);
       if (bQuestState) {
-        *nUnknown = '\x02';
+        *pbyStatusCode = '\x02';
         return true;
       }
 
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x02);
       if (bQuestState) {
-        *nUnknown = '\x01';
+        *pbyStatusCode = '\x01';
       }
     }
 
@@ -420,32 +420,24 @@ BOOL __fastcall Q20_PlayerCheckBladeQuestCannotComplete(::SGAMEDATA * pGame, D2U
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     BOOL BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Completed);
-    if (BVar1) {
-      return 0;
-    }
-
-    BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x06);
-    if (BVar1) {
-      return 0;
-    }
-
-    BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x08);
-    if (BVar1) {
-      return 0;
-    }
-
-    BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x07);
-    if (BVar1) {
-      return 0;
-    }
-
-    D2UnitStrc* pBladeItem = ITEMS::Items::Drop::HasQuestItem(pGame, pUnit, 0x20333367);
-    if (pBladeItem) {
-      return 0;
-    }
-
-    /* SetQuestState CannotCompleteQuestInGame(0xe): player lacks the Will item and
+    if (!BVar1) {
+      D2UnitStrc* pBladeItem;
+      BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x06);
+      if (!BVar1) {
+        BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x08);
+        if (!BVar1) {
+          BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x07);
+          if (!BVar1) {
+            pBladeItem = ITEMS::Items::Drop::HasQuestItem(pGame, pUnit, 0x20333367);
+            if (!pBladeItem) {
+              /* SetQuestState CannotCompleteQuestInGame(0xe): player lacks the Will item and
                          quest not advanced -> locked out self game */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_CannotCompleteQuestInGame);
+            }
+          }
+        }
+      }
+    }
+
     return 0;
 }
 
@@ -508,8 +500,8 @@ void __fastcall Q20_PlayerCheckInAct3SetStep06(::SGAMEDATA * pGame, D2UnitStrc *
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q3.cpp
 void __fastcall Q20_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     D2UnitStrc* pPlayerData;
-    int32_t iVar1;
-    uint8_t nDifficulty;
+    int nDifficulty;
+    int32_t nRewardLevel;
     int* piQuestCounter;
     uint16_t nNPCNo = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     short int nNPCId = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
@@ -583,22 +575,22 @@ void __fastcall Q20_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 
       /* SetQuestState Step0x08: post-orb reward branch taken (bolts/quiver granted)
                           */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x08);
-      nDifficulty = pQuestArgs->pGame->nDifficulty;
-      iVar1 = 0x15;
+      nDifficulty = (int)pQuestArgs->pGame->nDifficulty;
+      nRewardLevel = 0x15;
       switch (nDifficulty) {
         case 1:
           {
-            iVar1 = 0x23;
+            nRewardLevel = 0x23;
             break;
           }
         case 2:
           {
-            iVar1 = 0x4b;
+            nRewardLevel = 0x4b;
             break;
           }
       }
 
-      ITEM_RewardItemInInventory(pQuestArgs->pGame, pQuestArgs->pPlayer, 0x206e6972, iVar1, QUALITY_RARE, 1);
+      ITEM_RewardItemInInventory(pQuestArgs->pGame, pQuestArgs->pPlayer, 0x206e6972, nRewardLevel, QUALITY_RARE, 1);
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x07);
       if (!bQuestState) {
         return;
@@ -698,24 +690,23 @@ void __fastcall Q20_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2Ques
 // filter, propagating the completion forward in the quest chain.
 bool __fastcall Q20_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction != '\0') {
-      if (pQuestData->nStateFlag) {
-        return true;
+      if (!pQuestData->nStateFlag) {
+        pQuestData->nStateFlag = 1;
       }
 
-      pQuestData->nStateFlag = 1;
       return true;
     }
 
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (pQuestData_00) {
-      BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-      if (BVar2) {
+      BOOL BVar1 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+      if (BVar1) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2dc);
         exit(-1);
       }
 
-      bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
-      return bVar1;
+      bool bResult = pQuestData_00->fpSequenceFilter(pQuestData_00);
+      return bResult;
     }
 
     return false;
@@ -731,11 +722,11 @@ void __fastcall Q20_Callback14_PlayerJoinedGame(D2QuestDataStrc * pQuestData, D2
     if (pDVar2) {
       pDVar1->nBladeItemCount++;
     }
-    if (!(pDVar1->field_0x20 != '\0' && pDVar1->nBladeItemCount == 1)) {
+    if (!(pDVar1->bQuestItemLost != '\0' && pDVar1->nBladeItemCount == 1)) {
       return;
     }
 
-    pDVar1->field_0x20 = '\0';
+    pDVar1->bQuestItemLost = '\0';
 }
 
 // A3Q3 "Khalim's Will" — callback #9: fires when the quest item (0x20333367) is destroyed/removed.
@@ -755,7 +746,7 @@ void __fastcall Q20_Callback09_PlayerDroppedWithQuestItem(D2QuestDataStrc * pQue
       return;
     }
 
-    pQuestSpecific->field_0x20 = '\x01';
+    pQuestSpecific->bQuestItemLost = '\x01';
 }
 
 // Already documented.
@@ -770,19 +761,36 @@ void __fastcall Q20_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
     }
 
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Completed);
-    if (bQuestState) {
-      pQuestSpecificData->nQuestStage = 2;
-      return;
-    }
-    if (pQuestItemUnit) {
-      pQuestData->nStateFlagPrev = 4;
-      pQuestData->nStateFlag = 4;
-      UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q20_PlayerUpdateBladeState);
-      return;
-    }
+    if (!bQuestState) {
+      if (pQuestItemUnit) {
+        pQuestData->nStateFlagPrev = 4;
+        pQuestData->nStateFlag = 4;
+        UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q20_PlayerUpdateBladeState);
+        return;
+      }
 
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x06);
-    if (bQuestState != 1) {
+      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x06);
+      if (bQuestState == 1) {
+        pQuestSpecificData->nQuestStage = 2;
+        pQuestData->nStateFlag = 5;
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x07);
+        if (!bQuestState) {
+          pQuestData->nStateFlagPrev = 5;
+          return;
+        }
+
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x08);
+        if (!bQuestState) {
+          pQuestData->nStateFlagPrev = 6;
+          return;
+        }
+
+        /* SetQuestState Completed(0): on reload, Step0x06+0x07+0x08 all set -> mark
+                         done & clear bIsNotIntroduction */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Completed);
+        pQuestData->bIsNotIntroduction = '\0';
+        return;
+      }
+
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x05);
       if (bQuestState == 1) {
         pQuestData->nStateFlag = 3;
@@ -810,22 +818,7 @@ void __fastcall Q20_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
     }
 
     pQuestSpecificData->nQuestStage = 2;
-    pQuestData->nStateFlag = 5;
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x07);
-    if (!bQuestState) {
-      pQuestData->nStateFlagPrev = 5;
-      return;
-    }
-
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x08);
-    if (bQuestState) {
-      /* SetQuestState Completed(0): on reload, Step0x06+0x07+0x08 all set -> mark
-                         done & clear bIsNotIntroduction */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Completed);
-      pQuestData->bIsNotIntroduction = '\0';
-      return;
-    }
-
-    pQuestData->nStateFlagPrev = 6;
+    return;
 }
 
 // A3Q3 "Khalim's Will" — quest init. Zeroes the state-handler table, points pNpcMessages at the
@@ -837,7 +830,7 @@ void __fastcall Q20_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
 void __fastcall Q20_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
     ::SGAMEDATA* pSVar1 = pQuestData->pGame;
-    pQuestData->pNpcMessages = &A3Q3::aNpcGossipData;
+    pQuestData->pNpcMessages = A3Q3::aNpcGossipData;
     pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nQuestIdReal = QUEST_BladeOfTheOldReligion;
@@ -893,7 +886,7 @@ uint32_t __fastcall Q20_GetBladeHasBeenGiven(::SGAMEDATA * pGame) {
 // the drop fails, clears bCanDropBlade. No quest-state bit writes.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q3.cpp
 void __fastcall Q20_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    D2QuestDataStrc* pQuestDataArg = pQuestData;
+    D2QuestDataStrc* pQuestDataArg;
     QUEST_DebugPrint(pQuestData->pGame, "killed boss for quest", "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q3.cpp", 0x3df);
     D2QuestDataA3Q3Strc* pA3Q3Data = pQuestData->pQuestSpecificData.pA3Q3;
     if (!(pA3Q3Data->bCanDropBlade && pQuestData->bIsNotIntroduction != '\0')) {
@@ -962,27 +955,29 @@ uint8_t __fastcall Q20_QuestUpdate(::SGAMEDATA * pGame, D2QuestDataStrc * pQuest
 // or quest not in real play, flags the object hidden/disabled (SetupUpdateFlag 2). Otherwise records
 // the object's location/GUID into the A3Q3 state and, if the trigger already arrived but the drop
 // hasn't happened, spawns the unique serpent now.
-void __fastcall Objects_InitFn25(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn25_Gidbinn(D2ObjectInitFnArg * pInitArg) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_BladeOfTheOldReligion);
-    if (!pQuestData) {
-      D2Common::Units::SetupUpdateFlag(pInitArg->pObject, 2);
-      return;
-    }
-    if (pQuestData->bIsNotIntroduction != '\0') {
-      D2QuestDataA3Q3Strc* pA3Q3Data;
-      pA3Q3Data = pQuestData->pQuestSpecificData.pA3Q3;
-      pA3Q3Data->bSerpentLocationValid = true;
-      pA3Q3Data->nSerpentKillerGUID = pInitArg->nX;
-      pA3Q3Data->nSerpentSpawnX = pInitArg->nY;
-      if (!(pA3Q3Data->bSerpentArrived && !pA3Q3Data->bCanDropBlade)) {
+    if (pQuestData) {
+      if (pQuestData->bIsNotIntroduction != '\0') {
+        D2QuestDataA3Q3Strc* pA3Q3Data;
+        pA3Q3Data = pQuestData->pQuestSpecificData.pA3Q3;
+        pA3Q3Data->bSerpentLocationValid = true;
+        pA3Q3Data->nSerpentKillerGUID = pInitArg->nX;
+        pA3Q3Data->nSerpentSpawnX = pInitArg->nY;
+        if (!(pA3Q3Data->bSerpentArrived && !pA3Q3Data->bCanDropBlade)) {
+          return;
+        }
+
+        Q20_SpawnUniqueSerpent(pInitArg->pGame, pInitArg->pRoom, pA3Q3Data);
         return;
       }
 
-      Q20_SpawnUniqueSerpent(pInitArg->pGame, pInitArg->pRoom, pA3Q3Data);
+      D2Common::Units::SetupUpdateFlag(pInitArg->pObject, 2);
       return;
     }
 
     D2Common::Units::SetupUpdateFlag(pInitArg->pObject, 2);
+    return;
 }
 
 // A3Q3 "Khalim's Will" — object OPERATE fn (the Compelling-Orb / quest object trigger; name says
@@ -1013,25 +1008,23 @@ BOOL __fastcall OBJOP_A3Q5_NihlathakPortalTrigger(D2ObjectOperateFnArg * pOperat
         bQuestState = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x08);
         if (!bQuestState) {
           pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_BladeOfTheOldReligion);
-          if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
-            return 0;
-          }
-          if (!pQuestData->nStateFlag) {
-            pQuestData->nStateFlag = 1;
+          if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
+            if (!pQuestData->nStateFlag) {
+              pQuestData->nStateFlag = 1;
+            }
+
+            pA2Q3Data = pQuestData->pQuestSpecificData.pA2Q3;
+            D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
+            pObjTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pOperation->nObjectClassId);
+            pGame = pOperation->sArg.pGame;
+            GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjTxt->FrameCnt[1] >> 8) + pGame->dwGameFrame, 0, 0);
+            pA2Q3Data->bViperAmuletInitPending = '\x01';
+            if (!pA2Q3Data->bViperAmuletInitialized) {
+              pA2Q3Data->bViperAmuletInitialized = true;
+              AddQuestTimer(pQuestData, Q20_QuestUpdate, 7);
+            }
           }
 
-          pA2Q3Data = pQuestData->pQuestSpecificData.pA2Q3;
-          D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
-          pObjTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pOperation->nObjectClassId);
-          pGame = pOperation->sArg.pGame;
-          GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjTxt->FrameCnt[1] >> 8) + pGame->dwGameFrame, 0, 0);
-          pA2Q3Data->bViperAmuletInitPending = '\x01';
-          if (pA2Q3Data->bViperAmuletInitialized) {
-            return 0;
-          }
-
-          pA2Q3Data->bViperAmuletInitialized = true;
-          AddQuestTimer(pQuestData, Q20_QuestUpdate, 7);
           return 0;
         }
       }
@@ -1043,31 +1036,26 @@ BOOL __fastcall OBJOP_A3Q5_NihlathakPortalTrigger(D2ObjectOperateFnArg * pOperat
 
 // A3Q3 "Khalim's Will" — accessor: returns the recorded serpent-killer/spawn GUID into *pnParam
 // (and true) when the quest is in real play and the relevant flag is set; else false. Read-only.
-uint32_t __fastcall Q20_GetSerpentKillerGUID(::SGAMEDATA * pGame, int * pnParam) {
+bool __fastcall Q20_GetSerpentKillerGUID(::SGAMEDATA * pGame, int * pnPlayerGUID) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_BladeOfTheOldReligion);
-    if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
-      int nSerpentGUID;
-      pQuestData = (D2QuestDataStrc*)pQuestData->pQuestSpecificData.pA3Q3;
-      if (*(uint8_t*)((uintptr_t)&pQuestData->nQuestNoInternal + 2)) {
-        nSerpentGUID = pQuestData->sQuestGUID.aPlayerGUID[2];
-        *pnParam = nSerpentGUID;
-        return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)nSerpentGUID >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
-      }
+    if (pQuestData && pQuestData->bIsNotIntroduction != '\0' && pQuestData->pQuestSpecificData.pA3Q3->bCanDropBlade) {
+      *pnPlayerGUID = pQuestData->pQuestSpecificData.pA3Q3->nSerpentUnitGUID;
+      return true;
     }
 
-    return (uint32_t)pQuestData & -256;
+    return false;
 }
 
 // A3Q3 "Khalim's Will" — accessor: when the serpent/orb-object "pending" flag (field_0x06) is set,
 // returns its location (field_0x10) and GUID into pdwParam[0..1] and 1; else 0. Read-only.
-BOOL __fastcall Q20_GetSerpentLocation(::SGAMEDATA * pGame, uint32_t * pdwParam) {
+BOOL __fastcall Q20_GetSerpentLocation(::SGAMEDATA * pGame, uint32_t * pdwOut) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_BladeOfTheOldReligion);
     if (pQuestData) {
       D2QuestDataA2Q3Strc* pA2Q3Data;
       pA2Q3Data = pQuestData->pQuestSpecificData.pA2Q3;
       if (pA2Q3Data->field_0x06) {
-        *pdwParam = (uint32_t)(uintptr_t)pA2Q3Data->pAltarRoom;
-        pdwParam[1] = pA2Q3Data->sPlayerGUID.aPlayerGUID[0];
+        *pdwOut = (uint32_t)(uintptr_t)pA2Q3Data->pAltarRoom;
+        pdwOut[1] = pA2Q3Data->sPlayerGUID.aPlayerGUID[0];
         return 1;
       }
     }
@@ -1101,7 +1089,7 @@ void __fastcall Q20_ActivateSerpentObject(::SGAMEDATA * pGame) {
 // A3Q3 "Khalim's Will" — object init fn (#39) for a second quest object. Records the object's GUID
 // and coordinates into the A3Q3 state struct and applies the stored update/visibility flag
 // (aPlayerGUID[0xb]) to the object so it shows in the correct state on (re)creation. No quest bits.
-void __fastcall Objects_InitFn39(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn39_GidbinnAltar(D2ObjectInitFnArg * pInitArg) {
     int32_t nObjectGUID;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_BladeOfTheOldReligion);
     if (!pQuestData) {

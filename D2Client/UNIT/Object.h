@@ -63,18 +63,18 @@ namespace D2Client::UNIT::Object {
 
 // Function declarations
 // Initialises a newly-created object unit: allocates and zeroes a D2UnitDataObjectStrc, links the Objects.txt record, sets UNITFLAG_TARGETABLE/CANBEATTACKED/PREDRAW/DRAWSHADOW from txt flags for the initial anim mode, initialises the static collision path, adds the unit to the room, and sets up auto-lighting (or explicit RGB light from txt). Special-cases class 0x3B (town portal) and 0x3C (portal to Tristram/Stony Field) to store the destination level id.
-void __fastcall AllocObjectData(struct D2UnitStrc * pUnit, struct D2RoomStrc * pRoom, int32_t nXPos, int32_t nYPos, int32_t nClassId, int32_t nInitMode);
+void __fastcall AllocObjectData(struct D2UnitStrc * pUnit, struct D2RoomStrc * pRoom, int32_t nXPos, int32_t nYPos, int32_t nClassId, uint8_t nInitMode);
 // Adds a hardcoded visual overlay to specific object class IDs if the txt Overlay flag is set. Class 0x95 (Horadric Cube) in Neutral mode and 0x98 get OVERLAY_horadric_light; classes 0x162-0x164, 0x18D, 0x195-0x197, and 0x1C7 in Death mode get OVERLAY_multigleam. No-ops for all other classes or modes.
 void __fastcall OBJECT_AddVisualOverlay(struct D2UnitStrc * pUnit);
 void __fastcall FreeObjectData(struct D2UnitStrc * pUnit);
 // Gloaming shrine (nCode=16) server callback: reverses the activating player's character name string as an Easter egg effect
-void __fastcall OBJECT_ShrineGloaming_ReversePlayerName(struct D2UnitStrc * pUnit, struct D2UnitStrc * pPlayer, uint32_t dwParam);
+void __fastcall OBJECT_ShrineGloaming_ReversePlayerName(struct D2UnitStrc * pUnit, struct D2UnitStrc * pPlayer, uint32_t pShrinesTxt);
 // Spawns a 5×5 grid of Fireball missiles (MISSILE_Fireball) centred on pUnit's position, toggling X/Y offsets from ±5 to ±20 in steps of 5. Missile level is clamped to 1–8 based on pPlayer's level/5. Called server-side for trap objects (e.g. fire towers).
-void __fastcall OBJECT_SpawnFireballGrid(struct D2UnitStrc * pUnit, struct D2UnitStrc * pPlayer, uint32_t dwParam);
+void __fastcall OBJECT_SpawnFireballGrid(struct D2UnitStrc * pUnit, struct D2UnitStrc * pPlayer, uint32_t pShrinesTxt);
 // Spawns a 6-missile ring of MISSILE_Explosivepotion around pUnit's position in a fixed ±6-tile grid pattern. pPlayer is the owner; skill level (nToHit) is clamped to [1,8] from pPlayer's level/5. Called when an explosive potion object triggers.
-void __fastcall OBJECT_SpawnExplosivePotionGrid(struct D2UnitStrc * pUnit, struct D2UnitStrc * pPlayer, uint32_t dwParam);
+void __fastcall OBJECT_SpawnExplosivePotionGrid(struct D2UnitStrc * pUnit, struct D2UnitStrc * pPlayer, uint32_t pShrinesTxt);
 // Identical structure to OBJECT_SpawnExplosivePotionGrid but fires MISSILE_Chokinggaspoition. Spawns 6 choking-gas missiles in a ±6-tile ring around pUnit; pPlayer owns them with level-scaled nToHit [1,8]. Called when a choking-gas potion object triggers.
-void __fastcall OBJECT_SpawnChokingGasGrid(struct D2UnitStrc * pUnit, struct D2UnitStrc * pPlayer, uint32_t dwParam);
+void __fastcall OBJECT_SpawnChokingGasGrid(struct D2UnitStrc * pUnit, struct D2UnitStrc * pPlayer, uint32_t pShrinesTxt);
 void __fastcall OBJECT_UpdateShrineOverlay(struct D2UnitStrc * pUnit, struct D2ShrinesTxt * pShrinesTxt);
 void __fastcall SetShrineTextInfo(struct D2UnitStrc * pUnit);
 void __fastcall ObjectMessage(int32_t eMessageType, struct D2UnitStrc * pUnit, struct D2ServerMessageHandleStrc * pMessage);
@@ -131,7 +131,7 @@ bool __fastcall OBJECT_ClientFn_Zoo(struct D2UnitStrc * pUnit);
 // Runs the object's client-side per-frame behaviour: looks up D2ObjectsTxt.ClientFn (+0x1b4) for the unit's class, halts if >= 0x13 (line 0x546), and for a non-zero value tail-calls gpObjectClientFunctionDispatchTable[ClientFn](pUnit), returning its result; ClientFn 0 returns TRUE.
 // Provenance: 1.14d asm 004bdf19-004bdf26 (MOV EAX,[EDX*4+0x7277f0]; MOV ECX,ESI; POP ESI; JMP EAX).
 bool __fastcall OBJECT_ExecuteClientFunction(struct D2UnitStrc * pUnit);
-void __fastcall WAYPOINT_HandleActivation(int32_t pMessage);
+void __fastcall WAYPOINT_HandleActivation(uint8_t * pMessage);
 // Returns the object unit's szOwnerName (D2UnitDataObjectStrc+0x28): the town-portal owner shown on hover when the roster has no name.
 char * __fastcall OBJECT_GetOwnerName(struct D2UnitStrc * pUnit);
 void __fastcall SetObjectDataOwnerName(struct D2UnitStrc * pUnit, char * szOwnerName);

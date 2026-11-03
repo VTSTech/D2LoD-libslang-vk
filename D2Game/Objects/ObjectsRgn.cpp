@@ -3,7 +3,6 @@
 #include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Object.h"
@@ -23,6 +22,7 @@
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/Drlg/Preset.h"
+#include "D2Common/Merc.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Seed.h"
 #include "D2Common/Units.h"
@@ -158,21 +158,19 @@ int32_t __fastcall AllocObjectControl(::SGAMEDATA * pGame) {
     } while (nShrineClassIdxLoop < 8);
 
     iShrineIdx = 0;
-    if (nShrinesTxtCount <= 0) {
-      return aShrineClassCounts[8];
+    if (nShrinesTxtCount > 0) {
+      do {
+        pShrinesTxt = D2Common::DATATBLS::ObjectTbls::TXT_Shrines_GetLine(iShrineIdx);
+        byEffectClass = pShrinesTxt->nEffectClass;
+        if (byEffectClass < 8) {
+          *(int*)((uint8_t*)pObjectControl->sShrinesRng.aShrinesRng[byEffectClass] + pObjectControl->sShrinesRng.nShrinesCount[byEffectClass] * 4) = iShrineIdx;
+          pnShrineClassCount = pObjectControl->sShrinesRng.nShrinesCount + byEffectClass;
+          (*pnShrineClassCount)++;
+        }
+
+        iShrineIdx++;
+      } while (iShrineIdx < nShrinesCount);
     }
-
-    do {
-      pShrinesTxt = D2Common::DATATBLS::ObjectTbls::TXT_Shrines_GetLine(iShrineIdx);
-      byEffectClass = pShrinesTxt->nEffectClass;
-      if (byEffectClass < 8) {
-        *(int*)((uint8_t*)pObjectControl->sShrinesRng.aShrinesRng[byEffectClass] + pObjectControl->sShrinesRng.nShrinesCount[byEffectClass] * 4) = iShrineIdx;
-        pnShrineClassCount = pObjectControl->sShrinesRng.nShrinesCount + byEffectClass;
-        (*pnShrineClassCount)++;
-      }
-
-      iShrineIdx++;
-    } while (iShrineIdx < nShrinesCount);
 
     return aShrineClassCounts[8];
 }
@@ -317,7 +315,7 @@ void __fastcall AllocObjectControlSub0x1110(::SGAMEDATA * pGame, D2UnitStrc * pU
 
 // Object initializer for region-based objects (objrgn.cpp). Walks the pSub0x1110 linked list looking for an entry whose room matches pInitArg->pRoom (or whose coords fall inside that room). If found and the object is absent or dead, schedules a game event using the object's FrameCnt animation timing, then frees the entry. If not found and the room is a town room, calls SetupUpdateFlag(obj, 2).
 // @sourcefile .\OBJECTS\objrgn.cpp
-void __fastcall Objects_InitFn17(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn17_Waypoint(D2ObjectInitFnArg * pInitArg) {
     D2ObjectsTxt* pObjectsTxt;
     int nCoord;
     D2RoomStrc* pRoom;
@@ -401,8 +399,7 @@ int32_t __fastcall OBJECTRGN_CheckPointsCapacity(::SGAMEDATA * pGame, eD2LevelId
 }
 
 void __fastcall OBJECT_IncrementLevelSpawnCount(::SGAMEDATA * pGame, eD2LevelId eLevel) {
-    int* pnSpawnCount = &pGame->pObjectControl->aLevelsRng[eLevel]->pad_0x10;
-    (*pnSpawnCount)++;
+    pGame->pObjectControl->aLevelsRng[eLevel]->pad_0x10++;
 }
 
 uint32_t __fastcall OBJECT_IsPositionNearSpawnPoint2(::SGAMEDATA * pGame, eD2LevelId eLevel, int32_t nX, int32_t nY) {

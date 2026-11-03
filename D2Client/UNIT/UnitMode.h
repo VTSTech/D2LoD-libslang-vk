@@ -20,10 +20,9 @@ namespace D2Client::UNIT::UnitMode {
 // Client-side: handles the local player attempting to interact with a unit identified by type+GUID. Finds the client-side target unit; dispatches by unit type: PLAYER/MONSTER face the target and send interact request 0x13 (monster throttled to 200ms); ITEM sends pickup 0x16 (with inventory-open flag). For OBJECT, clears the server path target and, if the object is interactable, faces it and either starts a melee/kick skill cast or sends interact 0x13. Special handling for object class 0x194 (uses Kick/Attack depending on equipped-weapon code and death anim) and 0x178 (sends type-2 interact when dead, attack-skill when walking). No return; communicates via NET_D2GS_CLIENT_Send_* packets.
 // @sourcefile .\UNIT\UnitMode.cpp
 void __fastcall INTERACT_AnyObject(uint16_t eUnitType, DWORD nUnitGUID);
-void __thiscall ClickWithSkillOnUnitOrCoord(eD2UnitModeAction pThis, int32_t nTargetOrX, int32_t nParam, uint32_t dwUnused);
-// @sourcefile .\UNIT\UnitMode.cpp
-uint32_t UNITMODE_CanInterruptSkill(struct D2UnitStrc * pUnit);
-BOOL __fastcall HandleMessage(int32_t pTargetUid, struct D2UnitStrc * pUnit, struct D2ServerMessageHandleStrc * pMessage, int32_t nParam);
+// Registers: eModeAction in ECX; pUnit in EDX is passed by the caller but not read.
+void __fastcall ClickWithSkillOnUnitOrCoord(eD2UnitModeAction eModeAction, struct D2UnitStrc * pUnit, int32_t nTargetOrX, int32_t nUnitGUIDOrY, uint32_t dwUnused);
+BOOL __fastcall HandleMessage(int32_t nMessageType, struct D2UnitStrc * pUnit, struct D2ServerMessageHandleStrc * pMessage, int32_t eNeutralMode);
 // Client-side: when a player/monster unit enters a hit/death anim mode (player modes 0/4/0x13, monster modes 0/3/0xd), spawns the appropriate elemental-hit overlay graphic on the unit based on the high nibble of dwLastHitClass (provided the low nibble is also set). Maps element class 0x20->fire_hit, 0x30->ice_explode, 0x40->lightning, 0x10->doubledamage1, 0x70->bash, 0x80->hit_thorns, 0x90->sanctuaryknockback via GFX_AddOverlayToUnit. Visual only; no-op for other unit types or non-hit modes.
 void __fastcall UNITMODE_ShowElementalHitOverlay(struct D2UnitStrc * pUnit, int32_t nAnimMode);
 BOOL __stdcall UNITMODE_SetModeAndLoadCof(int32_t nAnimMode, struct D2UnitStrc * pUnit);
@@ -35,6 +34,9 @@ void __fastcall UNITMODE_SendWalkToPosition(struct D2UnitStrc * pUnit, int32_t n
 // @sourcefile .\UNIT\UnitMode.cpp
 void __fastcall UNITMODE_ExecuteSkillAction(eD2UnitModeAction nActionType, struct D2UnitStrc * pUnit, int32_t nTargetOrX, int32_t nTargetGUIDOrY, uint32_t dwUnused);
 void __fastcall UNITMODE_ExecuteDeferredAction(struct D2UnitStrc * pUnit);
-// 5 internal functions (defined in .cpp)
+// 6 internal functions (defined in .cpp)
+
+// Extern entries for hand-written callers (each forwards to the function of its name)
+uint32_t UNITMODE_CanInterruptSkill_Extern(struct D2UnitStrc * pUnit);
 
 } // namespace D2Client::UNIT::UnitMode

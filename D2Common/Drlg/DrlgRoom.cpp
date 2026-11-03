@@ -21,6 +21,7 @@
 #include "D2Common/Drlg/D2DrlgActWarpsInfoStrc.h"
 #include "D2Common/Drlg/D2DrlgCoordsStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
+#include "D2Common/Drlg/D2DrlgGridStrc.h"
 #include "D2Common/Drlg/D2DrlgLevelStrc.h"
 #include "D2Common/Drlg/D2DrlgMapStrc.h"
 #include "D2Common/Drlg/D2DrlgOrthStrc.h"
@@ -102,11 +103,10 @@ D2RoomStrc * __fastcall DRLGWARP_GetWarpDestinationRoom(D2RoomExStrc * pRoomEx, 
       if (pTileGrid->pRoomEx == pRoomEx) {
         *ppOrth = pTileGrid->pLvlWarpTxt->Id;
         *ppRoomEx = pTileGrid->pLvlWarpTxt;
-        if (pDestRoomEx->pRoom) {
-          return pDestRoomEx->pRoom;
+        if (!pDestRoomEx->pRoom) {
+          DUNGEON::Dungeon::InitRoomEx(pDestRoomEx);
         }
 
-        DUNGEON::Dungeon::InitRoomEx(pDestRoomEx);
         return pDestRoomEx->pRoom;
       }
 
@@ -119,10 +119,10 @@ D2RoomStrc * __fastcall DRLGWARP_GetWarpDestinationRoom(D2RoomExStrc * pRoomEx, 
 // Iterates all warp tiles in a room (linked list at offset 0x4c)
 // and sets each tile's select value (offset 0x8) to nSelectValue.
 // Called by DRLGROOM_SetWarpTileSelect.
-void __fastcall DRLGWARP_SetAllWarpTilesSelectValue(int32_t pRoomEx, uint32_t nSelectValue) {
-    int pWarpTile;
-    for (pWarpTile = *(int*)(pRoomEx + 0x4c); pWarpTile; pWarpTile = *(int*)(pWarpTile + 4)) {
-      *(uint32_t*)(pWarpTile + 8) = nSelectValue;
+void __fastcall DRLGWARP_SetAllWarpTilesSelectValue(D2RoomExStrc * pRoomEx, BOOL nSelectValue) {
+    D2DrlgRoomExRoomTileNodeStrc* pWarpTile;
+    for (pWarpTile = pRoomEx->pRoomTileNodes; pWarpTile; pWarpTile = pWarpTile->pRoomTileNext) {
+      pWarpTile->bEnabled = nSelectValue;
     }
 }
 
@@ -401,12 +401,12 @@ D2LvlWarpTxt * __fastcall DRLGROOM_GetLvlWarpTxtForWarpUnit(D2RoomExStrc * pRoom
     }
 
     while (pTileGrid) {
-      if (pTileGrid->pLvlWarpTxt->Id == (nClassId & 0xff)) {
-        if (pTileGrid->bEnabled) {
-          return pTileGrid->pLvlWarpTxt;
+      if (pTileGrid->pLvlWarpTxt->Id == (uint8_t)nClassId) {
+        if (!pTileGrid->bEnabled) {
+          return nullptr;
         }
 
-        return nullptr;
+        return pTileGrid->pLvlWarpTxt;
       }
 
       pTileGrid = pTileGrid->pRoomTileNext;
@@ -509,7 +509,7 @@ void __fastcall DRLGWARP_InitWarpConnectionsBetweenLevels(D2DrlgStrc * pDrlg, ui
       DRLGACTMISC_GetWarpsIdIfExists(pSrcLevel->pDrlg, pSrcLevel->eD2LevelId);
       DRLGACTMISC_GetWarpsIdIfExists(pDstLevel->pDrlg, pDstLevel->eD2LevelId);
       for (pSrcRoomEx = pSrcLevel->pRoomExFirst; pSrcRoomEx; pSrcRoomEx = pSrcRoomEx->pRoomExNext) {
-        if (pSrcRoomEx->eRoomExFlags & 1 << ((char)nSrcVisSlot + 4U & 0x1f)) {
+        if (pSrcRoomEx->eRoomExFlags & 1 << D2_SHIFT_COUNT(nSrcVisSlot + 4U)) {
           goto find_dst_warp_room;
         }
       }
@@ -517,7 +517,7 @@ void __fastcall DRLGWARP_InitWarpConnectionsBetweenLevels(D2DrlgStrc * pDrlg, ui
       pSrcRoomEx = 0;
       find_dst_warp_room:
       for (pDstRoomEx = pDstLevel->pRoomExFirst; pDstRoomEx; pDstRoomEx = pDstRoomEx->pRoomExNext) {
-        if (pDstRoomEx->eRoomExFlags & 1 << ((char)nDstVisSlot + 4U & 0x1f)) {
+        if (pDstRoomEx->eRoomExFlags & 1 << D2_SHIFT_COUNT(nDstVisSlot + 4U)) {
           goto init_warp_rooms;
         }
       }
@@ -744,7 +744,7 @@ void __fastcall DRLGROOMEX_AllocNodesForBothRoomEx(D2RoomExStrc * pRoomExA, D2Ro
 
 // Finds and removes a D2DrlgOrthStrc node from pRoomEx->pOrth linked list that has nType==1 and points to pDrlgRoomExTarget. Frees the removed node.
 // @sourcefile .\DRLG\DrlgRoom.cpp
-void __fastcall DRLGROOMEX_FindReplaceAndFreeSub00VsTargetRoomEx(D2PoolManagerStrc * pMemory, D2RoomExStrc * pRoomEx, D2RoomExStrc * pDrlgRoomExTarget) {
+void __fastcall DRLGROOMEX_FreeOrthToRoomEx(D2PoolManagerStrc * pMemory, D2RoomExStrc * pRoomEx, D2RoomExStrc * pDrlgRoomExTarget) {
     D2DrlgOrthStrc* pOrthCurrent = pRoomEx->pOrth;
     D2DrlgOrthStrc* pOrthNext = pOrthCurrent->pNext;
     if (pOrthCurrent->nType == 1 && pOrthCurrent->pLink.pRoomEx == pDrlgRoomExTarget) {
@@ -776,8 +776,8 @@ void __fastcall DRLGROOMEX_FindReplaceAndFreeSub00VsTargetRoomEx(D2PoolManagerSt
 }
 
 void __fastcall DRLGROOMEX_FindReplaceAndFreeSub00ForBothRoomEx(D2PoolManagerStrc * pMemory, D2RoomExStrc * pRoomEx, D2RoomExStrc * pDrlgRoomExB) {
-    DRLGROOMEX_FindReplaceAndFreeSub00VsTargetRoomEx(pMemory, pRoomEx, pDrlgRoomExB);
-    DRLGROOMEX_FindReplaceAndFreeSub00VsTargetRoomEx(pMemory, pDrlgRoomExB, pRoomEx);
+    DRLGROOMEX_FreeOrthToRoomEx(pMemory, pRoomEx, pDrlgRoomExB);
+    DRLGROOMEX_FreeOrthToRoomEx(pMemory, pDrlgRoomExB, pRoomEx);
 }
 
 // Sorting comparator: compares orths by direction first, then by coordinate for that direction.
@@ -786,36 +786,34 @@ BOOL __fastcall DRLGORTH_CompareByDirectionAndCoord(D2DrlgOrthStrc * pOrth1, D2D
     if ((int)pOrth2->neDrlgDirection > (int)eDir1) {
       return 1;
     }
-    if (pOrth2->neDrlgDirection != eDir1) {
-      return 0;
-    }
-
-    switch (eDir1) {
-      case DIRECTION_SOUTHEAST:
-        if (pOrth2->psCoordinatesAndSize->WorldPosition.y > pOrth1->psCoordinatesAndSize->WorldPosition.y) {
-          return 1;
-        }
-      break;
-      case DIRECTION_NORTHEAST:
-        if (pOrth2->psCoordinatesAndSize->WorldPosition.x < pOrth1->psCoordinatesAndSize->WorldPosition.x) {
-          return 1;
-        }
-      break;
-      case DIRECTION_SOUTHWEST:
-        if (pOrth2->psCoordinatesAndSize->WorldPosition.y < pOrth1->psCoordinatesAndSize->WorldPosition.y) {
-          return 1;
-        }
-      break;
-      case DIRECTION_NORTHWEST:
-        if (pOrth2->psCoordinatesAndSize->WorldPosition.x > pOrth1->psCoordinatesAndSize->WorldPosition.x) {
-          return 1;
-        }
+    if (pOrth2->neDrlgDirection == eDir1) {
+      switch (eDir1) {
+        case DIRECTION_SOUTHEAST:
+          if (pOrth2->psCoordinatesAndSize->WorldPosition.y > pOrth1->psCoordinatesAndSize->WorldPosition.y) {
+            return 1;
+          }
+        break;
+        case DIRECTION_NORTHEAST:
+          if (pOrth2->psCoordinatesAndSize->WorldPosition.x < pOrth1->psCoordinatesAndSize->WorldPosition.x) {
+            return 1;
+          }
+        break;
+        case DIRECTION_SOUTHWEST:
+          if (pOrth2->psCoordinatesAndSize->WorldPosition.y < pOrth1->psCoordinatesAndSize->WorldPosition.y) {
+            return 1;
+          }
+        break;
+        case DIRECTION_NORTHWEST:
+          if (pOrth2->psCoordinatesAndSize->WorldPosition.x > pOrth1->psCoordinatesAndSize->WorldPosition.x) {
+            return 1;
+          }
+      }
     }
 
     return 0;
 }
 
-static void __stdcall DRLGROOMEX_ReplaceSub00(D2DrlgOrthStrc * * pRoomEx, D2DrlgOrthStrc * pOrth) {
+static void __stdcall DRLGORTH_InsertSorted(D2DrlgOrthStrc * * pRoomEx, D2DrlgOrthStrc * pOrth) {
     BOOL bShouldInsertBefore;
     D2DrlgOrthStrc* pOrthPrev = *pRoomEx;
     if (!pOrthPrev) {
@@ -860,7 +858,7 @@ void __fastcall AllocDrlgOrth(D2DrlgOrthStrc * * pRoomEx, D2DrlgLevelStrc * pLev
     pOrth->bIsDrlgTypePresetArea = bIsDrlgTypePresetArea;
     pOrth->nType = 0;
     pOrth->psCoordinatesAndSize = &pLevel->sCoordinatesAndSize;
-    DRLGROOMEX_ReplaceSub00(pRoomEx, pOrth);
+    DRLGORTH_InsertSorted(pRoomEx, pOrth);
 }
 
 BOOL __fastcall DRLGCOORDS_IsWithinDistance(D2DrlgCoordsStrc * pCoords, D2DrlgCoordsStrc * pCoords2, int32_t nSize, int * nX, int * nY) {
@@ -1011,8 +1009,8 @@ uint32_t __fastcall DRLGROOMEX_CheckWorldCoordsInRoomBounds(D2DrlgCoordsStrc * p
       return 0;
     }
 
-    int iVar1 = pRoomCoords->WorldSize.x;
-    if (!(nWorldX < nRoomPosScaled + iVar1 * 4 + iVar1)) {
+    int nExtent = pRoomCoords->WorldSize.x;
+    if (!(nWorldX < nRoomPosScaled + nExtent * 4 + nExtent)) {
       return 0;
     }
 
@@ -1021,8 +1019,8 @@ uint32_t __fastcall DRLGROOMEX_CheckWorldCoordsInRoomBounds(D2DrlgCoordsStrc * p
       return 0;
     }
 
-    iVar1 = pRoomCoords->WorldSize.y;
-    return (uint32_t)(nWorldY < nRoomPosScaled + iVar1 * 4 + iVar1);
+    nExtent = pRoomCoords->WorldSize.y;
+    return (uint32_t)(nWorldY < nRoomPosScaled + nExtent * 4 + nExtent);
 }
 
 uint32_t __fastcall CheckLOSDraw(D2RoomExStrc * pRoomEx) {
@@ -1111,7 +1109,6 @@ BOOL __fastcall HasWaypoint(D2RoomExStrc * pRoomEx) {
     }
 
     return (uint32_t)((pRoomEx->eRoomExFlags & 0x30000U) != 0);
-    return (uint32_t)((pRoomEx->eRoomExFlags & 0x30000U) != 0);
 }
 
 char * __fastcall GetPickedLevelPrestFilePathFromRoomEx(D2RoomExStrc * pRoomEx) {
@@ -1125,24 +1122,19 @@ char * __fastcall GetPickedLevelPrestFilePathFromRoomEx(D2RoomExStrc * pRoomEx) 
 }
 
 static void ReorderNearRoomList(int nRoomCount, D2RoomStrc * * ppRoomList) {
+    int nIndex;
     int nPassRemaining;
     D2RoomStrc* pRoomCurrent;
     D2RoomStrc* pRoomNext;
     int nListCount = nRoomCount - 1;
     for (nPassRemaining = nListCount; nPassRemaining > 0; nPassRemaining--) {
-      int nIndex;
-      nIndex = 0;
-      if (nListCount > 0) {
-        do {
-          pRoomNext = ppRoomList[nIndex + 1];
-          pRoomCurrent = ppRoomList[nIndex];
-          if (pRoomCurrent->eFlags >= (int)(pRoomNext->nLastDeadGUIDs[1] + pRoomNext->eFlags) || (int)pRoomCurrent->nLastDeadGUIDs[0] >= (int)(pRoomNext->nLastDeadGUIDs[2] + pRoomNext->nLastDeadGUIDs[0])) {
-            ppRoomList[nIndex] = pRoomNext;
-            ppRoomList[nIndex + 1] = pRoomCurrent;
-          }
-
-          nIndex++;
-        } while (nIndex < nListCount);
+      for (nIndex = 0; nIndex < nListCount; nIndex++) {
+        pRoomNext = ppRoomList[nIndex + 1];
+        pRoomCurrent = ppRoomList[nIndex];
+        if (pRoomCurrent->eFlags >= (int)(pRoomNext->nLastDeadGUIDs[1] + pRoomNext->eFlags) || (int)pRoomCurrent->nLastDeadGUIDs[0] >= (int)(pRoomNext->nLastDeadGUIDs[2] + pRoomNext->nLastDeadGUIDs[0])) {
+          ppRoomList[nIndex] = pRoomNext;
+          ppRoomList[nIndex + 1] = pRoomCurrent;
+        }
       }
     }
 }
@@ -1186,15 +1178,9 @@ static void __stdcall DefineRoomsNear(D2PoolManagerStrc * pMemory, D2RoomExStrc 
     ReorderNearRoomList(nGapX, apNearRoomExList);
     D2RoomExStrc** ppNearRooms = (D2RoomExStrc**)D2_ALLOC_POOL_AT(pMemory, nGapX * 4, ".\\DRLG\\DrlgRoom.cpp", 0x2cb);
     pRoomEx->ppDrlgRoomsExNear = ppNearRooms;
-    nGapX = 0;
-    if (pRoomEx->nDrlgRoomsExNearCount <= 0) {
-      return;
-    }
-
-    do {
+    for (nGapX = 0; nGapX < pRoomEx->nDrlgRoomsExNearCount; nGapX++) {
       pRoomEx->ppDrlgRoomsExNear[nGapX] = (D2RoomExStrc*)apNearRoomExList[nGapX];
-      nGapX++;
-    } while (nGapX < pRoomEx->nDrlgRoomsExNearCount);
+    }
 }
 
 int32_t __fastcall GetRoomsNearCount(D2RoomExStrc * pRoomEx) {
@@ -1202,30 +1188,21 @@ int32_t __fastcall GetRoomsNearCount(D2RoomExStrc * pRoomEx) {
 }
 
 int32_t __fastcall GetRealRoomsNearCount(D2RoomExStrc * pRoomEx, D2RoomStrc * * ppRoomList) {
+    int32_t iNullFill;
+    int nIndex;
     int32_t nRealCount = 0;
-    int nIndex = 0;
-    if (pRoomEx->nDrlgRoomsExNearCount > 0) {
+    for (nIndex = 0; nIndex < pRoomEx->nDrlgRoomsExNearCount; nIndex++) {
       D2RoomStrc* pRoom;
-      do {
-        pRoom = pRoomEx->ppDrlgRoomsExNear[nIndex]->pRoom;
-        if (pRoom) {
-          ppRoomList[nRealCount] = pRoom;
-          nRealCount++;
-        }
-
-        nIndex++;
-      } while (nIndex < pRoomEx->nDrlgRoomsExNearCount);
+      pRoom = pRoomEx->ppDrlgRoomsExNear[nIndex]->pRoom;
+      if (pRoom) {
+        ppRoomList[nRealCount] = pRoom;
+        nRealCount++;
+      }
     }
 
-    int32_t iNullFill = nRealCount;
-    if (nRealCount >= pRoomEx->nDrlgRoomsExNearCount) {
-      return nRealCount;
-    }
-
-    do {
+    for (iNullFill = nRealCount; iNullFill < pRoomEx->nDrlgRoomsExNearCount; iNullFill++) {
       ppRoomList[iNullFill] = 0;
-      iNullFill++;
-    } while (iNullFill < pRoomEx->nDrlgRoomsExNearCount);
+    }
 
     return nRealCount;
 }
@@ -1299,7 +1276,7 @@ static BOOL __stdcall DRLGROOMEX_LinkNearRoomByDirection(uint8_t dstVisSlot, D2R
       if (!pDstRoomExIter) {
         return bLinkAdded;
       }
-      if (pDstRoomExIter->eRoomExFlags & 1 << (dstVisSlot + 4 & 0x1f)) {
+      if (pDstRoomExIter->eRoomExFlags & 1 << D2_SHIFT_COUNT(dstVisSlot + 4)) {
         if (warpDestLevel != -1) {
           DRLGROOMEX_ResizeArrayAndAddNewNearRoom(pRoomEx, pMemory, pDstRoomExIter, pDstRoomExIter);
           DRLGROOMEX_AllocRoomTile(pDstRoomExIter, srcVisSlot, pRoomEx);
@@ -1465,8 +1442,8 @@ void __fastcall DRLGROOMEX_FreeDrlgRoomEx(D2RoomExStrc * pRoomEx) {
       pOrthIter = pOrthCurrent->pNext;
       if (pOrthCurrent->nType == 1) {
         pLinkedRoomEx = pOrthCurrent->pLink.pRoomEx;
-        DRLGROOMEX_FindReplaceAndFreeSub00VsTargetRoomEx(pMemory, pRoomEx, pLinkedRoomEx);
-        DRLGROOMEX_FindReplaceAndFreeSub00VsTargetRoomEx(pMemory, pLinkedRoomEx, pRoomEx);
+        DRLGROOMEX_FreeOrthToRoomEx(pMemory, pRoomEx, pLinkedRoomEx);
+        DRLGROOMEX_FreeOrthToRoomEx(pMemory, pLinkedRoomEx, pRoomEx);
       }
     }
 
@@ -1499,7 +1476,7 @@ void __fastcall DRLGROOMEX_FreeDrlgRoomEx(D2RoomExStrc * pRoomEx) {
 
 // Links a RoomEx across levels using the vis arrays. For srcVisSlot (0..7), computes dst level id and ensures dst level is initialized. If a warp destination exists, align by matching the Nth occurrence of dst in src vis array with the Nth occurrence of src in dst vis array, then link via DRLGROOMEX_LinkNearRoomByDirection. Fallback: scan dst vis array for src and link first match.
 void __stdcall DRLGROOMEX_LinkNearRoomsByVis(D2PoolManagerStrc * pMemory, D2RoomExStrc * pRoomEx, uint8_t srcVisSlot) {
-    bool _bLinkResult;
+    BOOL _bLinkResult;
     bool bLinkResult;
     uint8_t nNextSlot;
     int nSrcOccurrenceIndex;

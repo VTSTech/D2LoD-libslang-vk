@@ -55,7 +55,6 @@ int32_t __fastcall D2WINSCROLLBAR_GetMaxValue(::D2WinScrollbar * pScrollbar) {
     }
 
     return pScrollbar->nMaxValue;
-    return pScrollbar->nMaxValue;
 }
 
 // Sets scrollbar maximum value (field 0x12). Clamps to non-negative. Validates form type FORM_Scrollbar (5).
@@ -91,7 +90,6 @@ int32_t __fastcall D2WINSCROLLBAR_GetPosition(::D2WinScrollbar * pScrollbar) {
     }
 
     return pScrollbar->nPosition;
-    return pScrollbar->nPosition;
 }
 
 // Links scrollbar to text box control (field 0x15). Scrollbar changes auto-update linked text box. Validates form type FORM_Scrollbar (5).
@@ -122,31 +120,29 @@ BOOL __fastcall D2WINSCROLLBAR_HandleMouseWheel(D2UIMouseMsgStrc * pMsg, ::D2Win
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x99);
       exit(-1);
     }
-    if (pScrollbar->nWheelLockFlag) {
-      return 0;
-    }
-    if (nWheelDelta > 0) {
-      pScrollbar->nPosition--;
-      pScrollbar->bUpArrowPressed = 1;
-    } else {
-      if (nWheelDelta < 0) {
-        pScrollbar->nPosition++;
-        pScrollbar->bDownArrowPressed = 1;
+    if (!pScrollbar->nWheelLockFlag) {
+      if (nWheelDelta > 0) {
+        pScrollbar->nPosition--;
+        pScrollbar->bUpArrowPressed = 1;
+      } else {
+        if (nWheelDelta < 0) {
+          pScrollbar->nPosition++;
+          pScrollbar->bDownArrowPressed = 1;
+        }
+      }
+      if (pScrollbar->nPosition < 0) {
+        pScrollbar->nPosition = 0;
+      } else if (pScrollbar->nPosition > pScrollbar->nMaxValue) {
+        pScrollbar->nPosition = pScrollbar->nMaxValue;
+      }
+      if (pScrollbar->pLinkedTextBox) {
+        D2WinTextBox::D2WINTEXTBOX_ScrollToLine(pScrollbar->pLinkedTextBox, pScrollbar->nPosition);
+      }
+      if (pScrollbar->pfnOnChange) {
+        pScrollbar->pfnOnChange(pMsg);
       }
     }
-    if (pScrollbar->nPosition < 0) {
-      pScrollbar->nPosition = 0;
-    } else if (pScrollbar->nPosition > pScrollbar->nMaxValue) {
-      pScrollbar->nPosition = pScrollbar->nMaxValue;
-    }
-    if (pScrollbar->pLinkedTextBox) {
-      D2WinTextBox::D2WINTEXTBOX_ScrollToLine(pScrollbar->pLinkedTextBox, pScrollbar->nPosition);
-    }
-    if (!pScrollbar->pfnOnChange) {
-      return 0;
-    }
 
-    pScrollbar->pfnOnChange(pMsg);
     return 0;
 }
 
@@ -168,7 +164,6 @@ int32_t __fastcall D2WINSCROLLBAR_GetStyle(::D2WinScrollbar * pScrollbar) {
     }
 
     return pScrollbar->nStyle;
-    return pScrollbar->nStyle;
 }
 
 BOOL __stdcall Push(D2ControlMsg * pScrollbar) {
@@ -184,12 +179,12 @@ BOOL __stdcall Push(D2ControlMsg * pScrollbar) {
       return 1;
     }
 
-    uint32_t uVar1;
-    uVar1 = pCtrl->sControl.dwState;
-    if (!(gadwBitMasks[2] & uVar1)) {
+    uint32_t dwState;
+    dwState = pCtrl->sControl.dwState;
+    if (!(gadwBitMasks[2] & dwState)) {
       return 1;
     }
-    if (!(gadwBitMasks[0] & uVar1)) {
+    if (!(gadwBitMasks[0] & dwState)) {
       return 1;
     }
 
@@ -210,19 +205,19 @@ BOOL __stdcall Push(D2ControlMsg * pScrollbar) {
     }
 
     nMaxValue = nPosY - 0x1e;
-    int iVar2;
-    iVar2 = pCtrl->nPosition;
+    int nOldPosition;
+    nOldPosition = pCtrl->nPosition;
     int nThumbTopY;
-    nThumbTopY = iVar2 * nMaxValue / nThumbPos;
+    nThumbTopY = nOldPosition * nMaxValue / nThumbPos;
     if (nMouseRelY >= nThumbTopY + 10 && nMouseRelY <= nThumbTopY + 0x14) {
       pCtrl->nWheelLockFlag = 1;
     }
     if (nMouseRelY < 0xb && !pCtrl->bDownArrowPressed && !pCtrl->nWheelLockFlag) {
       pCtrl->bUpArrowPressed = 1;
-      nCurPos = iVar2 - 1;
+      nCurPos = nOldPosition - 1;
     } else if (nMouseRelY > nPosY - 10 && !pCtrl->bUpArrowPressed && !pCtrl->nWheelLockFlag) {
       pCtrl->bDownArrowPressed = 1;
-      nCurPos = iVar2 + 1;
+      nCurPos = nOldPosition + 1;
     } else {
       if (pCtrl->bDownArrowPressed || pCtrl->bUpArrowPressed) {
         goto clamp_and_notify;
@@ -245,15 +240,15 @@ BOOL __stdcall Push(D2ControlMsg * pScrollbar) {
         }
       }
 
-      nThumbPos = iVar2 * nMaxValue / pCtrl->nMaxValue;
+      nThumbPos = nOldPosition * nMaxValue / pCtrl->nMaxValue;
       if (nMouseRelY < nThumbPos + 10) {
-        nCurPos = iVar2 - nStep;
+        nCurPos = nOldPosition - nStep;
       } else {
         if (nMouseRelY <= nThumbPos + 0x14) {
           goto clamp_and_notify;
         }
 
-        nCurPos = iVar2 + nStep;
+        nCurPos = nOldPosition + nStep;
       }
     }
 
@@ -271,9 +266,9 @@ BOOL __stdcall Push(D2ControlMsg * pScrollbar) {
       pCtrl->pfnOnChange((D2UIMouseMsgStrc*)pScrollbar);
     }
 
-    OnPress pOVar3 = pCtrl->sControl.fpOnPress;
-    if (pOVar3) {
-      BOOL bOnPressResult = (*pOVar3)(pScrollbar);
+    OnPress pOVar1 = pCtrl->sControl.fpOnPress;
+    if (pOVar1) {
+      BOOL bOnPressResult = (*pOVar1)(pScrollbar);
       return bOnPressResult;
     }
 
@@ -297,25 +292,25 @@ BOOL __stdcall Mouse(D2ControlMsg * pScrollbar) {
 }
 
 BOOL __fastcall Draw(::D2WinScrollbar * pScrollbar) {
-    uint32_t nGlobalTickCount;
     int nDrawY;
     D2GfxDataStrc sGfxData;
     D2ControlMsg pScrollbarArg;
-    DC6* local_8;
+    DC6* pDC6;
+    uint32_t dwState;
     int32_t nLine;
     if (!pScrollbar) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe7);
       exit(-1);
     } else {
-      uint32_t uVar1;
+      uint32_t nGlobalTickCount;
       if (pScrollbar->sControl.neD2FormType != FORM_Scrollbar) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe8);
         exit(-1);
       }
 
-      uVar1 = pScrollbar->sControl.dwState;
-      if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
-        local_8 = pScrollbar->sControl.pDC6;
+      dwState = pScrollbar->sControl.dwState;
+      if (gadwBitMasks[2] & dwState && gadwBitMasks[0] & dwState) {
+        pDC6 = pScrollbar->sControl.pDC6;
         nLine = pScrollbar->sControl.dwPosX;
         nDrawY = pScrollbar->sControl.dwPosY - 1;
         if (!pScrollbar->nMaxValue) {
@@ -333,18 +328,18 @@ BOOL __fastcall Draw(::D2WinScrollbar * pScrollbar) {
         }
 
         memset(&sGfxData, 0, 0x48);
-        sGfxData.pDC6 = local_8;
-        sGfxData.nFrameNumber = (uint32_t)(pScrollbar->bDownArrowPressed != 0) * 2 + 1;
+        sGfxData.pDC6 = pDC6;
+        sGfxData.nFrameNumber = pScrollbar->bDownArrowPressed != 0 ? 0x3U : 0x1U;
         sGfxData.nDirection = 0;
         D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nLine, nDrawY, -1, DRAW_SOLID, nullptr);
         sGfxData.nFrameNumber = 5;
         if (pScrollbar->sControl.dwSizeY - 10 > 10) {
-          local_8 = (DC6*)0xa;
+          pDC6 = (DC6*)0xa;
           do {
-            local_8 = (DC6*)((uintptr_t)&local_8->nFormat + 2);
+            pDC6 = (DC6*)((uintptr_t)&pDC6->nFormat + 2);
             nDrawY += -10;
             D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nLine, nDrawY, -1, DRAW_SOLID, nullptr);
-          } while ((int)local_8 < pScrollbar->sControl.dwSizeY - 10);
+          } while ((int)pDC6 < pScrollbar->sControl.dwSizeY - 10);
         }
 
         sGfxData.nFrameNumber = pScrollbar->bUpArrowPressed ? 2 : 0;
@@ -363,8 +358,7 @@ BOOL __fastcall Draw(::D2WinScrollbar * pScrollbar) {
     ::D2WinScrollbar* pNewScrollbar = D2_NEW_AT(::D2WinScrollbar, ".\\Src\\D2WinScrollbar.cpp", 0x1c);
     memset(pNewScrollbar, 0, 0x60);
     pNewScrollbar->sControl.neD2FormType = FORM_Scrollbar;
-    int* pStateField = &pNewScrollbar->sControl.dwState;
-    *pStateField |= gadwBitMasks[0];
+    pNewScrollbar->sControl.dwState |= gadwBitMasks[0];
     pNewScrollbar->sControl.dwState |= gadwBitMasks[2];
     pNewScrollbar->sControl.pDC6 = pDC6;
     pNewScrollbar->sControl.dwPosX = nPosX;

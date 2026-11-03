@@ -3,10 +3,10 @@
 #include "Storm/WindowHandle.h"
 #include "D2Client/Message.h"
 #include "D2Client/UI/EscMenu.h"
-#include "Storm/SMem.h"
 #include "Storm/Source/SEVT.h"
 #include "Storm/Source/SErr.h"
-#include "Storm/Source/SSystem.h"
+#include "Storm/Source/SFile.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Launch/MainMenus.h"
@@ -22,6 +22,8 @@ typedef int (__stdcall *pfnStormMsgIdleCallback)(int nIdleIteration);
 #define RECON_FPTD_pfnSEvtHandler
 typedef void (__stdcall *pfnSEvtHandler)(void * pData);
 #endif
+
+static uint32_t gpActiveWindow = 0; D2_STATIC_GUARD(gpActiveWindow, "gpActiveWindow");
 
 namespace Storm::WindowHandle {
 
@@ -68,16 +70,16 @@ int __stdcall SMsgPopRegisterState(char * szText) {
 }
 
 // @blizzard SMsgPushRegisterState (SMSG.CPP)
-uint32_t __stdcall SMsgPushRegisterState(uint32_t nParam) {
-    Source::SEVT::SEvtPushState(0x534d5348, nParam);
-    Source::SEVT::SEvtPushState(0x534d5349, nParam);
-    Source::SEVT::SEvtPushState(0x534d534a, nParam);
-    Source::SEVT::SEvtPushState(0x534d5347, nParam);
+uint32_t __stdcall SMsgPushRegisterState(uint32_t nSubId) {
+    Source::SEVT::SEvtPushState(0x534d5348, nSubId);
+    Source::SEVT::SEvtPushState(0x534d5349, nSubId);
+    Source::SEVT::SEvtPushState(0x534d534a, nSubId);
+    Source::SEVT::SEvtPushState(0x534d5347, nSubId);
     return 1;
 }
 
-uint32_t __stdcall WND_SetActiveWindow(uint32_t dwParam) {
-    gpActiveWindow = dwParam;
+uint32_t __stdcall WND_SetActiveWindow(uint32_t pWindow) {
+    gpActiveWindow = pWindow;
     return 1;
 }
 
@@ -86,11 +88,10 @@ uint32_t __thiscall WND_ResolveListOffset(int * pNode, int * pBase) {
     if ((int)nOffset < 0) {
       return ~nOffset;
     }
-    if ((int)pBase >= 0) {
-      return nOffset + (int)pBase;
+    if ((int)pBase < 0) {
+      pBase = (int*)((int)pNode - *(int*)(*pNode + 4));
     }
 
-    pBase = (int*)((int)pNode - *(int*)(*pNode + 4));
     return nOffset + (int)pBase;
 }
 
@@ -161,11 +162,10 @@ void __thiscall WND_InsertListNode(int * * ppList, int * * pNode, int32_t nMode,
 }
 
 uint32_t __thiscall WND_GetNodeMaskedOffset(int32_t pThis, int32_t pNode) {
-    if (pNode) {
-      return (int)*(uint32_t*)(pNode + 4) <= 0 ? 0 : *(uint32_t*)(pNode + 4);
+    if (!pNode) {
+      pNode = pThis + 4;
     }
 
-    pNode = pThis + 4;
     return (int)*(uint32_t*)(pNode + 4) <= 0 ? 0 : *(uint32_t*)(pNode + 4);
 }
 
@@ -180,13 +180,7 @@ void __thiscall WND_UnlinkListNode(int32_t pThis, int * pNode) {
       return;
     }
 
-    uint32_t nOffset = pNode[1];
-    if ((int)nOffset < 0) {
-      pBacklink = (int*)~nOffset;
-    } else {
-      pBacklink = (int*)((int)pNode + (nOffset - *(int*)(nNext + 4)));
-    }
-
+    pBacklink = (int*)D2_StormNextLink(pNode, -1);
     *pBacklink = nNext;
     *(int*)(*pNode + 4) = pNode[1];
     *pNode = 0;
@@ -203,7 +197,6 @@ uint32_t __thiscall WND_GetNodeData(int32_t pThis, int32_t pNode) {
 
 void __fastcall WND_RemoveAllChildren(D2StormListHead * pWindow) {
     int* pBacklink;
-    uint32_t nOffset;
     int* pNode;
     while (true) {
       int nNext;
@@ -214,13 +207,7 @@ void __fastcall WND_RemoveAllChildren(D2StormListHead * pWindow) {
 
       nNext = *pNode;
       if (nNext) {
-        nOffset = pNode[1];
-        if ((int)nOffset < 0) {
-          pBacklink = (int*)~nOffset;
-        } else {
-          pBacklink = (int*)((int)pNode + (nOffset - *(int*)(nNext + 4)));
-        }
-
+        pBacklink = (int*)D2_StormNextLink(pNode, -1);
         *pBacklink = nNext;
         *(int*)(*pNode + 4) = pNode[1];
         *pNode = 0;
@@ -238,13 +225,7 @@ void __fastcall WND_DetachAndClearChildren(D2StormListHead * pWindow) {
       return;
     }
 
-    uint32_t nOffset = pWindow->pNext;
-    if ((int)nOffset < 0) {
-      pBacklink = (int*)~nOffset;
-    } else {
-      pBacklink = (int*)((int)pNode + (nOffset - nNext->pNext));
-    }
-
+    pBacklink = (int*)D2_StormNextLink(pNode, -1);
     *pBacklink = (int)nNext;
     (*pNode)->pNext = pWindow->pNext;
     *pNode = 0;
@@ -252,51 +233,43 @@ void __fastcall WND_DetachAndClearChildren(D2StormListHead * pWindow) {
 }
 
 int * * __thiscall WND_AllocRecord(int * * ppList, int32_t nMode, int32_t nSize, uint32_t dwFlags) {
-    int** ppRecord = (int**)SMem::SMemAlloc(nSize + 0xc, s___AUWNDREC___00708850, -2, dwFlags | 8);
-    if (ppRecord) {
-      *ppRecord = 0;
-      ppRecord[1] = 0;
+    int** ppRecordNew = (int**)Source::SMem::SMemAlloc(nSize + 0xc, s___AUWNDREC___00708850, -2, dwFlags | 8);
+    int** ppRecord;
+    if (ppRecordNew) {
+      *ppRecordNew = 0;
+      ppRecordNew[1] = 0;
+      ppRecord = ppRecordNew;
     } else {
       ppRecord = 0;
     }
-    if (!nMode) {
-      return ppRecord;
+    if (nMode) {
+      WND_InsertListNode(ppList, ppRecord, nMode, nullptr);
     }
 
-    WND_InsertListNode(ppList, ppRecord, nMode, nullptr);
     return ppRecord;
 }
 
 int * __thiscall WND_UnlinkAndFreeRecord(int * pRecord, uint8_t byFreeFlags) {
-    uint32_t nOffset;
     int nNext = *pRecord;
     if (nNext) {
       int* pBacklink;
-      nOffset = pRecord[1];
-      if ((int)nOffset < 0) {
-        pBacklink = (int*)~nOffset;
-      } else {
-        pBacklink = (int*)((int)pRecord + (nOffset - *(int*)(nNext + 4)));
-      }
-
+      pBacklink = (int*)D2_StormNextLink(pRecord, -1);
       *pBacklink = nNext;
       *(int*)(*pRecord + 4) = pRecord[1];
       *pRecord = 0;
       pRecord[1] = 0;
     }
-    if (!(byFreeFlags & 1)) {
-      return pRecord;
+    if (byFreeFlags & 1) {
+      Source::SMem::SMemFree(pRecord, "delete", -1, 0);
     }
 
-    SMem::SMemFree(pRecord, "delete", -1, 0);
     return pRecord;
 }
 
 // @blizzard AddWindow (SMSG.CPP)
 void __stdcall SMSG_AddWindow(uint32_t hWnd) {
     StormWndRecStrc* pEntry;
-    uint32_t nOffset;
-    StormWndRecStrc* pRecord = (StormWndRecStrc*)SMem::SMemAlloc(0xc, s___AUWNDREC___00708850, -2, 8);
+    StormWndRecStrc* pRecord = (StormWndRecStrc*)Source::SMem::SMemAlloc(0xc, s___AUWNDREC___00708850, -2, 8);
     if (pRecord) {
       pRecord->link.pPrevLink = 0;
       pRecord->link.pNext = 0;
@@ -309,13 +282,7 @@ void __stdcall SMSG_AddWindow(uint32_t hWnd) {
     StormLinkStrc* nNext = pRecord->link.pPrevLink;
     if (nNext) {
       int* pBacklink;
-      nOffset = pRecord->link.pNext;
-      if ((int)nOffset < 0) {
-        pBacklink = (int*)~nOffset;
-      } else {
-        pBacklink = (int*)((int)pRecord + (nOffset - nNext->pNext));
-      }
-
+      pBacklink = (int*)D2_StormNextLink(pRecord, -1);
       *pBacklink = (int)nNext;
       pRecord->link.pPrevLink->pNext = pRecord->link.pNext;
       pRecord->link.pPrevLink = 0;
@@ -330,7 +297,6 @@ void __stdcall SMSG_AddWindow(uint32_t hWnd) {
 }
 
 uint32_t __thiscall WND_RemoveAndFreeRecord(void * pListHead, StormWndRecStrc * pRecord) {
-    uint32_t nOffset;
     StormWndRecStrc* pSVar1 = pRecord;
     if (!pRecord) {
       pSVar1 = (StormWndRecStrc*)((int)pListHead + 4);
@@ -340,20 +306,14 @@ uint32_t __thiscall WND_RemoveAndFreeRecord(void * pListHead, StormWndRecStrc * 
     StormLinkStrc* nNext = pRecord->link.pPrevLink;
     if (nNext) {
       int* pBacklink;
-      nOffset = pRecord->link.pNext;
-      if ((int)nOffset < 0) {
-        pBacklink = (int*)~nOffset;
-      } else {
-        pBacklink = (int*)((int)pRecord + (nOffset - nNext->pNext));
-      }
-
+      pBacklink = (int*)D2_StormNextLink(pRecord, -1);
       *pBacklink = (int)nNext;
       pRecord->link.pPrevLink->pNext = pRecord->link.pNext;
       pRecord->link.pPrevLink = 0;
       pRecord->link.pNext = 0;
     }
 
-    SMem::SMemFree(pRecord, s___AUWNDREC___00708850, -2, 0);
+    Source::SMem::SMemFree(pRecord, s___AUWNDREC___00708850, -2, 0);
     return (int)nResult <= 0 ? 0 : nResult;
 }
 
@@ -394,11 +354,9 @@ static void SMSG_DeleteWindow(uint32_t hWnd) {
 
 // @blizzard InternalRegister (SMSG.CPP)
 static void __stdcall SMSG_InternalRegister(uint32_t hWnd, int32_t pCallback, uint32_t dwEventTag, uint32_t dwContext) {
-    if (!pCallback) {
-      Source::SErr::SErrSetLastError(0x57);
-      return;
-    }
-
+    D2_CHECKS_BEGIN;
+    D2_CHECK(pCallback);
+    D2_CHECKS_END_VOID(Source::SErr::SErrSetLastError(0x57));
     uint32_t nRecord = SMSG_FindWindow(hWnd);
     if (!nRecord) {
       SMSG_AddWindow(hWnd);
@@ -446,7 +404,7 @@ BOOL __stdcall SMsgDispatchMessage(HWND handle, UINT uMsg, WPARAM nWParam, LPARA
       Source::SEVT::SEvtDispatch(0x534d5347, hCur, uMsg, &hMsgWnd);
       if (uMsg == 0x111) {
         dwEventTag = 0x534d5348;
-        nMsgParam = nWParam & 0xffff;
+        nMsgParam = (uint16_t)nWParam;
         Source::SEVT::SEvtDispatch(dwEventTag, hCur, nMsgParam, &hMsgWnd);
       } else {
         nMsgParam = nWParam;
@@ -467,11 +425,10 @@ BOOL __stdcall SMsgDispatchMessage(HWND handle, UINT uMsg, WPARAM nWParam, LPARA
         if (pbHandled) {
           *pbHandled = hMsgWnd.bHandled;
         }
-        if (!plResult) {
-          return 1;
+        if (plResult) {
+          *plResult = hMsgWnd.dwResult;
         }
 
-        *plResult = hMsgWnd.dwResult;
         return 1;
       }
 
@@ -519,25 +476,25 @@ void __stdcall SMsgUnregisterMessage(uint32_t hWnd, char * szText1, char * szTex
     SMSG_InternalUnregister(0x534d5347, szText1, szText2, (HWND)hWnd);
 }
 
-LRESULT __stdcall WndProcC(HWND hWnd, uint32_t nParam1, uint32_t nParam2, LPARAM lParam) {
+// Storm's registered window procedure; dispatches through SMsgDispatchMessage.
+// Name from the PowerPC 1.13c Storm traceback table (GenericWndProc @10026f30).
+LRESULT __stdcall GenericWndProc(HWND hWnd, uint32_t nMsg, uint32_t nWParam, LPARAM lParam) {
     BOOL bHandled = 0;
     int32_t lOutResult = 0;
-    BOOL bDispatched = SMsgDispatchMessage(hWnd, nParam1, nParam2, lParam, &bHandled, (LRESULT*)&lOutResult);
+    BOOL bDispatched = SMsgDispatchMessage(hWnd, nMsg, nWParam, lParam, &bHandled, (LRESULT*)&lOutResult);
     if (bDispatched && bHandled) {
       return lOutResult;
     }
 
-    int32_t lResult = DefWindowProcA(hWnd, nParam1, nParam2, lParam);
+    int32_t lResult = DefWindowProcA(hWnd, nMsg, nWParam, lParam);
     return lResult;
 }
 
 uint8_t * __stdcall WND_GetWndProc(int32_t nResourceId) {
-    if (nResourceId) {
-      Source::SErr::SErrSetLastError(0x57);
-      return nullptr;
-    }
-
-    return (uint8_t*)WndProcC;
+    D2_CHECKS_BEGIN;
+    D2_CHECK(!nResourceId);
+    D2_CHECKS_END(Source::SErr::SErrSetLastError(0x57), nullptr);
+    return (uint8_t*)GenericWndProc;
 }
 
 uint32_t __thiscall WND_ByteBuffer_HasRoom(int32_t pThis, int32_t nAddBytes) {
@@ -569,20 +526,21 @@ int32_t __thiscall WND_EntryArray_AllocOrReuse(int32_t pThis, int32_t pReuseEntr
     return pReuseEntry;
 }
 
+void StaticInit_gWndTrackingList() {
+    gpWndTrackingListHead.pNext = ~(uintptr_t)((char*)&gpWndTrackingListHead + 4);
+    atexit(StaticFini_gWndTrackingList);
+}
+
 // Runs at exit: removes every element from the tracked window list, then unlinks the list head itself.
 void StaticFini_gWndTrackingList() {
-    uint32_t* puVar1;
+    uint32_t* pNextLink;
     WND_RemoveAllChildren(&gpWndTrackingListHead);
     if (!gpWndTrackingListHead.pPrevLink) {
       return;
     }
-    if (gpWndTrackingListHead.pNext < 0) {
-      puVar1 = (uint32_t*)~gpWndTrackingListHead.pNext;
-    } else {
-      puVar1 = (uint32_t*)(gpWndTrackingListHead.pNext + ((int)((char*)&gpWndTrackingListHead + 4) - gpWndTrackingListHead.pPrevLink->pNext));
-    }
 
-    *puVar1 = (uint32_t)(uintptr_t)gpWndTrackingListHead.pPrevLink;
+    pNextLink = (uint32_t*)D2_StormNextLink((char*)&gpWndTrackingListHead + 4, -1);
+    *pNextLink = (uint32_t)(uintptr_t)gpWndTrackingListHead.pPrevLink;
     gpWndTrackingListHead.pPrevLink->pNext = gpWndTrackingListHead.pNext;
     gpWndTrackingListHead.pPrevLink = 0;
     gpWndTrackingListHead.pNext = 0;

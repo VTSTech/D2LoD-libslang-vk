@@ -12,27 +12,27 @@
 
 namespace D2Game::GAME::Server::ServerCmd {
 
-void __fastcall WriteValueBySize(D2BitBufferStrc * pBitBuffer, uint32_t nParam) {
-    if (nParam < 0x100) {
+void __fastcall WriteValueBySize(D2BitBufferStrc * pBitBuffer, uint32_t nValue) {
+    if (nValue < 0x100) {
       Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, 0, 1);
-      Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nParam, 8);
+      Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nValue, 8);
       return;
     }
 
     Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, 1, 1);
-    if (nParam < 0x10000) {
+    if (nValue < 0x10000) {
       Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, 0, 1);
-      Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nParam, 0x10);
+      Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nValue, 0x10);
       return;
     }
 
     Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, 1, 1);
-    Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nParam, 0x20);
+    Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nValue, 0x20);
 }
 
 void thunk_NET_D2GS_SERVER_SendPacketToClient(char * szText, size_t nSize) {
     int32_t dwRetAddr;
-    D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(0, dwRetAddr, szText, nSize);
+    D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient('\0', dwRetAddr, szText, nSize);
 }
 
 int __fastcall SERVERCMD_SendBufferToClient(int32_t nClientId, uint16_t wGuildFlags, uint16_t wUniqueCode, char * szPlayerName) {
@@ -41,29 +41,29 @@ int __fastcall SERVERCMD_SendBufferToClient(int32_t nClientId, uint16_t wGuildFl
     sPacket.nPacketId = 0xb2;
     sPacket.nUniqueCode = wUniqueCode;
     Storm::Source::SSTR::SStrCopy(sPacket.szPlayerName, szPlayerName, 0x10);
-    int32_t iVar1 = D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(0, nClientId, (char*)&sPacket, 0x35);
-    return iVar1;
+    int32_t nSendResult = D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient('\0', nClientId, (char*)&sPacket, 0x35);
+    return nSendResult;
 }
 
 void __fastcall NET_D2GS_SERVER_Send_0xB0_ConnectionTerminated(int32_t nClientId) {
     uint8_t aPacketFrame[4];
     d2_store24((char*)&aPacketFrame, (uint32_t)nClientId & 0xffffffu);
     aPacketFrame[3] = 0xb0;
-    D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(0, nClientId, (char*)(aPacketFrame + 3), 1);
+    D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient('\0', nClientId, (char*)(aPacketFrame + 3), 1);
 }
 
-void __fastcall SERVERCMD_SendSingleBytePacket(int32_t nParam) {
+void __fastcall SERVERCMD_SendSingleBytePacket(int32_t nClientId) {
     uint8_t aPacketFrame[4];
-    d2_store24((char*)&aPacketFrame, (uint32_t)nParam & 0xffffffu);
+    d2_store24((char*)&aPacketFrame, (uint32_t)nClientId & 0xffffffu);
     aPacketFrame[3] = 6;
-    D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(1, nParam, (char*)(aPacketFrame + 3), 1);
+    D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient('\x01', nClientId, (char*)(aPacketFrame + 3), 1);
 }
 
 void __fastcall NET_D2GS_SERVER_Send_0xB4_ConnectionRefused(int32_t nClientId, int32_t nReason) {
     D2GSPacketSrv0xB4 sPacket;
     sPacket.nPacketId = 0xb4;
     sPacket.nReason = nReason;
-    D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(0, nClientId, (char*)&sPacket, 5);
+    D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient('\0', nClientId, (char*)&sPacket, 5);
 }
 
 } // namespace D2Game::GAME::Server::ServerCmd

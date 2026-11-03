@@ -57,7 +57,7 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q7Strc) == 0x14, "D2_N
 namespace D2Game::Quests::QUESTS::A3Q7 {
 
 // A3Q7 (a3q7.cpp) = Act3 internal quest slot #20 QUESTINT_TheGuardian (= ext QUEST_TheGuardian, Mephisto/Durance). Act3 has 6 player quests; this "Q7" file is the engine's slot-20 logic + the Mephisto->Act4 transition (Dark Wanderer + red town portals). Objects_InitFn52: object init-fn for The Guardian. Lazily spawns/keeps a guardian-type monster (classId 0x129) and copies its DRLG map AI into quest-specific data. Guarded by: only runs while the quest is NOT already JustCompleted.
-void __fastcall Objects_InitFn52(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn52_NatalyaStart(D2ObjectInitFnArg * pInitArg) {
     D2UnitStrc* pGuardianQuest;
     int32_t iVar1;
     int nQuestDoneState = QUEST_GetQuestRecordState(pInitArg->pGame, QUEST_TheGuardian, 0xd);
@@ -98,25 +98,25 @@ void __fastcall Objects_InitFn52(D2ObjectInitFnArg * pInitArg) {
 }
 
 // A3Q7 / slot QUESTINT_TheGuardian (Mephisto). Q23_NotifyGuardianStateToPlayers(pGame, cParam): drives/broadcasts the quest's state-flag machine. While quest is active (bIsNotIntroduction) and nStateFlag<6: if cParam==0 it saves the current prev-flag and advances state to 6 (or 7 in multiplayer); else it restores the saved prev-flag. Calls QUEST_SetStateAndBroadcast with A3Q6::Q23_PlayerNotifyCompleted as the per-player notify cb. No GetQuestState/SetQuestState calls here (uses the broadcast helper instead).
-void __fastcall Q23_NotifyGuardianStateToPlayers(::SGAMEDATA * pGame, char cParam) {
+void __fastcall Q23_NotifyGuardianStateToPlayers(::SGAMEDATA * pGame, char bRestorePrevState) {
     uint8_t nBroadcastState;
     int32_t nPrevStateFlag;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheGuardian);
     if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag < 6)) {
       return;
     }
-    if (cParam != '\0') {
+    if (bRestorePrevState != '\0') {
       nPrevStateFlag = pQuestData->pQuestSpecificData.pA3Q6->nPrevStateFlagPrev;
     } else {
       pQuestData->pQuestSpecificData.pA3Q6->nPrevStateFlagPrev = (uint32_t)pQuestData->nStateFlagPrev;
-      nPrevStateFlag = (pQuestData->pGame->nGameType != SGAMETYPE_SINGLEPLAYER) + 6;
+      nPrevStateFlag = pQuestData->pGame->nGameType != SGAMETYPE_SINGLEPLAYER ? 7 : 6;
     }
 
     QUEST_SetStateAndBroadcast(pQuestData, nPrevStateFlag, nullptr, (::fpExecuteOnUnitFunction)A3Q6::Q23_PlayerNotifyCompleted, pQuestData->nStateFlag > 0);
 }
 
 // A3Q7 / slot QUESTINT_TheGuardian. Q24_HandleKhalimsWillCompletion(pGame): on the Guardian quest data, force Khalim's-Eye and Khalim's-Flail counts to 2 (mark Khalim's Will assembled), then if the orb unit exists flag it for client update (SetupUpdateFlag 1, and mode-2 update for the secondary orb ref). Cross-quest helper: pokes the Khalim's-Will item bookkeeping that gates the Mephisto fight. No quest-state transitions.
-void __fastcall Q24_HandleKhalimsWillCompletion(::SGAMEDATA * pGame) {
+void __fastcall Q24_HandleKhalimsWillCompletion(::SGAMEDATA * pGame, uint32_t nEventCode) {
     D2UnitStrc* pQuestData;
     D2QuestDataStrc* pOrbUnit = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheGuardian);
     if (!pOrbUnit) {
@@ -145,7 +145,7 @@ void __fastcall Q24_HandleKhalimsWillCompletion(::SGAMEDATA * pGame) {
 }
 
 // A3Q7 / slot QUESTINT_TheGuardian. Q24_SetupDarkWandererMapAi(pGame, pDrlgMap): stores the passed DRLG map pointer into quest data, then if the tracked "wanderer" monster exists, its map is valid, and the map hasn't been taken yet -> transfers (DRLGPRESET_TakeFileFromDrlgMap) the monster's map-AI DRLG file into quest data and marks bDrlgMapTaken. Binds the Mephisto/Act4-transition actor's generated map into the quest. No quest-state transitions.
-void __thiscall Q24_SetupDarkWandererMapAi(void * pThis, int32_t nParam) {
+void __thiscall Q24_SetupDarkWandererMapAi(void * pThis, int32_t pMapAI) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal((::SGAMEDATA*)pThis, QUESTINT_TheGuardian);
     if (!pQuestData) {
       return;
@@ -153,7 +153,7 @@ void __thiscall Q24_SetupDarkWandererMapAi(void * pThis, int32_t nParam) {
 
     D2QuestDataA3Q6Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA3Q6;
     D2MapAIStrc** pDrlgMapPtr = &pQuestSpecificData->pDrlgMap;
-    *pDrlgMapPtr = (D2MapAIStrc*)nParam;
+    *pDrlgMapPtr = (D2MapAIStrc*)pMapAI;
     if (pQuestSpecificData->nDarkWandererMapAiState == '\0') {
       return;
     }
@@ -169,7 +169,7 @@ void __thiscall Q24_SetupDarkWandererMapAi(void * pThis, int32_t nParam) {
 }
 
 // A3Q7 / slot QUESTINT_TheGuardian. Q24_StatusFilter: quest status-string filter callback (installed by Q24_InitData into fpStatusFilter). Stub - always returns false (no special status-bit suppression for this slot).
-bool __fastcall Q24_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown) {
+bool __fastcall Q24_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode) {
     return false;
 }
 
@@ -184,7 +184,7 @@ bool __fastcall Q24_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 // probes TestCollisionByCoordinates(mask 0x3C01) at (X, Y-0x14), then (X, Y-0xB), (X+2, Y-0xB),
 // (X-2, Y-0xB), then (X, Y-8); it takes the first free point, and if (X, Y-8) is blocked stores
 // (X, Y-3) without probing it. The chosen point is stored back in nDarkWandererX/Y. Returns 1. Only caller: AITHINK_Fn1_DarkWanderer.
-BOOL __fastcall Q24_GetDarkWandererSpawnCoords(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int * pnParam) {
+BOOL __fastcall Q24_GetDarkWandererSpawnCoords(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int * pnCoords) {
     BOOL bCollisionBlocked;
     D2QuestDataStrc* pWandererQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_UnknownDuplicate1);
     if (!pWandererQuestData) {
@@ -196,52 +196,52 @@ BOOL __fastcall Q24_GetDarkWandererSpawnCoords(::SGAMEDATA * pGame, D2UnitStrc *
       return 0;
     }
 
-    *pnParam = pA3Q7Data->nDarkWandererX;
-    pnParam[1] = pA3Q7Data->nDarkWandererY;
+    *pnCoords = pA3Q7Data->nDarkWandererX;
+    pnCoords[1] = pA3Q7Data->nDarkWandererY;
     if (pA3Q7Data->bCoordsAdjusted) {
       return 1;
     }
 
-    pnParam[1] += -0x14;
+    pnCoords[1] += -0x14;
     pA3Q7Data->bCoordsAdjusted = true;
-    bCollisionBlocked = D2Common::Units::TestCollisionByCoordinates(pUnit, *pnParam, pnParam[1], 0x3c01);
+    bCollisionBlocked = D2Common::Units::TestCollisionByCoordinates(pUnit, *pnCoords, pnCoords[1], 0x3c01);
     if (bCollisionBlocked) {
       int32_t nSavedX;
-      pnParam[1] += 9;
-      bCollisionBlocked = D2Common::Units::TestCollisionByCoordinates(pUnit, *pnParam, pnParam[1], 0x3c01);
+      pnCoords[1] += 9;
+      bCollisionBlocked = D2Common::Units::TestCollisionByCoordinates(pUnit, *pnCoords, pnCoords[1], 0x3c01);
       if (bCollisionBlocked) {
-        *pnParam += 2;
-        bCollisionBlocked = D2Common::Units::TestCollisionByCoordinates(pUnit, *pnParam, pnParam[1], 0x3c01);
+        *pnCoords += 2;
+        bCollisionBlocked = D2Common::Units::TestCollisionByCoordinates(pUnit, *pnCoords, pnCoords[1], 0x3c01);
         if (bCollisionBlocked) {
-          *pnParam += -4;
-          bCollisionBlocked = D2Common::Units::TestCollisionByCoordinates(pUnit, *pnParam, pnParam[1], 0x3c01);
+          *pnCoords += -4;
+          bCollisionBlocked = D2Common::Units::TestCollisionByCoordinates(pUnit, *pnCoords, pnCoords[1], 0x3c01);
           if (bCollisionBlocked) {
             nSavedX = pA3Q7Data->nDarkWandererX;
-            *pnParam = nSavedX;
-            pnParam[1] = pA3Q7Data->nDarkWandererY;
-            pnParam[1] += -8;
-            bCollisionBlocked = D2Common::Units::TestCollisionByCoordinates(pUnit, nSavedX, pnParam[1], 0x3c01);
-            if (bCollisionBlocked) {
-              pnParam[1] += 5;
-              pA3Q7Data->nDarkWandererX = *pnParam;
-              pA3Q7Data->nDarkWandererY = pnParam[1];
+            *pnCoords = nSavedX;
+            pnCoords[1] = pA3Q7Data->nDarkWandererY;
+            pnCoords[1] += -8;
+            bCollisionBlocked = D2Common::Units::TestCollisionByCoordinates(pUnit, nSavedX, pnCoords[1], 0x3c01);
+            if (!bCollisionBlocked) {
+              pA3Q7Data->nDarkWandererX = *pnCoords;
+              pA3Q7Data->nDarkWandererY = pnCoords[1];
               return 1;
             }
 
-            pA3Q7Data->nDarkWandererX = *pnParam;
-            pA3Q7Data->nDarkWandererY = pnParam[1];
+            pnCoords[1] += 5;
+            pA3Q7Data->nDarkWandererX = *pnCoords;
+            pA3Q7Data->nDarkWandererY = pnCoords[1];
             return 1;
           }
         }
 
-        pA3Q7Data->nDarkWandererX = *pnParam;
-        pA3Q7Data->nDarkWandererY = pnParam[1];
+        pA3Q7Data->nDarkWandererX = *pnCoords;
+        pA3Q7Data->nDarkWandererY = pnCoords[1];
         return 1;
       }
     }
 
-    pA3Q7Data->nDarkWandererX = *pnParam;
-    pA3Q7Data->nDarkWandererY = pnParam[1];
+    pA3Q7Data->nDarkWandererX = *pnCoords;
+    pA3Q7Data->nDarkWandererY = pnCoords[1];
     return 1;
 }
 
@@ -250,7 +250,7 @@ BOOL __fastcall Q24_GetDarkWandererSpawnCoords(::SGAMEDATA * pGame, D2UnitStrc *
 // nDarkWandererX/Y (+4/+8), picks a room with DRLGROOM_FindBetterNearbyRoom and spawns monster
 // class 0x170 there with SpawnMonsterAtRoomPos. If the spawn succeeds it clears bQuestCompleted.
 // It always sets bHasSpawnCoords (+0) so that Q24_GetDarkWandererSpawnCoords can answer.
-void __fastcall Objects_InitFn43(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn43_DarkWanderer(D2ObjectInitFnArg * pInitArg) {
     D2UnitStrc* pSpawnedMonster;
     int32_t nSpawnY;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_UnknownDuplicate1);

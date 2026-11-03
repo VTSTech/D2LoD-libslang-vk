@@ -3,15 +3,14 @@
 #include "D2Win/Forms.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Win/Src/D2WinList.h"
-#include "D2Win/Src/D2WinScrollbar.h"
-#include "D2Win/Src/D2WinTextBox.h"
+#include "D2Win/Src/D2WinProgressBar.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/WindowHandle.h"
 #include "globals/globals.h"
 #include "D2Client/D2ControlStrc.h"
 #include "D2Launch/MainMenus.h"
 #include "D2Win/D2WinList.h"
-#include "D2Win/D2WinScrollbar.h"
+#include "D2Win/D2WinProgressBar.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -153,23 +152,23 @@ void __fastcall D2WIN_UnregisterWindowHandlerArray(int32_t hHandle, void * pHand
 void __fastcall D2WINLIST_AddListItemFromCharName(::D2WinList * pList, char * szCharName, fpListEntryCallback nItemData, uint8_t bItemFlags, int32_t nUserData, int32_t bPrepend, int32_t bSelect) {
     int nStrLen;
     uint16_t* pWideStrBuf;
-    uint16_t local_204[256];
+    uint16_t wszCharName[256];
     for (nStrLen = 0; nStrLen < 0x100; nStrLen++) {
-      local_204[nStrLen] = L'\0';
+      wszCharName[nStrLen] = L'\0';
     }
 
-    D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(local_204, szCharName, 0x100);
-    Src::D2WinList::D2WINLIST_AddListItem(pList, local_204, nItemData, bItemFlags, nUserData, bPrepend, bSelect);
+    D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszCharName, szCharName, 0x100);
+    Src::D2WinList::D2WINLIST_AddListItem(pList, wszCharName, nItemData, bItemFlags, nUserData, bPrepend, bSelect);
 }
 
 // Sets custom user data field 0x10 on D2WinTextBox. Validates form type FORM_TextBox (10).
-BOOL __stdcall D2WINTEXTBOX_SetCustomData(::D2WinTextBox * pTextBox, int32_t nCustomData) {
+BOOL __stdcall D2WINTEXTBOX_SetCustomData(::D2WinProgressBar * pTextBox, float nCustomData) {
     if (pTextBox->sControl.neD2FormType != FORM_ProgressBar) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3a);
       exit(-1);
     }
 
-    pTextBox->sStyleControl.neD2FormType = nCustomData;
+    pTextBox->fCurrentProgress = nCustomData;
     return 1;
 }
 

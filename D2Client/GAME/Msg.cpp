@@ -20,6 +20,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
+#include "D2Client/UI/Inv.h"
 #include "support/d2_boot.h" // [d2boot] loading-screen freeze diagnostics
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -32,6 +33,12 @@
 #define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
+
+// also labelled: gnPacketSendCount_0x69
+static unsigned int gnD2GSBytesSentTotal = {}; D2_STATIC_GUARD(gnD2GSBytesSentTotal, "gnD2GSBytesSentTotal");
+// also labelled: gbNetworkPacketSyncFlag
+static uint32_t gnD2GSPacketsSentTotal = 0; D2_STATIC_GUARD(gnD2GSPacketsSentTotal, "gnD2GSPacketsSentTotal");
+static uint32_t gnLoadingProgressRatio = 0; D2_STATIC_GUARD(gnLoadingProgressRatio, "gnLoadingProgressRatio");
 
 namespace D2Client::GAME::Msg {
 
@@ -68,9 +75,9 @@ void __fastcall NET_D2GS_CLIENT_Send_0x67(char * szGameName) {
 
     uint32_t bIsArena = CLIENT_IsArenaMode();
     if (bIsArena) {
-      eD2PlayerClassIDDWORD eVar1;
-      eVar1 = CLIENT_GetDefaultCharClass();
-      packet.nCharClass = (uint8_t)eVar1;
+      eD2PlayerClassIDDWORD eCharClass;
+      eCharClass = CLIENT_GetDefaultCharClass();
+      packet.nCharClass = (uint8_t)eCharClass;
     } else {
       packet.nCharClass = nD2PlayerClassID;
     }
@@ -146,7 +153,7 @@ void __stdcall NET_D2GS_CLIENT_Send_0x6D_PING() {
           /* LPCVOID lpBaseAddress for ReadProcessMemory */ hProcess = GetCurrentProcess();
           /* HANDLE hProcess for ReadProcessMemory */ bReadOk = ReadProcessMemory(hProcess, pReadAddr, pReadBuffer, nBytesToRead, pBytesRead);
           if (bReadOk) {
-            nWardenChecksum = (((uint32_t)(wReadWord2[0] >> 8) << 8 | wReadWord2[0] & 0xff) << 8 | (uint32_t)(wReadWord1[0] >> 8)) << 8 | wReadWord1[0] & 0xff;
+            nWardenChecksum = (((uint32_t)(wReadWord2[0] >> 8) << 8 | (uint8_t)wReadWord2[0]) << 8 | (uint32_t)(wReadWord1[0] >> 8)) << 8 | (uint8_t)wReadWord1[0];
           }
         }
       }
@@ -217,9 +224,9 @@ void __fastcall NET_D2GS_CLIENT_Send_0x68(int16_t nGameToken, int32_t nGameHash)
     packet.nLanguageCode = (uint8_t)nLangOrArena;
     nLangOrArena = CLIENT_IsArenaMode();
     if (nLangOrArena) {
-      eD2PlayerClassIDDWORD eVar1;
-      eVar1 = CLIENT_GetDefaultCharClass();
-      packet.nCharClass = (uint8_t)eVar1;
+      eD2PlayerClassIDDWORD eCharClass;
+      eCharClass = CLIENT_GetDefaultCharClass();
+      packet.nCharClass = (uint8_t)eCharClass;
     } else {
       packet.nCharClass = nD2PlayerClassID;
     }
@@ -230,7 +237,7 @@ void __fastcall NET_D2GS_CLIENT_Send_0x68(int16_t nGameToken, int32_t nGameHash)
     gnD2GSPacketsSentTotal++;
 }
 
-void NET_D2GS_CLIENT_Send_0x6A() {
+void __fastcall NET_D2GS_CLIENT_Send_0x6A() {
     uint8_t aPacketFrame[4];
     aPacketFrame[3] = 0x6a;
     d2_store24((char*)&aPacketFrame, 0);
@@ -273,13 +280,13 @@ static uint8_t * MSG_ReadSaveFileToBuffer(size_t * pnFileSize) {
     return (uint8_t*)pBuffer;
 }
 
-void __fastcall LOADING_SetProgressRatio(int32_t nParam1, int32_t nParam2) {
-    if (!nParam2) {
-      gnLoadingProgressRatio = nParam2;
+void __fastcall LOADING_SetProgressRatio(int32_t nProgress, int32_t nTotal) {
+    if (!nTotal) {
+      gnLoadingProgressRatio = nTotal;
       return;
     }
 
-    gnLoadingProgressRatio = (nParam1 << 8) / nParam2;
+    gnLoadingProgressRatio = (nProgress << 8) / nTotal;
 }
 
 int __stdcall LOADING_GetProgressRatio() {
@@ -321,7 +328,7 @@ void __fastcall NET_D2GS_CLIENT_Send_0x6C(int32_t bAnimate) {
     size_t nFileSize = nChunkIndex;
     int nTotalChunks = (int)nChunkIndex / 0xff;
     nChunkIndex = 0;
-    uint8_t* pbVar1 = pReadPtr;
+    uint8_t* pSrcByte = pReadPtr;
     if (nTotalChunks > 0) {
       do {
         sPacket.nId = 'l';
@@ -329,9 +336,9 @@ void __fastcall NET_D2GS_CLIENT_Send_0x6C(int32_t bAnimate) {
         sPacket.nChunkSize = 0xff;
         nBytesCopied = 0;
         do {
-          sPacket.aData[nBytesCopied] = *pbVar1;
+          sPacket.aData[nBytesCopied] = *pSrcByte;
           nBytesCopied++;
-          pbVar1++;
+          pSrcByte++;
         } while (nBytesCopied < 0xff);
 
         D2Net::SRC::Client::NET_D2GS_CLIENT_SendPacketAfterChecks(0x106, 0, (char*)&sPacket);
@@ -352,9 +359,9 @@ void __fastcall NET_D2GS_CLIENT_Send_0x6C(int32_t bAnimate) {
     sPacket.nChunkSize = (uint8_t)nBytesCopied;
     if (nBytesCopied > 0) {
       do {
-        sPacket.aData[nTailBytes] = *pbVar1;
+        sPacket.aData[nTailBytes] = *pSrcByte;
         nTailBytes++;
-        pbVar1++;
+        pSrcByte++;
       } while (nTailBytes < nBytesCopied);
     }
 
@@ -362,16 +369,17 @@ void __fastcall NET_D2GS_CLIENT_Send_0x6C(int32_t bAnimate) {
     gnD2GSBytesSentTotal = gnD2GSBytesSentTotal + nBytesCopied + 7U;
     gnD2GSPacketsSentTotal++;
     D2_FREE_AT(pReadPtr, ".\\GAME\\Msg.cpp", 0x262);
-    if (nTotalChunks) {
-      gnLoadingProgressRatio = (nTotalChunks << 8) / nTotalChunks;
+    if (!nTotalChunks) {
+      gnLoadingProgressRatio = nTotalChunks;
       return;
     }
 
-    gnLoadingProgressRatio = nTotalChunks;
+    gnLoadingProgressRatio = (nTotalChunks << 8) / nTotalChunks;
+    return;
 }
 
 // Client-side outbound D2GS packet sender. Asserts size < 0x200, copies up to 512 bytes to a stack buffer and forwards via NET_D2GS_CLIENT_SendPacketAfterChecks. Performs a duplicate-suppression throttle keyed on the packet opcode (*pBytes): movement-ish opcodes 5-0x11 are dropped if identical to the last sent packet within 0x32ms; other opcodes within 0xC8ms; opcode 0x3a always sends. On send, caches the packet in gpLastSentPacketBuffer + gdwLastPacketSendTick and bumps gnPacketSendCount_0x69 / network sync flag. Inputs: pBytes (raw packet), nSize (length).
-void __stdcall NET_D2GS_CLIENT_Send(uint8_t * pBytes, int32_t nSize) {
+static void __stdcall NET_D2GS_CLIENT_Send(uint8_t * pBytes, int32_t nSize) {
     // Static local variables (originally global data)
     static char gaLastSentPacketBuffer[512] = {}; D2_STATIC_GUARD(gaLastSentPacketBuffer, "D2Client::GAME::Msg::NET_D2GS_CLIENT_Send::gaLastSentPacketBuffer");
     static unsigned int gdwLastPacketSendTick; D2_STATIC_GUARD_BSS(gdwLastPacketSendTick, "D2Client::GAME::Msg::NET_D2GS_CLIENT_Send::gdwLastPacketSendTick");
@@ -536,6 +544,11 @@ void __stdcall NET_D2GS_CLIENT_Send(uint8_t * pBytes, int32_t nSize) {
     gnD2GSPacketsSentTotal++;
 }
 
+// Extern entry for hand-written callers: NET_D2GS_CLIENT_Send itself keeps its unit's linkage.
+void __stdcall NET_D2GS_CLIENT_Send_Extern(uint8_t * pBytes, int32_t nSize) {
+    ::D2Client::GAME::Msg::NET_D2GS_CLIENT_Send(pBytes, nSize);
+}
+
 void __fastcall NET_D2GS_CLIENT_Send_CMD(uint8_t nOpcode) {
     uint8_t aPacketFrame[4];
     d2_store24((char*)&aPacketFrame, (uint32_t)(uint32_t)((uint32_t)((uint32_t)0 & 0xffffffu) << 8 | (uint32_t)(uint8_t)nOpcode) & 0xffffffu);
@@ -575,28 +588,28 @@ void __fastcall NET_D2GS_CLIENT_Send_SHORT_SHORT_SHORT_SHORT(uint8_t nPacketId, 
     NET_D2GS_CLIENT_Send(&packet.nId, 9);
 }
 
-void __fastcall NET_D2GS_CLIENT_Send_INT(uint8_t nId, int32_t nParam) {
-    D2GSPacketClt_CMD_INT local_c;
-    local_c.nId = nId;
-    local_c.nArg1 = nParam;
-    NET_D2GS_CLIENT_Send(&local_c.nId, 5);
+void __fastcall NET_D2GS_CLIENT_Send_INT(uint8_t nId, int32_t nArg1) {
+    D2GSPacketClt_CMD_INT sPacket;
+    sPacket.nId = nId;
+    sPacket.nArg1 = nArg1;
+    NET_D2GS_CLIENT_Send(&sPacket.nId, 5);
 }
 
 void __fastcall NET_D2GS_CLIENT_Send_INT_INT(uint8_t nPacketId, int32_t nArg1, int32_t nArg2) {
-    D2GSPacketClt_CMD_INT_INT local_10;
-    local_10.nId = nPacketId;
-    local_10.nArg1 = nArg1;
-    local_10.nArg2 = nArg2;
-    NET_D2GS_CLIENT_Send(&local_10.nId, 9);
+    D2GSPacketClt_CMD_INT_INT sPacket;
+    sPacket.nId = nPacketId;
+    sPacket.nArg1 = nArg1;
+    sPacket.nArg2 = nArg2;
+    NET_D2GS_CLIENT_Send(&sPacket.nId, 9);
 }
 
 void __fastcall NET_D2GS_CLIENT_Send_INT_INT_INT(uint8_t nPacketId, int32_t nArg1, int32_t nArg2, int32_t nArg3) {
-    D2GSPacketClt_CMD_INT_INT_INT local_14;
-    local_14.nArg1 = nArg1;
-    local_14.nId = nPacketId;
-    local_14.nArg2 = nArg2;
-    local_14.nArg3 = nArg3;
-    NET_D2GS_CLIENT_Send(&local_14.nId, 0xd);
+    D2GSPacketClt_CMD_INT_INT_INT sPacket;
+    sPacket.nArg1 = nArg1;
+    sPacket.nId = nPacketId;
+    sPacket.nArg2 = nArg2;
+    sPacket.nArg3 = nArg3;
+    NET_D2GS_CLIENT_Send(&sPacket.nId, 0xd);
 }
 
 void __fastcall NET_D2GS_CLIENT_Send_INT_INT_INT_INT(uint8_t nPacketId, int32_t nUnitType, int32_t nUnitGUID, int32_t nTargetX, int32_t nTargetY) {
@@ -610,26 +623,26 @@ void __fastcall NET_D2GS_CLIENT_Send_INT_INT_INT_INT(uint8_t nPacketId, int32_t 
 }
 
 void __fastcall NET_D2GS_CLIENT_Send_0x5D(int nActionType, uint32_t nPlayerGUID, int32_t bToggle) {
-    D2GSPacketClt0x5D local_c;
-    local_c.bToggle = bToggle != 0;
-    local_c.nId = 0x5d;
-    local_c.nActionType = (uint8_t)nActionType;
-    *(uint8_t*)(char*)&local_c.nPlayerGUID = (uint8_t)nPlayerGUID;
-    *(uint16_t*)((char*)&local_c.nPlayerGUID + 1) = (uint16_t)(nPlayerGUID >> 8);
-    *(uint8_t*)((char*)&local_c.nPlayerGUID + 3) = (uint8_t)(nPlayerGUID >> 0x18);
-    NET_D2GS_CLIENT_Send(&local_c.nId, 7);
+    D2GSPacketClt0x5D sPacket;
+    sPacket.bToggle = bToggle != 0;
+    sPacket.nId = 0x5d;
+    sPacket.nActionType = (uint8_t)nActionType;
+    *(uint8_t*)(char*)&sPacket.nPlayerGUID = (uint8_t)nPlayerGUID;
+    *(uint16_t*)((char*)&sPacket.nPlayerGUID + 1) = (uint16_t)(nPlayerGUID >> 8);
+    *(uint8_t*)((char*)&sPacket.nPlayerGUID + 3) = (uint8_t)(nPlayerGUID >> 0x18);
+    NET_D2GS_CLIENT_Send(&sPacket.nId, 7);
 }
 
 void __fastcall NET_D2GS_CLIENT_Send_0x5E(int nActionType, int32_t nPlayerGUID) {
-    D2GSPacketClt0x5E local_c;
-    local_c.nId = 0x5e;
-    local_c.nActionType = (uint8_t)nActionType;
-    local_c.nPlayerGUID = nPlayerGUID;
-    NET_D2GS_CLIENT_Send(&local_c.nId, 6);
+    D2GSPacketClt0x5E sPacket;
+    sPacket.nId = 0x5e;
+    sPacket.nActionType = (uint8_t)nActionType;
+    sPacket.nPlayerGUID = nPlayerGUID;
+    NET_D2GS_CLIENT_Send(&sPacket.nId, 6);
 }
 
 void __fastcall NET_D2GS_CLIENT_Send_Chat(D2ChatPacketBuildStrc * pChatPacket) {
-    char* pcVar1;
+    char* pTerminator;
     D2ChatPacketSendStrc sPacket;
     sPacket.nCmd = pChatPacket->nCmd;
     sPacket.nMsgType = pChatPacket->nMsgType;
@@ -638,14 +651,14 @@ void __fastcall NET_D2GS_CLIENT_Send_Chat(D2ChatPacketBuildStrc * pChatPacket) {
     if (pChatPacket->szTarget) {
       uint32_t nTargetLen;
       nTargetLen = Storm::Source::SSTR::SStrCopy(sPacket.abData + nMsgLen + 1, pChatPacket->szTarget, 0x10);
-      pcVar1 = sPacket.abData + nTargetLen + nMsgLen + 2;
+      pTerminator = sPacket.abData + nTargetLen + nMsgLen + 2;
     } else {
       sPacket.abData[nMsgLen + 1] = '\0';
-      pcVar1 = sPacket.abData + nMsgLen + 2;
+      pTerminator = sPacket.abData + nMsgLen + 2;
     }
 
-    *pcVar1 = '\0';
-    NET_D2GS_CLIENT_Send(&sPacket.nCmd, (int32_t)(pcVar1 + (1 - (uintptr_t)&sPacket)));
+    *pTerminator = '\0';
+    NET_D2GS_CLIENT_Send(&sPacket.nCmd, (int32_t)(pTerminator + (1 - (uintptr_t)&sPacket)));
 }
 
 void __fastcall NET_D2GS_CLIENT_Send_0x66(void * pData, uint32_t nLen) {

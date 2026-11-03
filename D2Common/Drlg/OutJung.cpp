@@ -41,28 +41,24 @@ void __fastcall BuildJungle(D2DrlgLevelStrc * pLevel) {
     int nLevelPrestId;
     int nRand;
     int nXCell;
+    int nYCell;
     if (!(pLevel->eD2LevelId - 0x4cU <= 2)) {
       return;
     }
 
     D2LevelDefsTxt* pSpiderForestDefs = DATATBLS::LvlTbls::TXT_LevelDefs_GetLine(LEVEL_SpiderForest);
-    uint8_t byDifficulty = pLevel->pDrlg->nDifficulty;
-    int nLevelWidthCells = pSpiderForestDefs->SizeX[byDifficulty] / 32;
-    int nLevelHeightCells = pSpiderForestDefs->SizeY[byDifficulty] / 32;
+    int nDifficulty = (int)pLevel->pDrlg->nDifficulty;
+    int nLevelWidthCells = pSpiderForestDefs->SizeX[nDifficulty] / 32;
+    int nLevelHeightCells = pSpiderForestDefs->SizeY[nDifficulty] / 32;
     int nPresetArrayIdx = 0;
-    uint32_t nSeedModulo = D2Client::Archive::UNIT_GetModuloFromSeed(&pLevel->sSeed, (uint32_t)(pLevel->nUnknown_1B8 == 3) * 4 + 2);
+    uint32_t nSeedModulo = D2Client::Archive::UNIT_GetModuloFromSeed(&pLevel->sSeed, pLevel->nSpecialPresetCellCount == 3 ? 0x6U : 0x2U);
     int nSpecialPresetCount = 0;
     if (!pLevel->pAutomapEx) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
       exit(-1);
     }
 
-    int nYCell = 0;
-    if (0 >= nLevelHeightCells) {
-      return;
-    }
-
-    do {
+    for (nYCell = 0; nYCell < nLevelHeightCells; nYCell++) {
       if (pLevel->eD2LevelId == 0x4c && nYCell == nLevelHeightCells - 1) {
         Outdoors::SpawnOutdoorLevelPresetEx(pLevel, 0, nYCell * 4, 0x23d, (uint32_t)!*(int*)((int)pLevel->pAutomapEx + nLevelHeightCells * nLevelWidthCells * 4 - 4), 0);
         nPresetArrayIdx += 2;
@@ -70,48 +66,41 @@ void __fastcall BuildJungle(D2DrlgLevelStrc * pLevel) {
         Outdoors::SpawnOutdoorLevelPresetEx(pLevel, 0, 0, 0x23e, (uint32_t)!*(int*)((int)pLevel->pAutomapEx + 4), 0);
         nPresetArrayIdx += 2;
       } else {
-        nXCell = 0;
-        if (nLevelWidthCells > 0) {
-          do {
-            nLevelPrestId = *(int*)((int)pLevel->pAutomapEx + nPresetArrayIdx * 4);
-            nPresetArrayIdx++;
-            nRand = -1;
-            if (nLevelPrestId > 0x23e) {
-              if (nSpecialPresetCount >= 3) {
-                Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x47);
-                exit(-1);
-              }
-
-              // 0067ea64 is ADD EAX,[EDX*0x4 + 0x6f2240] with EDX the level id (76..78): the
-              // base folds 76*4 out of the real table, {0, 10, 20} at 0x6f2370, so the decompiler
-              // rebases it onto row 11 of gaAct5SceneryPresetTable_0 and reads past that array
-              // once relinked. Ghidra cannot express a folded base; retire with the generator's
-              // interior-address pass, as in Outdoors/Act4.cpp.
-              static const int aOutJungPresetOffsetByLevel[3] = {0, 10, 20};
-              nLevelPrestId += aOutJungPresetOffsetByLevel[(int)pLevel->eD2LevelId - 0x4c];
-              nRand = gaOutJungSpecialPresetRandOffsets[nSeedModulo][nSpecialPresetCount];
-              nSpecialPresetCount++;
-            }
-            if (nLevelPrestId) {
-              Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nXCell * 4, nYCell * 4, nLevelPrestId, nRand, 0);
+        for (nXCell = 0; nXCell < nLevelWidthCells; nXCell++) {
+          nLevelPrestId = *(int*)((int)pLevel->pAutomapEx + nPresetArrayIdx * 4);
+          nPresetArrayIdx++;
+          nRand = -1;
+          if (nLevelPrestId > 0x23e) {
+            if (nSpecialPresetCount >= 3) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x47);
+              exit(-1);
             }
 
-            nXCell++;
-          } while (nXCell < nLevelWidthCells);
+            // 0067ea64 is ADD EAX,[EDX*0x4 + 0x6f2240] with EDX the level id (76..78): the
+            // base folds 76*4 out of the real table, {0, 10, 20} at 0x6f2370, so the decompiler
+            // rebases it onto row 11 of gaAct5SceneryPresetTable_0 and reads past that array
+            // once relinked. Ghidra cannot express a folded base; retire with the generator's
+            // interior-address pass, as in Outdoors/Act4.cpp.
+            static const int aOutJungPresetOffsetByLevel[3] = {0, 10, 20};
+            nLevelPrestId += aOutJungPresetOffsetByLevel[(int)pLevel->eD2LevelId - 0x4c];
+            nRand = gaOutJungSpecialPresetRandOffsets[nSeedModulo][nSpecialPresetCount];
+            nSpecialPresetCount++;
+          }
+          if (nLevelPrestId) {
+            Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nXCell * 4, nYCell * 4, nLevelPrestId, nRand, 0);
+          }
         }
       }
-
-      nYCell++;
-    } while (nYCell < nLevelHeightCells);
+    }
 }
 
 // DRLG outdoor-jungle generator: scatters random level presets (preset ids nLevelPrestId1..nLevelPrestId2) across every cell of the level's DRLG grid. Allocates a temp (x,y) cell list from the server memory pool, Fisher-Yates shuffles it with the level seed, then for each cell rolls a random preset id in range and, if TestOutdoorLevelPreset passes, places it via SpawnOutdoorLevelPresetEx. Stops after a4 placements (if a4>0). Frees the temp buffer on exit. Side-effects: advances pLevel->sSeed, spawns DS1 presets into the level.
 // @sourcefile .\DRLG\OutJung.cpp
 void __fastcall SpawnRandomPreset(D2DrlgLevelStrc * pLevel, int32_t nLevelPrestId1, int32_t nLevelPrestId2, int32_t a4) {
-    int nCellX;
+    int32_t nY;
     BOOL bCanSpawn;
     uint32_t nRandIdxA;
-    uint32_t uVar2;
+    uint32_t uVar1;
     uint32_t nGridWidthCells;
     int nCellY;
     uint32_t nShuffleCountdown;
@@ -126,10 +115,10 @@ void __fastcall SpawnRandomPreset(D2DrlgLevelStrc * pLevel, int32_t nLevelPrestI
     nSwapIdxA = nLevelPrestId2 - nLevelPrestId1;
     uint32_t nSwapIdxB;
     nSwapIdxB = nSwapIdxA + 1;
-    int iVar1;
-    iVar1 = pLevel->pDrlgLevelData.pDrlgLevelOutdoorsData->nGridCoordsWidth;
+    int nGridWidth;
+    nGridWidth = pLevel->pDrlgLevelData.pDrlgLevelOutdoorsData->nGridCoordsWidth;
     uint32_t nTotalCells;
-    nTotalCells = pLevel->pDrlgLevelData.pDrlgLevelOutdoorsData->nGridCoordsHeight * iVar1;
+    nTotalCells = pLevel->pDrlgLevelData.pDrlgLevelOutdoorsData->nGridCoordsHeight * nGridWidth;
     int nPlacedCount;
     nPlacedCount = 0;
     if (!nTotalCells) {
@@ -140,9 +129,10 @@ void __fastcall SpawnRandomPreset(D2DrlgLevelStrc * pLevel, int32_t nLevelPrestI
     pMemoryToFree = D2_ALLOC_POOL_AT(pMemory, nTotalCells * 8, ".\\DRLG\\OutJung.cpp", 0xcb);
     nLevelPrestId2 = 0;
     if ((int)nTotalCells > 0) {
+      int nCellX;
       do {
-        nCellX = nLevelPrestId2 / iVar1;
-        nCellY = nLevelPrestId2 % iVar1;
+        nCellX = nLevelPrestId2 / nGridWidth;
+        nCellY = nLevelPrestId2 % nGridWidth;
         nLevelPrestId2++;
         *(int*)((int)pMemoryToFree + nLevelPrestId2 * 8 - 8) = nCellY;
         *(int*)((int)pMemoryToFree + nLevelPrestId2 * 8 - 4) = nCellX;
@@ -173,18 +163,18 @@ void __fastcall SpawnRandomPreset(D2DrlgLevelStrc * pLevel, int32_t nLevelPrestI
             if (nTotalCells & nTotalCells - 1) {
               lSeedProduct = (uint64_t)nGridWidthCells * 0x6ac690c5 + (uint64_t)pLevel->sSeed.nSeedHigh;
               nGridWidthCells = (uint32_t)lSeedProduct;
-              uVar2 = (uint32_t)((uint64_t)lSeedProduct >> 0x20);
+              uVar1 = (uint32_t)((uint64_t)lSeedProduct >> 0x20);
               pLevel->sSeed.nSeedLow = nGridWidthCells;
               nGridWidthCells %= nTotalCells;
             } else {
               lSeedProduct = (uint64_t)nGridWidthCells * 0x6ac690c5 + (uint64_t)pLevel->sSeed.nSeedHigh;
               nGridWidthCells = (uint32_t)lSeedProduct;
-              uVar2 = (uint32_t)((uint64_t)lSeedProduct >> 0x20);
+              uVar1 = (uint32_t)((uint64_t)lSeedProduct >> 0x20);
               pLevel->sSeed.nSeedLow = nGridWidthCells;
               nGridWidthCells = nTotalCells - 1 & nGridWidthCells;
             }
 
-            pLevel->sSeed.nSeedHigh = uVar2;
+            pLevel->sSeed.nSeedHigh = uVar1;
           }
 
           nShuffleCountdown--;
@@ -198,45 +188,39 @@ void __fastcall SpawnRandomPreset(D2DrlgLevelStrc * pLevel, int32_t nLevelPrestI
       }
     }
 
-    nLevelPrestId2 = 0;
-    if ((int)nTotalCells > 0) {
-      int32_t nY;
-      do {
-        nFreeSrcLine = *(int32_t*)((int)pMemoryToFree + nLevelPrestId2 * 8);
-        nY = *(int32_t*)((int)pMemoryToFree + nLevelPrestId2 * 8 + 4);
-        if ((int)nSwapIdxB <= 0) {
-          nRandIdxA = 0;
+    for (nLevelPrestId2 = 0; nLevelPrestId2 < (int)nTotalCells; nLevelPrestId2++) {
+      nFreeSrcLine = *(int32_t*)((int)pMemoryToFree + nLevelPrestId2 * 8);
+      nY = *(int32_t*)((int)pMemoryToFree + nLevelPrestId2 * 8 + 4);
+      if ((int)nSwapIdxB <= 0) {
+        nRandIdxA = 0;
+      } else {
+        nRandIdxA = pLevel->sSeed.nSeedLow;
+        if (nSwapIdxB & nSwapIdxA) {
+          lSeedProduct = (uint64_t)nRandIdxA * 0x6ac690c5 + (uint64_t)pLevel->sSeed.nSeedHigh;
+          nRandIdxA = (uint32_t)lSeedProduct;
+          nGridWidthCells = (uint32_t)((uint64_t)lSeedProduct >> 0x20);
+          pLevel->sSeed.nSeedLow = nRandIdxA;
+          nRandIdxA %= nSwapIdxB;
         } else {
-          nRandIdxA = pLevel->sSeed.nSeedLow;
-          if (nSwapIdxB & nSwapIdxA) {
-            lSeedProduct = (uint64_t)nRandIdxA * 0x6ac690c5 + (uint64_t)pLevel->sSeed.nSeedHigh;
-            nRandIdxA = (uint32_t)lSeedProduct;
-            nGridWidthCells = (uint32_t)((uint64_t)lSeedProduct >> 0x20);
-            pLevel->sSeed.nSeedLow = nRandIdxA;
-            nRandIdxA %= nSwapIdxB;
-          } else {
-            lSeedProduct = (uint64_t)nRandIdxA * 0x6ac690c5 + (uint64_t)pLevel->sSeed.nSeedHigh;
-            nRandIdxA = (uint32_t)lSeedProduct;
-            nGridWidthCells = (uint32_t)((uint64_t)lSeedProduct >> 0x20);
-            pLevel->sSeed.nSeedLow = nRandIdxA;
-            nRandIdxA = nSwapIdxA & nRandIdxA;
-          }
-
-          pLevel->sSeed.nSeedHigh = nGridWidthCells;
+          lSeedProduct = (uint64_t)nRandIdxA * 0x6ac690c5 + (uint64_t)pLevel->sSeed.nSeedHigh;
+          nRandIdxA = (uint32_t)lSeedProduct;
+          nGridWidthCells = (uint32_t)((uint64_t)lSeedProduct >> 0x20);
+          pLevel->sSeed.nSeedLow = nRandIdxA;
+          nRandIdxA = nSwapIdxA & nRandIdxA;
         }
 
-        bCanSpawn = Outdoors::TestOutdoorLevelPreset(pLevel, nFreeSrcLine, nY, nLevelPrestId1 + nRandIdxA, 0, '\x0f');
-        if (bCanSpawn) {
-          Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nFreeSrcLine, nY, nLevelPrestId1 + nRandIdxA, -1, 0);
-          nPlacedCount++;
-          if (a4 > 0 && nPlacedCount >= a4) {
-            nFreeSrcLine = 0xeb;
-            goto cleanup;
-          }
-        }
+        pLevel->sSeed.nSeedHigh = nGridWidthCells;
+      }
 
-        nLevelPrestId2++;
-      } while (nLevelPrestId2 < (int)nTotalCells);
+      bCanSpawn = Outdoors::TestOutdoorLevelPreset(pLevel, nFreeSrcLine, nY, nLevelPrestId1 + nRandIdxA, 0, '\x0f');
+      if (bCanSpawn) {
+        Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nFreeSrcLine, nY, nLevelPrestId1 + nRandIdxA, -1, 0);
+        nPlacedCount++;
+        if (a4 > 0 && nPlacedCount >= a4) {
+          nFreeSrcLine = 0xeb;
+          goto cleanup;
+        }
+      }
     }
 
     nFreeSrcLine = 0xf2;

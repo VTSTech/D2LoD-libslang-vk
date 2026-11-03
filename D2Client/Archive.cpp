@@ -4,11 +4,30 @@
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2SeedStrc.h"
 #include "Fog/BitBuffer.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
+
+static char s___AUTALLOCREC___00711480[16] = {
+    '.',
+    '?',
+    'A',
+    'U',
+    'T',
+    'A',
+    'L',
+    'L',
+    'O',
+    'C',
+    'R',
+    'E',
+    'C',
+    '@',
+    '@',
+    '\x00'
+}; D2_STATIC_GUARD(s___AUTALLOCREC___00711480, "s___AUTALLOCREC___00711480");
 
 namespace D2Client::Archive {
 
@@ -29,11 +48,10 @@ uint32_t __thiscall ARCHIVE_ComputeAddress(int * pNode, int32_t nBaseAddr) {
     if ((int)nOffset < 0) {
       return ~nOffset;
     }
-    if (nBaseAddr >= 0) {
-      return nOffset + nBaseAddr;
+    if (nBaseAddr < 0) {
+      nBaseAddr = (int)pNode - *(int*)(*pNode + 4);
     }
 
-    nBaseAddr = (int)pNode - *(int*)(*pNode + 4);
     return nOffset + nBaseAddr;
 }
 
@@ -47,11 +65,10 @@ int32_t __thiscall ARCHIVE_GetNodeOrDefault(int32_t pThis, int32_t nNode) {
 }
 
 uint32_t __thiscall ARCHIVE_GetNodeValue(int32_t pThis, int32_t nNode) {
-    if (nNode) {
-      return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
+    if (!nNode) {
+      nNode = pThis + 4;
     }
 
-    nNode = pThis + 4;
     return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
 }
 
@@ -66,13 +83,7 @@ void __thiscall ARCHIVE_UnlinkNode(int32_t pThis, int * pNode) {
       return;
     }
 
-    uint32_t nPrevOffset = pNode[1];
-    if ((int)nPrevOffset < 0) {
-      pPrevLink = (int*)~nPrevOffset;
-    } else {
-      pPrevLink = (int*)((int)pNode + (nPrevOffset - *(int*)(nNext + 4)));
-    }
-
+    pPrevLink = (int*)D2_StormNextLink(pNode, -1);
     *pPrevLink = nNext;
     *(int*)(*pNode + 4) = pNode[1];
     *pNode = 0;
@@ -146,7 +157,6 @@ uint32_t __thiscall ARCHIVE_GetNodeSize(int32_t pThis, int32_t nNode) {
 
 void __fastcall ARCHIVE_ClearList(int32_t nList) {
     int* pPrevLink;
-    uint32_t nPrevOffset;
     int* pNode;
     while (true) {
       int nNext;
@@ -157,13 +167,7 @@ void __fastcall ARCHIVE_ClearList(int32_t nList) {
 
       nNext = *pNode;
       if (nNext) {
-        nPrevOffset = pNode[1];
-        if ((int)nPrevOffset < 0) {
-          pPrevLink = (int*)~nPrevOffset;
-        } else {
-          pPrevLink = (int*)((int)pNode + (nPrevOffset - *(int*)(nNext + 4)));
-        }
-
+        pPrevLink = (int*)D2_StormNextLink(pNode, -1);
         *pPrevLink = nNext;
         *(int*)(*pNode + 4) = pNode[1];
         *pNode = 0;
@@ -181,13 +185,7 @@ void __fastcall ARCHIVE_ClearAndFreeHead(int32_t nList) {
       return;
     }
 
-    uint32_t nPrevOffset = *(uint32_t*)(nList + 8);
-    if ((int)nPrevOffset < 0) {
-      pPrevLink = (int*)~nPrevOffset;
-    } else {
-      pPrevLink = (int*)((int)pHead + (nPrevOffset - *(int*)(nNext + 4)));
-    }
-
+    pPrevLink = (int*)D2_StormNextLink(pHead, -1);
     *pPrevLink = nNext;
     *(uint32_t*)(*pHead + 4) = *(uint32_t*)(nList + 8);
     *pHead = 0;
@@ -195,43 +193,36 @@ void __fastcall ARCHIVE_ClearAndFreeHead(int32_t nList) {
 }
 
 int * * __thiscall ARCHIVE_AllocNode(int * * ppList, int32_t nLinkMode, int32_t nSize, uint32_t dwAllocFlags) {
-    int** ppNode = (int**)Storm::SMem::SMemAlloc(nSize + 0x130, s___AUTALLOCREC___00711480, -2, dwAllocFlags | 8);
-    if (ppNode) {
-      *ppNode = 0;
-      ppNode[1] = 0;
+    int** ppNodeNew = (int**)Storm::Source::SMem::SMemAlloc(nSize + 0x130, s___AUTALLOCREC___00711480, -2, dwAllocFlags | 8);
+    int** ppNode;
+    if (ppNodeNew) {
+      *ppNodeNew = 0;
+      ppNodeNew[1] = 0;
+      ppNode = ppNodeNew;
     } else {
       ppNode = 0;
     }
-    if (!nLinkMode) {
-      return ppNode;
+    if (nLinkMode) {
+      ARCHIVE_LinkNode(ppList, ppNode, nLinkMode, nullptr);
     }
 
-    ARCHIVE_LinkNode(ppList, ppNode, nLinkMode, nullptr);
     return ppNode;
 }
 
 int * __thiscall ARCHIVE_FreeNode(int * pNode, uint8_t byFree) {
-    uint32_t nPrevOffset;
     int nNext = *pNode;
     if (nNext) {
       int* pPrevLink;
-      nPrevOffset = pNode[1];
-      if ((int)nPrevOffset < 0) {
-        pPrevLink = (int*)~nPrevOffset;
-      } else {
-        pPrevLink = (int*)((int)pNode + (nPrevOffset - *(int*)(nNext + 4)));
-      }
-
+      pPrevLink = (int*)D2_StormNextLink(pNode, -1);
       *pPrevLink = nNext;
       *(int*)(*pNode + 4) = pNode[1];
       *pNode = 0;
       pNode[1] = 0;
     }
-    if (!(byFree & 1)) {
-      return pNode;
+    if (byFree & 1) {
+      Storm::Source::SMem::SMemFree(pNode, "delete", -1, 0);
     }
 
-    Storm::SMem::SMemFree(pNode, "delete", -1, 0);
     return pNode;
 }
 
@@ -244,21 +235,14 @@ uint32_t __thiscall ARCHIVE_RemoveNode(int32_t pThis, int * pNode) {
     uint32_t nValue = pPrevLink[1];
     int nNext = *pNode;
     if (nNext) {
-      uint32_t nPrevOffset;
-      nPrevOffset = pNode[1];
-      if ((int)nPrevOffset < 0) {
-        pPrevLink = (int*)~nPrevOffset;
-      } else {
-        pPrevLink = (int*)((int)pNode + (nPrevOffset - *(int*)(nNext + 4)));
-      }
-
+      pPrevLink = (int*)D2_StormNextLink(pNode, -1);
       *pPrevLink = nNext;
       *(int*)(*pNode + 4) = pNode[1];
       *pNode = 0;
       pNode[1] = 0;
     }
 
-    Storm::SMem::SMemFree(pNode, s___AUTALLOCREC___00711480, -2, 0);
+    Storm::Source::SMem::SMemFree(pNode, s___AUTALLOCREC___00711480, -2, 0);
     return (int)nValue <= 0 ? 0 : nValue;
 }
 
@@ -282,8 +266,7 @@ void ARCHIVE_WriteMemoryCheckReport() {
     uint16_t* pScan;
     int**** ppWalk;
     SMemHeapDetailsStrc sHeapDetails;
-    SMemBlockInfo sBlockInfo;
-    int*** pNextLink;
+    SMemBlockDetailsStrc sBlockInfo;
     int*** pNextNode;
     HANDLE hFileTmp = CreateFileA("D2Mem.txt", 0x40000000, 0, (LPSECURITY_ATTRIBUTES)0x0, 2, 0x80, (HANDLE)0x0);
     HANDLE hFile = hFileTmp;
@@ -294,13 +277,14 @@ void ARCHIVE_WriteMemoryCheckReport() {
     __frame0.pListTail = 0;
     uint16_t** pHeapEnum = 0;
     sHeapDetails.dwSize = 0x128;
-    int nResult = Storm::SMem::SMemFindNextHeap(0, (int*)&pHeapEnum, &sHeapDetails);
+    int nResult = Storm::Source::SMem::SMemFindNextHeap(0, (int*)&pHeapEnum, &sHeapDetails);
     while (nResult) {
       int**** pNewRec;
-      pNewRec = (int****)Storm::SMem::SMemAlloc(0x130, s___AUTALLOCREC___00711480, -2, 8);
-      if (pNewRec) {
-        *pNewRec = 0;
-        pNewRec[1] = 0;
+      int**** pNewRecNew = (int****)Storm::Source::SMem::SMemAlloc(0x130, s___AUTALLOCREC___00711480, -2, 8);
+      if (pNewRecNew) {
+        *pNewRecNew = 0;
+        pNewRecNew[1] = 0;
+        pNewRec = pNewRecNew;
       } else {
         pNewRec = 0;
       }
@@ -313,16 +297,10 @@ void ARCHIVE_WriteMemoryCheckReport() {
         ppWalk++;
       }
 
-      if ((int)__frame0.pListPrev <= 0 || (ppWalk = (int****)__frame0.pListPrev , (uintptr_t)__frame0.pListPrev[0x4b] < sHeapDetails.dwUnknown124)) {
+      if ((int)__frame0.pListPrev <= 0 || (ppWalk = (int****)__frame0.pListPrev , (uintptr_t)__frame0.pListPrev[0x4b] < sHeapDetails.dwAllocatedBytes)) {
         pNextNode = *pNewRec;
         if (pNextNode) {
-          pNextLink = pNewRec[1];
-          if ((int)pNextLink < 0) {
-            pPrevLink = (int*)~(uint32_t)pNextLink;
-          } else {
-            pPrevLink = (int*)((int)pNextLink + ((int)pNewRec - (int)pNextNode[1]));
-          }
-
+          pPrevLink = (int*)D2_StormNextLink(pNewRec, -1);
           *pPrevLink = (int)pNextNode;
           (*pNewRec)[1] = (int**)pNewRec[1];
           *pNewRec = 0;
@@ -348,15 +326,15 @@ void ARCHIVE_WriteMemoryCheckReport() {
         do {
           ppInsertAfter = ppWalk;
           ppWalk = (int****)ppInsertAfter[1];
-          if ((int)ppWalk < 1) {
+          if ((int)ppWalk <= 0) {
             break;
           }
-        } while ((uintptr_t)ppWalk[0x4b] > sHeapDetails.dwUnknown124);
+        } while ((uintptr_t)ppWalk[0x4b] > sHeapDetails.dwAllocatedBytes);
 
         ARCHIVE_LinkNode(&__frame0.pListTail, (int**)pNewRec, 1, (int**)ppInsertAfter);
       }
 
-      nResult = Storm::SMem::SMemFindNextHeap((uint32_t)pHeapEnum, (int*)&pHeapEnum, &sHeapDetails);
+      nResult = Storm::Source::SMem::SMemFindNextHeap((uint32_t)pHeapEnum, (int*)&pHeapEnum, &sHeapDetails);
       hFileTmp = hFile;
     }
 
@@ -369,7 +347,7 @@ void ARCHIVE_WriteMemoryCheckReport() {
     int nHeapCount = 0;
     ARCHIVE_WriteFormattedText(hFileTmp, "      SIZE|    BLOCKS|  RESERVED| COMMITTED|       MAX|   REGIONS|FILENAME:LINE\n");
     hFileTmp = hFile;
-    for (pRec = (int)__frame0.pListPrev < 1 ? 0 : (uint32_t)__frame0.pListPrev; hFile = hFileTmp , 0 < (int)pRec; pRec = *(uint32_t*)(pRec + 4)) {
+    for (pRec = (int)__frame0.pListPrev <= 0 ? 0 : (uint32_t)__frame0.pListPrev; hFile = hFileTmp , 0 < (int)pRec; pRec = *(uint32_t*)(pRec + 4)) {
       ARCHIVE_WriteFormattedText(hFileTmp, "%10d|%10d|%10d|%10d|%10d|%10d|%s:%d\n", *(uint32_t*)(pRec + 300), *(uint32_t*)(pRec + 0x128), *(uint32_t*)(pRec + 0x120), *(uint32_t*)(pRec + 0x11c), *(uint32_t*)(pRec + 0x124), *(uint32_t*)(pRec + 0x118), pRec + 0x10, *(uint32_t*)(pRec + 0x114));
       nTotalMax += *(int*)(pRec + 0x120);
       nTotalBytes += *(int*)(pRec + 300);
@@ -390,13 +368,13 @@ void ARCHIVE_WriteMemoryCheckReport() {
     ARCHIVE_WriteFormattedText(hFileTmp, "TOTAL MAX:       %10d\n", nTotalRegions);
     ARCHIVE_WriteFormattedText(hFileTmp, "TOTAL REGIONS:   %10d\n\n\n\n\n", nTotalReserved);
     ARCHIVE_WriteFormattedText(hFileTmp, "================================================\n\n");
-    pHeapEnum = (uint16_t**)Storm::SMem::SMemGetHeapByCaller((int*)"SOURCE\\D2HELL\\Src\\Archive.cpp", 0xf5);
+    pHeapEnum = (uint16_t**)Storm::Source::SMem::SMemGetHeapByCaller((int*)"SOURCE\\D2HELL\\Src\\Archive.cpp", 0xf5);
     nResult = 0;
     sBlockInfo.dwSize = 0x1c;
     uint16_t* pBlock = 0;
     nTotalReserved = 0;
     nTotalBytes = 0;
-    int bFoundNextBlock = Storm::SMem::SMemFindNextBlock(pHeapEnum, 0, &pBlock, (int*)&sBlockInfo);
+    int bFoundNextBlock = Storm::Source::SMem::SMemFindNextBlock(pHeapEnum, 0, &pBlock, (int*)&sBlockInfo);
     do {
       if (!bFoundNextBlock) {
         ARCHIVE_WriteFormattedText(hFileTmp, "TOTAL MEMORY: %8d\n", nResult);
@@ -417,7 +395,7 @@ void ARCHIVE_WriteMemoryCheckReport() {
         __frame0.pListHead[1] = __frame0.pListPrev;
         return;
       }
-      if (sBlockInfo.nBlockSize > 0x220 && sBlockInfo.nBlockField40 && sBlockInfo.nBlockField44) {
+      if (sBlockInfo.nBlockSize > 0x220 && sBlockInfo.bValid && sBlockInfo.bAllocated) {
         for (pScan = pBlock; hFileTmp = hFile , pScan < (uint16_t*)(sBlockInfo.nBlockSize + (int)pBlock); pScan += 2) {
           if (*(int*)pScan == 0x4c4f4144 && *(int*)(pScan + 2) == 0x4655434b && *(int*)(pScan + 4) == 0x54484953 && *(int*)(pScan + 6) == 0x4e4f5720) {
             ARCHIVE_WriteFormattedText(hFile, "%8d\t%50s\t(%s:%d)\n", *(int*)(pScan + 10), pScan + 0x8e, pScan + 0xc, *(int*)(pScan + 8));
@@ -430,7 +408,7 @@ void ARCHIVE_WriteMemoryCheckReport() {
         }
       }
 
-      bFoundNextBlock = Storm::SMem::SMemFindNextBlock(pHeapEnum, (int32_t)pBlock, &pBlock, (int*)&sBlockInfo);
+      bFoundNextBlock = Storm::Source::SMem::SMemFindNextBlock(pHeapEnum, (int32_t)pBlock, &pBlock, (int*)&sBlockInfo);
     } while (true);
 }
 
@@ -461,22 +439,22 @@ void __fastcall ReadByteOrShort(D2BitBufferStrc * pBitBuffer) {
 }
 
 uint32_t __fastcall UNIT_GetModuloFromSeed(D2SeedStrc * pSeed, uint32_t nModulo) {
-    D2SeedStrc DVar2;
+    D2SeedStrc DVar1;
     if ((int)nModulo <= 0) {
       return 0;
     }
 
-    int64_t lVar1 = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
+    int64_t nSeedProduct = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
     if (nModulo & nModulo - 1) {
-      DVar2 = (D2SeedStrc)(lVar1 + (uint64_t)pSeed->nSeedHigh);
-      pSeed->nSeedHigh = DVar2.nSeedHigh;
-      pSeed->nSeedLow = DVar2.nSeedLow;
-      return (uint32_t)(DVar2.nSeedLow % nModulo);
+      DVar1 = (D2SeedStrc)(nSeedProduct + (uint64_t)pSeed->nSeedHigh);
+      pSeed->nSeedHigh = DVar1.nSeedHigh;
+      pSeed->nSeedLow = DVar1.nSeedLow;
+      return (uint32_t)(DVar1.nSeedLow % nModulo);
     }
 
-    DVar2 = (D2SeedStrc)(lVar1 + (uint64_t)pSeed->nSeedHigh);
-    *pSeed = DVar2;
-    return nModulo - 1 & DVar2.nSeedLow;
+    DVar1 = (D2SeedStrc)(nSeedProduct + (uint64_t)pSeed->nSeedHigh);
+    *pSeed = DVar1;
+    return nModulo - 1 & DVar1.nSeedLow;
 }
 
 uint32_t __fastcall RANDOM_RandomNumberSelector(D2SeedStrc * pSeed, uint32_t nModulo) {

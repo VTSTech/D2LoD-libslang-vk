@@ -11,9 +11,11 @@
 // Forward declarations
 struct D2GSPacketSrv0x27;
 struct D2GSPacketSrv0x27_TextStrc;
+struct D2GSPacketSrv0x50;
 struct D2GSPacketSrv0x76;
 struct D2GameViewStrc;
 struct D2HoverTextStrc;
+struct D2ItemsTxt;
 struct D2Packet0x5aEventStructure;
 struct D2UIMouseMsgStrc;
 struct D2UnitStrc;
@@ -74,10 +76,10 @@ void __stdcall thunk_TEXT_ClearChatMessages();
 void __stdcall TEXT_FreeTextBox(struct D2TextBoxStrc * pTextBox);
 void __stdcall TEXT_InitTextDisplaySettings();
 void __stdcall TEXT_FreeAllScreenMessages(struct D2ScreenMessageListStrc * pList);
-void __fastcall TEXT_SetTextDisplayMode(int32_t nParam);
+void __fastcall TEXT_SetTextDisplayMode(int32_t nDisplayMode);
 void __fastcall TEXT_DrawTextBoxAtPosition(struct D2TextBoxStrc * pTextBox, int32_t nScreenX, int32_t nScreenY);
 void __stdcall TEXT_OnClickCloseNpcDialog(struct D2UIMouseMsgStrc * pMsg);
-void __fastcall TEXT_SetNpcMenuSelection(int32_t nParam);
+void __fastcall TEXT_SetNpcMenuSelection(struct D2UnitStrc * pUnit);
 void __stdcall TEXT_ClearNpcMenuSelection();
 struct ScreenMessage_t * __fastcall TEXT_AllocScreenMessage(uint16_t * * ppwszText);
 void __fastcall TEXT_InsertScreenMessage(uint16_t * * ppwszText);
@@ -106,8 +108,8 @@ void __stdcall TEXT_OnEscCloseQuestScroll(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall TEXT_OnClickCloseQuestScroll(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall TEXT_OnPanelUnregister_NoOp();
 void __stdcall TEXT_DrawQuestScrollUI();
-void __fastcall TEXT_HandleScrollLinePacket(uint8_t * pPacket);
-void __fastcall TEXT_OpenQuestScroll(int32_t pUnit, int32_t pTextBlock);
+void __fastcall TEXT_HandleScrollLinePacket(struct D2GSPacketSrv0x50 * pPacket);
+void __fastcall TEXT_OpenQuestScroll(struct D2UnitStrc * pUnit, struct D2ItemsTxt * pTextBlock);
 uint32_t __stdcall TEXT_IsScrollingTextActive();
 void __stdcall TEXT_FreeChatAndLogMessages();
 int __stdcall TEXT_CloseMessageLogDialog();
@@ -124,9 +126,9 @@ int __stdcall TEXT_HandleEscapeKey();
 void __fastcall TEXT_DrawMonsterHoverText(struct D2UnitStrc * pUnit);
 void __fastcall TEXT_DrawObjectHoverText(struct D2UnitStrc * pUnit);
 void __fastcall TEXT_DrawMessageLogAndOverhead(struct D2GameViewStrc * pGameView);
-void __fastcall TEXT_ShowNpcDialog(struct D2UnitStrc * pUnit, uint16_t nParam, uint32_t dwUnused);
-void __fastcall TEXT_ShowScrollingText(uint16_t nParam, int32_t nParam2, int32_t bShowImage);
-void __fastcall TEXT_ShowStaticTextPopup(uint16_t nParam);
+void __fastcall TEXT_ShowNpcDialog(struct D2UnitStrc * pUnit, uint16_t wDialogStringId, uint32_t dwUnused);
+void __fastcall TEXT_ShowScrollingText(uint16_t wDialogStringId, int32_t bAlignToPanel, int32_t bShowImage);
+void __fastcall TEXT_ShowStaticTextPopup(uint16_t wStringId);
 void __fastcall TEXT_HandleOverheadTextPacket(struct D2GSPacketSrv0x27 * pPacket);
 void __stdcall TEXT_CloseNpcDialog();
 int __stdcall TEXT_HandleEscapeKey_Thunk();
@@ -135,6 +137,7 @@ void __stdcall INPUT_TextClickHandler(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_TextKeyHandler(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_TextKeyFilter(struct D2UIMouseMsgStrc * pMsg);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca07b(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
+void StaticInit_gnTextBoxExclusionX();
 // 11 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::Text

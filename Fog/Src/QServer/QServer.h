@@ -9,7 +9,7 @@
 #include "d2_platform.h"
 #include "D2Net/in_addr.h"
 #include "Fog/D2QServerStrc.h"
-#include "Storm/Source/SSystem.h"
+#include "Storm/Source/SFile.h"
 
 // Forward declarations
 struct SGAMEDATA;
@@ -251,8 +251,7 @@ struct D2QServerModePacketNodeStrc {
     /* 0x5BC */ struct D2QServerModePacketNodeStrc * pNext; // Next queued packet node
 };
 
-#pragma pack(push, 1)
-struct D2QServerStrc {
+struct __attribute__((packed)) D2QServerStrc {
     /* 0x000 */ int bUseNtLocalMode; // BOOL - 0 = Online (Winsock sockets), 1 = Local (NT pipes/IPC for singleplayer/LAN)
     /* 0x004 */ int clientsCount;
     /* 0x008 */ int nClientBucketCount; // Number of client-hash buckets / per-bucket locks used by token and socket lookups
@@ -283,7 +282,7 @@ struct D2QServerStrc {
     /* 0x890 */ int nHacklistSize;
     /* 0x894 */ CRITICAL_SECTION csHacklist; // Protects hacklist and ban/rate-limit related state
     /* 0x8AC */ struct D2QServerHacklistEntryStrc * * ppHacklistBuckets; // Hash buckets of active hacklist entries
-    /* 0x8B0 */ int nHacklistBucketCount; // Number of entries in ppHacklistBuckets
+    /* 0x8B0 */ uint32_t nHacklistBucketCount; // Number of entries in ppHacklistBuckets
     /* 0x8B4 */ CRITICAL_SECTION csWorkerTelemetry; // Protects worker telemetry snapshots and accept-stage counters
     /* 0x8CC */ D2QServerWorkerTelemetryStrc aWorkerTelemetry[4]; // Per-worker accept/IO telemetry records
     /* 0xB8C */ int nListeningWorkers; // Number of initialized listener workers
@@ -307,7 +306,6 @@ struct D2QServerStrc {
     /* 0xC2C */ uint32_t aIoWorkerThreadIds[4];
     /* 0xC3C */ int aIoWorkerStopFlags[4]; // BOOL[4] - per-IO-worker stop flags
 };
-#pragma pack(pop)
 
 struct D2QServerTokenHashMapData {
     /* 0x00 */ int nSizeMaybe;
@@ -382,7 +380,7 @@ namespace Fog::Src {
 // nothing - is _NullSub.
 void __stdcall _NullSubTrace();
 void QSERVER_LOG(char * szModul, char * szFormatString, ...);
-void __stdcall _unused_SetupDefaultValues(int * pnParam);
+void __stdcall _unused_SetupDefaultValues(int * pnQServerSettings);
 void __stdcall StartListening(struct D2QServerStrc * pQServer, uint32_t nToken);
 int __stdcall SwapWorkerSlotValue(struct D2QServerStrc * pQServer, int nWorkerIndex, int nNewSlotValueOrZero);
 // @sourcefile .\Src\QServer\QServer.cpp
@@ -390,8 +388,8 @@ bool __stdcall ClearModePacketQueues(struct D2QServerStrc * pQServer);
 int __stdcall GetConnectedClients(struct D2QServerStrc * pQServer);
 uint32_t __stdcall IsSingleplayer(struct D2QServerStrc * pQServer);
 void __stdcall SetPerIpConnectionLimit(struct D2QServerStrc * pQServer, int nPerIpConnectionLimit);
-DWORD __stdcall WaitForEmptyEvent(struct D2QServerStrc * pQServer, DWORD dwParam);
-struct FogCritSectLockStrc * __thiscall _unused_broken(struct FogCritSectLockStrc * pQServer, LPCRITICAL_SECTION pCriticalSection);
+DWORD __stdcall WaitForEmptyEvent(struct D2QServerStrc * pQServer, DWORD dwTimeoutMs);
+struct FogCritSectLockStrc * __thiscall EnterCriticalSection_QServer(struct FogCritSectLockStrc * pQServer, LPCRITICAL_SECTION pCriticalSection);
 // Leaves the critical section a QServer frame local holds: LeaveCriticalSection(*ppCriticalSection). ECX = &local,
 // plain RET; reached from the EH unwind funclet Unwind_006ca540 (LEA ECX,[EBP-0x10]; JMP).
 // Provenance: 1.14d 006be530 MOV EAX,[ECX] / PUSH EAX / CALL [LeaveCriticalSection].
@@ -402,7 +400,7 @@ void __fastcall IncrementClientRefCount(struct D2QServerStrc * pQServer, struct 
 void __stdcall LogHackList(int nHacklistSize);
 void __fastcall SweepExpiredHackEntries(struct D2QServerStrc * pQServer);
 // @sourcefile .\Src\QServer\QServer.cpp
-void __thiscall HACKL_RemoveIpFromHacklist(struct D2QServerStrc * pQServer, uint32_t nIpAddress, uint32_t dwParam3);
+void __thiscall HACKL_RemoveIpFromHacklist(struct D2QServerStrc * pQServer, uint32_t nIpAddress, uint32_t nLine);
 int __thiscall HACKL_CheckAndResetHacklistEntry(struct D2QServerStrc * pQServer, uint32_t nIpAddress);
 // Checks whether the given IP currently has at least the configured per-IP connection limit.
 BOOL __fastcall IsPerIpLimitReached(struct D2QServerStrc * pQServer, in_addr * pClientIp);
@@ -414,7 +412,7 @@ int __stdcall DequeueModePacket(struct D2QServerStrc * pQServer, int nMode, char
 // Sole caller is D2Game::Game::Server::NET_WaitForEmptyEvent @0052b6d0.
 // 006be4e0 returns 0 outright in NT-local mode and passes the raw DWORD wait result through;
 // its caller is D2Game::Game::Server::WaitForEmptyEvent @0052b1f0.
-uint32_t __stdcall WaitForEmptyEventOrPumpIo(struct D2QServerStrc * pQServer, DWORD dwParam);
+uint32_t __stdcall WaitForEmptyEventOrPumpIo(struct D2QServerStrc * pQServer, DWORD dwTimeoutMs);
 struct D2QServerClientConnectionStrc * __fastcall GetTokenHashMapByTokenId(struct D2QServerStrc * pQServer, uint32_t nToken, struct D2TSExplicitListHeadStrc * * pBucket);
 uint32_t __stdcall GetClientLocalIpByToken(struct D2QServerStrc * pQServer, uint32_t nToken);
 uint16_t __stdcall GetClientLocalPortByToken(struct D2QServerStrc * pQServer, uint32_t nToken);
@@ -472,8 +470,8 @@ void __stdcall BanClient(struct D2QServerStrc * pQServer, int nClientId, char * 
 void __stdcall DisconnectAndBanIp(struct D2QServerStrc * pQServer, uint32_t nIpAddress, char * szFile, int nLine);
 // @wasnamed CloseRemoteConnection - one name on two different functions.
 // @evidence __stdcall shim whose whole body forwards its four arguments to 006c0420.
-void __stdcall thunk_CloseRemoteConnection(struct D2QServerStrc * pQServer, int nParam1, char * szText, int nParam2);
-void __stdcall QSDisconnectIP(struct D2QServerStrc * pQServer, in_addr addr, char * szText, int nParam);
+void __stdcall thunk_CloseRemoteConnection(struct D2QServerStrc * pQServer, int nClientId, char * szText, int nLine);
+void __stdcall QSDisconnectIP(struct D2QServerStrc * pQServer, in_addr addr, char * szText, int nLine);
 // @sourcefile .\Src\QServer\QServer.cpp
 int __fastcall CheckIfPlayerIsBannedByAddress(struct D2QServerStrc * pQServer, in_addr * pAddr, char * szFile, int32_t nLine);
 // @sourcefile .\Src\QServer\QServer.cpp

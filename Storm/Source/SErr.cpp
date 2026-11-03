@@ -3,13 +3,13 @@
 #include "Storm/Source/SErr.h"
 #include "Fog/3rdparty/crashy.h"
 #include "Fog/Source/SFile.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SFile.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
 #include "Storm/Storm.h"
 #include "Storm/WindowHandle.h"
-#include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -103,17 +103,17 @@ static LPSTR * SERR_GetString(int32_t nErrorIndex) {
     static char gszErrorStringBuffer[256] = {}; D2_STATIC_GUARD(gszErrorStringBuffer, "Storm::Source::SErr::SERR_GetString::gszErrorStringBuffer");
 
     int nLen = 0x100;
-    char* pcVar1 = gszErrorStringBuffer;
+    char* szErrorString = gszErrorStringBuffer;
     UINT uID = nErrorIndex + 0x5100;
     HMODULE hInstance_lcl = SSystem::StormGetInstance();
-    /* HINSTANCE hInstance for LoadStringA */ nLen = LoadStringA(hInstance_lcl, uID, pcVar1, nLen);
-    pcVar1 = gszErrorStringBuffer;
+    /* HINSTANCE hInstance for LoadStringA */ nLen = LoadStringA(hInstance_lcl, uID, szErrorString, nLen);
+    szErrorString = gszErrorStringBuffer;
     if (nLen) {
-      return (LPSTR*)pcVar1;
+      return (LPSTR*)szErrorString;
     }
 
-    pcVar1 = gaSErrMessageStrings[nErrorIndex];
-    return (LPSTR*)pcVar1;
+    szErrorString = gaSErrMessageStrings[nErrorIndex];
+    return (LPSTR*)szErrorString;
 }
 
 // Lazily initialises the SErr critical section (InterlockedIncrement guard around InitializeCriticalSection) and enters it.
@@ -154,22 +154,22 @@ static BOOL __stdcall SERR_UndecorateObjectName(char * szMangled, int32_t nMaxLe
       return 0;
     }
 
-    char* pcVar1 = strpbrk(szMangled + 4, "?@");
-    if (!pcVar1) {
+    char* pSeparator = strpbrk(szMangled + 4, "?@");
+    if (!pSeparator) {
       return 0;
     }
 
     SSTR::SStrCopy(szText, szMangled + 4, nMaxLen);
-    pcVar1 = strpbrk(szText, "?@");
-    if (pcVar1) {
-      *pcVar1 = '\0';
+    pSeparator = strpbrk(szText, "?@");
+    if (pSeparator) {
+      *pSeparator = '\0';
       while (true) {
-        pcVar1--;
-        if (!(pcVar1 >= szText && *pcVar1 == '_')) {
+        pSeparator--;
+        if (!(pSeparator >= szText && *pSeparator == '_')) {
           break;
         }
 
-        *pcVar1 = '\0';
+        *pSeparator = '\0';
       }
 
       SSTR::SStrPack(szText, " (", nMaxLen);
@@ -222,6 +222,18 @@ void __stdcall SErrSetLastError(DWORD dwErrCode) {
     SetLastError(dwErrCode);
 }
 
+uint32_t __thiscall SSYSTEM_ListOffsetToPointer(int * pNode, int * pBase) {
+    uint32_t nOffset = pNode[1];
+    if ((int)nOffset < 0) {
+      return ~nOffset;
+    }
+    if ((int)pBase < 0) {
+      pBase = (int*)((int)pNode - *(int*)(*pNode + 4));
+    }
+
+    return nOffset + (int)pBase;
+}
+
 // Looks the message-source module for (dwMessageId >> 16) & 0xfff out of gpErrorModuleList, then calls FormatMessageA with that module as lpSource. Returns nonzero on success.
 // @was FORMAT_FormatErrorMessage (pass 6, 2026.08.28)
 // @oracle Storm 1.10b PPC export SErrGetErrorStr, code vector 10015c50 (TVector 100cbe7c).
@@ -229,11 +241,10 @@ void __stdcall SErrSetLastError(DWORD dwErrCode) {
 // @oracle-note The rival candidate SSYSTEM_LoadErrorString 0041c170 was ruled out: 1 parameter against the oracle's 3, and it calls LoadStringA rather than FormatMessage. It is a 1.14d-only helper that MWCC inlined into SErrDisplayError on the PPC side. Left under its descriptive name.
 // @corroboration Also called from Lng::LNG_FormatErrorMessageWithFallback, i.e. from D2 code outside the Storm module - the caller profile of an export.
 uint32_t __stdcall SErrGetErrorStr(DWORD dwMessageId, LPSTR szText, DWORD nBufferSize) {
-    if (!szText || !nBufferSize) {
-      SErrSetLastError(0x57);
-      return 0;
-    }
-
+    D2_CHECKS_BEGIN;
+    D2_CHECK(szText);
+    D2_CHECK(nBufferSize);
+    D2_CHECKS_END(SErrSetLastError(0x57), 0);
     SERR_InternalEnterCriticalSection();
     if (!gbFormatErrorModulesInitialized) {
       gbFormatErrorModulesInitialized = 1;
@@ -260,6 +271,181 @@ uint32_t __stdcall SErrGetErrorStr(DWORD dwMessageId, LPSTR szText, DWORD nBuffe
     return (uint32_t)(dwResult != 0);
 }
 
+int32_t __thiscall SSYSTEM_ListGetPointer(int32_t pList, int32_t pNode) {
+    if (pNode) {
+      return pNode;
+    }
+
+    pNode = pList + 4;
+    return pNode;
+}
+
+void __thiscall SSYSTEM_ListUnlinkAndInsert(int * * pList, int * * pNode, int32_t nInsertMode, int * * ppTarget) {
+    int* ppPrevLink;
+    int** pEffectiveNode = pNode;
+    if (!pNode) {
+      pEffectiveNode = pList + 1;
+    }
+
+    int* pLink = *pEffectiveNode;
+    if (pLink) {
+      ppPrevLink = pEffectiveNode[1];
+      if ((int)ppPrevLink < 0) {
+        ppPrevLink = (int*)~(uint32_t)ppPrevLink;
+      } else {
+        ppPrevLink = (int*)((int)ppPrevLink + ((int)pEffectiveNode - pLink[1]));
+      }
+
+      *ppPrevLink = (int)pLink;
+      (*pEffectiveNode)[1] = (int)pEffectiveNode[1];
+      *pEffectiveNode = 0;
+      pEffectiveNode[1] = 0;
+    }
+    if (!ppTarget) {
+      ppTarget = pList + 1;
+    }
+
+    switch (nInsertMode) {
+      case 1:
+        {
+          *pEffectiveNode = (int*)ppTarget;
+          pEffectiveNode[1] = ppTarget[1];
+          pLink = *pList;
+          ppPrevLink = ppTarget[1];
+          if ((int)ppPrevLink < 0) {
+            *(int***)~(uint32_t)ppPrevLink = (int**)pEffectiveNode;
+            ppTarget[1] = (int*)pNode;
+            return;
+          }
+          if ((int)pLink < 0) {
+            pLink = (int*)((int)ppTarget - (*ppTarget)[1]);
+          }
+
+          *(int***)((int)ppPrevLink + (int)pLink) = (int**)pEffectiveNode;
+          ppTarget[1] = (int*)pNode;
+          return;
+        }
+      default:
+        {
+          pLink = *ppTarget;
+          *pEffectiveNode = pLink;
+          pEffectiveNode[1] = (int*)pLink[1];
+          pLink[1] = (int)pNode;
+          *ppTarget = (int*)pEffectiveNode;
+          return;
+        }
+    }
+}
+
+uint32_t __thiscall SSYSTEM_ListGetNext(int32_t pList, int32_t pNode) {
+    if (!pNode) {
+      pNode = pList + 4;
+    }
+
+    return (int)*(uint32_t*)(pNode + 4) <= 0 ? 0 : *(uint32_t*)(pNode + 4);
+}
+
+void __thiscall SSYSTEM_ListUnlink(int32_t pThis, int * pNode) {
+    int* pPrevLink;
+    if (!pNode) {
+      pNode = (int*)(pThis + 4);
+    }
+
+    int pNext = *pNode;
+    if (!pNext) {
+      return;
+    }
+
+    pPrevLink = (int*)D2_StormNextLink(pNode, -1);
+    *pPrevLink = pNext;
+    *(int*)(*pNode + 4) = pNode[1];
+    *pNode = 0;
+    pNode[1] = 0;
+}
+
+uint32_t __thiscall SSYSTEM_ListGetData(int32_t pList, int32_t pNode) {
+    if (pNode) {
+      return *(uint32_t*)(pNode + 4);
+    }
+
+    return *(uint32_t*)(pList + 8);
+}
+
+// TSList<HANDLER>::UnlinkAll on SErr's handler list: unlinks every node without freeing it.
+// Named per redivivus issue #35; T from the list's delete tag .?AUHANDLER@@ (00708434).
+void __fastcall TSList_HANDLER_UnlinkAll(D2StormListHead * pList) {
+    int* pPrevLink;
+    int* pNode;
+    while (true) {
+      int pNext;
+      pNode = (int*)pList->pNext;
+      if ((int)pNode <= 0) {
+        break;
+      }
+
+      pNext = *pNode;
+      if (pNext) {
+        pPrevLink = (int*)D2_StormNextLink(pNode, -1);
+        *pPrevLink = pNext;
+        *(int*)(*pNode + 4) = pNode[1];
+        *pNode = 0;
+        pNode[1] = 0;
+      }
+    }
+}
+
+// TSList<HANDLER>::~TSList: UnlinkAll, then unlinks the list's terminator link.
+// Named per redivivus issue #35; T from the UnlinkAll it calls (SErr's .?AUHANDLER@@ list).
+void __fastcall TSList_HANDLER_Destructor(D2StormListHead * pList) {
+    int* pPrevLink;
+    TSList_HANDLER_UnlinkAll(pList);
+    StormLinkStrc** pHead = &pList->pPrevLink;
+    StormLinkStrc* pNext = *pHead;
+    if (!pNext) {
+      return;
+    }
+
+    pPrevLink = (int*)D2_StormNextLink(pHead, -1);
+    *pPrevLink = (int)pNext;
+    (*pHead)->pNext = pList->pNext;
+    *pHead = 0;
+    pList->pNext = 0;
+}
+
+int * * __thiscall SSYSTEM_ListAllocNode(int * * pList, int32_t nInsertMode, int32_t nDataSize, uint32_t nAllocFlags) {
+    int** pNodeNew = (int**)SMem::SMemAlloc(nDataSize + 0xc, gszSSystemListAllocTag, -2, nAllocFlags | 8);
+    int** pNode;
+    if (pNodeNew) {
+      *pNodeNew = 0;
+      pNodeNew[1] = 0;
+      pNode = pNodeNew;
+    } else {
+      pNode = 0;
+    }
+    if (nInsertMode) {
+      SSYSTEM_ListUnlinkAndInsert(pList, pNode, nInsertMode, nullptr);
+    }
+
+    return pNode;
+}
+
+int * __thiscall SSYSTEM_ListFreeNode(int * pNode, uint8_t bFreeMemory) {
+    int pNext = *pNode;
+    if (pNext) {
+      int* pPrevLink;
+      pPrevLink = (int*)D2_StormNextLink(pNode, -1);
+      *pPrevLink = pNext;
+      *(int*)(*pNode + 4) = pNode[1];
+      *pNode = 0;
+      pNode[1] = 0;
+    }
+    if (bFreeMemory & 1) {
+      SMem::SMemFree(pNode, "delete", -1, 0);
+    }
+
+    return pNode;
+}
+
 // Under the error critical section, SMemAllocs a 12-byte list node, links it into gpStormErrorCallbackListHead and stores the caller's handler pointer at +8.
 // @was SSYSTEM_RegisterErrorCallback (pass 6, 2026.08.28)
 // @oracle Storm 1.10b PPC export SErrRegisterHandler, code vector 10015960 (TVector 100cbea4).
@@ -269,7 +455,6 @@ void __stdcall SErrRegisterHandler(pfnSErrDisplayCallback pfnCallback) {
     int* pPrevLink;
     uint32_t* pPrevSlot;
     StormLinkStrc** pNewCallback;
-    uint32_t nPrevLinkOffset;
     SERR_InternalEnterCriticalSection();
     StormLinkStrc** pNode = (StormLinkStrc**)SMem::SMemAlloc(0xc, gszSSystemListAllocTag, -2, 0x8000008);
     if (pNode) {
@@ -281,16 +466,10 @@ void __stdcall SErrRegisterHandler(pfnSErrDisplayCallback pfnCallback) {
       pNode = &gnStormErrorCallbackCount.pPrevLink;
     }
 
-    StormLinkStrc* iVar1 = *pNode;
-    if (iVar1) {
-      nPrevLinkOffset = (uint32_t)pNode[1];
-      if ((int)nPrevLinkOffset < 0) {
-        pPrevLink = (int*)~nPrevLinkOffset;
-      } else {
-        pPrevLink = (int*)((int)pNode + (nPrevLinkOffset - iVar1->pNext));
-      }
-
-      *pPrevLink = (int)iVar1;
+    StormLinkStrc* pNextNode = *pNode;
+    if (pNextNode) {
+      pPrevLink = (int*)D2_StormNextLink(pNode, -1);
+      *pPrevLink = (int)pNextNode;
       (*pNode)->pNext = (int)pNode[1];
       *pNode = 0;
       pNode[1] = 0;
@@ -316,6 +495,31 @@ void __stdcall SErrRegisterHandler(pfnSErrDisplayCallback pfnCallback) {
     SERR_InternalLeaveCriticalSection();
 }
 
+// TSList<HANDLER>::Clear: unlinks and SMemFrees every node.
+// Named per redivivus issue #35; T from the delete tag .?AUHANDLER@@ (00708434).
+void __fastcall TSList_HANDLER_Clear(int32_t pList) {
+    int* pPrevLink;
+    int* pNode;
+    while (true) {
+      int pNext;
+      pNode = *(int**)(pList + 8);
+      if ((int)pNode <= 0) {
+        break;
+      }
+
+      pNext = *pNode;
+      if (pNext) {
+        pPrevLink = (int*)D2_StormNextLink(pNode, -1);
+        *pPrevLink = pNext;
+        *(int*)(*pNode + 4) = pNode[1];
+        *pNode = 0;
+        pNode[1] = 0;
+      }
+
+      SMem::SMemFree(pNode, gszSSystemListAllocTag, -2, 0);
+    }
+}
+
 uint32_t __thiscall SSYSTEM_ListRemoveAndFree(void * pList, int * pNode) {
     int* pPrevLink = pNode;
     if (!pNode) {
@@ -325,14 +529,7 @@ uint32_t __thiscall SSYSTEM_ListRemoveAndFree(void * pList, int * pNode) {
     uint32_t nResultOffset = pPrevLink[1];
     int pNext = *pNode;
     if (pNext) {
-      uint32_t nOffset;
-      nOffset = pNode[1];
-      if ((int)nOffset < 0) {
-        pPrevLink = (int*)~nOffset;
-      } else {
-        pPrevLink = (int*)((int)pNode + (nOffset - *(int*)(pNext + 4)));
-      }
-
+      pPrevLink = (int*)D2_StormNextLink(pNode, -1);
       *pPrevLink = pNext;
       *(int*)(*pNode + 4) = pNode[1];
       *pNode = 0;
@@ -374,7 +571,7 @@ int __stdcall SErrDisplayError(uint32_t nErrorCode, uint32_t * pStackTrace, int3
     uint32_t nCallbackNode;
     StormSErrHandlerNode* pCallbackNode;
     int32_t nErrStringIndex;
-    int iVar1;
+    int nResult;
     LPDWORD lpExitCode;
     uint32_t nErrorCodeArg;
     int32_t nMaxCopyLen;
@@ -390,7 +587,7 @@ int __stdcall SErrDisplayError(uint32_t nErrorCode, uint32_t * pStackTrace, int3
     /* DWORD nSize for GetModuleFileNameA */ /* LPSTR lpFilename for GetModuleFileNameA */ /* HMODULE hModule for GetModuleFileNameA */ __frame0.szModuleFile[0] = '\0';
     __frame0.szModuleName[0] = '\0';
     GetModuleFileNameA((HMODULE)0x0, __frame0.szModuleFile, 0x104);
-    SSystem::SMemZero(&__frame0.findData, 0x140);
+    SMem::SMemZero(&__frame0.findData, 0x140);
     HANDLE hFindHandle;
     hFindHandle = FindFirstFileA(__frame0.szModuleFile, &__frame0.findData);
     if (hFindHandle) {
@@ -408,7 +605,7 @@ int __stdcall SErrDisplayError(uint32_t nErrorCode, uint32_t * pStackTrace, int3
     __frame0.szErrorText[0] = '\0';
     SErrGetErrorStr(nErrorCode, __frame0.szErrorText, 0x100);
     if (__frame0.szErrorText[0] == '\0') {
-      nCallbackNode = nErrorCode & 0xffff;
+      nCallbackNode = (uint16_t)nErrorCode;
       nErrorCodeArg = nErrorCode;
       ppFormat = SERR_GetString(0);
       /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(__frame0.szErrorText, (LPCSTR)ppFormat, nCallbackNode, nErrorCodeArg);
@@ -438,7 +635,7 @@ int __stdcall SErrDisplayError(uint32_t nErrorCode, uint32_t * pStackTrace, int3
       pCustomMsgArg += nLen;
     }
 
-    /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(pCustomMsgArg, " : error %u: ", nErrorCode & 0xffff);
+    /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(pCustomMsgArg, " : error %u: ", (uint16_t)nErrorCode);
     nErrorCodeArg = SSTR::SStrLen(pCustomMsgArg);
     SSTR::SStrCopy(pCustomMsgArg + nErrorCodeArg, __frame0.szErrorText, 0x7fffffff);
     /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA(__frame0.szFullMessage);
@@ -523,8 +720,8 @@ int __stdcall SErrDisplayError(uint32_t nErrorCode, uint32_t * pStackTrace, int3
       (*pfnBlizzardErrorCallback)(__frame0.findData.cFileName + 0x10, __frame0.szFullMessage, nullptr, 0, nTraceFlags, false);
     }
 
-    iVar1 = 7;
-    __frame0.nMsgBoxFlags = (uint32_t)(nMessageFlags != 0) * 2 + 1 | 0x52010;
+    nResult = 7;
+    __frame0.nMsgBoxFlags = (nMessageFlags != 0 ? 0x3U : 0x1U) | 0x52010;
     for (pCallbackNode = (StormSErrHandlerNode*)(gnStormErrorCallbackCount.pNext <= 0 ? 0 : gnStormErrorCallbackCount.pNext); 0 < (int)pCallbackNode; pCallbackNode = pCallbackNode->pNext) {
       pCustomMsgArg = __frame0.pCustomMsgPtr;
       if (!__frame0.pCustomMsgPtr) {
@@ -544,15 +741,15 @@ int __stdcall SErrDisplayError(uint32_t nErrorCode, uint32_t * pStackTrace, int3
         hWnd = (HWND)0x0;
       }
 
-      /* UINT uType for MessageBoxA */ /* LPCSTR lpCaption for MessageBoxA */ /* LPCSTR lpText for MessageBoxA */ /* HWND hWnd for MessageBoxA */ iVar1 = MessageBoxA(hWnd, __frame0.szFullMessage, __frame0.szModuleName, __frame0.nMsgBoxFlags);
+      /* UINT uType for MessageBoxA */ /* LPCSTR lpCaption for MessageBoxA */ /* LPCSTR lpText for MessageBoxA */ /* HWND hWnd for MessageBoxA */ nResult = MessageBoxA(hWnd, __frame0.szFullMessage, __frame0.szModuleName, __frame0.nMsgBoxFlags);
     }
 
     continue_or_terminate:
     SERR_InternalLeaveCriticalSection();
-    if (nMessageFlags && iVar1 == 7) {
-      iVar1 = 1;
+    if (nMessageFlags && nResult == 7) {
+      nResult = 1;
     } else {
-      if (iVar1 == 2) {
+      if (nResult == 2) {
         SSystem::__break();
       }
 
@@ -571,11 +768,11 @@ int __stdcall SErrDisplayError(uint32_t nErrorCode, uint32_t * pStackTrace, int3
         /* HANDLE hProcess for TerminateProcess */ TerminateProcess(hFindHandle, nExitCode);
       }
 
-      iVar1 = 0;
+      nResult = 0;
     }
 
     gbSSystemErrorDialogActive = 0;
-    return iVar1;
+    return nResult;
 }
 
 // @was SSYSTEM_DisplayErrorDialogFormatted (pass 6, 2026.08.28)
@@ -598,20 +795,20 @@ void __stdcall SErrReportNamedResourceLeak(char * szMessage, char * szText) {
     static int gnDebugMemoryInitFlag; D2_STATIC_GUARD_BSS(gnDebugMemoryInitFlag, "Storm::Source::SErr::SErrReportNamedResourceLeak::gnDebugMemoryInitFlag");
     static uint32_t gbDebugMemoryInitialized; D2_STATIC_GUARD_BSS(gbDebugMemoryInitialized, "Storm::Source::SErr::SErrReportNamedResourceLeak::gbDebugMemoryInitialized");
 
-    char szDebugOutput[200];
-    uint32_t szFormatted[64];
+    char szFormatted[256];
     if (!gbDebugMemoryInitialized) {
       gbDebugMemoryInitialized = 1;
       SReg::SRegLoadValue("Internal", "Debug Memory", 0, &gnDebugMemoryInitFlag);
     }
     if (gnDebugMemoryInitFlag) {
+      char szDebugOutput[200];
       if (!szText || *szText == '\0') {
-        SSTR::SStrPrintf((char*)szFormatted, 0x100, "%s", szMessage);
+        SSTR::SStrPrintf(szFormatted, 0x100, "%s", szMessage);
       } else {
-        SSTR::SStrPrintf((char*)szFormatted, 0x100, "%s (%s)", szMessage, szText);
+        SSTR::SStrPrintf(szFormatted, 0x100, "%s (%s)", szMessage, szText);
       }
       if (!gnSSystemOption1) {
-        SErrDisplayError(0x8510007f, szFormatted, -3, nullptr, 1, 1);
+        SErrDisplayError(0x8510007f, (uint32_t*)szFormatted, -3, nullptr, 1, 1);
         return;
       }
 
@@ -652,7 +849,7 @@ void __stdcall SErrDisplayAppFatal(char * szText, ...) {
     uint32_t* pContextCallback = 0;
     uint32_t nContextParam = 0;
     if (gpSSystemThreadContextCallback.dwThreadId == dwCurrentThreadId_lcl) {
-      SSystem::SMemZero(&gpSSystemThreadContextCallback, 0xc);
+      SMem::SMemZero(&gpSSystemThreadContextCallback, 0xc);
       pContextCallback = (uint32_t*)pSavedCallback;
       nContextParam = nSavedContextParam;
     }
@@ -671,20 +868,21 @@ void __stdcall SErrReportResourceLeak(char * szMessage) {
     SErrReportNamedResourceLeak(szMessage, nullptr);
 }
 
+void StaticInit_gStormErrorCallbackList() {
+    gnStormErrorCallbackCount.pNext = ~(uintptr_t)((char*)&gnStormErrorCallbackCount + 4);
+    atexit(StaticFini_gStormErrorCallbackList);
+}
+
 // Runs at exit: removes every element from the Storm error callback list, then unlinks the list head itself.
 void StaticFini_gStormErrorCallbackList() {
-    uint32_t* puVar1;
-    SSystem::SSYSTEM_ListClearPositive(&gnStormErrorCallbackCount);
+    uint32_t* pBackLink;
+    TSList_HANDLER_UnlinkAll(&gnStormErrorCallbackCount);
     if (!gnStormErrorCallbackCount.pPrevLink) {
       return;
     }
-    if (gnStormErrorCallbackCount.pNext < 0) {
-      puVar1 = (uint32_t*)~gnStormErrorCallbackCount.pNext;
-    } else {
-      puVar1 = (uint32_t*)(gnStormErrorCallbackCount.pNext + ((int)((char*)&gnStormErrorCallbackCount + 4) - gnStormErrorCallbackCount.pPrevLink->pNext));
-    }
 
-    *puVar1 = (uint32_t)(uintptr_t)gnStormErrorCallbackCount.pPrevLink;
+    pBackLink = (uint32_t*)D2_StormNextLink((char*)&gnStormErrorCallbackCount + 4, -1);
+    *pBackLink = (uint32_t)(uintptr_t)gnStormErrorCallbackCount.pPrevLink;
     gnStormErrorCallbackCount.pPrevLink->pNext = gnStormErrorCallbackCount.pNext;
     gnStormErrorCallbackCount.pPrevLink = 0;
     gnStormErrorCallbackCount.pNext = 0;

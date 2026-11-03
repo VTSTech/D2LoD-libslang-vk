@@ -80,8 +80,8 @@ struct D2WardenModuleObjectStrc {
 
 struct D2WardenModuleStrc {
     /* 0x00 */ void * pLibrary;
-    /* 0x04 */ uint32_t field_0x4;
-    /* 0x08 */ uint32_t field_0x8;
+    /* 0x04 */ uint32_t nImageSize;
+    /* 0x08 */ uint32_t nLoadedLibraryCount;
     /* 0x0C */ struct D2WardenModuleObjectStrc * pModuleObject;
     /* 0x10 */ struct D2WardenModuleObjectStrc * (__fastcall *pfnCreateInterface)(::WardenClient *);
 };
@@ -107,15 +107,15 @@ struct WardenClient {
 namespace D2Client::Warden {
 
 // Function declarations
-void __thiscall WARDEN_RC4Decrypt(struct D2RC4StateStrc * pState, int32_t pData, uint32_t nLen);
+void __thiscall WARDEN_RC4Decrypt(struct D2RC4StateStrc * pState, uint8_t * pData, uint32_t nLen);
 uint32_t __stdcall WARDEN_CheckSignatureMagic(int32_t nDataLen, uint32_t nTotalLen, int32_t pBuffer, int * pnSigOffset);
 // @sourcefile .\WARDEN\WardenClient.cpp
-void __fastcall WARDEN_CbAllocModuleStruct(uint32_t nParam);
+void __fastcall WARDEN_CbAllocModuleStruct(uint32_t nSize);
 // @sourcefile .\WARDEN\WardenClient.cpp
-void __fastcall WARDEN_CbFreeModuleStruct(void * pParam);
+void __fastcall WARDEN_CbFreeModuleStruct(void * pModuleStruct);
 // @sourcefile .\WARDEN\WardenClient.cpp
 LPVOID * __thiscall WARDEN_DestroyModuleObject(LPVOID * ppModule, uint8_t bFreeStruct);
-uint32_t __stdcall WARDEN_DownloadModule(char * dwParam1, void * dwParam2, uint32_t pModuleRequest);
+uint32_t __stdcall WARDEN_DownloadModule(char * szKey, void * pData, uint32_t nSize);
 void __thiscall SendPacket(::WardenClient * pThis, void * pData, uint32_t nLen);
 bool __thiscall CheckModule(::WardenClient * pThis, uint8_t * pModuleHash, void * pRc4Key);
 void __thiscall LoadModule(::WardenClient * pThis, uint8_t * pModuleHash, void * pData, uint32_t nSize);
@@ -138,7 +138,7 @@ void __fastcall WARDEN_Tick(uint32_t dwTickArg);
 void __stdcall WARDEN_Cleanup();
 void __fastcall WARDEN_Initialize(uint32_t dwModuleParam);
 void __fastcall WARDEN_SetGlobalFlag(uint32_t dwParam);
-void __fastcall WARDEN_FreeModuleLibraries(LPVOID * ppParam);
+void __fastcall WARDEN_FreeModuleLibraries(LPVOID * ppWardenModule);
 // 4 internal functions (defined in .cpp)
 
 } // namespace D2Client::Warden

@@ -5,7 +5,6 @@
 
 #include "globals/globals.h"
 #include "D2Client/ClientModeInGame.h"
-#include "D2Client/Cursor.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/D2GSPacketSrv0x2A.h"
 #include "D2Client/Draw/LightMap.h"
@@ -16,24 +15,12 @@
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/GAME/Sound.h"
 #include "D2Client/Message.h"
-#include "D2Client/SKILLS.h"
-#include "D2Client/SKILLS/Skills.h"
-#include "D2Client/SKILLS/SkillsAma.h"
-#include "D2Client/SKILLS/SkillsAss.h"
-#include "D2Client/SKILLS/SkillsBar.h"
-#include "D2Client/SKILLS/SkillsDru.h"
-#include "D2Client/SKILLS/SkillsEMon.h"
-#include "D2Client/SKILLS/SkillsMon.h"
-#include "D2Client/SKILLS/SkillsNec.h"
-#include "D2Client/SKILLS/SkillsPal.h"
-#include "D2Client/SKILLS/SkillsSor.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/Button/ButtonImplementation.h"
 #include "D2Client/UI/Button/ButtonWrapper.h"
 #include "D2Client/UI/Chat.h"
 #include "D2Client/UI/CmdTbl.h"
-#include "D2Client/UI/Dialog.h"
 #include "D2Client/UI/Draw.h"
 #include "D2Client/UI/Editbox/EditBoxImplementation.h"
 #include "D2Client/UI/Editbox/EditBoxWrapper.h"
@@ -47,6 +34,7 @@
 #include "D2Client/UI/Panel.h"
 #include "D2Client/UI/Party.h"
 #include "D2Client/UI/QuestLog.h"
+#include "D2Client/UI/ShowItems.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/SpellSel.h"
 #include "D2Client/UI/Spinner/SpinnerImplementation.h"
@@ -64,12 +52,10 @@
 #include "D2Client/UNIT/UnitSnd.h"
 #include "D2Client/Warden/WardenClient.h"
 #include "D2Common/INVENTORY/Inventory.h"
-#include "D2Game/GAME/Arena.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Gdi/Renderer/Windowed.h"
 #include "D2Launch/CharSel.h"
 #include "Storm/Source/SCMD.h"
-#include "Storm/_unnamespaced.h"
 
 
 // =============================================================================
@@ -475,17 +461,17 @@ D2UIFlagInitStrc gsUIDrawFlagInit0[5] = {
     {
         /* .eEventType = */ 0x3,
         /* .nMessageOrKeyCode = */ 0x20,
-        /* .pfHandler = */ &HELP_OnEscapeOrSpace
+        /* .pfHandler = */ &D2Client::UI::Help::HELP_OnEscapeOrSpace
     },
     {
         /* .eEventType = */ 0x3,
         /* .nMessageOrKeyCode = */ 0x1b,
-        /* .pfHandler = */ &HELP_OnEscapeOrSpace
+        /* .pfHandler = */ &D2Client::UI::Help::HELP_OnEscapeOrSpace
     },
     {
         /* .eEventType = */ 0x0,
         /* .nMessageOrKeyCode = */ 0x102,
-        /* .pfHandler = */ &HELP_MiniPanelKeyNoOp
+        /* .pfHandler = */ &D2Client::UI::Help::HELP_MiniPanelKeyNoOp
     }
 }; D2_GLOBAL_GUARD(gsUIDrawFlagInit0, "gsUIDrawFlagInit0");
 
@@ -547,107 +533,13 @@ D2UIFlagInitStrc g_UIFlagInitDrawPanel4[2] = {
     {
         /* .eEventType = */ 0x0,
         /* .nMessageOrKeyCode = */ 0x200,
-        /* .pfHandler = */ &INV_PanelKeyNoOp
+        /* .pfHandler = */ &D2Client::UI::Inv::INV_PanelKeyNoOp
     }
 }; D2_GLOBAL_GUARD(g_UIFlagInitDrawPanel4, "g_UIFlagInitDrawPanel4");
 
 char param_2_006d6454[3] = { '%', 'i', '\x00' }; D2_GLOBAL_GUARD(param_2_006d6454, "param_2_006d6454");
 
-POINT gaAutomapXMarkerPolyline[13] = {
-    {
-        /* .x = */ 0x0,
-        /* .y = */ -0x1
-    },
-    {
-        /* .x = */ 0x2,
-        /* .y = */ -0x2
-    },
-    {
-        /* .x = */ 0x4,
-        /* .y = */ -0x1
-    },
-    {
-        /* .x = */ 0x2,
-        /* .y = */ 0x0
-    },
-    {
-        /* .x = */ 0x4,
-        /* .y = */ 0x1
-    },
-    {
-        /* .x = */ 0x2,
-        /* .y = */ 0x2
-    },
-    {
-        /* .x = */ 0x0,
-        /* .y = */ 0x1
-    },
-    {
-        /* .x = */ -0x2,
-        /* .y = */ 0x2
-    },
-    {
-        /* .x = */ -0x4,
-        /* .y = */ 0x1
-    },
-    {
-        /* .x = */ -0x2,
-        /* .y = */ 0x0
-    },
-    {
-        /* .x = */ -0x4,
-        /* .y = */ -0x1
-    },
-    {
-        /* .x = */ -0x2,
-        /* .y = */ -0x2
-    },
-    {
-        /* .x = */ 0x0,
-        /* .y = */ -0x1
-    }
-}; D2_GLOBAL_GUARD(gaAutomapXMarkerPolyline, "gaAutomapXMarkerPolyline");
-
 char cChatCmdSlash[2] = { '/', '\x00' }; D2_GLOBAL_GUARD(cChatCmdSlash, "cChatCmdSlash");
-
-// also labelled: gQServerClientConnection
-uint8_t gabWardenEmbeddedModuleHash[16] = {
-    0x69,
-    0x3e,
-    0xe4,
-    0xdd,
-    0xf4,
-    0x73,
-    0x6e,
-    0x7a,
-    0x2,
-    0xa5,
-    0x24,
-    0x8c,
-    0xb0,
-    0x4c,
-    0x4b,
-    0x5c
-}; D2_GLOBAL_GUARD(gabWardenEmbeddedModuleHash, "gabWardenEmbeddedModuleHash");
-
-uint8_t gabWardenModuleRc4Key[16] = {
-    0x58,
-    0x57,
-    0x6e,
-    0x8d,
-    0xd0,
-    0x5a,
-    0x64,
-    0x53,
-    0x30,
-    0xf4,
-    0x90,
-    0xb7,
-    0x89,
-    0xd7,
-    0xd4,
-    0xb0
-}; D2_GLOBAL_GUARD(gabWardenModuleRc4Key, "gabWardenModuleRc4Key");
 
 char param_2_006d9be8[4] = { '%', 'l', 'd', '\x00' }; D2_GLOBAL_GUARD(param_2_006d9be8, "param_2_006d9be8");
 
@@ -775,6 +667,27 @@ D2MonMsgAnimModeStrc gaMonMsgAnimModeTable[30] = {
         /* .bCheckMoveFlag = */ 0x1
     }
 }; D2_GLOBAL_GUARD(gaMonMsgAnimModeTable, "gaMonMsgAnimModeTable");
+
+char cObjectDataPeriod[18] = {
+    '.',
+    '\\',
+    'U',
+    'N',
+    'I',
+    'T',
+    '\\',
+    'O',
+    'b',
+    'j',
+    'e',
+    'c',
+    't',
+    '.',
+    'c',
+    'p',
+    'p',
+    '\x00'
+}; D2_GLOBAL_GUARD(cObjectDataPeriod, "cObjectDataPeriod");
 
 int ganMissileRingSinOffsets[64] = {
     0x0,
@@ -912,54 +825,6 @@ int ganMissileRingCosOffsets[64] = {
 
 int gnPaladinSkillIndexTable[8] = { 0x0, -0x1, -0x2, -0x1, 0x0, 0x1, 0x2, 0x1 }; D2_GLOBAL_GUARD(gnPaladinSkillIndexTable, "gnPaladinSkillIndexTable");
 
-D2Missile032SpreadStrc gaMissile032SpreadConstData[6] = {
-    {
-        /* .nFrameThreshold = */ 0x12c,
-        /* .nModulus = */ 0x19,
-        /* .nTargetX = */ 0x1
-    },
-    {
-        /* .nFrameThreshold = */ 0xfa,
-        /* .nModulus = */ 0xa,
-        /* .nTargetX = */ 0x3
-    },
-    {
-        /* .nFrameThreshold = */ 0x64,
-        /* .nModulus = */ 0x8,
-        /* .nTargetX = */ 0x4
-    },
-    {
-        /* .nFrameThreshold = */ 0x4b,
-        /* .nModulus = */ 0x6,
-        /* .nTargetX = */ 0x4
-    },
-    {
-        /* .nFrameThreshold = */ 0x1e,
-        /* .nModulus = */ 0x4,
-        /* .nTargetX = */ 0x3
-    },
-    {
-        /* .nFrameThreshold = */ 0x0,
-        /* .nModulus = */ 0x64,
-        /* .nTargetX = */ 0x0
-    }
-}; D2_GLOBAL_GUARD(gaMissile032SpreadConstData, "gaMissile032SpreadConstData");
-
-uint32_t gnIntensityTableModes[10] = {
-    0x0,
-    0x6,
-    0x6,
-    0x6,
-    0x6,
-    0x6,
-    0x6,
-    0x6,
-    0x6,
-    0x6
-}; D2_GLOBAL_GUARD(gnIntensityTableModes, "gnIntensityTableModes");
-
-eD2States gaeSetBonusStates[6] = { STATE_itemset1, STATE_itemset2, STATE_itemset3, STATE_itemset4, STATE_itemset5, STATE_itemset6 }; D2_GLOBAL_GUARD(gaeSetBonusStates, "gaeSetBonusStates");
-
 eD2ClientAppMode gdwAppMode = APPMODE_SAVE; D2_GLOBAL_GUARD(gdwAppMode, "gdwAppMode");
 
 char string_IpAddressTcpIp[24] = {
@@ -1047,29 +912,6 @@ D2UIFlagInitStrc g_UIFlagInitGameDataPanel3[2] = {
         /* .pfHandler = */ &D2Client::GAME::Game::INPUT_HandleScrollToEnd
     }
 }; D2_GLOBAL_GUARD(g_UIFlagInitGameDataPanel3, "g_UIFlagInitGameDataPanel3");
-
-D2UIFlagInitStrc gaUIFlagInitMessageHandlers[4] = {
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x2,
-        /* .pfHandler = */ &D2Client::_Message::MESSAGE_OnQuitMessage
-    },
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x1c,
-        /* .pfHandler = */ &D2Client::_Message::MESSAGE_OnActivate
-    },
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x84,
-        /* .pfHandler = */ (fnD2InitUIFlagFunction)&D2Client::_Message::WndProcD
-    },
-    {
-        /* .eEventType = */ 0x1,
-        /* .nMessageOrKeyCode = */ 0x9ca4,
-        /* .pfHandler = */ (fnD2InitUIFlagFunction)&D2Client::_Message::MESSAGE_OnClose
-    }
-}; D2_GLOBAL_GUARD(gaUIFlagInitMessageHandlers, "gaUIFlagInitMessageHandlers");
 
 D2UIFlagInitStrc gaUIFlagInitNpcShopHandlers[8] = {
     {
@@ -1362,903 +1204,6 @@ D2UIFlagDescStrc * gUIFlagDismissModeTable[39] = { // VP: vanilla-plus 38 -> 39 
     // VP-END [row-10 options page]
 }; D2_GLOBAL_GUARD(gUIFlagDismissModeTable, "gUIFlagDismissModeTable");
 
-char s___AUTALLOCREC___00711480[16] = {
-    '.',
-    '?',
-    'A',
-    'U',
-    'T',
-    'A',
-    'L',
-    'L',
-    'O',
-    'C',
-    'R',
-    'E',
-    'C',
-    '@',
-    '@',
-    '\x00'
-}; D2_GLOBAL_GUARD(s___AUTALLOCREC___00711480, "s___AUTALLOCREC___00711480");
-
-D2NET_CLIENT_D2GS_ServerToClient NET_D2GS_CLIENT_INCOMING[175] = {
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x01_NEWGAME,
-        /* .nExpectedSize = */ 0x8,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x02_LoadSuccess,
-        /* .nExpectedSize = */ 0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x03_NEWACT,
-        /* .nExpectedSize = */ 0xc,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x04_STARTACT,
-        /* .nExpectedSize = */ 0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x05_UnloadComplete,
-        /* .nExpectedSize = */ 0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x06_ENDGAME,
-        /* .nExpectedSize = */ 0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x07_NEWROOM,
-        /* .nExpectedSize = */ 0x6,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x08_REMOVEROOM,
-        /* .nExpectedSize = */ 0x6,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x09_AssignLevelWarp,
-        /* .nExpectedSize = */ 0xb,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x0A_RemoveObject,
-        /* .nExpectedSize = */ 0x6,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x0B_UNITCTRL,
-        /* .nExpectedSize = */ 0x6,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x9,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x0C_UNITCHANGE
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0xd,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x0D_UNITCHANGE_XY
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0xc,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x0E_UNITCHANGE_ID
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x10,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x0F_UNITCHANGE_XYPOS
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x10,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x10_UNITCHANGE_IDPOS
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x11_UnitDoOverlay,
-        /* .nExpectedSize = */ 0x8,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv0x12_Ignore,
-        /* .nExpectedSize = */ 0x1a,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv0x13_Ignore,
-        /* .nExpectedSize = */ 0xe,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv0x14_Ignore,
-        /* .nExpectedSize = */ 0x12,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x15_WarpXY,
-        /* .nExpectedSize = */ 0xb,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x16_UPDATE,
-        /* .nExpectedSize = */ -0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ -0x1,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x17_UNITPATH
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x18_PLAYERCOMMONSTATCHANGE_BIG,
-        /* .nExpectedSize = */ 0xf,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x19_STATCHANGE_CONTROL_GOLD_BYTE_DELTA,
-        /* .nExpectedSize = */ 0x2,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x19_STATCHANGE_CONTROL_GOLD_BYTE_DELTA,
-        /* .nExpectedSize = */ 0x2,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x19_STATCHANGE_CONTROL_GOLD_BYTE_DELTA,
-        /* .nExpectedSize = */ 0x3,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x19_STATCHANGE_CONTROL_GOLD_BYTE_DELTA,
-        /* .nExpectedSize = */ 0x5,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x19_STATCHANGE_CONTROL_GOLD_BYTE_DELTA,
-        /* .nExpectedSize = */ 0x3,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x19_STATCHANGE_CONTROL_GOLD_BYTE_DELTA,
-        /* .nExpectedSize = */ 0x4,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x19_STATCHANGE_CONTROL_GOLD_BYTE_DELTA,
-        /* .nExpectedSize = */ 0x6,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x20,
-        /* .nExpectedSize = */ 0xa,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x21_SETSKILLLEVEL,
-        /* .nExpectedSize = */ 0xc,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x22_SETSKILLITEMREFS,
-        /* .nExpectedSize = */ 0xc,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x23_SETSKILL,
-        /* .nExpectedSize = */ 0xd,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x5a,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x5a,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x26_CHATSTART,
-        /* .nExpectedSize = */ -0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x27_PRESETTALK,
-        /* .nExpectedSize = */ 0x28,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x28_INTERACTION_ENABLE,
-        /* .nExpectedSize = */ 0x67,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x29_GAMEQUESTRECORD,
-        /* .nExpectedSize = */ 0x61,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x2A_TRANSACTION_RESULTS,
-        /* .nExpectedSize = */ 0xf,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x2C_PLAY_SOUND,
-        /* .nExpectedSize = */ 0x8,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x3E_ITEMUPDATESTAT,
-        /* .nExpectedSize = */ -0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x3F,
-        /* .nExpectedSize = */ 0x8,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x40,
-        /* .nExpectedSize = */ 0xd,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x42,
-        /* .nExpectedSize = */ 0x6,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv0x45_Ignore,
-        /* .nExpectedSize = */ 0xd,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_RecvRecalcEquippedItems,
-        /* .nExpectedSize = */ 0xb,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_RecvRecalcEquippedItems2,
-        /* .nExpectedSize = */ 0xb,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x10,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x4C_SKILL_ID
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x11,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x4D_SKILL_XY
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x4E_ADDTOMERCENARYLIST,
-        /* .nExpectedSize = */ 0x7,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x4F,
-        /* .nExpectedSize = */ 0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x50,
-        /* .nExpectedSize = */ 0xf,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x51_NEWOBJECT,
-        /* .nExpectedSize = */ 0xe,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x52,
-        /* .nExpectedSize = */ 0x2a,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x53,
-        /* .nExpectedSize = */ 0xa,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv0x54_Ignore,
-        /* .nExpectedSize = */ 0x3,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x57_CHANGEMONSTERUNIT,
-        /* .nExpectedSize = */ 0xe,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x58,
-        /* .nExpectedSize = */ 0x7,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x59_NEWPLAYERUNIT,
-        /* .nExpectedSize = */ 0x1a,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x5A,
-        /* .nExpectedSize = */ 0x28,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x5B,
-        /* .nExpectedSize = */ -0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x5C,
-        /* .nExpectedSize = */ 0x5,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x5D,
-        /* .nExpectedSize = */ 0x6,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x5E,
-        /* .nExpectedSize = */ 0x26,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x5F_PORTALFLAGS,
-        /* .nExpectedSize = */ 0x5,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x60_SETWARPDEST,
-        /* .nExpectedSize = */ 0x7,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x61,
-        /* .nExpectedSize = */ 0x2,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x62_INTERACTION_STOP,
-        /* .nExpectedSize = */ 0x7,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x63,
-        /* .nExpectedSize = */ 0x15,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x65_SCORE_UPDATE,
-        /* .nExpectedSize = */ 0x7,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv0x66_Ignore,
-        /* .nExpectedSize = */ 0x7,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x10,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x67_UNITCHANGE_MONSTERXYPATH
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x15,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x68_UNITCHANGE_MONSTERIDPATH
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0xc,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x69_UNITCHANGE_MONSTERXYNOPATH
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0xc,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_RecvNpcStateToEntity
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x10,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x6B_UNITCHANGE_MONSTERXYPOSITION
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x10,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x6C_UNITCHANGE_MONSTERIDPOSITION
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0xa,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x6D_UNITCHANGE_MONSTERNEUTRAL
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x1,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::SCMD_Rcv0x6E_UnitIgnore
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x1,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::SCMD_Rcv0x6F_UnitIgnore
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x1,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::SCMD_Rcv0x70_UnitIgnore
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x1,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::SCMD_Rcv0x71_UnitIgnore
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x1,
-        /* .fpIncomingHandlerUnit = */ &D2Client::GAME::SCmd::SCMD_Rcv0x72_UnitIgnore
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x73_CreateMissile,
-        /* .nExpectedSize = */ 0x20,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x74,
-        /* .nExpectedSize = */ 0xa,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x75_UPDATEROSTER,
-        /* .nExpectedSize = */ 0xd,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x76,
-        /* .nExpectedSize = */ 0x6,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x77,
-        /* .nExpectedSize = */ 0x2,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x78_TRADENAME,
-        /* .nExpectedSize = */ 0x15,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x79_TRADEGOLD,
-        /* .nExpectedSize = */ 0x6,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x7A_UPDATEPET,
-        /* .nExpectedSize = */ 0xd,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x7B_SYNCHOTKEYS,
-        /* .nExpectedSize = */ 0x8,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x7C_SETITEMUNUSED,
-        /* .nExpectedSize = */ 0x6,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x7D,
-        /* .nExpectedSize = */ 0x12,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x7E,
-        /* .nExpectedSize = */ 0x5,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x7F,
-        /* .nExpectedSize = */ 0xa,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ nullptr,
-        /* .nExpectedSize = */ 0x4,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x81,
-        /* .nExpectedSize = */ 0x14,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x82_LINKTOWNPORTAL,
-        /* .nExpectedSize = */ 0x1d,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x89,
-        /* .nExpectedSize = */ 0x2,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x8A,
-        /* .nExpectedSize = */ 0x6,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x8B_PLAYERBUTTON,
-        /* .nExpectedSize = */ 0x6,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x8C_PLAYERFLAGS,
-        /* .nExpectedSize = */ 0xb,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x8D_PLAYERPARTY,
-        /* .nExpectedSize = */ 0x7,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x8E_LINKDEADBODY,
-        /* .nExpectedSize = */ 0xa,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x8F,
-        /* .nExpectedSize = */ 0x21,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x90_PARTYLOCUPDATE,
-        /* .nExpectedSize = */ 0xd,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x91_WELCOME_BACK,
-        /* .nExpectedSize = */ 0x1a,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x92_CLEARINVENTORY,
-        /* .nExpectedSize = */ 0x6,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_RecvSkillTabBonusDelta,
-        /* .nExpectedSize = */ 0x8,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x94_SETALLSKILLS,
-        /* .nExpectedSize = */ -0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x95_PLAYERCOMMONSTATCHANGE_MEDIUM,
-        /* .nExpectedSize = */ 0xd,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x96_PlayerLeave,
-        /* .nExpectedSize = */ 0x9,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9,
-        /* .nExpectedSize = */ 0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x98_SETSPAWNERMONSTER,
-        /* .nExpectedSize = */ 0x7,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x99_ITEM_SKILL_ID,
-        /* .nExpectedSize = */ 0x10,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9A_ITEM_SKILL_XY,
-        /* .nExpectedSize = */ 0x11,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9B_DEAD_HIRELING,
-        /* .nExpectedSize = */ 0x7,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9C_ITEMEX,
-        /* .nExpectedSize = */ -0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9D,
-        /* .nExpectedSize = */ -0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9Eto0xA2,
-        /* .nExpectedSize = */ 0x7,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9Eto0xA2,
-        /* .nExpectedSize = */ 0x8,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9Eto0xA2,
-        /* .nExpectedSize = */ 0xa,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9Eto0xA2,
-        /* .nExpectedSize = */ 0x7,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9Eto0xA2,
-        /* .nExpectedSize = */ 0x8,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0xA3_PROGRESSIVE_SKILL,
-        /* .nExpectedSize = */ 0x18,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0xA4_PRELOAD_MONSTER,
-        /* .nExpectedSize = */ 0x3,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0xA5_FORCESTOPSKILL,
-        /* .nExpectedSize = */ 0x8,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0xA6,
-        /* .nExpectedSize = */ -0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0xA7,
-        /* .nExpectedSize = */ 0x7,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0xA8_UNITSTATE_ONVAL_EX,
-        /* .nExpectedSize = */ -0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0xA9_UNITSTATE_OFF_EX,
-        /* .nExpectedSize = */ 0x7,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0xAA_UNITSTATE_ALL_EX,
-        /* .nExpectedSize = */ -0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0xAB,
-        /* .nExpectedSize = */ 0x7,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0xAC,
-        /* .nExpectedSize = */ -0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::SCMD_Rcv_IgnoreShared,
-        /* .nExpectedSize = */ 0x0,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    },
-    {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0xAE_WARDENDATA,
-        /* .nExpectedSize = */ -0x1,
-        /* .fpIncomingHandlerUnit = */ nullptr
-    }
-}; D2_GLOBAL_GUARD(NET_D2GS_CLIENT_INCOMING, "NET_D2GS_CLIENT_INCOMING");
-
 D2UIFlagInitStrc gsUIEngineFlagInit[4] = {
     {
         /* .eEventType = */ 0x0,
@@ -2304,90 +1249,6 @@ D2UIFlagInitStrc gsUIEngineFlagInit2[4] = {
         /* .pfHandler = */ &D2Client::Engine::INPUT_CharScreenDualButtonForce
     }
 }; D2_GLOBAL_GUARD(gsUIEngineFlagInit2, "gsUIEngineFlagInit2");
-
-D2UIFlagInitStrc gUIFlagGeneralInit[3] = {
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x200,
-        /* .pfHandler = */ &D2Client::UI::ui::UI_HandleMousePositionUpdate
-    },
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0xa0,
-        /* .pfHandler = */ (fnD2InitUIFlagFunction)&D2Client::UI::ui::UI_HandleCursorMouseDown
-    },
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x202,
-        /* .pfHandler = */ &D2Client::UI::ui::UI_HandleCursorMouseUp
-    }
-}; D2_GLOBAL_GUARD(gUIFlagGeneralInit, "gUIFlagGeneralInit");
-
-D2CursorDataStrc CursorData[7] = {
-    {
-        /* .bAnimated = */ 0x0,
-        /* .nFrameOffset = */ 0x0,
-        /* .nMaxFrames = */ 0x1,
-        /* .nAnimStep = */ 0x0,
-        /* .bKeyPressSwitch = */ 0x1,
-        /* .pFunction = */ &D2Client::UI::ui::MOUSE_DrawCursorSprite,
-        /* .szCursorname = */ s_Gaunt_006d6b80
-    },
-    {
-        /* .bAnimated = */ 0x1,
-        /* .nFrameOffset = */ 0x0,
-        /* .nMaxFrames = */ 0x8,
-        /* .nAnimStep = */ 0x0,
-        /* .bKeyPressSwitch = */ 0x1,
-        /* .pFunction = */ &D2Client::UI::ui::MOUSE_DrawCursorSprite,
-        /* .szCursorname = */ s_grasp_006d6b78
-    },
-    {
-        /* .bAnimated = */ 0x1,
-        /* .nFrameOffset = */ 0x0,
-        /* .nMaxFrames = */ 0x8,
-        /* .nAnimStep = */ 0x40,
-        /* .bKeyPressSwitch = */ 0x1,
-        /* .pFunction = */ &D2Client::UI::ui::MOUSE_DrawCursorSprite,
-        /* .szCursorname = */ s_ohand_006d6b70
-    },
-    {
-        /* .bAnimated = */ 0x1,
-        /* .nFrameOffset = */ 0x1,
-        /* .nMaxFrames = */ 0x8,
-        /* .nAnimStep = */ 0x20,
-        /* .bKeyPressSwitch = */ 0x1,
-        /* .pFunction = */ &D2Client::UI::ui::MOUSE_DrawCursorSprite,
-        /* .szCursorname = */ s_orotate_006d6b68
-    },
-    {
-        /* .bAnimated = */ 0x1,
-        /* .nFrameOffset = */ 0x1,
-        /* .nMaxFrames = */ 0x8,
-        /* .nAnimStep = */ 0x40,
-        /* .bKeyPressSwitch = */ 0x1,
-        /* .pFunction = */ &D2Client::UI::ui::MOUSE_DrawCursorSprite,
-        /* .szCursorname = */ s_ppress_006d6b60
-    },
-    {
-        /* .bAnimated = */ 0x1,
-        /* .nFrameOffset = */ 0x1,
-        /* .nMaxFrames = */ 0x8,
-        /* .nAnimStep = */ 0x40,
-        /* .bKeyPressSwitch = */ 0x1,
-        /* .pFunction = */ &D2Client::UI::ui::MOUSE_DrawCursorSprite,
-        /* .szCursorname = */ s_protate_006d6b58
-    },
-    {
-        /* .bAnimated = */ 0x0,
-        /* .nFrameOffset = */ 0x0,
-        /* .nMaxFrames = */ 0x1,
-        /* .nAnimStep = */ 0x0,
-        /* .bKeyPressSwitch = */ 0x0,
-        /* .pFunction = */ &D2Client::UI::ui::UI_DrawCursorIcon,
-        /* .szCursorname = */ s_buysell_006d6b50
-    }
-}; D2_GLOBAL_GUARD(CursorData, "CursorData");
 
 int gaKeyBindingsDefault[285] = {
     0x0,
@@ -2699,40 +1560,6 @@ D2UIFlagInitStrc gsUICmdTblFlagInit[4] = {
         /* .pfHandler = */ &D2Client::UI::CmdTbl::INPUT_DispatchKeyCommand
     }
 }; D2_GLOBAL_GUARD(gsUICmdTblFlagInit, "gsUICmdTblFlagInit");
-
-uint32_t gaMonsterModePrecacheEntries[15] = {
-    0xc,
-    0x0,
-    0x1,
-    0x2,
-    0xf,
-    0x4,
-    0x3,
-    0x5,
-    0x7,
-    0x6,
-    0xd,
-    0x8,
-    0x9,
-    0xa,
-    0xb
-}; D2_GLOBAL_GUARD(gaMonsterModePrecacheEntries, "gaMonsterModePrecacheEntries");
-
-eD2ArenaFlags CLIENT_ArenaFlags = ARENAFLAG_ClientUpdate; D2_GLOBAL_GUARD(CLIENT_ArenaFlags, "CLIENT_ArenaFlags");
-
-eD2PlayerClassIDDWORD eD2PlayerClassIDDWORD_00712f00 = CLASS_SORCERESS; D2_GLOBAL_GUARD(eD2PlayerClassIDDWORD_00712f00, "eD2PlayerClassIDDWORD_00712f00");
-
-D2UIFlagInitStrc gUIFlagChatInit = {
-    /* .eEventType = */ 0x0,
-    /* .nMessageOrKeyCode = */ 0x102,
-    /* .pfHandler = */ &D2Client::UI::Chat::INPUT_HandleChatCharInput
-}; D2_GLOBAL_GUARD(gUIFlagChatInit, "gUIFlagChatInit");
-
-D2UIFlagInitStrc g_UIFlagInitChatPanel = {
-    /* .eEventType = */ 0x0,
-    /* .nMessageOrKeyCode = */ 0x282,
-    /* .pfHandler = */ &D2Client::UI::Chat::INPUT_HandleIMENotify
-}; D2_GLOBAL_GUARD(g_UIFlagInitChatPanel, "g_UIFlagInitChatPanel");
 
 D2EscMenuHeaderStrc gEscMenuHeaderInitData = {
     /* .nItemCount = */ 0x3,
@@ -41528,102 +40355,6 @@ int NPCButtonArray[16] = {
     0x111
 }; D2_GLOBAL_GUARD(NPCButtonArray, "NPCButtonArray");
 
-int gaWaypointRowLayout[55] = {
-    0x5,
-    0x11,
-    0x59,
-    0x50,
-    0x54,
-    0x11,
-    0x3c,
-    0x11,
-    0x7d,
-    0x50,
-    0x77,
-    0x11,
-    0x60,
-    0x11,
-    0xa1,
-    0x50,
-    0x9a,
-    0x11,
-    0x84,
-    0x11,
-    0xc5,
-    0x50,
-    0xbd,
-    0x11,
-    0xa8,
-    0x11,
-    0xea,
-    0x50,
-    0xe0,
-    0x11,
-    0xcd,
-    0x11,
-    0x10e,
-    0x50,
-    0x103,
-    0x11,
-    0xf1,
-    0x11,
-    0x132,
-    0x50,
-    0x126,
-    0x11,
-    0x115,
-    0x11,
-    0x156,
-    0x50,
-    0x149,
-    0x11,
-    0x139,
-    0x11,
-    0x17a,
-    0x50,
-    0x16c,
-    0x11,
-    0x15d
-}; D2_GLOBAL_GUARD(gaWaypointRowLayout, "gaWaypointRowLayout");
-
-D2UIFlagInitStrc gsUITextFlagInit[7] = {
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x205,
-        /* .pfHandler = */ &D2Client::UI::Text::TEXT_OnClickCloseNpcDialog
-    },
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x204,
-        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextClickHandler
-    },
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x201,
-        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextClickHandler
-    },
-    {
-        /* .eEventType = */ 0x3,
-        /* .nMessageOrKeyCode = */ 0x1b,
-        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextDismiss
-    },
-    {
-        /* .eEventType = */ 0x3,
-        /* .nMessageOrKeyCode = */ 0x20,
-        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextDismiss
-    },
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x102,
-        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextKeyHandler
-    },
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x104,
-        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextKeyFilter
-    }
-}; D2_GLOBAL_GUARD(gsUITextFlagInit, "gsUITextFlagInit");
-
 // also labelled: gaQuestIconData_SevenTombs
 uint16_t gaQuestDescData_SevenTombs[32] = {
     0x3a0,
@@ -42446,7 +41177,7 @@ D2UIConfigTabEntryStrc g_UIConfigTabTable[3] = {
     },
     {
         /* .nLabelStringId = */ 0xf84,
-        /* .pfnAction = */ &D2Client::UI::ui::UIAction_ResetKeyBindingsToDefaults,
+        /* .pfnAction = */ (pfnUIConfigTabAction)&D2Client::UI::ui::UIAction_ResetKeyBindingsToDefaults,
         /* .nTabId = */ 0x3,
         /* .aBounds = */ {
             '\x00',
@@ -42498,10 +41229,37 @@ D2UIFlagInitStrc gsUIFlagInit1 = {
     /* .pfHandler = */ &D2Client::UI::ui::INPUT_ConfigMouseClick
 }; D2_GLOBAL_GUARD(gsUIFlagInit1, "gsUIFlagInit1");
 
-D2UIFlagInitStrc gsUIFlagInit0 = {
-    /* .eEventType = */ 0x0,
-    /* .nMessageOrKeyCode = */ 0x201,
-    /* .pfHandler = */ &D2Client::UI::ui::INPUT_ConfigScreenOpen
+D2UIFlagInitStrc gsUIFlagInit0[6] = {
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x201,
+        /* .pfHandler = */ &D2Client::UI::ui::INPUT_ConfigScreenOpen
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x204,
+        /* .pfHandler = */ &D2Client::UI::ui::INPUT_ConfigScreenOpen
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x100,
+        /* .pfHandler = */ &D2Client::UI::ui::INPUT_ConfigKeyBind
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x104,
+        /* .pfHandler = */ &D2Client::UI::ui::INPUT_ConfigKeyBind
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x101,
+        /* .pfHandler = */ &D2Client::UI::ui::INPUT_ConfigKeyBindAlternate
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x105,
+        /* .pfHandler = */ &D2Client::UI::ui::INPUT_ConfigKeyBindAlternate
+    }
 }; D2_GLOBAL_GUARD(gsUIFlagInit0, "gsUIFlagInit0");
 
 D2UIFlagInitStrc gsUIFlagInit2 = {
@@ -42668,68 +41426,6 @@ char * gaLanguageNames_00724a80[15] = {
     s_Unknown_006cc780,
     (char*)0x006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_00724a80, "gaLanguageNames_00724a80");
-
-D2ClassIconWithNameStrc pSpellsClassSkillicon[7] = {
-    {
-        /* .pD2Archive = */ nullptr,
-        /* .szSpelliconPath = */ "Spells\\AmSkillicon"
-    },
-    {
-        /* .pD2Archive = */ nullptr,
-        /* .szSpelliconPath = */ "Spells\\SoSkillicon"
-    },
-    {
-        /* .pD2Archive = */ nullptr,
-        /* .szSpelliconPath = */ "Spells\\NeSkillicon"
-    },
-    {
-        /* .pD2Archive = */ nullptr,
-        /* .szSpelliconPath = */ "Spells\\PaSkillicon"
-    },
-    {
-        /* .pD2Archive = */ nullptr,
-        /* .szSpelliconPath = */ "Spells\\BaSkillicon"
-    },
-    {
-        /* .pD2Archive = */ nullptr,
-        /* .szSpelliconPath = */ "Spells\\DrSkillicon"
-    },
-    {
-        /* .pD2Archive = */ nullptr,
-        /* .szSpelliconPath = */ "Spells\\AsSkillicon"
-    }
-}; D2_GLOBAL_GUARD(pSpellsClassSkillicon, "pSpellsClassSkillicon");
-
-D2ClassIconWithNameStrc pSpellsClassSkilltree[7] = {
-    {
-        /* .pD2Archive = */ nullptr,
-        /* .szSpelliconPath = */ "Spells\\skltree_a_back"
-    },
-    {
-        /* .pD2Archive = */ nullptr,
-        /* .szSpelliconPath = */ "Spells\\skltree_s_back"
-    },
-    {
-        /* .pD2Archive = */ nullptr,
-        /* .szSpelliconPath = */ "Spells\\skltree_n_back"
-    },
-    {
-        /* .pD2Archive = */ nullptr,
-        /* .szSpelliconPath = */ "Spells\\skltree_p_back"
-    },
-    {
-        /* .pD2Archive = */ nullptr,
-        /* .szSpelliconPath = */ "Spells\\skltree_b_back"
-    },
-    {
-        /* .pD2Archive = */ nullptr,
-        /* .szSpelliconPath = */ "Spells\\skltree_d_back"
-    },
-    {
-        /* .pD2Archive = */ nullptr,
-        /* .szSpelliconPath = */ "Spells\\skltree_i_back"
-    }
-}; D2_GLOBAL_GUARD(pSpellsClassSkilltree, "pSpellsClassSkilltree");
 
 // also labelled: gaNpcDialogOptionData_725cb0
 D2SpeechBankStrc gaNpcSpeechBank_725cb0[10] = {
@@ -43360,85 +42056,6 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
     }
 }; D2_GLOBAL_GUARD(D2NPCSpeech, "D2NPCSpeech");
 
-D2UIFlagInitStrc g_UIFlagInitDialogMouseWheel = {
-    /* .eEventType = */ 0x0,
-    /* .nMessageOrKeyCode = */ 0x20a,
-    /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogMouseWheel
-}; D2_GLOBAL_GUARD(g_UIFlagInitDialogMouseWheel, "g_UIFlagInitDialogMouseWheel");
-
-D2UIFlagInitStrc gsUIDialogFlagInit[14] = {
-    {
-        /* .eEventType = */ 0x3,
-        /* .nMessageOrKeyCode = */ 0x1b,
-        /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogEscapeKey
-    },
-    {
-        /* .eEventType = */ 0x3,
-        /* .nMessageOrKeyCode = */ 0x1b,
-        /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogEscapeKey
-    },
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x202,
-        /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogMouseUp
-    },
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x201,
-        /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogMouseDown
-    },
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x205,
-        /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogMouseUp
-    },
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x204,
-        /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogMouseDown
-    },
-    {
-        /* .eEventType = */ 0x3,
-        /* .nMessageOrKeyCode = */ 0x26,
-        /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogPageUp
-    },
-    {
-        /* .eEventType = */ 0x3,
-        /* .nMessageOrKeyCode = */ 0x28,
-        /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogPageDown
-    },
-    {
-        /* .eEventType = */ 0x3,
-        /* .nMessageOrKeyCode = */ 0x27,
-        /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogNavigateUp
-    },
-    {
-        /* .eEventType = */ 0x3,
-        /* .nMessageOrKeyCode = */ 0x25,
-        /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogNavigateDown
-    },
-    {
-        /* .eEventType = */ 0x3,
-        /* .nMessageOrKeyCode = */ 0xd,
-        /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogEnterKey
-    },
-    {
-        /* .eEventType = */ 0x3,
-        /* .nMessageOrKeyCode = */ 0x1b,
-        /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogConfirm
-    },
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x102,
-        /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogKeyHandler
-    },
-    {
-        /* .eEventType = */ 0x0,
-        /* .nMessageOrKeyCode = */ 0x200,
-        /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogClickHandler
-    }
-}; D2_GLOBAL_GUARD(gsUIDialogFlagInit, "gsUIDialogFlagInit");
-
 uint16_t gaButtonDescriptors[4] = { 0x10, 0xd49, 0xa, 0x102e }; D2_GLOBAL_GUARD(gaButtonDescriptors, "gaButtonDescriptors");
 
 fnObjectClientFn gpObjectClientFunctionDispatchTable[19] = {
@@ -43495,144 +42112,48 @@ D2NpcCashTabStrc gaNpcCashTabs[2] = {
     }
 }; D2_GLOBAL_GUARD(gaNpcCashTabs, "gaNpcCashTabs");
 
-D2UIFlagInitStrc gUIFlagMapInit = {
-    /* .eEventType = */ 0x0,
-    /* .nMessageOrKeyCode = */ 0x202,
-    /* .pfHandler = */ &D2Client::UI::ui::INPUT_GambleRepairClick
+D2UIFlagInitStrc gUIFlagMapInit[8] = {
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x202,
+        /* .pfHandler = */ &D2Client::UI::ui::INPUT_GambleRepairClick
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x201,
+        /* .pfHandler = */ &D2Client::UI::UseItem::INPUT_UseItemClick
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x204,
+        /* .pfHandler = */ &D2Client::UI::UseItem::INPUT_UseItemClick
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x205,
+        /* .pfHandler = */ &D2Client::UI::ui::INPUT_GambleRepairClick
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x200,
+        /* .pfHandler = */ &D2Client::TEXT_SetUnknownFlag
+    },
+    {
+        /* .eEventType = */ 0x3,
+        /* .nMessageOrKeyCode = */ 0x1b,
+        /* .pfHandler = */ &D2Client::UI::ui::PACKET_SendUnitInteraction0x44
+    },
+    {
+        /* .eEventType = */ 0x3,
+        /* .nMessageOrKeyCode = */ 0x20,
+        /* .pfHandler = */ &D2Client::UI::ui::PACKET_SendUnitInteraction0x44
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x102,
+        /* .pfHandler = */ &D2Client::UI::UseItem::INPUT_UseItemPassthrough
+    }
 }; D2_GLOBAL_GUARD(gUIFlagMapInit, "gUIFlagMapInit");
-
-D2SkillCltDoFunc SKILLCLTDOFUNCS[130] = {
-    nullptr,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::Skills::Skills_CltDoFunc_Bow_ShootArrow,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::Skills::Skills_CltDoFunc_Bow_ThrowItem,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsAss::Skills_CltDoFunc_Ass_Melee_TargetValidate,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsAss::Skills_CltDoFunc_Ass_Blade_DecrementCharge,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsAss::Skills_CltDoFunc_Ass_AuraLevel_SpawnMissileRandom,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsAss::Skills_CltDoFunc_Ass_AuraLevel_SpawnMissileCharge,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsAss::Skills_CltDoFunc_Ass_AuraLevel_CastAttackTarget,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsAss::Skills_CltDoFunc_Ass_AuraLevel_StreamMissile,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::Skills_CltDoFunc_AuraLevel_MissileAtTarget,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::Skills_CltDoFunc_AuraLevel_MissilesOnTargetVelocity,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::Skills_CltDoFunc_AuraLevel_CltCreateMissileAtTarget,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::Skills_CltDoFunc_AuraState_OverlayOnTarget,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::Skills_CltDoFunc_AuraState_OverlayOnCaster,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::Skills_CltDoFunc_AuraLevel_CastAttackAtCoords,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::Skills_CltDoFunc_AuraLevel_ProjectileMissile,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsAma::Skills_CltDoFunc_Ama_PlayDoSound,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsAma::Skills_CltDoFunc_Ama_MultiShotArrows,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsAma::Skills_CltDoFunc_Ama_GuidedArrow,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsAma::Skills_CltDoFunc_Ama_LinearMissileSpray,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsAma::Skills_CltDoFunc_Ama_Strafe,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsAma::Skills_CltDoFunc_Ama_Impale,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsAma::Skills_CltDoFunc_Ama_PiercingShot,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsSor::Skills_CltDoFunc_Sor_LinearMissileCount,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsSor::Skills_CltDoFunc_Sor_Inferno,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsSor::Skills_CltDoFunc_Sor_HomingMissileVelocity,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsSor::Skills_CltDoFunc_Sor_FrostNova,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsSor::Skills_CltDoFunc_Sor_MissileWithChargeCount,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsSor::Skills_CltDoFunc_Sor_CollisionCheckedMissile,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsSor::Skills_CltDoFunc_Sor_SimpleMakeMissile,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsNec::Skills_CltDoFunc_Nec_CurseCenter_StreamMissile,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsNec::Skills_CltDoFunc_Nec_TargetedMissileAtParam,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsNec::Skills_CltDoFunc_Nec_Teeth,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsNec::Skills_CltDoFunc_Nec_BoneSpear,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsPal::Skills_CltDoFunc_Pal_Zeal_DirOffsetMissile,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsPal::Skills_CltDoFunc_Pal_ChargePathMissile,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsPal::Skills_CltDoFunc_Pal_FistOfHeavens,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsPal::Skills_CltDoFunc_Pal_HolyBolt_Melee,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsBar::Skills_CltDoFunc_Bar_BloodParticlesOnTarget,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsBar::Skills_CltDoFunc_Bar_DoubleSwing_Sound,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsBar::Skills_CltDoFunc_Bar_SoftMonster_BloodParticles,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsBar::Skills_CltDoFunc_Bar_Whirlwind_CorpseExplosion,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsBar::Skills_CltDoFunc_Bar_ThrowItem,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsBar::Skills_CltDoFunc_Bar_Leap_ArcParticle,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsBar::Skills_CltDoFunc_Bar_LeapAttack_ArcParticle,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsBar::Skills_CltDoFunc_Bar_Whirlwind_EndCollision,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_ResetAnimSpeed,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_AdvanceFrameMetrics,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_CompositeDirMissile,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_SetSequenceFromCalc,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_RemoveCollisionAtParam,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_JumpMissileTowardTarget,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_AdvanceFrameMetrics2,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_SpawnMissilesInArea,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_RandomDualMissile,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_RingMissileSpray,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_PeriodicMissile,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_DirectionalBeam,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_RandomScatterMissiles,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_ChargeAnim,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_LineMissileSpread,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_RadialMissileExplosion,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_MeleeRepeat,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_ScatterDoubleMissile,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_BaalTaunt_AnimCycle,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_CurseCenter_StreamRange,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_ArrowModifier_MakeMissile,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsDru::Skills_CltDoFunc_Dru_ShapeShift_FwdArc,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsDru::Skills_CltDoFunc_Dru_ShapeShift_SideArc,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsDru::Skills_CltDoFunc_Dru_ShapeShift_BackArc,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsEMon::Skills_CltDoFunc_EMon_PerpendicularMissile,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsEMon::Skills_CltDoFunc_EMon_FallingMissileWithZ,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsEMon::Skills_CltDoFunc_EMon_MissileAtOwnerWithZ,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsEMon::Skills_CltDoFunc_EMon_CastAttackMissileB,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsEMon::Skills_CltDoFunc_EMon_OffsetParticleMissile,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsEMon::Skills_CltDoFunc_EMon_ScreenShake,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsEMon::Skills_CltDoFunc_EMon_DelayedLineMissileChain,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsEMon::Skills_CltDoFunc_EMon_InfernoWithZ,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsEMon::Skills_CltDoFunc_EMon_MissileAtParam,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsEMon::Skills_CltDoFunc_EMon_MissileAtParamSP1,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsEMon::Skills_CltDoFunc_EMon_WallMissileRow,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsEMon::Skills_CltDoFunc_EMon_PerpendicularMissile2,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::Skills_CltDoFunc_BaalCorpseExplosion,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SKILLS_CltDoFunc_AuraLevelMissileAtTarget_ExtendedPath,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsSor::Skills_CltDoFunc_Sor_Blizzard,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsPal::Skills_CltDoFunc_Pal_RateThrottledBloodParticles,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsPal::Skills_CltDoFunc_Pal_RandomRadiusMissileField,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsSor::Skills_CltDoFunc_Sor_RandomRadiusMissile,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsEMon::Skills_CltDoFunc_EMon_HomingToOwner,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsEMon::Skills_CltDoFunc_EMon_VineAttack,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::Skills_CltDoFunc_MultiMissileDirected,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::Skills_CltDoFunc_DualMissileAtCoords,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::Skills_CltDoFunc_DualMissileWithZ,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsEMon::Skills_CltDoFunc_EMon_BloodAndMissileB,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_ComponentOffset_Missile_A,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsMon::Skills_CltDoFunc_Mon_ComponentOffset_Missile_B,
-    (D2SkillCltDoFunc)&D2Client::SKILLS::SkillsSor::Skills_CltDoFunc_Sor_OffsetMissileCount,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr
-}; D2_GLOBAL_GUARD(SKILLCLTDOFUNCS, "SKILLCLTDOFUNCS");
 
 int gaUnitSoundTable[28] = {
     0x0,
@@ -43681,7 +42202,7 @@ eD2Sounds gaUnitSoundTableModeChange[12] = {
 }; D2_GLOBAL_GUARD(gaUnitSoundTableModeChange, "gaUnitSoundTableModeChange");
 
 // VP: vanilla-plus - entry 0 (Amazon) pointed at the orphaned bUnitSoundTableInit flag byte in the decompile; retail's .data 0x72a008 shows all seven entries target real tables (Amazon at 0x727eac, the other six contiguous at 0x729f00..0x72a008). Real contents restored in globals.cpp (recovered from retail 1.14d Game.exe; see globals.h)
-int * gaUnitSoundTableByClassId[7] = { (int*)&gaUnitSoundIdsAmazon, (int*)&gaUnitSoundIdsSorceress, (int*)&gaUnitSoundIdsNecromancer, (int*)&gaUnitSoundIdsPaladin, (int*)&gaUnitSoundIdsBarbarian, (int*)&gaUnitSoundIdsDruid, (int*)&gaUnitSoundIdsAssassin }; D2_GLOBAL_GUARD(gaUnitSoundTableByClassId, "gaUnitSoundTableByClassId");
+int * gaUnitSoundTableByClassId[7] = { gaUnitSoundIdsAmazon, gaUnitSoundIdsSorceress, gaUnitSoundIdsNecromancer, gaUnitSoundIdsPaladin, gaUnitSoundIdsBarbarian, gaUnitSoundIdsDruid, gaUnitSoundIdsAssassin }; D2_GLOBAL_GUARD(gaUnitSoundTableByClassId, "gaUnitSoundTableByClassId");
 
 int gaAmbientMusicLevelSetTable[168] = {
     0x11,
@@ -43854,290 +42375,50 @@ int gaAmbientMusicLevelSetTable[168] = {
     0x4f
 }; D2_GLOBAL_GUARD(gaAmbientMusicLevelSetTable, "gaAmbientMusicLevelSetTable");
 
-D2MissileSrvDoFuncData MISSILECLTCOLLIDEFUNCS[9] = {
+D2SkillChargeDescStrc gaSkillChargeDescTable[6] = {
     {
-        /* .pFunction = */ nullptr,
-        /* .nFlags = */ 0x0
+        /* .nFileIndex = */ 0x0,
+        /* .nDescFunc = */ 0x1,
+        /* .wDescStrPos = */ 0xdaa,
+        /* .wDescStrNeg = */ 0xdaa,
+        /* .nDescVal = */ 0x2
     },
     {
-        /* .pFunction = */ (fpMissileSrvDoFuncData)&D2Client::UNIT::Missile::Missiles_SrvDoFuncData_01,
-        /* .nFlags = */ 0x84
+        /* .nFileIndex = */ 0x1,
+        /* .nDescFunc = */ 0x1,
+        /* .wDescStrPos = */ 0xdac,
+        /* .wDescStrNeg = */ 0xdac,
+        /* .nDescVal = */ 0x2
     },
     {
-        /* .pFunction = */ (fpMissileSrvDoFuncData)&D2Client::UNIT::Missile::Missiles_SrvDoFuncData_02,
-        /* .nFlags = */ 0x104
+        /* .nFileIndex = */ 0x2,
+        /* .nDescFunc = */ 0x1,
+        /* .wDescStrPos = */ 0xdab,
+        /* .wDescStrNeg = */ 0xdab,
+        /* .nDescVal = */ 0x2
     },
     {
-        /* .pFunction = */ (fpMissileSrvDoFuncData)&D2Client::UNIT::Missile::Missiles_SrvDoFuncData_03,
-        /* .nFlags = */ 0x184
+        /* .nFileIndex = */ 0x3,
+        /* .nDescFunc = */ 0x1,
+        /* .wDescStrPos = */ 0xdad,
+        /* .wDescStrNeg = */ 0xdad,
+        /* .nDescVal = */ 0x2
     },
     {
-        /* .pFunction = */ nullptr,
-        /* .nFlags = */ 0x0
+        /* .nFileIndex = */ 0x9,
+        /* .nDescFunc = */ 0x1,
+        /* .wDescStrPos = */ 0xdae,
+        /* .wDescStrNeg = */ 0xdae,
+        /* .nDescVal = */ 0x2
     },
     {
-        /* .pFunction = */ (fpMissileSrvDoFuncData)&D2Client::UNIT::Missile::Missiles_SrvDoFuncData_02,
-        /* .nFlags = */ 0x104
-    },
-    {
-        /* .pFunction = */ nullptr,
-        /* .nFlags = */ 0x4
-    },
-    {
-        /* .pFunction = */ (fpMissileSrvDoFuncData)&D2Client::UNIT::Missile::Missiles_SrvDoFuncData_07,
-        /* .nFlags = */ 0x40
-    },
-    {
-        /* .pFunction = */ (fpMissileSrvDoFuncData)&D2Client::UNIT::Missile::Missiles_SrvDoFuncData_03,
-        /* .nFlags = */ 0x185
+        /* .nFileIndex = */ 0x7,
+        /* .nDescFunc = */ 0x1,
+        /* .wDescStrPos = */ 0xdaf,
+        /* .wDescStrNeg = */ 0xdaf,
+        /* .nDescVal = */ 0x2
     }
-}; D2_GLOBAL_GUARD(MISSILECLTCOLLIDEFUNCS, "MISSILECLTCOLLIDEFUNCS");
-
-int32_t aIntensityTable_Mode0[120] = {
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x2,
-    0x5,
-    0x2,
-    0x3,
-    0x2,
-    0x1,
-    0x2,
-    -0x1,
-    0x2,
-    -0x3,
-    0x2,
-    -0x5,
-    -0x5,
-    0x2,
-    -0x3,
-    0x2,
-    -0x1,
-    0x2,
-    0x1,
-    0x2,
-    0x3,
-    0x2,
-    0x5,
-    0x2,
-    0x2,
-    0x5,
-    0x2,
-    0x3,
-    0x2,
-    0x2,
-    0x2,
-    0x2,
-    0x3,
-    0x2,
-    0x5,
-    0x2,
-    -0x5,
-    0x2,
-    -0x3,
-    0x2,
-    -0x1,
-    0x2,
-    0x2,
-    -0x1,
-    0x2,
-    -0x3,
-    0x2,
-    -0x5,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x2,
-    0x5,
-    0x2,
-    0x3,
-    0x2,
-    0x1,
-    0x2,
-    -0x1,
-    0x2,
-    -0x3,
-    0x2,
-    -0x5,
-    -0x5,
-    0x2,
-    -0x3,
-    0x2,
-    -0x1,
-    0x2,
-    0x1,
-    0x2,
-    0x3,
-    0x2,
-    0x5,
-    0x2,
-    0x2,
-    0x5,
-    0x2,
-    0x3,
-    0x2,
-    0x2,
-    0x2,
-    0x2,
-    0x3,
-    0x2,
-    0x5,
-    0x2,
-    -0x5,
-    0x2,
-    -0x3,
-    0x2,
-    -0x1,
-    0x2,
-    0x2,
-    -0x1,
-    0x2,
-    -0x3,
-    0x2,
-    -0x5
-}; D2_GLOBAL_GUARD(aIntensityTable_Mode0, "aIntensityTable_Mode0");
-
-int32_t aIntensityTable_Mode1[120] = {
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    -0x2,
-    0x5,
-    -0x2,
-    0x3,
-    -0x2,
-    0x1,
-    -0x2,
-    -0x1,
-    -0x2,
-    -0x3,
-    -0x2,
-    -0x5,
-    -0x5,
-    -0x2,
-    -0x3,
-    -0x2,
-    -0x1,
-    -0x2,
-    0x1,
-    -0x2,
-    0x3,
-    -0x2,
-    0x5,
-    -0x2,
-    -0x2,
-    0x5,
-    -0x2,
-    0x3,
-    -0x2,
-    -0x2,
-    -0x2,
-    -0x2,
-    0x3,
-    -0x2,
-    0x5,
-    -0x2,
-    -0x5,
-    -0x2,
-    -0x3,
-    -0x2,
-    -0x1,
-    -0x2,
-    -0x2,
-    -0x1,
-    -0x2,
-    -0x3,
-    -0x2,
-    -0x5,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    -0x2,
-    0x5,
-    -0x2,
-    0x3,
-    -0x2,
-    0x1,
-    -0x2,
-    -0x1,
-    -0x2,
-    -0x3,
-    -0x2,
-    -0x5,
-    -0x5,
-    -0x2,
-    -0x3,
-    -0x2,
-    -0x1,
-    -0x2,
-    0x1,
-    -0x2,
-    0x3,
-    -0x2,
-    0x5,
-    -0x2,
-    -0x2,
-    0x5,
-    -0x2,
-    0x3,
-    -0x2,
-    -0x2,
-    -0x2,
-    -0x2,
-    0x3,
-    -0x2,
-    0x5,
-    -0x2,
-    -0x5,
-    -0x2,
-    -0x3,
-    -0x2,
-    -0x1,
-    -0x2,
-    -0x2,
-    -0x1,
-    -0x2,
-    -0x3,
-    -0x2,
-    -0x5
-}; D2_GLOBAL_GUARD(aIntensityTable_Mode1, "aIntensityTable_Mode1");
+}; D2_GLOBAL_GUARD(gaSkillChargeDescTable, "gaSkillChargeDescTable");
 
 D2SkillDescDamageFunc gapSkillDamageDescFuncTable[36] = {
     nullptr,
@@ -44238,265 +42519,6 @@ int32_t gaSkillDescLayoutPositions[36] = {
     0x136
 }; D2_GLOBAL_GUARD(gaSkillDescLayoutPositions, "gaSkillDescLayoutPositions");
 
-short gnNpcMenuQuestIdTable[256] = {
-    0x0,
-    0x1,
-    0x2,
-    0x3,
-    0x4,
-    0x5,
-    0x6,
-    0x7,
-    0x8,
-    0x9,
-    0xa,
-    0xb,
-    0xc,
-    0xd,
-    0xe,
-    0xf,
-    0x10,
-    0x11,
-    0x12,
-    0x13,
-    0x14,
-    0x15,
-    0x16,
-    0x17,
-    0x18,
-    0x19,
-    0x1a,
-    0x1b,
-    0x1c,
-    0x1d,
-    0x1e,
-    0x1f,
-    0x20,
-    0x21,
-    0x22,
-    0x23,
-    0x24,
-    0x25,
-    0x26,
-    0x27,
-    0x28,
-    0x29,
-    0x2a,
-    0x2b,
-    0x2c,
-    0x2d,
-    0x2e,
-    0x2f,
-    0x30,
-    0x31,
-    0x32,
-    0x33,
-    0x34,
-    0x35,
-    0x36,
-    0x37,
-    0x38,
-    0x39,
-    0x3a,
-    0x3b,
-    0x3c,
-    0x3d,
-    0x3e,
-    0x3f,
-    0x40,
-    0x61,
-    0x62,
-    0x63,
-    0x64,
-    0x65,
-    0x66,
-    0x67,
-    0x68,
-    0x69,
-    0x6a,
-    0x6b,
-    0x6c,
-    0x6d,
-    0x6e,
-    0x6f,
-    0x70,
-    0x71,
-    0x72,
-    0x73,
-    0x74,
-    0x75,
-    0x76,
-    0x77,
-    0x78,
-    0x79,
-    0x7a,
-    0x5b,
-    0x5c,
-    0x5d,
-    0x5e,
-    0x5f,
-    0x60,
-    0x61,
-    0x62,
-    0x63,
-    0x64,
-    0x65,
-    0x66,
-    0x67,
-    0x68,
-    0x69,
-    0x6a,
-    0x6b,
-    0x6c,
-    0x6d,
-    0x6e,
-    0x6f,
-    0x70,
-    0x71,
-    0x72,
-    0x73,
-    0x74,
-    0x75,
-    0x76,
-    0x77,
-    0x78,
-    0x79,
-    0x7a,
-    0x7b,
-    0x7c,
-    0x7d,
-    0x7e,
-    0x7f,
-    0x80,
-    0x81,
-    0x82,
-    0x83,
-    0x84,
-    0x85,
-    0x86,
-    0x87,
-    0x88,
-    0x89,
-    0x8a,
-    0x8b,
-    0x8c,
-    0x8d,
-    0x8e,
-    0x8f,
-    0x90,
-    0x91,
-    0x92,
-    0x93,
-    0x94,
-    0x95,
-    0x96,
-    0x97,
-    0x98,
-    0x99,
-    0x8a,
-    0x9b,
-    0x8c,
-    0x9d,
-    0x9e,
-    0x9f,
-    0xa0,
-    0xa1,
-    0xa2,
-    0xa3,
-    0xa4,
-    0xa5,
-    0xa6,
-    0xa7,
-    0xa8,
-    0xa9,
-    0xaa,
-    0xab,
-    0xac,
-    0xad,
-    0xae,
-    0xaf,
-    0xb0,
-    0xb1,
-    0xb2,
-    0xb3,
-    0xb4,
-    0xb5,
-    0xb6,
-    0xb7,
-    0xb8,
-    0xb9,
-    0xba,
-    0xbb,
-    0xbc,
-    0xbd,
-    0xbe,
-    0xbf,
-    0xc0,
-    0xc1,
-    0xc2,
-    0xc3,
-    0xc4,
-    0xc5,
-    0xc6,
-    0xc7,
-    0xc8,
-    0xc9,
-    0xca,
-    0xcb,
-    0xcc,
-    0xcd,
-    0xce,
-    0xcf,
-    0xd0,
-    0xd1,
-    0xd2,
-    0xd3,
-    0xd4,
-    0xd5,
-    0xd6,
-    0xd7,
-    0xd8,
-    0xd9,
-    0xda,
-    0xdb,
-    0xdc,
-    0xdd,
-    0xde,
-    0xdf,
-    0xc0,
-    0xc1,
-    0xc2,
-    0xc3,
-    0xc4,
-    0xc5,
-    0xc6,
-    0xc7,
-    0xc8,
-    0xc9,
-    0xca,
-    0xcb,
-    0xcc,
-    0xcd,
-    0xce,
-    0xcf,
-    0xd0,
-    0xd1,
-    0xd2,
-    0xd3,
-    0xd4,
-    0xd5,
-    0xd6,
-    0xf7,
-    0xd8,
-    0xd9,
-    0xda,
-    0xdb,
-    0xdc,
-    0xdd,
-    0xde,
-    0x9f
-}; D2_GLOBAL_GUARD(gnNpcMenuQuestIdTable, "gnNpcMenuQuestIdTable");
-
 eD2ClientAppMode gClientAppModeQueue[5] = {}; D2_GLOBAL_GUARD(gClientAppModeQueue, "gClientAppModeQueue");
 
 // also labelled: lpCriticalSection_QSERVERLoopRelated, lpCriticalSection_007a0468
@@ -44516,7 +42538,7 @@ eD2GSGameType eD2GSGameType_007a0610 = 0; D2_GLOBAL_GUARD(eD2GSGameType_007a0610
 
 D2ExitCutsceneState gExitCutsceneState = {}; D2_GLOBAL_GUARD(gExitCutsceneState, "gExitCutsceneState");
 
-D2ClientTimerStrc gLoadTimerDurationMs = D2ClientTimerStrc(); D2_GLOBAL_GUARD(gLoadTimerDurationMs, "gLoadTimerDurationMs");
+D2ClientTimerStrc gLoadTimerDurationMs = {}; D2_GLOBAL_GUARD(gLoadTimerDurationMs, "gLoadTimerDurationMs");
 
 HACCEL gbLanguageDllLoaded = nullptr; D2_GLOBAL_GUARD(gbLanguageDllLoaded, "gbLanguageDllLoaded");
 
@@ -44530,15 +42552,19 @@ D2UIFlagStrc GFX_bShowUIFlag = {}; D2_GLOBAL_GUARD(GFX_bShowUIFlag, "GFX_bShowUI
 
 D2UIFlagDescStrc gaUIFlagDescsClient[3] = {}; D2_GLOBAL_GUARD(gaUIFlagDescsClient, "gaUIFlagDescsClient");
 
+uint16_t gU16ImmunityStringBuffer2[256] = {}; D2_GLOBAL_GUARD(gU16ImmunityStringBuffer2, "gU16ImmunityStringBuffer2");
+
+uint16_t UNICODE_007a2c80[80] = {}; D2_GLOBAL_GUARD(UNICODE_007a2c80, "UNICODE_007a2c80");
+
+uint16_t gU16ImmunityStringBuffer1[256] = {}; D2_GLOBAL_GUARD(gU16ImmunityStringBuffer1, "gU16ImmunityStringBuffer1");
+
+uint16_t gnMonsterHealthBarValue[256] = {}; D2_GLOBAL_GUARD(gnMonsterHealthBarValue, "gnMonsterHealthBarValue");
+
 uint32_t gnAutoMapCellPriority[2048] = {}; D2_GLOBAL_GUARD(gnAutoMapCellPriority, "gnAutoMapCellPriority");
 
 D2UnitStrc * ClientSideUnitHashTables[6][128] = {}; D2_GLOBAL_GUARD(ClientSideUnitHashTables, "ClientSideUnitHashTables");
 
 D2UnitStrc * ServerSideUnitHashTables[6][128] = {}; D2_GLOBAL_GUARD(ServerSideUnitHashTables, "ServerSideUnitHashTables");
-
-D2KeyBindStrc gaKeyBindingsBackup[114] = {}; D2_GLOBAL_GUARD(gaKeyBindingsBackup, "gaKeyBindingsBackup");
-
-D2KeyBindStrc g_KeyBindingsTable[114] = {}; D2_GLOBAL_GUARD(g_KeyBindingsTable, "g_KeyBindingsTable");
 
 D2ClientLightPulseStrc gRoomLightPulse = {}; D2_GLOBAL_GUARD(gRoomLightPulse, "gRoomLightPulse");
 
@@ -44592,25 +42618,25 @@ int32_t gaArcaneStarXPos[256] = {}; D2_GLOBAL_GUARD(gaArcaneStarXPos, "gaArcaneS
 
 int32_t gaArcaneStarXVelocity[256] = {}; D2_GLOBAL_GUARD(gaArcaneStarXVelocity, "gaArcaneStarXVelocity");
 
-uint8_t PalShift_RandTransform[7680] = {}; D2_GLOBAL_GUARD(PalShift_RandTransform, "PalShift_RandTransform");
-
 LPCANDIDATELIST gpIMECandidateList = nullptr; D2_GLOBAL_GUARD(gpIMECandidateList, "gpIMECandidateList");
 
-int gnMiniPanelButtonX[8] = {}; D2_GLOBAL_GUARD(gnMiniPanelButtonX, "gnMiniPanelButtonX");
+uint16_t gwcImeCompositionBuffer[32] = {}; D2_GLOBAL_GUARD(gwcImeCompositionBuffer, "gwcImeCompositionBuffer");
 
-uint32_t gnMiniPanelButtonY[8] = {}; D2_GLOBAL_GUARD(gnMiniPanelButtonY, "gnMiniPanelButtonY");
+// also labelled: ChatValue
+uint16_t gwszChatInputText[257] = {}; D2_GLOBAL_GUARD(gwszChatInputText, "gwszChatInputText");
 
-uint32_t gnMiniPanelButtonFrame[8] = {}; D2_GLOBAL_GUARD(gnMiniPanelButtonFrame, "gnMiniPanelButtonFrame");
+uint8_t gaChatHistoryBuffer[4112] = {}; D2_GLOBAL_GUARD(gaChatHistoryBuffer, "gaChatHistoryBuffer");
 
-uint32_t gnMiniPanelButtonState[8] = {}; D2_GLOBAL_GUARD(gnMiniPanelButtonState, "gnMiniPanelButtonState");
-
-uint32_t gnMiniPanelButtonState6[8] = {}; D2_GLOBAL_GUARD(gnMiniPanelButtonState6, "gnMiniPanelButtonState6");
+// also labelled: gpIMECompositionString
+uint16_t gwcIMECompositionString[32] = {}; D2_GLOBAL_GUARD(gwcIMECompositionString, "gwcIMECompositionString");
 
 D2NpcShopButtonStrc gaNpcShopButtons[4] = {}; D2_GLOBAL_GUARD(gaNpcShopButtons, "gaNpcShopButtons");
 
 D2InventoryEntryStrc gaPlayerBodySlotScreenCoords[11] = {}; D2_GLOBAL_GUARD(gaPlayerBodySlotScreenCoords, "gaPlayerBodySlotScreenCoords");
 
 D2InventoryEntryStrc gaHirelingBodySlotScreenCoords[11] = {}; D2_GLOBAL_GUARD(gaHirelingBodySlotScreenCoords, "gaHirelingBodySlotScreenCoords");
+
+uint8_t gpInvRecipeScrollImage[8192] = {}; D2_GLOBAL_GUARD(gpInvRecipeScrollImage, "gpInvRecipeScrollImage");
 
 RGBQUAD nColor = RGBQUAD(); D2_GLOBAL_GUARD(nColor, "nColor");
 
@@ -44640,45 +42666,23 @@ RECT lprcTextOverheadRect = {}; D2_GLOBAL_GUARD(lprcTextOverheadRect, "lprcTextO
 
 int gQuestLogSelectedQuestByAct[5] = {}; D2_GLOBAL_GUARD(gQuestLogSelectedQuestByAct, "gQuestLogSelectedQuestByAct");
 
+D2QuestLogStrc gQuestLog = {}; D2_GLOBAL_GUARD(gQuestLog, "gQuestLog");
+
 int gaControlConfigRegionMouseState[7] = {}; D2_GLOBAL_GUARD(gaControlConfigRegionMouseState, "gaControlConfigRegionMouseState");
 
 uint64_t gbUIGoldStashMode = 0; D2_GLOBAL_GUARD(gbUIGoldStashMode, "gbUIGoldStashMode");
 
 uint64_t gbUIStatWindowDrawFlag = 0; D2_GLOBAL_GUARD(gbUIStatWindowDrawFlag, "gbUIStatWindowDrawFlag");
 
-D2SpellSelGridRegionStrc gSpellSelGridRegion = {}; D2_GLOBAL_GUARD(gSpellSelGridRegion, "gSpellSelGridRegion");
-
-int gSpellSelectionSkillIDs[16] = {}; D2_GLOBAL_GUARD(gSpellSelectionSkillIDs, "gSpellSelectionSkillIDs");
-
-int32_t gSpellSelLeftSkillBindings[16] = {}; D2_GLOBAL_GUARD(gSpellSelLeftSkillBindings, "gSpellSelLeftSkillBindings");
-
-int gSpellSelRightSkillBindings[16] = {}; D2_GLOBAL_GUARD(gSpellSelRightSkillBindings, "gSpellSelRightSkillBindings");
-
-int gbSpellSelSkillTreeNodeHovered[128] = {}; D2_GLOBAL_GUARD(gbSpellSelSkillTreeNodeHovered, "gbSpellSelSkillTreeNodeHovered");
-
-int gaSpellSelSkillTreeState[128] = {}; D2_GLOBAL_GUARD(gaSpellSelSkillTreeState, "gaSpellSelSkillTreeState");
+uint16_t gnMonsterUniqueNameBuffer[2] = {}; D2_GLOBAL_GUARD(gnMonsterUniqueNameBuffer, "gnMonsterUniqueNameBuffer");
 
 D2GSPacketSrv0x2A D2GSPacketSrv0x2A_007c0d87 = {}; D2_GLOBAL_GUARD(D2GSPacketSrv0x2A_007c0d87, "D2GSPacketSrv0x2A_007c0d87");
 
 short gaNpcMenuHandledMessageIds[9] = {}; D2_GLOBAL_GUARD(gaNpcMenuHandledMessageIds, "gaNpcMenuHandledMessageIds");
 
-uint8_t aQuestAvailabilityPacket[37] = {}; D2_GLOBAL_GUARD(aQuestAvailabilityPacket, "aQuestAvailabilityPacket");
-
-D2GroundItemLabelStrc gaGroundItemLabels[32] = {}; D2_GLOBAL_GUARD(gaGroundItemLabels, "gaGroundItemLabels");
+uint16_t gNpcMenuConfirmDialogStrings[40] = {}; D2_GLOBAL_GUARD(gNpcMenuConfirmDialogStrings, "gNpcMenuConfirmDialogStrings");
 
 int gaLevelAmbientMusicPlayedFlags[1024] = {}; D2_GLOBAL_GUARD(gaLevelAmbientMusicPlayedFlags, "gaLevelAmbientMusicPlayedFlags");
-
-int gPlrModeTokens[20] = {}; D2_GLOBAL_GUARD(gPlrModeTokens, "gPlrModeTokens");
-
-int gTxtCompositTokens[16] = {}; D2_GLOBAL_GUARD(gTxtCompositTokens, "gTxtCompositTokens");
-
-int gObjModeTokens[8] = {}; D2_GLOBAL_GUARD(gObjModeTokens, "gObjModeTokens");
-
-int gMonModeTokens[16] = {}; D2_GLOBAL_GUARD(gMonModeTokens, "gMonModeTokens");
-
-int gArmTypeTokens[3] = {}; D2_GLOBAL_GUARD(gArmTypeTokens, "gArmTypeTokens");
-
-D2ClientSoundChannelStrc gaSoundChannels[16] = {}; D2_GLOBAL_GUARD(gaSoundChannels, "gaSoundChannels");
 
 int32_t gaYBufferRowOffsets[732] = {}; D2_GLOBAL_GUARD(gaYBufferRowOffsets, "gaYBufferRowOffsets");
 
@@ -44687,31 +42691,22 @@ int32_t gaYBufferRowOffsets[732] = {}; D2_GLOBAL_GUARD(gaYBufferRowOffsets, "gaY
 // =============================================================================
 
 int cChatCmdExclaim = 0x21; D2_GLOBAL_GUARD(cChatCmdExclaim, "cChatCmdExclaim");
+char * gpszDiabloIICaption = s_Diablo_II_006cc8b8; D2_GLOBAL_GUARD(gpszDiabloIICaption, "gpszDiabloIICaption");
 BOOL gbQuitGame = 0x1; D2_GLOBAL_GUARD(gbQuitGame, "gbQuitGame");
 uint32_t gnPrimaryClickState = 0x10; D2_GLOBAL_GUARD(gnPrimaryClickState, "gnPrimaryClickState");
 int gnMouseButtonEventState = 0x10; D2_GLOBAL_GUARD(gnMouseButtonEventState, "gnMouseButtonEventState");
 int gnActTransitionFadeFrames = 0x1; D2_GLOBAL_GUARD(gnActTransitionFadeFrames, "gnActTransitionFadeFrames");
-D2GameRecordStrc * gpCurrentGameRecord = (D2GameRecordStrc *)&gsGameRecordContext; D2_GLOBAL_GUARD(gpCurrentGameRecord, "gpCurrentGameRecord");
 uint32_t gnLastMouseButtonEventType = 0x1; D2_GLOBAL_GUARD(gnLastMouseButtonEventType, "gnLastMouseButtonEventType");
 int nHealthBarScreenX = -0x1; D2_GLOBAL_GUARD(nHealthBarScreenX, "nHealthBarScreenX");
 int gnMercenaryHealthBarScreenY = -0x1; D2_GLOBAL_GUARD(gnMercenaryHealthBarScreenY, "gnMercenaryHealthBarScreenY");
 int gnUIFlagCount = 0x27; D2_GLOBAL_GUARD(gnUIFlagCount, "gnUIFlagCount"); // VP: vanilla-plus 0x26 -> 0x27 (UI_VANILLAPLUS)
 uint32_t gbCursorAnimationPending = 0x1; D2_GLOBAL_GUARD(gbCursorAnimationPending, "gbCursorAnimationPending");
 int nAutoMapZoomDivisor = 0xa; D2_GLOBAL_GUARD(nAutoMapZoomDivisor, "nAutoMapZoomDivisor");
-uint32_t nNextGUID = 0x1; D2_GLOBAL_GUARD(nNextGUID, "nNextGUID");
-uint32_t gnSelectConstant13_X = 0x13; D2_GLOBAL_GUARD(gnSelectConstant13_X, "gnSelectConstant13_X");
-uint32_t gnSelectConstant13_Y = 0x13; D2_GLOBAL_GUARD(gnSelectConstant13_Y, "gnSelectConstant13_Y");
-int gnCursorDataCount = 0x7; D2_GLOBAL_GUARD(gnCursorDataCount, "gnCursorDataCount");
-int gnDenOfEvilLightTimerTick = -0x1; D2_GLOBAL_GUARD(gnDenOfEvilLightTimerTick, "gnDenOfEvilLightTimerTick");
-int gnDiabloSpawnLightTimer = -0x1; D2_GLOBAL_GUARD(gnDiabloSpawnLightTimer, "gnDiabloSpawnLightTimer");
-uint32_t gnQuestMonsterUnitId = -0x1; D2_GLOBAL_GUARD(gnQuestMonsterUnitId, "gnQuestMonsterUnitId");
-uint32_t gnMonsterModePrecacheCount = 0xf; D2_GLOBAL_GUARD(gnMonsterModePrecacheCount, "gnMonsterModePrecacheCount");
-uint32_t gnBlizzardSoundPlayed = 0x1; D2_GLOBAL_GUARD(gnBlizzardSoundPlayed, "gnBlizzardSoundPlayed");
+int ScreenSizeX = 0x280; D2_GLOBAL_GUARD(ScreenSizeX, "ScreenSizeX");
+int ScreenSizeY = 0x1e0; D2_GLOBAL_GUARD(ScreenSizeY, "ScreenSizeY");
+D2CmdBindingStrc gaCmdHandlerTable[57] = {}; D2_GLOBAL_GUARD(gaCmdHandlerTable, "gaCmdHandlerTable");
+D2CmdBindingStrc gnCmdTableMax[57] = {}; D2_GLOBAL_GUARD(gnCmdTableMax, "gnCmdTableMax");
 uint32_t gbLightmapColorEnabled = 0x1; D2_GLOBAL_GUARD(gbLightmapColorEnabled, "gbLightmapColorEnabled");
-D2SeedStrc * gpArcaneStarsSeed = (D2SeedStrc *)&gaSpriteArcaneStarYOffset; D2_GLOBAL_GUARD(gpArcaneStarsSeed, "gpArcaneStarsSeed");
-int gnChatHistoryReadIndex = 0x7; D2_GLOBAL_GUARD(gnChatHistoryReadIndex, "gnChatHistoryReadIndex");
-uint32_t gnChatHistoryWriteIndex = 0x7; D2_GLOBAL_GUARD(gnChatHistoryWriteIndex, "gnChatHistoryWriteIndex");
-uint32_t gpWardenModuleParam = -0x1; D2_GLOBAL_GUARD(gpWardenModuleParam, "gpWardenModuleParam");
 uint32_t gnInventoryActiveUnitId = 0x1; D2_GLOBAL_GUARD(gnInventoryActiveUnitId, "gnInventoryActiveUnitId");
 int gnItemDescTitleMaxWidth = 0x1; D2_GLOBAL_GUARD(gnItemDescTitleMaxWidth, "gnItemDescTitleMaxWidth");
 int gaInventoryItemSlots = -0x1; D2_GLOBAL_GUARD(gaInventoryItemSlots, "gaInventoryItemSlots");
@@ -44731,27 +42726,18 @@ uint32_t gnInvLArmSlotImageOffsetX = 0x0; D2_GLOBAL_GUARD(gnInvLArmSlotImageOffs
 uint32_t gnInvLArmSlotImageOffsetY = -0x2; D2_GLOBAL_GUARD(gnInvLArmSlotImageOffsetY, "gnInvLArmSlotImageOffsetY");
 int AmountOfNPCTabs = 0x4; D2_GLOBAL_GUARD(AmountOfNPCTabs, "AmountOfNPCTabs");
 uint32_t CurrentNpcButtonSelection = 0x3; D2_GLOBAL_GUARD(CurrentNpcButtonSelection, "CurrentNpcButtonSelection");
-int gnBeltPanelState = 0x2; D2_GLOBAL_GUARD(gnBeltPanelState, "gnBeltPanelState");
-BOOL gbPanelClickProcessed = 0x1; D2_GLOBAL_GUARD(gbPanelClickProcessed, "gbPanelClickProcessed");
-int32_t gnBeltSlotUnderCursor = -0x1; D2_GLOBAL_GUARD(gnBeltSlotUnderCursor, "gnBeltSlotUnderCursor");
-int gnBeltTooltipX = -0x1; D2_GLOBAL_GUARD(gnBeltTooltipX, "gnBeltTooltipX");
-int gnBeltTooltipY = -0x1; D2_GLOBAL_GUARD(gnBeltTooltipY, "gnBeltTooltipY");
-unsigned int gnScrollingTextBoxTopY = 0xc; D2_GLOBAL_GUARD(gnScrollingTextBoxTopY, "gnScrollingTextBoxTopY");
 D2ConfigControlDescStrc * gpStatDescriptorTable = (D2ConfigControlDescStrc *)&gaConfigControlBindings; D2_GLOBAL_GUARD(gpStatDescriptorTable, "gpStatDescriptorTable");
 int nConfigControlSelected = 0x1; D2_GLOBAL_GUARD(nConfigControlSelected, "nConfigControlSelected");
 uint32_t gnConfigBindingFirstClick = 0x1; D2_GLOBAL_GUARD(gnConfigBindingFirstClick, "gnConfigBindingFirstClick");
-int nSkillTreeActiveTab = 0x1; D2_GLOBAL_GUARD(nSkillTreeActiveTab, "nSkillTreeActiveTab");
-int gnSkillTreeHighlightIndex = 0x1; D2_GLOBAL_GUARD(gnSkillTreeHighlightIndex, "gnSkillTreeHighlightIndex");
 int D2NPCSpeechCount = 0x2e; D2_GLOBAL_GUARD(D2NPCSpeechCount, "D2NPCSpeechCount");
 int nSoundVolumeLeftChannel = 0x64; D2_GLOBAL_GUARD(nSoundVolumeLeftChannel, "nSoundVolumeLeftChannel");
 int nSoundVolumeRightChannel = 0x64; D2_GLOBAL_GUARD(nSoundVolumeRightChannel, "nSoundVolumeRightChannel");
 int nCashDisplayItemCount = 0x2; D2_GLOBAL_GUARD(nCashDisplayItemCount, "nCashDisplayItemCount");
-int SKILLCLTDOFUNCS_SIZE = 0x82; D2_GLOBAL_GUARD(SKILLCLTDOFUNCS_SIZE, "SKILLCLTDOFUNCS_SIZE");
-uint32_t gnLightmapQualityLastCheck = 0x1; D2_GLOBAL_GUARD(gnLightmapQualityLastCheck, "gnLightmapQualityLastCheck");
 uint32_t gnDialogDataInitialized = 0x1; D2_GLOBAL_GUARD(gnDialogDataInitialized, "gnDialogDataInitialized");
 D2IniConfigStrc * D2IniData_client = 0; D2_GLOBAL_GUARD(D2IniData_client, "D2IniData_client");
 uint32_t gnClientAppModeQueueState = 0; D2_GLOBAL_GUARD(gnClientAppModeQueueState, "gnClientAppModeQueueState");
 int gClientAppModeQueueCounter = 0; D2_GLOBAL_GUARD(gClientAppModeQueueCounter, "gClientAppModeQueueCounter");
+LPCSTR gpszCmdLineCaptionStr = 0; D2_GLOBAL_GUARD(gpszCmdLineCaptionStr, "gpszCmdLineCaptionStr");
 uint32_t gbQServerRunning = 0; D2_GLOBAL_GUARD(gbQServerRunning, "gbQServerRunning");
 unsigned int gdwLastPacketActivityTick = {}; D2_GLOBAL_GUARD(gdwLastPacketActivityTick, "gdwLastPacketActivityTick");
 uint32_t gnClientModeInitValue = 0; D2_GLOBAL_GUARD(gnClientModeInitValue, "gnClientModeInitValue");
@@ -44795,13 +42781,12 @@ HMODULE ghLngLibrary = 0; D2_GLOBAL_GUARD(ghLngLibrary, "ghLngLibrary");
 uint32_t gdwQuestResurrectDismissThrottle = 0; D2_GLOBAL_GUARD(gdwQuestResurrectDismissThrottle, "gdwQuestResurrectDismissThrottle");
 DC6 * DC6_EnteredAreaName = 0; D2_GLOBAL_GUARD(DC6_EnteredAreaName, "DC6_EnteredAreaName");
 DC6 * pDC6_Frame = 0; D2_GLOBAL_GUARD(pDC6_Frame, "pDC6_Frame");
-uint32_t gnGoldDialogTransactionType = 0; D2_GLOBAL_GUARD(gnGoldDialogTransactionType, "gnGoldDialogTransactionType");
+int gnGoldDialogTransactionType = 0; D2_GLOBAL_GUARD(gnGoldDialogTransactionType, "gnGoldDialogTransactionType");
 SpinnerWrapper * gpCurrentDialog = 0; D2_GLOBAL_GUARD(gpCurrentDialog, "gpCurrentDialog");
 EditBoxWrapper * gpDialogDefaultActionCallback = 0; D2_GLOBAL_GUARD(gpDialogDefaultActionCallback, "gpDialogDefaultActionCallback");
 ButtonWrapper * gpUiGoldTransactionDialog = 0; D2_GLOBAL_GUARD(gpUiGoldTransactionDialog, "gpUiGoldTransactionDialog");
 ButtonWrapper * gpUiGoldDialogCancelButton = 0; D2_GLOBAL_GUARD(gpUiGoldDialogCancelButton, "gpUiGoldDialogCancelButton");
 uint32_t gbKeyConfigModeActiveInDialog = 0; D2_GLOBAL_GUARD(gbKeyConfigModeActiveInDialog, "gbKeyConfigModeActiveInDialog");
-uint32_t gbLoadScreenLevelLoadInProgress = 0; D2_GLOBAL_GUARD(gbLoadScreenLevelLoadInProgress, "gbLoadScreenLevelLoadInProgress");
 // also labelled: g_nMouseX
 int gnPanelOffsetX = 0; D2_GLOBAL_GUARD(gnPanelOffsetX, "gnPanelOffsetX");
 // also labelled: g_nMouseY
@@ -44815,7 +42800,6 @@ int nLoadedActNo = 0; D2_GLOBAL_GUARD(nLoadedActNo, "nLoadedActNo");
 DC6 * gpDC6YouDiedHardcoreImage = 0; D2_GLOBAL_GUARD(gpDC6YouDiedHardcoreImage, "gpDC6YouDiedHardcoreImage");
 DC6 * gpDC6DeathInstructionImage = 0; D2_GLOBAL_GUARD(gpDC6DeathInstructionImage, "gpDC6DeathInstructionImage");
 uint32_t gnGoldDialogTransactionMode = 0; D2_GLOBAL_GUARD(gnGoldDialogTransactionMode, "gnGoldDialogTransactionMode");
-uint32_t gnLoadScreenAnimFrame = 0; D2_GLOBAL_GUARD(gnLoadScreenAnimFrame, "gnLoadScreenAnimFrame");
 uint32_t gnImmunityText2Color = 0; D2_GLOBAL_GUARD(gnImmunityText2Color, "gnImmunityText2Color");
 uint32_t gnTooltipScreenX = 0; D2_GLOBAL_GUARD(gnTooltipScreenX, "gnTooltipScreenX");
 uint32_t gnTooltipScreenY = 0; D2_GLOBAL_GUARD(gnTooltipScreenY, "gnTooltipScreenY");
@@ -44838,6 +42822,8 @@ uint32_t MouseXOffset = 0; D2_GLOBAL_GUARD(MouseXOffset, "MouseXOffset");
 uint32_t gnBorderType = 0; D2_GLOBAL_GUARD(gnBorderType, "gnBorderType");
 uint32_t MouseYRelatedB = 0; D2_GLOBAL_GUARD(MouseYRelatedB, "MouseYRelatedB");
 uint32_t nScreenMode = 0; D2_GLOBAL_GUARD(nScreenMode, "nScreenMode");
+int WindowSizeY = 0; D2_GLOBAL_GUARD(WindowSizeY, "WindowSizeY");
+int WindowSizeX = 0; D2_GLOBAL_GUARD(WindowSizeX, "WindowSizeX");
 size_t nD2PacketsClientBufferSize = 0; D2_GLOBAL_GUARD(nD2PacketsClientBufferSize, "nD2PacketsClientBufferSize");
 uint32_t gbConnectionLost = 0; D2_GLOBAL_GUARD(gbConnectionLost, "gbConnectionLost");
 D2ArchiveStrc * IMG_popupok_DiscPrompt = 0; D2_GLOBAL_GUARD(IMG_popupok_DiscPrompt, "IMG_popupok_DiscPrompt");
@@ -44849,9 +42835,16 @@ uint32_t gnConnectionLostScreenState = 0; D2_GLOBAL_GUARD(gnConnectionLostScreen
 uint32_t gbCharScreenOkPressed = 0; D2_GLOBAL_GUARD(gbCharScreenOkPressed, "gbCharScreenOkPressed");
 uint32_t gbCharScreenOkButtonConfirmed = 0; D2_GLOBAL_GUARD(gbCharScreenOkButtonConfirmed, "gbCharScreenOkButtonConfirmed");
 uint32_t gbCharScreenCancelPressed = 0; D2_GLOBAL_GUARD(gbCharScreenCancelPressed, "gbCharScreenCancelPressed");
-BOOL BOOL_007a5260 = 0; D2_GLOBAL_GUARD(BOOL_007a5260, "BOOL_007a5260");
-BOOL bRecursionClick = 0; D2_GLOBAL_GUARD(bRecursionClick, "bRecursionClick");
+D2UnitStrc * ClientSideUnitHashTables_1__0_[6][128] = {}; D2_GLOBAL_GUARD(ClientSideUnitHashTables_1__0_, "ClientSideUnitHashTables_1__0_");
+D2UnitStrc * ClientSideUnitHashTables_1__1_[6][128] = {}; D2_GLOBAL_GUARD(ClientSideUnitHashTables_1__1_, "ClientSideUnitHashTables_1__1_");
+D2UnitStrc * ClientSideUnitHashTables_2__0_[6][128] = {}; D2_GLOBAL_GUARD(ClientSideUnitHashTables_2__0_, "ClientSideUnitHashTables_2__0_");
 D2UnitStrc * ClientSideUnitHashTables_3__0_[6][128] = {}; D2_GLOBAL_GUARD(ClientSideUnitHashTables_3__0_, "ClientSideUnitHashTables_3__0_");
+D2UnitStrc * ServerSideUnitHashTables_0__1_[6][128] = {}; D2_GLOBAL_GUARD(ServerSideUnitHashTables_0__1_, "ServerSideUnitHashTables_0__1_");
+D2UnitStrc * ServerSideUnitHashTables_1__0_[6][128] = {}; D2_GLOBAL_GUARD(ServerSideUnitHashTables_1__0_, "ServerSideUnitHashTables_1__0_");
+D2UnitStrc * ServerSideUnitHashTables_1__1_[6][128] = {}; D2_GLOBAL_GUARD(ServerSideUnitHashTables_1__1_, "ServerSideUnitHashTables_1__1_");
+D2UnitStrc * ServerSideUnitHashTables_2__0_[6][128] = {}; D2_GLOBAL_GUARD(ServerSideUnitHashTables_2__0_, "ServerSideUnitHashTables_2__0_");
+D2UnitStrc * ServerSideUnitHashTables_3__0_[6][128] = {}; D2_GLOBAL_GUARD(ServerSideUnitHashTables_3__0_, "ServerSideUnitHashTables_3__0_");
+D2UnitStrc * ServerSideUnitHashTables_4__0_[6][128] = {}; D2_GLOBAL_GUARD(ServerSideUnitHashTables_4__0_, "ServerSideUnitHashTables_4__0_");
 D2UnitStrc * pPlayerUnit = 0; D2_GLOBAL_GUARD(pPlayerUnit, "pPlayerUnit");
 int gnSelectExclusionRectLeft = 0; D2_GLOBAL_GUARD(gnSelectExclusionRectLeft, "gnSelectExclusionRectLeft");
 int gnSelectExclusionRectTop = 0; D2_GLOBAL_GUARD(gnSelectExclusionRectTop, "gnSelectExclusionRectTop");
@@ -44866,21 +42859,6 @@ D2UnitStrc * pCursorItem = 0; D2_GLOBAL_GUARD(pCursorItem, "pCursorItem");
 int32_t gCursorAnimationFrame = 0; D2_GLOBAL_GUARD(gCursorAnimationFrame, "gCursorAnimationFrame");
 uint32_t gnCursorAnimStartTick = 0; D2_GLOBAL_GUARD(gnCursorAnimStartTick, "gnCursorAnimStartTick");
 int ItemTypeOnHand = 0; D2_GLOBAL_GUARD(ItemTypeOnHand, "ItemTypeOnHand");
-// also labelled: gnPacketSendCount_0x69
-unsigned int gnD2GSBytesSentTotal = {}; D2_GLOBAL_GUARD(gnD2GSBytesSentTotal, "gnD2GSBytesSentTotal");
-// also labelled: gbNetworkPacketSyncFlag
-uint32_t gnD2GSPacketsSentTotal = 0; D2_GLOBAL_GUARD(gnD2GSPacketsSentTotal, "gnD2GSPacketsSentTotal");
-int gnCursorInitialized = 0; D2_GLOBAL_GUARD(gnCursorInitialized, "gnCursorInitialized");
-pfnVoidNoArgCallback gpfnMouseLeftButtonHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnMouseLeftButtonHandler, "gpfnMouseLeftButtonHandler");
-pfnVoidNoArgCallback gpfnMouseRightButtonHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnMouseRightButtonHandler, "gpfnMouseRightButtonHandler");
-pfnVoidNoArgCallback gpfnMouseMiddleButtonHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnMouseMiddleButtonHandler, "gpfnMouseMiddleButtonHandler");
-pfnVoidNoArgCallback gpfnScrollUpButtonHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnScrollUpButtonHandler, "gpfnScrollUpButtonHandler");
-pfnVoidNoArgCallback gpfnScrollDownButtonHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnScrollDownButtonHandler, "gpfnScrollDownButtonHandler");
-pfnVoidNoArgCallback gpfnMouseLeftButtonAltHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnMouseLeftButtonAltHandler, "gpfnMouseLeftButtonAltHandler");
-pfnVoidNoArgCallback gpfnMouseRightButtonAltHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnMouseRightButtonAltHandler, "gpfnMouseRightButtonAltHandler");
-pfnVoidNoArgCallback gpfnMouseMiddleButtonAltHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnMouseMiddleButtonAltHandler, "gpfnMouseMiddleButtonAltHandler");
-unsigned int gbKeyBindingsEnabled = {}; D2_GLOBAL_GUARD(gbKeyBindingsEnabled, "gbKeyBindingsEnabled");
-unsigned int gbKeyConfigModeActive = {}; D2_GLOBAL_GUARD(gbKeyConfigModeActive, "gbKeyConfigModeActive");
 BOOL DenOfEvilLight = 0; D2_GLOBAL_GUARD(DenOfEvilLight, "DenOfEvilLight");
 uint32_t gnDiabloSpawnLightActive = 0; D2_GLOBAL_GUARD(gnDiabloSpawnLightActive, "gnDiabloSpawnLightActive");
 // also labelled: SecondsUntilGameEnds
@@ -44895,6 +42873,7 @@ int gnGfxDirectionCountCache = 0; D2_GLOBAL_GUARD(gnGfxDirectionCountCache, "gnG
 int gnWeatherTransitionCountdown = 0; D2_GLOBAL_GUARD(gnWeatherTransitionCountdown, "gnWeatherTransitionCountdown");
 int gnWeatherTransitionState = 0; D2_GLOBAL_GUARD(gnWeatherTransitionState, "gnWeatherTransitionState");
 float gnWeatherTransitionInitialized = 0; D2_GLOBAL_GUARD(gnWeatherTransitionInitialized, "gnWeatherTransitionInitialized");
+DC6 * DC6_UncompOverlays_Rain2[4] = {}; D2_GLOBAL_GUARD(DC6_UncompOverlays_Rain2, "DC6_UncompOverlays_Rain2");
 int gnWeatherParticleState = 0; D2_GLOBAL_GUARD(gnWeatherParticleState, "gnWeatherParticleState");
 int gnWeatherRngCountdown = 0; D2_GLOBAL_GUARD(gnWeatherRngCountdown, "gnWeatherRngCountdown");
 uint32_t gbWeatherTransitionTriggered = 0; D2_GLOBAL_GUARD(gbWeatherTransitionTriggered, "gbWeatherTransitionTriggered");
@@ -44921,14 +42900,9 @@ int nScaleFactor = 0; D2_GLOBAL_GUARD(nScaleFactor, "nScaleFactor");
 uint32_t gnLastLightmapUpdateFrame = 0; D2_GLOBAL_GUARD(gnLastLightmapUpdateFrame, "gnLastLightmapUpdateFrame");
 DC6 * gpAncientsBgDC6 = 0; D2_GLOBAL_GUARD(gpAncientsBgDC6, "gpAncientsBgDC6");
 DC6 * gnDrawBackgroundRenderOffset = 0; D2_GLOBAL_GUARD(gnDrawBackgroundRenderOffset, "gnDrawBackgroundRenderOffset");
-void * gpMonsterPalShiftList = 0; D2_GLOBAL_GUARD(gpMonsterPalShiftList, "gpMonsterPalShiftList");
-void * gpPalShiftEntryListHead = 0; D2_GLOBAL_GUARD(gpPalShiftEntryListHead, "gpPalShiftEntryListHead");
-int gbPalShiftRandTransformLoaded = 0; D2_GLOBAL_GUARD(gbPalShiftRandTransformLoaded, "gbPalShiftRandTransformLoaded");
-D2GamePalShiftGreenBloodStrc * PalShift_GreenBlood = 0; D2_GLOBAL_GUARD(PalShift_GreenBlood, "PalShift_GreenBlood");
 uint32_t fps = 0; D2_GLOBAL_GUARD(fps, "fps");
 uint32_t gbFPSStatsEnabled = 0; D2_GLOBAL_GUARD(gbFPSStatsEnabled, "gbFPSStatsEnabled");
 uint32_t gbHideExtendedFPSStats = 0; D2_GLOBAL_GUARD(gbHideExtendedFPSStats, "gbHideExtendedFPSStats");
-uint32_t gnLoadingProgressRatio = 0; D2_GLOBAL_GUARD(gnLoadingProgressRatio, "gnLoadingProgressRatio");
 uint32_t gnChatHistoryScrollIndex = 0; D2_GLOBAL_GUARD(gnChatHistoryScrollIndex, "gnChatHistoryScrollIndex");
 int gaIMECompositionBuffer = 0; D2_GLOBAL_GUARD(gaIMECompositionBuffer, "gaIMECompositionBuffer");
 char gaChatInputBuffer = 0; D2_GLOBAL_GUARD(gaChatInputBuffer, "gaChatInputBuffer");
@@ -44937,49 +42911,40 @@ uint16_t gnChatHistoryFillCount = 0; D2_GLOBAL_GUARD(gnChatHistoryFillCount, "gn
 uint32_t gnChatInputTextCursorPosition = 0; D2_GLOBAL_GUARD(gnChatInputTextCursorPosition, "gnChatInputTextCursorPosition");
 int gnChatInputTextLength = 0; D2_GLOBAL_GUARD(gnChatInputTextLength, "gnChatInputTextLength");
 uint32_t gnIMEInputMode = 0; D2_GLOBAL_GUARD(gnIMEInputMode, "gnIMEInputMode");
-int gnEscMenuSelectedIndex = 0; D2_GLOBAL_GUARD(gnEscMenuSelectedIndex, "gnEscMenuSelectedIndex");
-D2EscMenuHeaderStrc * gpEscMenuItemCount = 0; D2_GLOBAL_GUARD(gpEscMenuItemCount, "gpEscMenuItemCount");
-D2EscMenuItemStrc * gpEscMenuCurrentTable = 0; D2_GLOBAL_GUARD(gpEscMenuCurrentTable, "gpEscMenuCurrentTable");
-uint32_t gbEscMenuSliderDragging = 0; D2_GLOBAL_GUARD(gbEscMenuSliderDragging, "gbEscMenuSliderDragging");
-uint32_t gnEscMenuSliderValue = 0; D2_GLOBAL_GUARD(gnEscMenuSliderValue, "gnEscMenuSliderValue");
-DC6 * gpEscMenuOptBarDC6 = 0; D2_GLOBAL_GUARD(gpEscMenuOptBarDC6, "gpEscMenuOptBarDC6");
-DC6 * gpEscMenuOptBarCDC6 = 0; D2_GLOBAL_GUARD(gpEscMenuOptBarCDC6, "gpEscMenuOptBarCDC6");
-DC6 * gpEscMenuOptSkullDC6 = 0; D2_GLOBAL_GUARD(gpEscMenuOptSkullDC6, "gpEscMenuOptSkullDC6");
-int SizeCurrentSelectedEscMenuItem = 0; D2_GLOBAL_GUARD(SizeCurrentSelectedEscMenuItem, "SizeCurrentSelectedEscMenuItem");
-DC6 * gpMiniPanelBackgroundDC6 = 0; D2_GLOBAL_GUARD(gpMiniPanelBackgroundDC6, "gpMiniPanelBackgroundDC6");
-DC6 * gpMiniPanelButtonsDC6 = 0; D2_GLOBAL_GUARD(gpMiniPanelButtonsDC6, "gpMiniPanelButtonsDC6");
-uint32_t gnMiniPanelRightScreen = 0; D2_GLOBAL_GUARD(gnMiniPanelRightScreen, "gnMiniPanelRightScreen");
-uint32_t gnMiniPanelLeftScreen = 0; D2_GLOBAL_GUARD(gnMiniPanelLeftScreen, "gnMiniPanelLeftScreen");
-uint32_t gnMiniPanelMouseOverButton = 0; D2_GLOBAL_GUARD(gnMiniPanelMouseOverButton, "gnMiniPanelMouseOverButton");
-uint32_t gbMiniPanelSinglePlayer = 0; D2_GLOBAL_GUARD(gbMiniPanelSinglePlayer, "gbMiniPanelSinglePlayer");
-uint32_t gnMiniPanelHoverState = 0; D2_GLOBAL_GUARD(gnMiniPanelHoverState, "gnMiniPanelHoverState");
-void * gpWardenResponseData = 0; D2_GLOBAL_GUARD(gpWardenResponseData, "gpWardenResponseData");
-uint32_t gnWardenResponseSize = 0; D2_GLOBAL_GUARD(gnWardenResponseSize, "gnWardenResponseSize");
-D2WardenModuleStrc * gpWardenActiveModule = 0; D2_GLOBAL_GUARD(gpWardenActiveModule, "gpWardenActiveModule");
-D2WardenModuleStrc * gpWardenPendingModule = 0; D2_GLOBAL_GUARD(gpWardenPendingModule, "gpWardenPendingModule");
-D2BNetClientCallbacksStrc * sgpUnknownSequence = 0; D2_GLOBAL_GUARD(sgpUnknownSequence, "sgpUnknownSequence");
 void * pSoundChannelDataArray = 0; D2_GLOBAL_GUARD(pSoundChannelDataArray, "pSoundChannelDataArray");
 D2SoundsTxt * pTxtSounds = 0; D2_GLOBAL_GUARD(pTxtSounds, "pTxtSounds");
 int nTxtSoundsSize = 0; D2_GLOBAL_GUARD(nTxtSoundsSize, "nTxtSoundsSize");
 D2SoundEnvironTxt * pTxtSoundEnviron = 0; D2_GLOBAL_GUARD(pTxtSoundEnviron, "pTxtSoundEnviron");
 int nTxtSoundEnvironSize = 0; D2_GLOBAL_GUARD(nTxtSoundEnvironSize, "nTxtSoundEnvironSize");
-uint32_t gpSoundHdrGlobal = 0; D2_GLOBAL_GUARD(gpSoundHdrGlobal, "gpSoundHdrGlobal");
-uint32_t gnSoundIdRangeMax = 0; D2_GLOBAL_GUARD(gnSoundIdRangeMax, "gnSoundIdRangeMax");
+int gpSoundHdrGlobal = 0; D2_GLOBAL_GUARD(gpSoundHdrGlobal, "gpSoundHdrGlobal");
+int gnSoundIdRangeMax = 0; D2_GLOBAL_GUARD(gnSoundIdRangeMax, "gnSoundIdRangeMax");
 uint32_t gnCurrentGameAudioVolume = 0; D2_GLOBAL_GUARD(gnCurrentGameAudioVolume, "gnCurrentGameAudioVolume");
 unsigned int gdwLastSoundAsyncLoadTick = {}; D2_GLOBAL_GUARD(gdwLastSoundAsyncLoadTick, "gdwLastSoundAsyncLoadTick");
 int gnSoundEvictedAudioVolume = 0; D2_GLOBAL_GUARD(gnSoundEvictedAudioVolume, "gnSoundEvictedAudioVolume");
 uint32_t gnSoundAsyncLoadCount = 0; D2_GLOBAL_GUARD(gnSoundAsyncLoadCount, "gnSoundAsyncLoadCount");
 uint32_t gnSoundBufferMaxBytes = 0; D2_GLOBAL_GUARD(gnSoundBufferMaxBytes, "gnSoundBufferMaxBytes");
 uint32_t gnSoundBufferBytesLoaded = 0; D2_GLOBAL_GUARD(gnSoundBufferBytesLoaded, "gnSoundBufferBytesLoaded");
-char gbCutsceneActive = 0; D2_GLOBAL_GUARD(gbCutsceneActive, "gbCutsceneActive");
-uint8_t gbLoggerStateInactive = 0; D2_GLOBAL_GUARD(gbLoggerStateInactive, "gbLoggerStateInactive");
-uint8_t gbItemDescDirtyFlag = 0; D2_GLOBAL_GUARD(gbItemDescDirtyFlag, "gbItemDescDirtyFlag");
-uint8_t geCutsceneCurrentSoundId = 0; D2_GLOBAL_GUARD(geCutsceneCurrentSoundId, "geCutsceneCurrentSoundId");
+D2NpcShopButtonStrc DRAW_UI_NPC_BUTTONS[4] = {}; D2_GLOBAL_GUARD(DRAW_UI_NPC_BUTTONS, "DRAW_UI_NPC_BUTTONS");
+D2NpcShopButtonStrc gaNpcShopButtonStringIds[4] = {}; D2_GLOBAL_GUARD(gaNpcShopButtonStringIds, "gaNpcShopButtonStringIds");
+D2NpcShopButtonStrc gnNpcShopButtonActionType[4] = {}; D2_GLOBAL_GUARD(gnNpcShopButtonActionType, "gnNpcShopButtonActionType");
+D2NpcShopButtonStrc gnCurrentNpcButtonSelection[4] = {}; D2_GLOBAL_GUARD(gnCurrentNpcButtonSelection, "gnCurrentNpcButtonSelection");
+D2NpcShopButtonStrc gnNpcShopButtonActionType_b[4] = {}; D2_GLOBAL_GUARD(gnNpcShopButtonActionType_b, "gnNpcShopButtonActionType_b");
+D2NpcShopButtonStrc gnSomeUIOffset1[4] = {}; D2_GLOBAL_GUARD(gnSomeUIOffset1, "gnSomeUIOffset1");
+D2NpcShopButtonStrc gnCurrentShopNpcButtonState[4] = {}; D2_GLOBAL_GUARD(gnCurrentShopNpcButtonState, "gnCurrentShopNpcButtonState");
+D2NpcShopButtonStrc NpcButtonFirst[4] = {}; D2_GLOBAL_GUARD(NpcButtonFirst, "NpcButtonFirst");
+D2NpcShopButtonStrc NpcButtonThird[4] = {}; D2_GLOBAL_GUARD(NpcButtonThird, "NpcButtonThird");
+D2NpcShopButtonStrc gwInvNpcButton1TextId[4] = {}; D2_GLOBAL_GUARD(gwInvNpcButton1TextId, "gwInvNpcButton1TextId");
+D2NpcShopButtonStrc gbInvNpcButtonState[4] = {}; D2_GLOBAL_GUARD(gbInvNpcButtonState, "gbInvNpcButtonState");
+D2NpcShopButtonStrc gwInvNpcButton4TextId[4] = {}; D2_GLOBAL_GUARD(gwInvNpcButton4TextId, "gwInvNpcButton4TextId");
+D2GridScreenCoordinates gnTradePage2ScreenTop = {}; D2_GLOBAL_GUARD(gnTradePage2ScreenTop, "gnTradePage2ScreenTop");
+D2GridScreenCoordinates gnTradePage2ScreenBottom = {}; D2_GLOBAL_GUARD(gnTradePage2ScreenBottom, "gnTradePage2ScreenBottom");
+D2GridScreenCoordinates gnTradePage2ScreenLeft = {}; D2_GLOBAL_GUARD(gnTradePage2ScreenLeft, "gnTradePage2ScreenLeft");
+D2GridScreenCoordinates gnTradePage2ScreenRight = {}; D2_GLOBAL_GUARD(gnTradePage2ScreenRight, "gnTradePage2ScreenRight");
 unsigned int gdwInvLastActionTickCount = {}; D2_GLOBAL_GUARD(gdwInvLastActionTickCount, "gdwInvLastActionTickCount");
 int gnInvMouseX = 0; D2_GLOBAL_GUARD(gnInvMouseX, "gnInvMouseX");
 BOOL gbInvOverlayFlag = 0; D2_GLOBAL_GUARD(gbInvOverlayFlag, "gbInvOverlayFlag");
 DC6 * gpInvShopTabImage = 0; D2_GLOBAL_GUARD(gpInvShopTabImage, "gpInvShopTabImage");
-uint32_t gpInvCursorItem = 0; D2_GLOBAL_GUARD(gpInvCursorItem, "gpInvCursorItem");
+int gpInvCursorItem = 0; D2_GLOBAL_GUARD(gpInvCursorItem, "gpInvCursorItem");
 int gbInvNpcScreenCoordsInitialized = 0; D2_GLOBAL_GUARD(gbInvNpcScreenCoordsInitialized, "gbInvNpcScreenCoordsInitialized");
 uint32_t gpInvItemUnderCursor = 0; D2_GLOBAL_GUARD(gpInvItemUnderCursor, "gpInvItemUnderCursor");
 uint32_t gbInvBodySlotUnderCursorExists = 0; D2_GLOBAL_GUARD(gbInvBodySlotUnderCursorExists, "gbInvBodySlotUnderCursorExists");
@@ -45041,7 +43006,7 @@ uint32_t gShopTradeUIState = 0; D2_GLOBAL_GUARD(gShopTradeUIState, "gShopTradeUI
 uint32_t gnInvMercBodySlot2 = 0; D2_GLOBAL_GUARD(gnInvMercBodySlot2, "gnInvMercBodySlot2");
 uint32_t gbInvRecipeScrollOpen = 0; D2_GLOBAL_GUARD(gbInvRecipeScrollOpen, "gbInvRecipeScrollOpen");
 uint32_t gnHireDisplayMode = 0; D2_GLOBAL_GUARD(gnHireDisplayMode, "gnHireDisplayMode");
-uint32_t gpHireHoverUnit = 0; D2_GLOBAL_GUARD(gpHireHoverUnit, "gpHireHoverUnit");
+int gpHireHoverUnit = 0; D2_GLOBAL_GUARD(gpHireHoverUnit, "gpHireHoverUnit");
 uint32_t gnHireIconDrawX = 0; D2_GLOBAL_GUARD(gnHireIconDrawX, "gnHireIconDrawX");
 uint32_t gnHireIconHoverX = 0; D2_GLOBAL_GUARD(gnHireIconHoverX, "gnHireIconHoverX");
 uint32_t gnHireIconHoverY = 0; D2_GLOBAL_GUARD(gnHireIconHoverY, "gnHireIconHoverY");
@@ -45064,7 +43029,6 @@ uint32_t gpPanelMenuButton = 0; D2_GLOBAL_GUARD(gpPanelMenuButton, "gpPanelMenuB
 uint32_t gpPanelRunButton = 0; D2_GLOBAL_GUARD(gpPanelRunButton, "gpPanelRunButton");
 uint8_t gbPanelStaminaColorRed = 0; D2_GLOBAL_GUARD(gbPanelStaminaColorRed, "gbPanelStaminaColorRed");
 int gpPartyAcceptButton = 0; D2_GLOBAL_GUARD(gpPartyAcceptButton, "gpPartyAcceptButton");
-int32_t gpWaypointButtonHover = 0; D2_GLOBAL_GUARD(gpWaypointButtonHover, "gpWaypointButtonHover");
 uint8_t gbWaypointButtonPressed = 0; D2_GLOBAL_GUARD(gbWaypointButtonPressed, "gbWaypointButtonPressed");
 uint32_t ClickingDownOnWaypointEntry = 0; D2_GLOBAL_GUARD(ClickingDownOnWaypointEntry, "ClickingDownOnWaypointEntry");
 DC6 * WaypointWayGateBackGround = 0; D2_GLOBAL_GUARD(WaypointWayGateBackGround, "WaypointWayGateBackGround");
@@ -45074,6 +43038,9 @@ uint32_t WaypointCurrentSelectedAct = 0; D2_GLOBAL_GUARD(WaypointCurrentSelected
 int MaximumAmountOfWaypointInSelectedAct = 0; D2_GLOBAL_GUARD(MaximumAmountOfWaypointInSelectedAct, "MaximumAmountOfWaypointInSelectedAct");
 uint32_t NoOtherWaypointAvailableBool = 0; D2_GLOBAL_GUARD(NoOtherWaypointAvailableBool, "NoOtherWaypointAvailableBool");
 D2TextBoxStrc * gpTextScrollingBox = 0; D2_GLOBAL_GUARD(gpTextScrollingBox, "gpTextScrollingBox");
+RECT gnTextBoxExclusionTop[16] = {}; D2_GLOBAL_GUARD(gnTextBoxExclusionTop, "gnTextBoxExclusionTop");
+RECT gnTextBoxExclusionRight[16] = {}; D2_GLOBAL_GUARD(gnTextBoxExclusionRight, "gnTextBoxExclusionRight");
+RECT gnTextBoxExclusionBottom[16] = {}; D2_GLOBAL_GUARD(gnTextBoxExclusionBottom, "gnTextBoxExclusionBottom");
 D2TextBoxStrc * gpStaticTextPopup = 0; D2_GLOBAL_GUARD(gpStaticTextPopup, "gpStaticTextPopup");
 uint32_t gdwTextPopupExpireTime = 0; D2_GLOBAL_GUARD(gdwTextPopupExpireTime, "gdwTextPopupExpireTime");
 ListBoxWrapper * gpTextMessageLogHead = 0; D2_GLOBAL_GUARD(gpTextMessageLogHead, "gpTextMessageLogHead");
@@ -45106,32 +43073,26 @@ uint32_t gpTextScrollBoxDC6 = 0; D2_GLOBAL_GUARD(gpTextScrollBoxDC6, "gpTextScro
 DC6 * gpQuestScrollImageTop = 0; D2_GLOBAL_GUARD(gpQuestScrollImageTop, "gpQuestScrollImageTop");
 DC6 * gpQuestScrollImageBottom = 0; D2_GLOBAL_GUARD(gpQuestScrollImageBottom, "gpQuestScrollImageBottom");
 DC6 * gpQuestScrollImageBg = 0; D2_GLOBAL_GUARD(gpQuestScrollImageBg, "gpQuestScrollImageBg");
+uint32_t gnTextBoxExclusionX = 0; D2_GLOBAL_GUARD(gnTextBoxExclusionX, "gnTextBoxExclusionX");
 uint32_t gbTextEventHandlersRegistered = 0; D2_GLOBAL_GUARD(gbTextEventHandlersRegistered, "gbTextEventHandlersRegistered");
 int gnUICtrlConfigTotalRows = 0; D2_GLOBAL_GUARD(gnUICtrlConfigTotalRows, "gnUICtrlConfigTotalRows");
 int gnUICtrlConfigScrollMaxLines = 0; D2_GLOBAL_GUARD(gnUICtrlConfigScrollMaxLines, "gnUICtrlConfigScrollMaxLines");
-uint32_t gnUICtrlConfigColumnWidth = 0; D2_GLOBAL_GUARD(gnUICtrlConfigColumnWidth, "gnUICtrlConfigColumnWidth");
+int gnUICtrlConfigColumnWidth = 0; D2_GLOBAL_GUARD(gnUICtrlConfigColumnWidth, "gnUICtrlConfigColumnWidth");
 uint32_t gnUICtrlConfigMouseButtonState = 0; D2_GLOBAL_GUARD(gnUICtrlConfigMouseButtonState, "gnUICtrlConfigMouseButtonState");
 uint32_t gnUICtrlConfigButton3State = 0; D2_GLOBAL_GUARD(gnUICtrlConfigButton3State, "gnUICtrlConfigButton3State");
-uint32_t gnUICtrlConfigScrollOffset = 0; D2_GLOBAL_GUARD(gnUICtrlConfigScrollOffset, "gnUICtrlConfigScrollOffset");
+int gnUICtrlConfigScrollOffset = 0; D2_GLOBAL_GUARD(gnUICtrlConfigScrollOffset, "gnUICtrlConfigScrollOffset");
 int g_ControlConfigUIState = 0; D2_GLOBAL_GUARD(g_ControlConfigUIState, "g_ControlConfigUIState");
 int gnUICtrlConfigActiveButton = 0; D2_GLOBAL_GUARD(gnUICtrlConfigActiveButton, "gnUICtrlConfigActiveButton");
 BOOL gbUICtrlConfigKeyBindMode = 0; D2_GLOBAL_GUARD(gbUICtrlConfigKeyBindMode, "gbUICtrlConfigKeyBindMode");
 DC6 * gpUICtrlConfigScrollbarDC6 = 0; D2_GLOBAL_GUARD(gpUICtrlConfigScrollbarDC6, "gpUICtrlConfigScrollbarDC6");
 int gnUICtrlConfigPendingKeyStrId = 0; D2_GLOBAL_GUARD(gnUICtrlConfigPendingKeyStrId, "gnUICtrlConfigPendingKeyStrId");
 unsigned int gdwUICtrlConfigKeyBindTimestamp = {}; D2_GLOBAL_GUARD(gdwUICtrlConfigKeyBindTimestamp, "gdwUICtrlConfigKeyBindTimestamp");
+int gnUICtrlConfigScrollPosition = 0; D2_GLOBAL_GUARD(gnUICtrlConfigScrollPosition, "gnUICtrlConfigScrollPosition");
 DC6 * gpUIStatLevelUpPanelImages = 0; D2_GLOBAL_GUARD(gpUIStatLevelUpPanelImages, "gpUIStatLevelUpPanelImages");
 DC6 * gpUIStatLevelUpButtonImages = 0; D2_GLOBAL_GUARD(gpUIStatLevelUpButtonImages, "gpUIStatLevelUpButtonImages");
 BOOL gbUIStatButtonHovered = 0; D2_GLOBAL_GUARD(gbUIStatButtonHovered, "gbUIStatButtonHovered");
 BOOL gbUISkillButtonHovered = 0; D2_GLOBAL_GUARD(gbUISkillButtonHovered, "gbUISkillButtonHovered");
 BOOL gbUIStatScreenMouseDown = 0; D2_GLOBAL_GUARD(gbUIStatScreenMouseDown, "gbUIStatScreenMouseDown");
-int gbSpellSelActiveRightSkillSlot = 0; D2_GLOBAL_GUARD(gbSpellSelActiveRightSkillSlot, "gbSpellSelActiveRightSkillSlot");
-DC6 * gpSpellSelSkillIconDC6 = 0; D2_GLOBAL_GUARD(gpSpellSelSkillIconDC6, "gpSpellSelSkillIconDC6");
-unsigned int gbSpellSelMouseHandFlag = {}; D2_GLOBAL_GUARD(gbSpellSelMouseHandFlag, "gbSpellSelMouseHandFlag");
-BOOL gbSpellSelSkillTreeBackground = 0; D2_GLOBAL_GUARD(gbSpellSelSkillTreeBackground, "gbSpellSelSkillTreeBackground");
-uint32_t BooleanWaitingForSkillingMaybe = 0; D2_GLOBAL_GUARD(BooleanWaitingForSkillingMaybe, "BooleanWaitingForSkillingMaybe");
-uint32_t gnSpellSelSkillTreeOffsetY = 0; D2_GLOBAL_GUARD(gnSpellSelSkillTreeOffsetY, "gnSpellSelSkillTreeOffsetY");
-uint32_t gnSpellSelSkillTreeClickY = 0; D2_GLOBAL_GUARD(gnSpellSelSkillTreeClickY, "gnSpellSelSkillTreeClickY");
-uint8_t gnSpellSelTabHighlightColor = 0; D2_GLOBAL_GUARD(gnSpellSelTabHighlightColor, "gnSpellSelTabHighlightColor");
 uint32_t gnNpcMenuMercHireCost1 = 0; D2_GLOBAL_GUARD(gnNpcMenuMercHireCost1, "gnNpcMenuMercHireCost1");
 uint32_t gnNpcMenuMercHireCost2 = 0; D2_GLOBAL_GUARD(gnNpcMenuMercHireCost2, "gnNpcMenuMercHireCost2");
 uint8_t gbNpcMenuInitialized = 0; D2_GLOBAL_GUARD(gbNpcMenuInitialized, "gbNpcMenuInitialized");
@@ -45164,7 +43125,6 @@ DC6 * gpNpcMenuShopInventoryDC6 = 0; D2_GLOBAL_GUARD(gpNpcMenuShopInventoryDC6, 
 DC6 * gpNpcMenuShopInventoryBuffer = 0; D2_GLOBAL_GUARD(gpNpcMenuShopInventoryBuffer, "gpNpcMenuShopInventoryBuffer");
 D2UnitStrc * gpNpcShopOwnerUnit = 0; D2_GLOBAL_GUARD(gpNpcShopOwnerUnit, "gpNpcShopOwnerUnit");
 short gbNpcMenuShopOpened = 0; D2_GLOBAL_GUARD(gbNpcMenuShopOpened, "gbNpcMenuShopOpened");
-uint8_t gnNpcMenuMercListCount = 0; D2_GLOBAL_GUARD(gnNpcMenuMercListCount, "gnNpcMenuMercListCount");
 uint8_t gbNpcMenuTransactionPending = 0; D2_GLOBAL_GUARD(gbNpcMenuTransactionPending, "gbNpcMenuTransactionPending");
 BOOL gbNpcMenuTransactionConfirmed = 0; D2_GLOBAL_GUARD(gbNpcMenuTransactionConfirmed, "gbNpcMenuTransactionConfirmed");
 uint32_t gnNpcMenuTransactionItemGUID = 0; D2_GLOBAL_GUARD(gnNpcMenuTransactionItemGUID, "gnNpcMenuTransactionItemGUID");
@@ -45172,14 +43132,11 @@ unsigned int gbNpcMenuShopTransactionActive = {}; D2_GLOBAL_GUARD(gbNpcMenuShopT
 uint32_t gnNpcMenuShopTransactionCost = 0; D2_GLOBAL_GUARD(gnNpcMenuShopTransactionCost, "gnNpcMenuShopTransactionCost");
 unsigned int gdwNpcMenuLastClickTimestamp = {}; D2_GLOBAL_GUARD(gdwNpcMenuLastClickTimestamp, "gdwNpcMenuLastClickTimestamp");
 int32_t gnDialogStructAllocCount = 0; D2_GLOBAL_GUARD(gnDialogStructAllocCount, "gnDialogStructAllocCount");
-uint32_t gnTradeGoldUpdateBuffer = 0; D2_GLOBAL_GUARD(gnTradeGoldUpdateBuffer, "gnTradeGoldUpdateBuffer");
 uint32_t gnTradePlayerGoldAmount = 0; D2_GLOBAL_GUARD(gnTradePlayerGoldAmount, "gnTradePlayerGoldAmount");
 uint32_t gdwTradeThrottleTimestamp = 0; D2_GLOBAL_GUARD(gdwTradeThrottleTimestamp, "gdwTradeThrottleTimestamp");
 bool gbTradeResetFlag = 0; D2_GLOBAL_GUARD(gbTradeResetFlag, "gbTradeResetFlag");
 uint32_t gnTradeAcceptedFlags = 0; D2_GLOBAL_GUARD(gnTradeAcceptedFlags, "gnTradeAcceptedFlags");
 int32_t g_nTradeWindowState = 0; D2_GLOBAL_GUARD(g_nTradeWindowState, "g_nTradeWindowState");
-uint8_t gbTradeWindowOpen = 0; D2_GLOBAL_GUARD(gbTradeWindowOpen, "gbTradeWindowOpen");
-BOOL bReceivedQuestAvailabilityPacket = 0; D2_GLOBAL_GUARD(bReceivedQuestAvailabilityPacket, "bReceivedQuestAvailabilityPacket");
 D2SoundChannelNodeStrc * gpActiveSoundChannelsHead = 0; D2_GLOBAL_GUARD(gpActiveSoundChannelsHead, "gpActiveSoundChannelsHead");
 uint32_t gnSoundChannelCount = 0; D2_GLOBAL_GUARD(gnSoundChannelCount, "gnSoundChannelCount");
 uint32_t gpSoundChannelsArray = 0; D2_GLOBAL_GUARD(gpSoundChannelsArray, "gpSoundChannelsArray");
@@ -45193,33 +43150,11 @@ uint32_t gnCursorItemUnitId = 0; D2_GLOBAL_GUARD(gnCursorItemUnitId, "gnCursorIt
 uint32_t gnTextSystemInitFlag = 0; D2_GLOBAL_GUARD(gnTextSystemInitFlag, "gnTextSystemInitFlag");
 DC6 * gpUpgradeMenuDC6 = 0; D2_GLOBAL_GUARD(gpUpgradeMenuDC6, "gpUpgradeMenuDC6");
 DC6 * gpHoradricBackgroundDC6 = 0; D2_GLOBAL_GUARD(gpHoradricBackgroundDC6, "gpHoradricBackgroundDC6");
-int gItemDrawFlags = 0; D2_GLOBAL_GUARD(gItemDrawFlags, "gItemDrawFlags");
-short gnWeaponHandClassId_Right = 0; D2_GLOBAL_GUARD(gnWeaponHandClassId_Right, "gnWeaponHandClassId_Right");
-short gnWeaponHandClassId_Left = 0; D2_GLOBAL_GUARD(gnWeaponHandClassId_Left, "gnWeaponHandClassId_Left");
 int gnSoundLastInitTick = 0; D2_GLOBAL_GUARD(gnSoundLastInitTick, "gnSoundLastInitTick");
 uint32_t gdwSoundChannelIndex = 0; D2_GLOBAL_GUARD(gdwSoundChannelIndex, "gdwSoundChannelIndex");
 uint32_t gnSoundInitCooldown = 0; D2_GLOBAL_GUARD(gnSoundInitCooldown, "gnSoundInitCooldown");
 unsigned int gnSoundLastPlayerAnimModeTime = {}; D2_GLOBAL_GUARD(gnSoundLastPlayerAnimModeTime, "gnSoundLastPlayerAnimModeTime");
 int geSoundLastPlayerAnimMode = 0; D2_GLOBAL_GUARD(geSoundLastPlayerAnimMode, "geSoundLastPlayerAnimMode");
-uint32_t gdwWarpFadeExpireTime = 0; D2_GLOBAL_GUARD(gdwWarpFadeExpireTime, "gdwWarpFadeExpireTime");
-unsigned int gdwAmbientMusicLevelChangeTick = {}; D2_GLOBAL_GUARD(gdwAmbientMusicLevelChangeTick, "gdwAmbientMusicLevelChangeTick");
-unsigned int gdwAmbientMusicRestartTick = {}; D2_GLOBAL_GUARD(gdwAmbientMusicRestartTick, "gdwAmbientMusicRestartTick");
-int geCutsceneAmbientMusicSoundId = 0; D2_GLOBAL_GUARD(geCutsceneAmbientMusicSoundId, "geCutsceneAmbientMusicSoundId");
-uint32_t geAmbientMusicLevelId = 0; D2_GLOBAL_GUARD(geAmbientMusicLevelId, "geAmbientMusicLevelId");
-uint32_t gdwAmbientMusicChangeTime = 0; D2_GLOBAL_GUARD(gdwAmbientMusicChangeTime, "gdwAmbientMusicChangeTime");
-uint32_t gbSoundSequenceActive = 0; D2_GLOBAL_GUARD(gbSoundSequenceActive, "gbSoundSequenceActive");
-uint32_t geSoundSequenceSoundId = 0; D2_GLOBAL_GUARD(geSoundSequenceSoundId, "geSoundSequenceSoundId");
-uint32_t gnSoundSequenceResumeIndex = 0; D2_GLOBAL_GUARD(gnSoundSequenceResumeIndex, "gnSoundSequenceResumeIndex");
-uint32_t gbPendingSoundSequencePlay = 0; D2_GLOBAL_GUARD(gbPendingSoundSequencePlay, "gbPendingSoundSequencePlay");
-uint32_t geDelayedSoundId = 0; D2_GLOBAL_GUARD(geDelayedSoundId, "geDelayedSoundId");
-uint32_t gnDelayedSoundPlayIndex = 0; D2_GLOBAL_GUARD(gnDelayedSoundPlayIndex, "gnDelayedSoundPlayIndex");
-uint32_t gbPendingDelayedSoundPlay = 0; D2_GLOBAL_GUARD(gbPendingDelayedSoundPlay, "gbPendingDelayedSoundPlay");
-uint32_t gnSoundSequenceEndIndex = 0; D2_GLOBAL_GUARD(gnSoundSequenceEndIndex, "gnSoundSequenceEndIndex");
-uint32_t geLastAmbientMusicLevelId = 0; D2_GLOBAL_GUARD(geLastAmbientMusicLevelId, "geLastAmbientMusicLevelId");
-int UNIT_CenterXCoordsDiv5 = 0; D2_GLOBAL_GUARD(UNIT_CenterXCoordsDiv5, "UNIT_CenterXCoordsDiv5");
-int gnPlayerTileGridIndex = 0; D2_GLOBAL_GUARD(gnPlayerTileGridIndex, "gnPlayerTileGridIndex");
-int UNIT_CenterYCoordsDiv5 = 0; D2_GLOBAL_GUARD(UNIT_CenterYCoordsDiv5, "UNIT_CenterYCoordsDiv5");
-uint32_t BackgroundSoundsActive = 0; D2_GLOBAL_GUARD(BackgroundSoundsActive, "BackgroundSoundsActive");
 LONG * lpAddend_007c8a74 = 0; D2_GLOBAL_GUARD(lpAddend_007c8a74, "lpAddend_007c8a74");
 BOOL pAudioMixerInterface = 0; D2_GLOBAL_GUARD(pAudioMixerInterface, "pAudioMixerInterface");
 int32_t int32_t_007c8c7c = 0; D2_GLOBAL_GUARD(int32_t_007c8c7c, "int32_t_007c8c7c");
@@ -45242,11 +43177,6 @@ int gnTileInnerClipXMax_b = 0; D2_GLOBAL_GUARD(gnTileInnerClipXMax_b, "gnTileInn
 int gnMinTileDrawY = 0; D2_GLOBAL_GUARD(gnMinTileDrawY, "gnMinTileDrawY");
 int gnMinTileScreenY_b = 0; D2_GLOBAL_GUARD(gnMinTileScreenY_b, "gnMinTileScreenY_b");
 int gnTileClipRight = 0; D2_GLOBAL_GUARD(gnTileClipRight, "gnTileClipRight");
-uint32_t gnBinkDDrawYOffset = 0; D2_GLOBAL_GUARD(gnBinkDDrawYOffset, "gnBinkDDrawYOffset");
-uint32_t gnBinkDDrawXOffset = 0; D2_GLOBAL_GUARD(gnBinkDDrawXOffset, "gnBinkDDrawXOffset");
-void * gpBinkVideoDirectDraw = 0; D2_GLOBAL_GUARD(gpBinkVideoDirectDraw, "gpBinkVideoDirectDraw");
-uint32_t gnBinkDDrawSurfaceType = 0; D2_GLOBAL_GUARD(gnBinkDDrawSurfaceType, "gnBinkDDrawSurfaceType");
-uint32_t g_bBinkDDrawVideoQuitRequested = 0; D2_GLOBAL_GUARD(g_bBinkDDrawVideoQuitRequested, "g_bBinkDDrawVideoQuitRequested");
 
 namespace D2Common::Drlg::Maze {
 
@@ -45727,9 +43657,9 @@ namespace Fog::_3rdparty::crashy {
 
 } // namespace Fog::_3rdparty::crashy
 
-namespace Storm::SFile {
+namespace Storm::Source::SFile {
 
-} // namespace Storm::SFile
+} // namespace Storm::Source::SFile
 
 namespace Class::FILEREC {
 
@@ -45800,7 +43730,7 @@ namespace D2Game::GAME::Rendering {
 // Initialized scalars
 // =============================================================================
 
-uint32_t CurrentRendingEngine = 0x3; D2_GLOBAL_GUARD(CurrentRendingEngine, "D2Game::GAME::Rendering::CurrentRendingEngine");
+int CurrentRendingEngine = 0x3; D2_GLOBAL_GUARD(CurrentRendingEngine, "D2Game::GAME::Rendering::CurrentRendingEngine");
 
 } // namespace D2Game::GAME::Rendering
 

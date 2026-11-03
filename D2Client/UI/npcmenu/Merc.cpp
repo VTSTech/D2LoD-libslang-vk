@@ -23,6 +23,7 @@
 #include "D2Common/QuestRecord.h"
 #include "D2Game/GAME/Arena.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/GAME/SCmd.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "D2Win/DC6.h"
@@ -32,6 +33,8 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
+
+static uint8_t gnNpcMenuMercListCount = 0; D2_STATIC_GUARD(gnNpcMenuMercListCount, "gnNpcMenuMercListCount");
 
 namespace D2Client::UI::npcmenu::Merc {
 
@@ -70,10 +73,10 @@ D2BitBufferStrc * __stdcall NPCMENU_GetMercHireCost() {
     return gpNpcMenuDialogOptions;
 }
 
-void __fastcall NPCMENU_SetSelectedMercIndex(int16_t nParam) {
+void __fastcall NPCMENU_SetSelectedMercIndex(int16_t wMercNameId) {
     D2MercForHire* pMercEntry = D2Client::Merc::D2MercForHire;
     do {
-      if (pMercEntry->nNameStringId == nParam) {
+      if (pMercEntry->nNameStringId == wMercNameId) {
         break;
       }
 
@@ -91,9 +94,9 @@ void __fastcall NPCMENU_MercItemFoundCb(void * pUnit) {
     gnNpcMenuMercListCount = 1;
 }
 
-void __fastcall NPCMENU_HandleMercListPacket(int32_t nParam) {
+void __fastcall NPCMENU_HandleMercListPacket(D2GSPacketSrv0x8A * pPacket) {
     D2UnitStrc* pInteractedNpc;
-    D2UnitStrc* pUnit = UNIT::Player::UNITS_FindClientSideUnit(*(int32_t*)(nParam + 2), (eD2UnitType)*(uint8_t*)(nParam + 1));
+    D2UnitStrc* pUnit = UNIT::Player::UNITS_FindClientSideUnit(pPacket->nUnitGUID, (eD2UnitType)pPacket->nUnitType);
     if (!pUnit) {
       return;
     }
@@ -162,6 +165,7 @@ void __stdcall NPCMENU_ResurrectMerc() {
 }
 
 int __stdcall NPCMENU_ShowMercResurrectDialog() {
+    BOOL bIsExpansion;
     Sound::SOUND_PlaySound(SOUND_CURSOR_SELECT, nullptr, 0, 0, 0);
     gnNpcMenuMercHireCost1 = gpNpcMenuMercListBox->pVtable->GetValue(gpNpcMenuMercListBox);
     gnNpcMenuMercHireCost2 = _Interaction::nCurrentInteractedNpcGUID;
@@ -175,10 +179,9 @@ int __stdcall NPCMENU_ShowMercResurrectDialog() {
     }
 
     int32_t nRosterPetGUID = 0;
-    D2UnitStrc* pMerc = UNIT::Player::GetPlayerUnit_UI();
-    nRosterPetGUID = GAME::RosterPets::GetRosterPetGUID(pMerc, 7, nRosterPetGUID);
+    nRosterPetGUID = GAME::RosterPets::GetRosterPetGUID(UNIT::Player::GetPlayerUnit_UI(), 7, nRosterPetGUID);
     if (nRosterPetGUID == -1) {
-      BOOL bIsExpansion;
+      D2UnitStrc* pMerc;
       bIsExpansion = GAME::Game::CLIENT_CheckExpansion();
       if (!bIsExpansion) {
         NPCMENU_HireMerc();

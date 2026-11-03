@@ -40,6 +40,7 @@
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
+#include "D2Game/SKILLS/SkillsServer.h"
 #include "D2Game/UNIT/PlayerList.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitEvent.h"
@@ -56,7 +57,7 @@
 namespace D2Common::Unit {
 
 // Validates that pUnit's current tile coordinates lie within pRoom's bounds and that pUnit is in the room's unit list. Returns 1 if position is valid and unit is found in list. If coordinates are out of bounds or the unit is absent from the list, halts with a fatal error (nParam=1) or returns 0 (nParam=0). Handles both dynamic-path (monsters/players) and static-path (objects/items) coordinate sources.
-static BOOL __stdcall DRLGROOM_ValidateUnitPosition(int32_t nParam, D2RoomStrc * pRoom, D2UnitStrc * pUnit) {
+static BOOL __stdcall DRLGROOM_ValidateUnitPosition(int32_t bHaltIfPresent, D2RoomStrc * pRoom, D2UnitStrc * pUnit) {
     int nUnitX;
     int nUnitY;
     D2DrlgRoomCoordsStrc roomCoords;
@@ -96,7 +97,7 @@ static BOOL __stdcall DRLGROOM_ValidateUnitPosition(int32_t nParam, D2RoomStrc *
         pUnitIter = pUnitIter->pRoomNext;
       }
 
-      if (!nParam) {
+      if (!bHaltIfPresent) {
         return 0;
       }
 
@@ -267,7 +268,7 @@ BOOL __stdcall DRLGROOM_IsUnitInRoom(D2RoomStrc * pRoom, D2UnitStrc * pUnit) {
 
 // DRLGROOM_AddUnitToRoomList - Core function that prepends a unit to a room's unit linked list. Checks collision flags, links via pRoomFirstUnit, increments allied count for players/allied monsters.
 BOOL __stdcall DRLGROOM_AddUnitToRoomList(D2UnitStrc * pUnit, D2RoomStrc * pRoom, eD2UnitType nUnitType) {
-    bool _bValid;
+    BOOL _bValid;
     bool bValid;
     D2UnitStrc** ppUnitList;
     int32_t nLine;

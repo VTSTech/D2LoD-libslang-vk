@@ -29,6 +29,7 @@
 #include "Storm/Source/SSTR.h"
 #include "Storm/Storm.h"
 #include "globals/globals.h"
+#include "D2Client/D2Client.h"
 #include "D2Client/UI/MiniPanel.h"
 #include "D2Launch/MainMenus.h"
 
@@ -42,6 +43,68 @@
 #define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
+
+static int gnChatHistoryReadIndex = 0x7; D2_STATIC_GUARD(gnChatHistoryReadIndex, "gnChatHistoryReadIndex");
+static uint32_t gnChatHistoryWriteIndex = 0x7; D2_STATIC_GUARD(gnChatHistoryWriteIndex, "gnChatHistoryWriteIndex");
+static D2UIFlagInitStrc gUIFlagChatInit[4] = {
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x102,
+        /* .pfHandler = */ &D2Client::UI::Chat::INPUT_HandleChatCharInput
+    },
+    {
+        /* .eEventType = */ 0x3,
+        /* .nMessageOrKeyCode = */ 0x26,
+        /* .pfHandler = */ &D2Client::UI::Chat::INPUT_HandleChatScroll
+    },
+    {
+        /* .eEventType = */ 0x3,
+        /* .nMessageOrKeyCode = */ 0x28,
+        /* .pfHandler = */ &D2Client::UI::Chat::INPUT_HandleChatScroll
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x201,
+        /* .pfHandler = */ &D2Client::UI::Chat::CHAT_CheckChatboxBounds
+    }
+}; D2_STATIC_GUARD(gUIFlagChatInit, "gUIFlagChatInit");
+static D2UIFlagInitStrc g_UIFlagInitChatPanel[7] = {
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x282,
+        /* .pfHandler = */ &D2Client::UI::Chat::INPUT_HandleIMENotify
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x10f,
+        /* .pfHandler = */ &D2Client::INPUT_HandleIMEComposition
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x10d,
+        /* .pfHandler = */ &D2Client::INPUT_HandleIMEStartComposition
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x10e,
+        /* .pfHandler = */ &D2Client::INPUT_HandleIMEEndComposition
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x284,
+        /* .pfHandler = */ &D2Client::UI::Chat::CHAT_ResetIMEState
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x285,
+        /* .pfHandler = */ &D2Client::UI::Chat::CHAT_ResetIMEState
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x283,
+        /* .pfHandler = */ &D2Client::UI::Chat::CHAT_ResetIMEState
+    }
+}; D2_STATIC_GUARD(g_UIFlagInitChatPanel, "g_UIFlagInitChatPanel");
 
 namespace D2Client::UI::Chat {
 
@@ -215,27 +278,20 @@ uint8_t __stdcall CHAT_CheckIMELanguage() {
     return 1;
 }
 
-void __stdcall CHAT_ResetIMEState(int32_t nParam) {
-    *(uint32_t*)(nParam + 0x18) = 1;
-    *(uint32_t*)(nParam + 0x1c) = 0;
+void __stdcall CHAT_ResetIMEState(D2UIMouseMsgStrc * pMsg) {
+    pMsg->bHandled = 1;
+    pMsg->dwResult = 0;
 }
 
 void __stdcall CHAT_InitIME() {
-    // Frame slots -12..-4 are ONE object: &dwConversionMode is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      DWORD dwConversionMode;
-      DWORD dwSentenceMode;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     BOOL bResult;
-    DWORD dwHotKeyId;
+    DWORD dwConversionMode;
+    DWORD dwSentenceMode;
     int32_t nEventCount;
     nEventCount = 4;
     HWND hWnd;
     hWnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, &gUIFlagChatInit, nEventCount);
+    _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, gUIFlagChatInit, nEventCount);
     gaIMECompositionBuffer = D2Lang::StrTable::strtable::MISC_GetLanguageCode();
     if (gaIMECompositionBuffer != 6 && gaIMECompositionBuffer != 9 && gaIMECompositionBuffer != 8 && gaIMECompositionBuffer != 7 && gaIMECompositionBuffer != 0xc) {
       return;
@@ -266,21 +322,18 @@ void __stdcall CHAT_InitIME() {
           if (langId == 0x411) {
             nEventCount = 7;
             gbChatInputEnabled = 1;
-            hWnd = D2gfx::D2GFX::GetHwnd();
-            _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, &g_UIFlagInitChatPanel, nEventCount);
+            _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), g_UIFlagInitChatPanel, nEventCount);
             /* BOOL param_2 for ImmSetOpenStatus */ /* HIMC param_1 for ImmSetOpenStatus */ bResult = ImmSetOpenStatus(hIMC, 1);
             if (bResult) {
               /* HIMC param_2 for ImmReleaseContext */ gaChatInputBuffer = '\x01';
               gnIMEInputMode = 3;
-              hWnd = D2gfx::D2GFX::GetHwnd();
-              /* HWND param_1 for ImmReleaseContext */ ImmReleaseContext(hWnd, hIMC);
+              /* HWND param_1 for ImmReleaseContext */ ImmReleaseContext(D2gfx::D2GFX::GetHwnd(), hIMC);
               return;
             }
 
             /* HIMC param_2 for ImmReleaseContext */ gaChatInputBuffer = '\0';
             gnIMEInputMode = 0;
-            hWnd = D2gfx::D2GFX::GetHwnd();
-            /* HWND param_1 for ImmReleaseContext */ ImmReleaseContext(hWnd, hIMC);
+            /* HWND param_1 for ImmReleaseContext */ ImmReleaseContext(D2gfx::D2GFX::GetHwnd(), hIMC);
             return;
           }
         goto release_ime_context;
@@ -291,10 +344,10 @@ void __stdcall CHAT_InitIME() {
             goto release_ime_context;
           }
         /* BOOL param_2 for ImmSetOpenStatus */ /* HIMC param_1 for ImmSetOpenStatus */ ImmSetOpenStatus(hIMC, 1);
-        /* LPDWORD lpfdwSentence for ImmGetConversionStatus */ /* LPDWORD lpfdwConversion for ImmGetConversionStatus */ /* HIMC param_1 for ImmGetConversionStatus */ ImmGetConversionStatus(hIMC, &__frame0.dwConversionMode, &__frame0.dwSentenceMode);
-        /* DWORD param_3 for ImmSetConversionStatus */ /* DWORD param_2 for ImmSetConversionStatus */ /* HIMC param_1 for ImmSetConversionStatus */ ImmSetConversionStatus(hIMC, 1, __frame0.dwSentenceMode);
-        /* LPDWORD lpfdwSentence for ImmGetConversionStatus */ /* LPDWORD lpfdwConversion for ImmGetConversionStatus */ /* HIMC param_1 for ImmGetConversionStatus */ ImmGetConversionStatus(hIMC, &__frame0.dwConversionMode, &__frame0.dwSentenceMode);
-        if ((uint8_t)__frame0.dwConversionMode & 1) {
+        /* LPDWORD lpfdwSentence for ImmGetConversionStatus */ /* LPDWORD lpfdwConversion for ImmGetConversionStatus */ /* HIMC param_1 for ImmGetConversionStatus */ ImmGetConversionStatus(hIMC, &dwConversionMode, &dwSentenceMode);
+        /* DWORD param_3 for ImmSetConversionStatus */ /* DWORD param_2 for ImmSetConversionStatus */ /* HIMC param_1 for ImmSetConversionStatus */ ImmSetConversionStatus(hIMC, 1, dwSentenceMode);
+        /* LPDWORD lpfdwSentence for ImmGetConversionStatus */ /* LPDWORD lpfdwConversion for ImmGetConversionStatus */ /* HIMC param_1 for ImmGetConversionStatus */ ImmGetConversionStatus(hIMC, &dwConversionMode, &dwSentenceMode);
+        if ((uint8_t)dwConversionMode & 1) {
           gnIMEInputMode = 1;
           gaChatInputBuffer = '\x01';
           gbChatInputEnabled = 1;
@@ -310,9 +363,7 @@ void __stdcall CHAT_InitIME() {
         hKeyboardLayout = GetKeyboardLayout(0);
         /* HKL param_1 for ImmIsIME */ bResult = ImmIsIME(hKeyboardLayout);
         if (!bResult) {
-          /* DWORD param_2 for ImmSimulateHotKey */ dwHotKeyId = 0x70;
-          hWnd = D2gfx::D2GFX::GetHwnd();
-          /* HWND param_1 for ImmSimulateHotKey */ ImmSimulateHotKey(hWnd, dwHotKeyId);
+          /* DWORD param_2 for ImmSimulateHotKey */ /* HWND param_1 for ImmSimulateHotKey */ ImmSimulateHotKey(D2gfx::D2GFX::GetHwnd(), 0x70);
         }
 
         /* BOOL param_2 for ImmSetOpenStatus */ /* HIMC param_1 for ImmSetOpenStatus */ ImmSetOpenStatus(hIMC, 1);
@@ -326,9 +377,7 @@ void __stdcall CHAT_InitIME() {
         hKeyboardLayout = GetKeyboardLayout(0);
         /* HKL param_1 for ImmIsIME */ bResult = ImmIsIME(hKeyboardLayout);
         if (!bResult) {
-          /* DWORD param_2 for ImmSimulateHotKey */ dwHotKeyId = 0x10;
-          hWnd = D2gfx::D2GFX::GetHwnd();
-          /* HWND param_1 for ImmSimulateHotKey */ ImmSimulateHotKey(hWnd, dwHotKeyId);
+          /* DWORD param_2 for ImmSimulateHotKey */ /* HWND param_1 for ImmSimulateHotKey */ ImmSimulateHotKey(D2gfx::D2GFX::GetHwnd(), 0x10);
         }
 
         /* BOOL param_2 for ImmSetOpenStatus */ /* HIMC param_1 for ImmSetOpenStatus */ ImmSetOpenStatus(hIMC, 1);
@@ -336,9 +385,7 @@ void __stdcall CHAT_InitIME() {
         break;
       }
 
-      nEventCount = 7;
-      hWnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, &g_UIFlagInitChatPanel, nEventCount);
+      _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), g_UIFlagInitChatPanel, 7);
     }
 
     release_ime_context:
@@ -348,31 +395,25 @@ void __stdcall CHAT_InitIME() {
 
 // @sourcefile .\UI\chat.cpp
 void __stdcall CHAT_ShutdownIME() {
-    // Frame slots -12..-4 are ONE object: &dwConversionMode is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      DWORD dwConversionMode;
-      DWORD dwSentenceMode;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    DWORD dwSentenceMode;
     int32_t nEventCount = 4;
     HWND hWnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, &gUIFlagChatInit, nEventCount);
+    _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gUIFlagChatInit, nEventCount);
     if (!gbChatInputEnabled) {
       return;
     }
 
     nEventCount = 7;
     hWnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, &g_UIFlagInitChatPanel, nEventCount);
+    _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, g_UIFlagInitChatPanel, nEventCount);
     hWnd = D2gfx::D2GFX::GetHwnd();
     HIMC hIMC = ImmGetContext(hWnd);
     if (hIMC) {
+      DWORD dwConversionMode;
       /* BOOL param_2 for ImmSetOpenStatus */ /* HIMC param_1 for ImmSetOpenStatus */ ImmSetOpenStatus(hIMC, 0);
       if (gaIMECompositionBuffer == 7 || gaIMECompositionBuffer == 0xc) {
-        /* LPDWORD lpfdwSentence for ImmGetConversionStatus */ /* LPDWORD lpfdwConversion for ImmGetConversionStatus */ /* HIMC param_1 for ImmGetConversionStatus */ ImmGetConversionStatus(hIMC, &__frame0.dwConversionMode, &__frame0.dwSentenceMode);
-        /* DWORD param_3 for ImmSetConversionStatus */ /* DWORD param_2 for ImmSetConversionStatus */ /* HIMC param_1 for ImmSetConversionStatus */ ImmSetConversionStatus(hIMC, 0, __frame0.dwSentenceMode);
+        /* LPDWORD lpfdwSentence for ImmGetConversionStatus */ /* LPDWORD lpfdwConversion for ImmGetConversionStatus */ /* HIMC param_1 for ImmGetConversionStatus */ ImmGetConversionStatus(hIMC, &dwConversionMode, &dwSentenceMode);
+        /* DWORD param_3 for ImmSetConversionStatus */ /* DWORD param_2 for ImmSetConversionStatus */ /* HIMC param_1 for ImmSetConversionStatus */ ImmSetConversionStatus(hIMC, 0, dwSentenceMode);
       }
 
       /* HIMC param_2 for ImmReleaseContext */ /* HWND param_1 for ImmReleaseContext */ ImmReleaseContext(D2gfx::D2GFX::GetHwnd(), hIMC);
@@ -578,7 +619,7 @@ void __stdcall DRAW_UI_ChatInput() {
 
         case 5:
           wszModeLabel[0] = L'\0';
-        wszModeLabel[1] = L'漢';
+        wszModeLabel[1] = L'\x6f22';
         wszModeLabel[2] = L'\0';
         wszModeLabel[3] = L'\0';
         D2Win::Src::D2WinFont::DRAW_text(wszModeLabel, 0x14, ScreenSizeY - 0x80, 0, 0);
@@ -586,8 +627,8 @@ void __stdcall DRAW_UI_ChatInput() {
         default:
           goto draw_input_box;
         case 1:
-          wszModeLabel[0] = L'한';
-        wszModeLabel[1] = L'글';
+          wszModeLabel[0] = L'\xd55c';
+        wszModeLabel[1] = L'\xae00';
         wszModeLabel[2] = L'\0';
         wszModeLabel[3] = L'\0';
         break;
@@ -642,8 +683,7 @@ void __stdcall DRAW_UI_ChatInput() {
           pWrapNext = pWrapLine->pNext;
           if (!pWrapNext && gbChatInputEnabled && gaChatInputBuffer != '\0') {
             nPosY = i - 0x58 + ScreenSizeY;
-            nInputLen = D2Win::Src::D2WinFont::DRAW_text0(pWrapLine->wszLine);
-            CHAT_DrawIMEComposition(nInputLen + 0x83, nPosY);
+            CHAT_DrawIMEComposition(D2Win::Src::D2WinFont::DRAW_text0(pWrapLine->wszLine) + 0x83, nPosY);
           }
 
           nLineIdx++;
@@ -684,8 +724,8 @@ void __stdcall DRAW_UI_ChatInput() {
 
 void __stdcall CHAT_RestoreFromHistory() {
     int i;
-    int iVar1 = gnChatHistoryScrollIndex * 0x202;
-    uint16_t* pwSrc = (uint16_t*)(gaChatHistoryBuffer + iVar1);
+    int nHistoryOffset = gnChatHistoryScrollIndex * 0x202;
+    uint16_t* pwSrc = (uint16_t*)(gaChatHistoryBuffer + nHistoryOffset);
     uint16_t* ppwDst = gwszChatInputText;
     for (i = 0x80; i; i--) {
       *(uint32_t*)ppwDst = *(uint32_t*)pwSrc;
@@ -694,7 +734,7 @@ void __stdcall CHAT_RestoreFromHistory() {
     }
 
     *ppwDst = *pwSrc;
-    gnChatInputTextCursorPosition = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength((uint16_t*)(gaChatHistoryBuffer + iVar1));
+    gnChatInputTextCursorPosition = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength((uint16_t*)(gaChatHistoryBuffer + nHistoryOffset));
 }
 
 static void __fastcall CHAT_AddToHistory(uint16_t * pwSrc) {
@@ -798,7 +838,7 @@ BOOL __stdcall CHAT_ParseCommand(char * * ppszText, uint8_t * pbCommandType, cha
             return 1;
           }
 
-          Storm::Source::SSTR::SStrTokenize(&pszCursor, szToken, (char*)0x100, " ", nullptr);
+          Storm::Source::SSTR::SStrTokenize(&pszCursor, szToken, 0x100, " ", nullptr);
           pScan = pszCursor;
           pScan = pScan + strlen(pScan) + 1;
           if (pScan == pszCursor + 1) {
@@ -827,8 +867,8 @@ BOOL __stdcall CHAT_ParseCommand(char * * ppszText, uint8_t * pbCommandType, cha
     } while (true);
 }
 
-void __stdcall CHAT_CheckChatboxBounds(int32_t nParam) {
-    if (!((int)(uint32_t)*(uint16_t*)(nParam + 0xe) > ScreenSizeY - 0x31)) {
+void __stdcall CHAT_CheckChatboxBounds(D2UIMouseMsgStrc * pMsg) {
+    if (!((int)(uint32_t)pMsg->uLParam.sMousePos.nMouseY > ScreenSizeY - 0x31)) {
       return;
     }
 
@@ -860,20 +900,14 @@ void __stdcall INPUT_HandleChatScroll(D2UIMouseMsgStrc * pMsg) {
 }
 
 int32_t __fastcall CHAT_IsWideStringASCII(uint16_t * wszText) {
+    int i;
     int32_t nLength = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
-    int i = 0;
     uint32_t uHighBits = (uint32_t)((uint32_t)nLength >> 8) & 0xffffffu;
-    if (nLength <= 0) {
-      return (uint32_t)((uint32_t)((uint32_t)uHighBits & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
-    }
-
-    do {
+    for (i = 0; i < nLength; i++) {
       if ((uint16_t)wszText[nLength] > 0xff) {
         return (uint32_t)uHighBits << 8;
       }
-
-      i++;
-    } while (i < nLength);
+    }
 
     return (uint32_t)((uint32_t)((uint32_t)uHighBits & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
 }
@@ -934,7 +968,7 @@ void __stdcall CHAT_ProcessBattleNetMessage() {
     uint16_t wszMessageW[340];
     uint16_t wszPrefixW[340];
     char aHeaderBuffer[14];
-    int iStack_8;
+    int nMessageType;
     char cScanChar;
     uint16_t* pwszSenderLine;
     D2BNetClientCallbacksStrc* pCallbacks;
@@ -944,11 +978,11 @@ void __stdcall CHAT_ProcessBattleNetMessage() {
     }
 
     int nResult;
-    nResult = pCallbacks->pfnDequeueMessage(&iStack_8, aMessageBuffer);
+    nResult = pCallbacks->pfnDequeueMessage(&nMessageType, aMessageBuffer);
     if (!nResult) {
       return;
     }
-    if (iStack_8) {
+    if (nMessageType) {
       return;
     }
 
@@ -1087,11 +1121,10 @@ static BOOL CHAT_HandleResignCommand(char * szCommandName, char * szInput) {
 
       if (nCopyCount == 1) {
         pCallbacks = ClientModeInGame::CLIENT_GetGameVersionInfo();
-        if (!pCallbacks) {
-          return 1;
+        if (pCallbacks) {
+          pCallbacks->pfnSendChatCommand((uint8_t*)szInput);
         }
 
-        pCallbacks->pfnSendChatCommand((uint8_t*)szInput);
         return 1;
       }
     }
@@ -1111,13 +1144,11 @@ static BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szComman
     static char gszChatWhisperTargetName[2] = " "; D2_STATIC_GUARD(gszChatWhisperTargetName, "D2Client::UI::Chat::CHAT_HandleWhisperCommand::gszChatWhisperTargetName");
 
     D2BNetClientCallbacksStrc* pCallbacks;
-    char* pdwMsgDst;
     char szMessageText[256];
     MessageStrc MStack_334;
     char szTargetName[256];
     D2ChatPacketBuildStrc sWhisperPacket;
     char cScanChar;
-    int nTokenCopyBase;
     char* pScan;
     pScan = szCommandName;
     pScan = pScan + strlen(pScan) + 1;
@@ -1142,21 +1173,10 @@ static BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szComman
       do {
         nTokenCount++;
         if (nTokenCount == 2) {
-          nTokenCopyBase = -(int)pScan;
-          do {
-            cScanChar = *pScan;
-            pScan[(int)(szTargetName + nTokenCopyBase)] = cScanChar;
-            pScan++;
-          } while (cScanChar != '\0');
+          strcpy(szTargetName, pScan);
         } else if (nTokenCount == 3) {
           pScan = pScan + (uintptr_t)&sWhisperPacket + (0x10 - (int)szInput);
-          nTokenCount = -(int)pScan;
-          do {
-            cScanChar = *pScan;
-            pScan[(int)(szMessageText + nTokenCount)] = cScanChar;
-            pScan++;
-          } while (cScanChar != '\0');
-
+          strcpy(szMessageText, pScan);
           goto send_whisper;
         }
 
@@ -1167,9 +1187,7 @@ static BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szComman
         send_whisper:
         if (bInGame) {
           for (pRoster = GAME::Roster::GetNextRosterPlayer(nullptr); pRoster; pRoster = GAME::Roster::GetNextRosterPlayer(pRoster)) {
-            pScan = szTargetName;
-            pdwMsgDst = GAME::Roster::GetRosterName(pRoster);
-            nTokenCount = _stricmp(pdwMsgDst, pScan);
+            nTokenCount = _stricmp(GAME::Roster::GetRosterName(pRoster), szTargetName);
             if (!nTokenCount) {
               strncpy(sWhisperPacket.szMsg, szMessageText, 0xff);
               sWhisperPacket.szMsg[0xff] = '\0';
@@ -1190,11 +1208,10 @@ static BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szComman
         }
         sprintf(szInput, "%s %s %s", szCommandName, szTargetName, szMessageText);
         pCallbacks = ClientModeInGame::CLIENT_GetGameVersionInfo();
-        if (!pCallbacks) {
-          return 1;
+        if (pCallbacks) {
+          pCallbacks->pfnSendChatCommand((uint8_t*)szInput);
         }
 
-        pCallbacks->pfnSendChatCommand((uint8_t*)szInput);
         return 1;
       }
     }
@@ -1203,7 +1220,7 @@ static BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szComman
     MStack_334.messageColor = 3;
     sprintf(sWhisperPacket.szMsg + 0xd, "<BattleNet>: Correct usage is: %s (name) (message)", szCommandName);
     pScan = sWhisperPacket.szMsg + 0xd;
-    pdwMsgDst = MStack_334.message;
+    char* pdwMsgDst = MStack_334.message;
     memcpy(pdwMsgDst, pScan, 0x100);
     Text::TEXT_ProcessChatMessage(&MStack_334);
     return 1;
@@ -1554,6 +1571,39 @@ void __stdcall INPUT_HandleChatCharInput(D2UIMouseMsgStrc * pMsg) {
     pMsg->bHandled = 1;
     pMsg->dwResult = 0;
     Storm::SMsgBreakHandlerChain(pMsg);
+}
+
+void StaticInit_gwszChatInputText() {
+    int nWordsRemaining;
+    uint16_t* pChatInputBuf = gwszChatInputText;
+    for (nWordsRemaining = 0x80; nWordsRemaining; nWordsRemaining--) {
+      pChatInputBuf[0] = L'\0';
+      pChatInputBuf[1] = L'\0';
+      pChatInputBuf += 2;
+    }
+
+    *pChatInputBuf = L'\0';
+}
+
+void StaticInit_gaChatHistoryBuffer() {
+    int nDwordsRemaining;
+    uint8_t* pChatHistoryBuf = gaChatHistoryBuffer;
+    for (nDwordsRemaining = 0x404; nDwordsRemaining; nDwordsRemaining--) {
+      memset(pChatHistoryBuf, 0, 4 * sizeof(pChatHistoryBuf[0]));
+      pChatHistoryBuf += 4;
+    }
+}
+
+void StaticInit_gwcIMECompositionString() {
+    for (int iFill = 0; iFill < 32; iFill++) {
+      gwcIMECompositionString[iFill] = L'\0';
+    }
+}
+
+void StaticInit_gwcImeCompositionBuffer() {
+    for (int iFill = 0; iFill < 32; iFill++) {
+      gwcImeCompositionBuffer[iFill] = L'\0';
+    }
 }
 
 } // namespace D2Client::UI::Chat

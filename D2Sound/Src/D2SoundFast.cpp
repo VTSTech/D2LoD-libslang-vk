@@ -2,16 +2,15 @@
 
 #include "D2Sound/Src/D2SoundFast.h"
 #include "D2Client/Sound/Sound.h"
+#include "D2Hell/D2Hell.h"
 #include "D2Sound/D2Sound.h"
 #include "D2Sound/Sound.h"
 #include "D2Sound/Src/D2SoundSmp.h"
-#include "Fog/Archive.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/D2MPQFileStrc.h"
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SReg.h"
-#include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -25,18 +24,29 @@
 #endif
 
 
+static uint32_t gnMusicEnabled = 0; D2_STATIC_GUARD(gnMusicEnabled, "gnMusicEnabled");
+static uint32_t gbSoundFastPathActive = 0; D2_STATIC_GUARD(gbSoundFastPathActive, "gbSoundFastPathActive");
+static uint32_t g_nSoundMixerType = 0; D2_STATIC_GUARD(g_nSoundMixerType, "g_nSoundMixerType");
+static uint32_t g_nSoundMasterVolume = 0; D2_STATIC_GUARD(g_nSoundMasterVolume, "g_nSoundMasterVolume");
+static uint32_t g_nSoundMusicVolume = 0; D2_STATIC_GUARD(g_nSoundMusicVolume, "g_nSoundMusicVolume");
+static uint32_t g_nSoundPositionalBias = 0; D2_STATIC_GUARD(g_nSoundPositionalBias, "g_nSoundPositionalBias");
+static uint32_t g_nSoundNpcSpeech = 0; D2_STATIC_GUARD(g_nSoundNpcSpeech, "g_nSoundNpcSpeech");
+static uint32_t g_nSoundOptionsMusic = 0; D2_STATIC_GUARD(g_nSoundOptionsMusic, "g_nSoundOptionsMusic");
+static _RTL_CRITICAL_SECTION lpCriticalSection_008817c4 = {}; D2_STATIC_GUARD(lpCriticalSection_008817c4, "lpCriticalSection_008817c4");
+static D2SoundSmpStrc * gpaSoundEffectBuffers[8] = {}; D2_STATIC_GUARD(gpaSoundEffectBuffers, "gpaSoundEffectBuffers");
+static D2SoundSmpStrc * nSoundEffectIndexValue[8] = { 0 }; D2_STATIC_GUARD(nSoundEffectIndexValue, "nSoundEffectIndexValue");
+static uint32_t gnSoundEffectSampleCount = 0; D2_STATIC_GUARD(gnSoundEffectSampleCount, "gnSoundEffectSampleCount");
+static void * gpWavFileCacheListHead = 0; D2_STATIC_GUARD(gpWavFileCacheListHead, "gpWavFileCacheListHead");
+
 namespace D2Sound::Src::D2SoundFast {
 
-static D2SoundSmpStrc * nSoundEffectIndexValue[8] = { 0 }; D2_STATIC_GUARD(nSoundEffectIndexValue, "D2Sound::Src::D2SoundFast::nSoundEffectIndexValue");
-
 BOOL __stdcall SOUND_IsAmbientStreaming() {
-    if (!gpMusicStreamBuffer) {
-      return 0;
-    }
-
-    uint32_t bIsStreaming = D2SoundSmp::SOUNDSMP_IsStreaming(gpMusicStreamBuffer);
-    if (bIsStreaming) {
-      return 1;
+    if (gpMusicStreamBuffer) {
+      uint32_t bIsStreaming;
+      bIsStreaming = D2SoundSmp::SOUNDSMP_IsStreaming(gpMusicStreamBuffer);
+      if (bIsStreaming) {
+        return 1;
+      }
     }
 
     return 0;
@@ -124,8 +134,8 @@ int __stdcall SOUND_PlayNextAmbientSound() {
     BOOL BVar1;
     int nRandIdx;
     DWORD dwLanguageCode;
-    int32_t iVar8;
     bool bHasStreamBuffer;
+    int32_t nAmbientIdx;
     char* szSoundFile;
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gSoundSmpCs);
     if (!gpMusicStreamBuffer || (dwVolume = D2SoundSmp::SOUNDSMP_GetEffectiveVolume() , !dwVolume) || gpMusicStreamBuffer && (dwVolume = D2SoundSmp::SOUNDSMP_IsStreaming(gpMusicStreamBuffer) , dwVolume != 0)) {
@@ -138,16 +148,16 @@ int __stdcall SOUND_PlayNextAmbientSound() {
     int nAmbientCount;
     nAmbientCount = gaAmbientSoundFlags;
     do {
-      iVar8 = 0;
-      if (0 < nAmbientCount) {
+      nAmbientIdx = 0;
+      if (nAmbientCount > 0) {
         do {
-          pAmbientEntry = Sound::SOUND_GetAmbientSoundEntry(iVar8);
+          pAmbientEntry = Sound::SOUND_GetAmbientSoundEntry(nAmbientIdx);
           if (!pAmbientEntry[1]) {
             goto play_unplayed_track;
           }
 
-          iVar8++;
-        } while (iVar8 < gaAmbientSoundFlags);
+          nAmbientIdx++;
+        } while (nAmbientIdx < gaAmbientSoundFlags);
       }
       if (bResetDone) {
         /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ gnMusicEnabled = 0;
@@ -308,20 +318,20 @@ int __stdcall SOUND_GetNpcSpeech() {
     return g_nSoundNpcSpeech;
 }
 
-int32_t __fastcall SOUND_SetNpcSpeech(int32_t nParam) {
-    Storm::Source::SReg::SRegSaveValue("Diablo II", "NPC Speech", 0, nParam);
-    g_nSoundNpcSpeech = nParam;
-    return nParam;
+int32_t __fastcall SOUND_SetNpcSpeech(int32_t nNpcSpeech) {
+    Storm::Source::SReg::SRegSaveValue("Diablo II", "NPC Speech", 0, nNpcSpeech);
+    g_nSoundNpcSpeech = nNpcSpeech;
+    return nNpcSpeech;
 }
 
 int __stdcall SOUND_GetOptionsMusic() {
     return g_nSoundOptionsMusic;
 }
 
-int32_t __fastcall SOUND_SetOptionsMusic(int32_t nParam) {
-    Storm::Source::SReg::SRegSaveValue("Diablo II", "Options Music", 0, nParam);
-    g_nSoundOptionsMusic = nParam;
-    return nParam;
+int32_t __fastcall SOUND_SetOptionsMusic(int32_t nOptionsMusic) {
+    Storm::Source::SReg::SRegSaveValue("Diablo II", "Options Music", 0, nOptionsMusic);
+    g_nSoundOptionsMusic = nOptionsMusic;
+    return nOptionsMusic;
 }
 
 void __stdcall SOUND_InitSoundEffectBuffers() {
@@ -352,7 +362,7 @@ void __fastcall SOUND_LoadWavFile(char * szText) {
       return;
     }
 
-    int* pArchive = (int*)Fog::Archive::D2FILE_AllocAndLoadD2File(nullptr, szText, &nAllocSize, ".\\Src\\D2SoundFast.cpp", 0x77);
+    int* pArchive = (int*)D2Hell::D2FILE_AllocAndLoadD2File(nullptr, szText, &nAllocSize, ".\\Src\\D2SoundFast.cpp", 0x77);
     if (!pArchive) {
       return;
     }
@@ -377,7 +387,7 @@ void __fastcall SOUND_LoadWavFile(char * szText) {
     } while (cFilenameChar != '\0');
 }
 
-void __fastcall SOUND_PlaySoundEffect(uint8_t * pbParam) {
+void __fastcall SOUND_PlaySoundEffect(uint8_t * szSoundFile) {
     uint8_t* pbCacheEntry;
     int32_t bIsPlaying;
     uint8_t* pbSearchName;
@@ -387,7 +397,7 @@ void __fastcall SOUND_PlaySoundEffect(uint8_t * pbParam) {
       int nCmpResult;
       /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_008817c4);
       pbCacheEntry = (uint8_t*)gpWavFileCacheListHead;
-      pbSearchName = pbParam;
+      pbSearchName = szSoundFile;
       pbMatchedEntry = (uint8_t*)gpWavFileCacheListHead;
       if (gpWavFileCacheListHead) {
         match_cache_entry:
@@ -420,7 +430,7 @@ void __fastcall SOUND_PlaySoundEffect(uint8_t * pbParam) {
     return;
     next_cache_entry:
     pbCacheEntry = *(uint8_t**)(pbMatchedEntry + 0x5c);
-    pbSearchName = pbParam;
+    pbSearchName = szSoundFile;
     pbMatchedEntry = pbCacheEntry;
     if (!pbCacheEntry) {
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_008817c4);

@@ -15,10 +15,11 @@ struct D2QSSocketStrc;
 namespace Fog::Src::D2QSSocket {
 
 // Function declarations
+void __stdcall QSSOCKET_SetCallbackHandler1(struct D2QSSocketStrc * pQSSocket, void * fpCallback, void * pContext);
 int __fastcall NET_MCP_CLIENT_SendPacketToSafesocket(struct D2NetDataStrc * pSafesocket, char * pBytes, size_t nSize);
-bool __stdcall QSSOCKET_SendWithTimeout(struct D2QSSocketStrc * pQSSocket, char * pBuffer, uint16_t nLength);
+BOOL __stdcall QSSOCKET_SendWithTimeout(struct D2QSSocketStrc * pQSSocket, char * pBuffer, uint16_t nLength);
 int __stdcall ReadBytesFromSocket(struct D2QSSocketStrc * pMCPQSocket, char * pOutBuf, int nMaxBytes);
-void __stdcall QSSOCKET_SetCallbackHandler2(struct D2QSSocketStrc * pQSSocket, int nHeaderSize, int nSizeFieldOffset, int nUnknown0x120);
+void __stdcall QSSOCKET_SetCallbackHandler2(struct D2QSSocketStrc * pQSSocket, int nHeaderSize, int nSizeFieldOffset, int nHeaderLeadByte);
 // Socket receive loop, passed as thread proc to Fog::Safesock::Create_Flag0
 int __stdcall ReceiveLoopCallback(struct D2QSSocketStrc * pQSSocket);
 // lpStartAddress parameter of CreateThread
@@ -30,10 +31,10 @@ void __stdcall D2QSSOCKET_BlockSocketIfValid(struct D2QSSocketStrc * pQSSocket);
 struct D2QSSocketStrc * __stdcall STRUCT_D2QSSocket_Init(char * szIpAddress, int nPort, char * szName);
 // @sourcefile .\Src\D2QSSocket.cpp
 void __stdcall FreeD2QSSocket(struct D2QSSocketStrc * pSocket);
-void __stdcall QSSOCKET_WaitForEvent(struct D2QSSocketStrc * pQSSocket, DWORD dwTimeout);
+DWORD __stdcall QSSOCKET_WaitForEvent(struct D2QSSocketStrc * pQSSocket, DWORD dwTimeout);
 struct D2NetDataStrc * __stdcall NET_D2QSocket_GetSafesock(struct D2QSSocketStrc * pQSSocket);
 void __stdcall QSSOCKET_SignalEvent(struct D2QSSocketStrc * pQSSocket);
-int __stdcall NET_MCP_CLIENT_SendPacketToQSocket(struct D2QSSocketStrc * pQSocket, char * pBytes, short nSize);
+int __stdcall NET_MCP_CLIENT_SendPacketToQSocket(struct D2QSSocketStrc * pQSocket, char * pBytes, uint16_t nSize);
 int32_t __stdcall NET_MCP_CLIENT_Send(struct D2QSSocketStrc * pQSocket, char * pBytes, uint16_t nDataSizeNoHeader);
 // 3 internal functions (defined in .cpp)
 

@@ -6,7 +6,6 @@
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Seed.h"
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/Stats.h"
@@ -49,7 +48,6 @@
 #include "D2Game/D2Game.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/D2StateExArgStrc.h"
-#include "D2Game/D2UnitFindDataStrc.h"
 #include "D2Game/GAME/Arena.h"
 #include "D2Game/GAME/Clients.h"
 #include "D2Game/GAME/Event.h"
@@ -128,45 +126,44 @@ uint32_t __fastcall DAMAGE_CheckMonsterTypeVsMonsterType(uint32_t nMonTypeA, int
 
 static uint32_t __stdcall DAMAGE_RollPhysicalDamageRange(int32_t nDamageRange, int32_t nMinPctBonus, D2UnitStrc * pUnit, int32_t nDamageMin, int32_t nRangePctBonus, uint32_t nDamageAccum) {
     uint32_t nRandRoll;
-    if (nDamageRange <= 0) {
-      return (int)nDamageAccum < 0 ? 0 : nDamageAccum;
+    int nAdjustedMin;
+    if (nDamageRange > 0) {
+      int32_t nMinBonusAmt;
+      nMinBonusAmt = D2Client::Stats::D2ApplyPercent(nDamageMin, nMinPctBonus, 100);
+      nAdjustedMin = nDamageMin + nMinBonusAmt;
+      nMinBonusAmt = D2Client::Stats::D2ApplyPercent(nDamageRange, nRangePctBonus, 100);
+      nDamageAccum += nAdjustedMin;
+      if (nDamageRange + nMinBonusAmt > nAdjustedMin) {
+        nRandRoll = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnit->sSeed, nDamageRange + nMinBonusAmt - nAdjustedMin);
+        nDamageAccum += nRandRoll;
+      }
     }
 
-    int32_t nMinBonusAmt = D2Client::Stats::D2ApplyPercent(nDamageMin, nMinPctBonus, 100);
-    int nAdjustedMin = nDamageMin + nMinBonusAmt;
-    nMinBonusAmt = D2Client::Stats::D2ApplyPercent(nDamageRange, nRangePctBonus, 100);
-    nDamageAccum += nAdjustedMin;
-    if (!(nDamageRange + nMinBonusAmt > nAdjustedMin)) {
-      return (int)nDamageAccum < 0 ? 0 : nDamageAccum;
-    }
-
-    nRandRoll = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnit->sSeed, nDamageRange + nMinBonusAmt - nAdjustedMin);
-    nDamageAccum += nRandRoll;
     return (int)nDamageAccum < 0 ? 0 : nDamageAccum;
 }
 
-static uint32_t __stdcall DAMAGE_RollElementalDamageWithBonus(eD2UnitStat eUnitStat, eD2UnitStat eStat1, int32_t nParam1, int32_t nParam2, uint32_t nParam, D2UnitStrc * pUnit, eD2UnitStat eStat2) {
+static uint32_t __stdcall DAMAGE_RollElementalDamageWithBonus(eD2UnitStat eUnitStat, eD2UnitStat eStat1, int32_t nMinPctBonus, int32_t nRangePctBonus, uint32_t nDamageAccum, D2UnitStrc * pUnit, eD2UnitStat eStat2) {
     int nDamageBase = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eStat2, 0);
     if (nDamageBase * 0x100 < 8) {
-      return (int)nParam < 0 ? 0 : nParam;
+      return (int)nDamageAccum < 0 ? 0 : nDamageAccum;
     }
 
     int nMinDamage = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eUnitStat, 0);
     if (eStat1 != ~UNITSTAT_strength) {
       int nBonusStat;
       nBonusStat = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eStat1, 0);
-      nParam1 += nBonusStat;
-      nParam2 += nBonusStat;
+      nMinPctBonus += nBonusStat;
+      nRangePctBonus += nBonusStat;
     }
 
-    uint32_t nResult = DAMAGE_RollPhysicalDamageRange(nDamageBase * 0x100, nParam1, pUnit, nMinDamage << 8, nParam2, nParam);
+    uint32_t nResult = DAMAGE_RollPhysicalDamageRange(nDamageBase * 0x100, nMinPctBonus, pUnit, nMinDamage << 8, nRangePctBonus, nDamageAccum);
     return nResult;
 }
 
-static int32_t __stdcall DAMAGE_ApplyHealingToUnit(int32_t nParam, D2UnitStrc * pUnit) {
-    bool _bIsDead;
+static int32_t __stdcall DAMAGE_ApplyHealingToUnit(int32_t nHealAmount, D2UnitStrc * pUnit) {
+    BOOL _bIsDead;
     bool bIsDead;
-    if (nParam <= 0) {
+    if (nHealAmount <= 0) {
       return 0;
     }
 
@@ -182,78 +179,78 @@ static int32_t __stdcall DAMAGE_ApplyHealingToUnit(int32_t nParam, D2UnitStrc * 
 
     int32_t nMaxHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
     int nCurHp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
-    int32_t nValue = nCurHp + nParam;
+    int32_t nValue = nCurHp + nHealAmount;
     if (nValue >= nMaxHp) {
       nValue = nMaxHp;
     }
 
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, nValue, 0);
     if (nValue != nMaxHp) {
-      return nParam;
+      return nHealAmount;
     }
 
     return nMaxHp - nCurHp;
 }
 
-static int32_t __stdcall DAMAGE_ApplyManaToUnit(int32_t nParam, D2UnitStrc * pUnit) {
-    if (nParam <= 0) {
+static int32_t __stdcall DAMAGE_ApplyManaToUnit(int32_t nManaAmount, D2UnitStrc * pUnit) {
+    if (nManaAmount <= 0) {
       return 0;
     }
 
     int32_t nMaxMana = D2Common::Stats::StatsEx::GetTxtMaxMana(pUnit);
     int nCurMana = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mana, 0);
-    int nValue = nCurMana + nParam;
-    if (nCurMana + nParam >= nMaxMana) {
+    int nValue = nCurMana + nManaAmount;
+    if (nCurMana + nManaAmount >= nMaxMana) {
       nValue = nMaxMana;
     }
 
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_mana, nValue, 0);
     if (nValue != nMaxMana) {
-      return nParam;
+      return nManaAmount;
     }
 
     return nMaxMana - nCurMana;
 }
 
-static uint32_t DAMAGE_DrainManaFromUnit(uint32_t nParam, D2UnitStrc * pUnit) {
-    if ((int)nParam <= 0) {
+static uint32_t DAMAGE_DrainManaFromUnit(uint32_t nManaDrain, D2UnitStrc * pUnit) {
+    if ((int)nManaDrain <= 0) {
       return 0;
     }
 
     int nNewMana = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mana, 0);
-    nNewMana -= nParam;
+    nNewMana -= nManaDrain;
     if (nNewMana < 0x100) {
       nNewMana = 0;
     }
 
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_mana, nNewMana, 0);
-    return nNewMana ? nParam : 0;
+    return nNewMana ? nManaDrain : 0;
 }
 
-static uint32_t DAMAGE_DrainStaminaFromUnit(uint32_t nParam, D2UnitStrc * pUnit) {
-    if ((int)nParam <= 0) {
+static uint32_t DAMAGE_DrainStaminaFromUnit(uint32_t nStaminaDrain, D2UnitStrc * pUnit) {
+    if ((int)nStaminaDrain <= 0) {
       return 0;
     }
 
     int nNewStamina = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_stamina, 0);
-    nNewStamina -= nParam;
+    nNewStamina -= nStaminaDrain;
     if (nNewStamina < 0 || nNewStamina < 0x100) {
       nNewStamina = 0;
     }
 
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_stamina, nNewStamina, 0);
-    return nNewStamina ? nParam : 0;
+    return nNewStamina ? nStaminaDrain : 0;
 }
 
 // Applies the STATE_stunned state to pUnit2 for nParam game-frames. Skips if nParam &lt; 1, if the target is a non-stunable monster (boss, zero-velocity, or rolls against a 90% stun-chance for monster-type 8), or clamps mercs to 13 frames and others to 250. Re-uses an existing stun stat-list if present (updates timeout + event), otherwise allocates a new one and attaches it.
-static void __stdcall DAMAGE_ApplyStun(D2UnitStrc * pUnit, int32_t nParam, D2UnitStrc * pUnit2) {
+static void __stdcall DAMAGE_ApplyStun(D2UnitStrc * pUnit, int32_t nStunFrames, D2UnitStrc * pUnit2) {
     D2MonStatsTxt* pVictimMonStats;
     uint32_t nCheckResult;
     D2StatListExStrc* pStunStatList;
     eD2UnitType eAttackerType;
     int32_t nAttackerGUID;
     D2SeedStrc sSeedResult;
-    if (nParam <= 0) {
+    if (nStunFrames <= 0) {
       return;
     }
     if (pUnit2 && pUnit2->eUnitType == UNIT_MONSTER) {
@@ -278,44 +275,46 @@ static void __stdcall DAMAGE_ApplyStun(D2UnitStrc * pUnit, int32_t nParam, D2Uni
       }
 
       nCheckResult = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pUnit2);
-      if (nCheckResult && nParam >= 0xd) {
-        nParam = 0xd;
+      if (nCheckResult && nStunFrames >= 0xd) {
+        nStunFrames = 0xd;
         goto apply_stun;
       }
     }
-    if (nParam > 0xfa) {
-      nParam = 0xfa;
+    if (nStunFrames > 0xfa) {
+      nStunFrames = 0xfa;
     }
 
     apply_stun:
     pStunStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit2, STATE_stunned);
     ::SGAMEDATA* pGame = SUnit::GetGamePointer(pUnit);
-    int nTimeout = pGame->dwGameFrame + nParam;
-    if (pStunStatList) {
-      D2Common::Stats::StatsEx::SetTimeout_WithFlag(pStunStatList, nTimeout);
+    int nTimeout = pGame->dwGameFrame + nStunFrames;
+    if (!pStunStatList) {
+      if (!pUnit) {
+        nAttackerGUID = -1;
+        eAttackerType = UNIT_COUNT;
+      } else {
+        nAttackerGUID = pUnit->nUnitGUID;
+        eAttackerType = pUnit->eUnitType;
+      }
+
+      pStunStatList = (D2StatListExStrc*)D2Common::Stats::StatsEx::AllocStatList(pGame->pMemoryPool, 2, nTimeout, eAttackerType, nAttackerGUID);
       GAME::Event::SetEvent(pGame, pUnit2, 0xc, nTimeout, 0, 0);
+      D2Common::Stats::StatsEx::SetState(pStunStatList, STATE_stunned);
+      D2Common::Stats::StatsEx::STATLIST_SetExpireFunction(pStunStatList, SKILLS::SkillsServer::DefaultExpireFunction);
+      D2Common::Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit2, pStunStatList, 1);
+      D2Common::DATATBLS::ItemStats::SetState(pUnit2, STATE_stunned, 1);
       return;
     }
-    if (!pUnit) {
-      nAttackerGUID = -1;
-      eAttackerType = UNIT_COUNT;
-    } else {
-      nAttackerGUID = pUnit->nUnitGUID;
-      eAttackerType = pUnit->eUnitType;
-    }
 
-    pStunStatList = (D2StatListExStrc*)D2Common::Stats::StatsEx::AllocStatList(pGame->pMemoryPool, 2, nTimeout, eAttackerType, nAttackerGUID);
+    D2Common::Stats::StatsEx::SetTimeout_WithFlag(pStunStatList, nTimeout);
     GAME::Event::SetEvent(pGame, pUnit2, 0xc, nTimeout, 0, 0);
-    D2Common::Stats::StatsEx::SetState(pStunStatList, STATE_stunned);
-    D2Common::Stats::StatsEx::STATLIST_SetExpireFunction(pStunStatList, SKILLS::SkillsServer::DefaultExpireFunction);
-    D2Common::Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit2, pStunStatList, 1);
-    D2Common::DATATBLS::ItemStats::SetState(pUnit2, STATE_stunned, 1);
+    return;
 }
 
 // Applies poison damage-over-time to pUnit2. nParam1=drain rate (UNITSTAT_hpregen penalty per frame), nParam2=duration in frames. If no existing STATE_poison stat list, allocates a new one and sets it up with the attacker's GUID/type and expiry event. If one already exists, extends duration and stacks rate if the new hit is stronger. Triggers STATREGEN timer for monster targets.
-static void __stdcall DAMAGE_ApplyPoison(D2UnitStrc * pUnit, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit2) {
+static void __stdcall DAMAGE_ApplyPoison(D2UnitStrc * pUnit, int32_t nPoisonRate, int32_t nPoisonFrames, D2UnitStrc * pUnit2) {
     int32_t nAttackerGUID;
-    if (!(nParam2 > 0 && nParam1 > 0)) {
+    if (!(nPoisonFrames > 0 && nPoisonRate > 0)) {
       return;
     }
 
@@ -326,7 +325,7 @@ static void __stdcall DAMAGE_ApplyPoison(D2UnitStrc * pUnit, int32_t nParam1, in
       GAME::Event::SetEvent(pGame, pUnit2, 3, pGame->dwGameFrame + 1, 0, 0);
     }
 
-    int nEndFrame = pGame->dwGameFrame + nParam2;
+    int nEndFrame = pGame->dwGameFrame + nPoisonFrames;
     if (!pPoisonStatList) {
       eD2UnitType eAttackerType;
       D2Common::DATATBLS::ItemStats::SetState(pUnit2, STATE_poison, 1);
@@ -340,7 +339,7 @@ static void __stdcall DAMAGE_ApplyPoison(D2UnitStrc * pUnit, int32_t nParam1, in
 
       pPoisonStatList = (D2StatListExStrc*)D2Common::Stats::StatsEx::AllocStatList(pGame->pMemoryPool, 2, nEndFrame, eAttackerType, nAttackerGUID);
       GAME::Event::SetEvent(pGame, pUnit2, 0xc, nEndFrame, 0, 0);
-      D2Common::Stats::StatsEx::STATLIST_SetStatValue(pPoisonStatList, UNITSTAT_hpregen, -nParam1, 0);
+      D2Common::Stats::StatsEx::STATLIST_SetStatValue(pPoisonStatList, UNITSTAT_hpregen, -nPoisonRate, 0);
       D2Common::Stats::StatsEx::SetState(pPoisonStatList, STATE_poison);
       D2Common::Stats::StatsEx::STATLIST_SetExpireFunction(pPoisonStatList, SKILLS::SkillsServer::DefaultExpireFunction);
       D2Common::Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit2, pPoisonStatList, 1);
@@ -348,13 +347,13 @@ static void __stdcall DAMAGE_ApplyPoison(D2UnitStrc * pUnit, int32_t nParam1, in
     }
 
     int32_t nCurRegenRate = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pPoisonStatList, UNITSTAT_hpregen, 0);
-    if (!(-nParam1 == nCurRegenRate || nParam1 > -nCurRegenRate)) {
+    if (!(-nPoisonRate == nCurRegenRate || nPoisonRate > -nCurRegenRate)) {
       return;
     }
 
     D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pPoisonStatList, nEndFrame);
     GAME::Event::SetEvent(pGame, pUnit2, 0xc, nEndFrame, 0, 0);
-    D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pPoisonStatList, UNITSTAT_hpregen, -nParam1, 0);
+    D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pPoisonStatList, UNITSTAT_hpregen, -nPoisonRate, 0);
 }
 
 // @sourcefile .\UNIT\SUnitDmg.cpp
@@ -378,9 +377,9 @@ void __fastcall DAMAGE_OnColdExpire(D2UnitStrc * pUnit, eD2States eState, uint32
 }
 
 // Applies burning (fire DoT) damage to pUnit2, mirroring DAMAGE_ApplyPoison logic but for STATE_burning. nParam1=HP drain rate, nParam2=duration frames. Allocates or updates a stat list on the target with hpregen penalty and expiry event; stacks rate/extends duration if new hit is stronger than current burn.
-static void __stdcall DAMAGE_ApplyBurning(D2UnitStrc * pUnit, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit2) {
+static void __stdcall DAMAGE_ApplyBurning(D2UnitStrc * pUnit, int32_t nBurnRate, int32_t nBurnFrames, D2UnitStrc * pUnit2) {
     int32_t nAttackerGUID;
-    if (!(nParam2 > 0 && nParam1 > 0)) {
+    if (!(nBurnFrames > 0 && nBurnRate > 0)) {
       return;
     }
 
@@ -391,7 +390,7 @@ static void __stdcall DAMAGE_ApplyBurning(D2UnitStrc * pUnit, int32_t nParam1, i
       GAME::Event::SetEvent(pGame, pUnit2, 3, pGame->dwGameFrame + 1, 0, 0);
     }
 
-    int nEndFrame = pGame->dwGameFrame + nParam2;
+    int nEndFrame = pGame->dwGameFrame + nBurnFrames;
     if (!pBurnStatList) {
       eD2UnitType eAttackerType;
       D2Common::DATATBLS::ItemStats::SetState(pUnit2, STATE_burning, 1);
@@ -405,7 +404,7 @@ static void __stdcall DAMAGE_ApplyBurning(D2UnitStrc * pUnit, int32_t nParam1, i
 
       pBurnStatList = (D2StatListExStrc*)D2Common::Stats::StatsEx::AllocStatList(pGame->pMemoryPool, 2, nEndFrame, eAttackerType, nAttackerGUID);
       GAME::Event::SetEvent(pGame, pUnit2, 0xc, nEndFrame, 0, 0);
-      D2Common::Stats::StatsEx::STATLIST_SetStatValue(pBurnStatList, UNITSTAT_hpregen, -nParam1, 0);
+      D2Common::Stats::StatsEx::STATLIST_SetStatValue(pBurnStatList, UNITSTAT_hpregen, -nBurnRate, 0);
       D2Common::Stats::StatsEx::SetState(pBurnStatList, STATE_burning);
       D2Common::Stats::StatsEx::STATLIST_SetExpireFunction(pBurnStatList, SKILLS::SkillsServer::DefaultExpireFunction);
       D2Common::Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit2, pBurnStatList, 1);
@@ -413,13 +412,13 @@ static void __stdcall DAMAGE_ApplyBurning(D2UnitStrc * pUnit, int32_t nParam1, i
     }
 
     int32_t nCurRegenRate = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pBurnStatList, UNITSTAT_hpregen, 0);
-    if (!(-nParam1 == nCurRegenRate || nParam1 > -nCurRegenRate)) {
+    if (!(-nBurnRate == nCurRegenRate || nBurnRate > -nCurRegenRate)) {
       return;
     }
 
     D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pBurnStatList, nEndFrame);
     GAME::Event::SetEvent(pGame, pUnit2, 0xc, nEndFrame, 0, 0);
-    D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pBurnStatList, UNITSTAT_hpregen, -nParam1, 0);
+    D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pBurnStatList, UNITSTAT_hpregen, -nBurnRate, 0);
 }
 
 int32_t __fastcall DAMAGE_GetMonsterDelayByDifficulty(D2UnitStrc * pUnit, D2UnitStrc * pMonster) {
@@ -437,40 +436,40 @@ int32_t __fastcall DAMAGE_GetMonsterDelayByDifficulty(D2UnitStrc * pUnit, D2Unit
 
 // Applies cold slow to pUnit2 for nParam frames, sourced from attacker pUnit. Looks up MonStats ColdEffect per difficulty; divides duration for cold-immune monsters. Creates or extends STATE_cold stat list (velocity/attack/anim rate penalties), schedules expiry event, and probabilistically sets STATE_shatter on eligible monsters.
 // @sourcefile .\UNIT\SUnitDmg.cpp
-static void __stdcall DAMAGE_ApplyCold(D2UnitStrc * pUnit, int32_t nParam, D2UnitStrc * pUnit2) {
-    bool _bCanShatter;
+static void __stdcall DAMAGE_ApplyCold(D2UnitStrc * pUnit, int32_t nColdLength, D2UnitStrc * pUnit2) {
+    BOOL _bCanShatter;
     bool bCanShatter;
     eD2UnitType eUnitType;
     int pExistingColdList;
     int32_t nAttackerGUID;
-    int local_8;
+    int nColdEffectPct;
     int32_t nMonClassId;
-    if (nParam <= 0) {
+    if (nColdLength <= 0) {
       return;
     }
 
     D2StatListExStrc* pColdStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit2, STATE_cold);
     ::SGAMEDATA* pGame = SUnit::GetGamePointer(pUnit);
     if (!pUnit2 || pUnit2->eUnitType != UNIT_MONSTER || (nMonClassId = pUnit2->nClassId , nMonClassId < 0) || nMonClassId >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nMonClassId)) {
-      local_8 = -0x32;
+      nColdEffectPct = -0x32;
     } else {
-      local_8 = (int)sgptDataTable->pTxtMonStats[nMonClassId].aColdEffect[pGame->nDifficulty];
-      if (!local_8) {
+      nColdEffectPct = (int)sgptDataTable->pTxtMonStats[nMonClassId].aColdEffect[pGame->nDifficulty];
+      if (!nColdEffectPct) {
         return;
       }
     }
-    if (pUnit2 && pUnit2->eUnitType == UNIT_MONSTER && local_8 < 0) {
+    if (pUnit2 && pUnit2->eUnitType == UNIT_MONSTER && nColdEffectPct < 0) {
       D2DifficultyLevelsTxt* pDiffLevels;
       pDiffLevels = D2Common::DATATBLS::DataTbls::GetDifficultyLevels((uint32_t)pGame->nDifficulty);
       if (pDiffLevels->MonsterColdDivisor) {
-        nParam /= pDiffLevels->MonsterColdDivisor;
+        nColdLength /= pDiffLevels->MonsterColdDivisor;
       }
     }
-    if (nParam <= 1) {
-      nParam = 1;
+    if (nColdLength <= 1) {
+      nColdLength = 1;
     }
 
-    int32_t nExpireFrame = pGame->dwGameFrame + nParam;
+    int32_t nExpireFrame = pGame->dwGameFrame + nColdLength;
     if (!pColdStatList) {
       D2Common::DATATBLS::ItemStats::SetState(pUnit2, STATE_cold, 1);
       if (!pUnit) {
@@ -486,9 +485,9 @@ static void __stdcall DAMAGE_ApplyCold(D2UnitStrc * pUnit, int32_t nParam, D2Uni
       D2Common::Stats::StatsEx::SetState(pColdStatList, STATE_cold);
       D2Common::Stats::StatsEx::STATLIST_SetExpireFunction(pColdStatList, (PFN_StatExpireCallback)DAMAGE_OnColdExpire);
       D2Common::Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit2, pColdStatList, 1);
-      D2Common::Stats::StatsEx::STATLIST_SetStatValue(pColdStatList, UNITSTAT_velocitypercent, local_8, 0);
-      D2Common::Stats::StatsEx::STATLIST_SetStatValue(pColdStatList, UNITSTAT_attackrate, local_8, 0);
-      D2Common::Stats::StatsEx::STATLIST_SetStatValue(pColdStatList, UNITSTAT_other_animrate, local_8, 0);
+      D2Common::Stats::StatsEx::STATLIST_SetStatValue(pColdStatList, UNITSTAT_velocitypercent, nColdEffectPct, 0);
+      D2Common::Stats::StatsEx::STATLIST_SetStatValue(pColdStatList, UNITSTAT_attackrate, nColdEffectPct, 0);
+      D2Common::Stats::StatsEx::STATLIST_SetStatValue(pColdStatList, UNITSTAT_other_animrate, nColdEffectPct, 0);
       D2Common::Units::UpdateAnimSpeed(pUnit2, ".\\UNIT\\SUnitDmg.cpp", 0x1dc);
     } else {
       pExistingColdList = D2Common::Stats::StatsEx::STATLIST_GetFullListFromStatList(pColdStatList);
@@ -512,14 +511,14 @@ static void __stdcall DAMAGE_ApplyCold(D2UnitStrc * pUnit, int32_t nParam, D2Uni
 }
 
 // Server-side application of the Freeze effect to a target (pUnit2) from attacker pUnit for nParam frames. Players and bosses/special/uninterruptable/merc monsters fall back to DAMAGE_ApplyCold instead of being frozen. For eligible monsters: bails if a monster delay-by-difficulty check passes, divides duration by the difficulty's MonsterFreezeDivisor, and computes an expire game-frame. Creates+attaches a STATE_freeze statlist with expire callback SUNITDMG_StatExpireCallback_ResumeAI (or extends an existing freeze's timeout to the later expiry). Fires game events: event 0xc with the expire frame, an AITHINK timer trigger, and event 2 one frame after expiry to resume AI. Halts via Fog::ErrorManager on a zero freeze divisor or a non-monster reaching the event stage.
-static void __stdcall DAMAGE_ApplyFreeze(D2UnitStrc * pUnit, int32_t nParam, D2UnitStrc * pUnit2) {
+static void __stdcall DAMAGE_ApplyFreeze(D2UnitStrc * pUnit, int32_t nFreezeFrames, D2UnitStrc * pUnit2) {
     eD2States eFrozenState;
     uint32_t nCheckResult;
     int32_t nFreezeDelay;
     int32_t nMonStatsId;
     int32_t nAttackerGUID;
     D2UnitStrc* pVictimCopy;
-    if (nParam <= 0) {
+    if (nFreezeFrames <= 0) {
       return;
     }
 
@@ -531,7 +530,7 @@ static void __stdcall DAMAGE_ApplyFreeze(D2UnitStrc * pUnit, int32_t nParam, D2U
     switch (eTargetType) {
       case UNIT_PLAYER:
         {
-          DAMAGE_ApplyCold(pUnit, nParam, pUnit2);
+          DAMAGE_ApplyCold(pUnit, nFreezeFrames, pUnit2);
           return;
         }
       case UNIT_MONSTER:
@@ -549,13 +548,13 @@ static void __stdcall DAMAGE_ApplyFreeze(D2UnitStrc * pUnit, int32_t nParam, D2U
           pVictimCopy = pUnit2;
           nCheckResult = D2Common::Monsters::MONSTERS::UnitIsMarkedBoss(D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(nMonStatsId), pVictimCopy);
           if (nCheckResult || (nCheckResult = Monsters::CheckMonsterType(pUnit2, 8) , nCheckResult != 0)) {
-            DAMAGE_ApplyCold(pUnit, nParam, pUnit2);
+            DAMAGE_ApplyCold(pUnit, nFreezeFrames, pUnit2);
             return;
           }
 
           nCheckResult = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pUnit2);
           if (nCheckResult) {
-            DAMAGE_ApplyCold(pUnit, nParam, pUnit2);
+            DAMAGE_ApplyCold(pUnit, nFreezeFrames, pUnit2);
             return;
           }
 
@@ -577,10 +576,10 @@ static void __stdcall DAMAGE_ApplyFreeze(D2UnitStrc * pUnit, int32_t nParam, D2U
         exit(-1);
       }
 
-      nParam /= pDiffLevels->MonsterFreezeDivisor;
+      nFreezeFrames /= pDiffLevels->MonsterFreezeDivisor;
     }
 
-    int32_t nFreezeExpireFrame = pGame->dwGameFrame + nParam;
+    int32_t nFreezeExpireFrame = pGame->dwGameFrame + nFreezeFrames;
     if (!pFreezeStatList) {
       D2Common::DATATBLS::ItemStats::SetState(pUnit2, STATE_freeze, 1);
       if (!pUnit) {
@@ -605,61 +604,61 @@ static void __stdcall DAMAGE_ApplyFreeze(D2UnitStrc * pUnit, int32_t nParam, D2U
     }
 
     GAME::Event::SetEvent(pGame, pUnit2, 0xc, nFreezeDelay, 0, 0);
-    if (!pUnit2 || pUnit2->eUnitType != UNIT_MONSTER) {
+    if ((pUnit2 ? pUnit2->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x276);
       exit(-1);
     }
 
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit2, UNITEVENTCALLBACK_AITHINK, 0);
-    GAME::Event::SetEvent(pGame, pUnit2, 2, pGame->dwGameFrame + 1 + nParam, 0, 0);
+    GAME::Event::SetEvent(pGame, pUnit2, 2, pGame->dwGameFrame + 1 + nFreezeFrames, 0, 0);
 }
 
 // Computes the physical damage total in nParam throughout the body; the only caller (DAMAGE_CalculateOffensiveDamage) assigns the never-set local nPhysDmgResult straight from this call's result into pDmgStrc->dwPhysDamage, proving the value is meant to flow back. The final D2ApplyPercent(nParam,...) call (when bParam!=0x80) also drops its own int32_t return, which is this function's true final value.
-uint32_t __fastcall DAMAGE_CalculatePhysicalDamage(D2UnitStrc * pUnit, int32_t nParam1, D2UnitStrc * pWeapon, int32_t nMinDmg, int32_t nParam2, int32_t nParam3, uint32_t nParam, uint8_t bParam) {
+uint32_t __fastcall DAMAGE_CalculatePhysicalDamage(D2UnitStrc * pUnit, int32_t bUseWeaponStats, D2UnitStrc * pWeapon, int32_t nMinDmg, int32_t nMaxDmg, int32_t nBonusPercent, uint32_t nFlatDamage, uint8_t byScale) {
     int nDamagePctTotal;
     int nMinPctBoosted;
     int nMaxDmgPct;
     int nAttrBonus;
     uint32_t nRandRoll;
-    if (nParam1) {
+    if (bUseWeaponStats) {
       if (!pWeapon && (pWeapon = PLAYER::Player::PLAYER_GetActiveWeaponForSkill(pUnit) , !pWeapon)) {
         nMinDmg = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mindamage, 0);
         if (nMinDmg <= 0) {
           nMinDmg = 1;
         }
 
-        nParam2 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_maxdamage, 0);
-        if (nParam2 <= 1) {
-          nParam2 = 2;
+        nMaxDmg = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_maxdamage, 0);
+        if (nMaxDmg <= 1) {
+          nMaxDmg = 2;
         }
       } else {
         nDamagePctTotal = D2Common::INVENTORY::Inventory::INVENTORY_GetWeaponHandedness(pUnit, pUnit->pInventory);
         if (nDamagePctTotal == 2) {
           nMinDmg = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_secondary_mindamage, 0);
-          nParam2 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_secondary_maxdamage, 0);
+          nMaxDmg = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_secondary_maxdamage, 0);
         } else {
           nMinDmg = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mindamage, 0);
-          nParam2 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_maxdamage, 0);
+          nMaxDmg = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_maxdamage, 0);
         }
       }
 
       nMinDmg <<= 8;
-      nParam2 <<= 8;
+      nMaxDmg <<= 8;
     }
 
     int32_t nNormDmgBonus;
     nNormDmgBonus = D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_normaldamage, 0);
-    nParam2 += nNormDmgBonus * 0x100;
+    nMaxDmg += nNormDmgBonus * 0x100;
     nMinDmg += nNormDmgBonus * 0x100;
     if (nMinDmg < 1) {
       nMinDmg = 0x100;
     }
-    if (nParam2 <= nMinDmg) {
-      nParam2 = nMinDmg + 0x100;
+    if (nMaxDmg <= nMinDmg) {
+      nMaxDmg = nMinDmg + 0x100;
     }
 
     nDamagePctTotal = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_damagepercent, 0);
-    nDamagePctTotal = nParam3 + nDamagePctTotal;
+    nDamagePctTotal = nBonusPercent + nDamagePctTotal;
     nMinPctBoosted = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_item_mindamage_percent, 0);
     nMaxDmgPct = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_item_maxdamage_percent, 0);
     if (pWeapon) {
@@ -678,7 +677,7 @@ uint32_t __fastcall DAMAGE_CalculatePhysicalDamage(D2UnitStrc * pUnit, int32_t n
 
       nAttrBonus = D2Common::Skills::SKILLS_GetItemBonusDamage(pUnit, pWeapon, nullptr, 1);
     } else {
-      if (!nParam1) {
+      if (!bUseWeaponStats) {
         goto apply_percent_and_roll;
       }
 
@@ -690,27 +689,26 @@ uint32_t __fastcall DAMAGE_CalculatePhysicalDamage(D2UnitStrc * pUnit, int32_t n
     if (nDamagePctTotal <= -0x5a) {
       nDamagePctTotal = -0x5a;
     }
-    if (nParam2 > 0) {
+    if (nMaxDmg > 0) {
       nNormDmgBonus = D2Client::Stats::D2ApplyPercent(nMinDmg, nMinPctBoosted + nDamagePctTotal, 100);
       nMinPctBoosted = nNormDmgBonus + nMinDmg;
-      nNormDmgBonus = D2Client::Stats::D2ApplyPercent(nParam2, nMaxDmgPct + nDamagePctTotal, 100);
-      nParam = nMinPctBoosted + nParam;
-      if (nNormDmgBonus + nParam2 > nMinPctBoosted) {
-        nRandRoll = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnit->sSeed, nNormDmgBonus + nParam2 - nMinPctBoosted);
-        nParam += nRandRoll;
+      nNormDmgBonus = D2Client::Stats::D2ApplyPercent(nMaxDmg, nMaxDmgPct + nDamagePctTotal, 100);
+      nFlatDamage = nMinPctBoosted + nFlatDamage;
+      if (nNormDmgBonus + nMaxDmg > nMinPctBoosted) {
+        nRandRoll = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnit->sSeed, nNormDmgBonus + nMaxDmg - nMinPctBoosted);
+        nFlatDamage += nRandRoll;
       }
     }
 
-    nRandRoll = (int)nParam < 0 ? 0 : nParam;
-    if (bParam == 0x80) {
-      return nRandRoll;
+    nRandRoll = (int)nFlatDamage < 0 ? 0 : nFlatDamage;
+    if (byScale != 0x80) {
+      nRandRoll = D2Client::Stats::D2ApplyPercent(nRandRoll, (uint32_t)byScale, 0x80);
     }
 
-    nRandRoll = D2Client::Stats::D2ApplyPercent(nRandRoll, (uint32_t)bParam, 0x80);
     return nRandRoll;
 }
 
-void __stdcall DAMAGE_ApplyDemonBonus(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int32_t nParam) {
+void __stdcall DAMAGE_ApplyDemonBonus(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, D2DamageStrc * pDamage) {
     uint32_t bIsDemon = D2Common::Monsters::MONSTERS::IsDemon(pUnit2);
     if (!bIsDemon) {
       return;
@@ -721,40 +719,41 @@ void __stdcall DAMAGE_ApplyDemonBonus(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, i
       return;
     }
 
-    *(int*)(nParam + 0xc) += nDemonDmgPct;
+    pDamage->dwEnDmgPct += nDemonDmgPct;
 }
 
-static void DAMAGE_ApplyUndeadBonusDamage(int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+static void DAMAGE_ApplyUndeadBonusDamage(D2DamageStrc * pDamage, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     BOOL nUndeadOrBluntBonus = D2Common::Monsters::MONSTERS::MONSTER_IsMonsterUndead(pUnit2);
     if (!nUndeadOrBluntBonus) {
       return;
     }
 
-    int iVar1 = 0;
+    int nBluntBonusPct = 0;
     D2UnitStrc* pActiveWeapon = PLAYER::Player::PLAYER_GetActiveWeaponForSkill(pUnit);
     if (pActiveWeapon) {
       uint32_t bIsBlunt;
       bIsBlunt = D2Common::ITEMS::Items::ITEMS_IsA(pActiveWeapon, ITEMTYPE_Blunt);
       if (bIsBlunt) {
-        iVar1 = 0x32;
+        nBluntBonusPct = 0x32;
       }
     }
 
     int32_t nUndeadDmgPct = D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_undeaddamage_percent, 0);
-    if (!(iVar1 + nUndeadDmgPct > 0)) {
+    if (!(nBluntBonusPct + nUndeadDmgPct > 0)) {
       return;
     }
 
-    *(int*)(nParam + 0xc) = *(int*)(nParam + 0xc) + iVar1 + nUndeadDmgPct;
+    pDamage->dwEnDmgPct = pDamage->dwEnDmgPct + nBluntBonusPct + nUndeadDmgPct;
 }
 
-static void __stdcall DAMAGE_ApplyMonsterTypeBonusDamage(D2UnitStrc * pUnit, D2DamageStrc * pDamage, int * pnParam) {
+static void __stdcall DAMAGE_ApplyMonsterTypeBonusDamage(D2UnitStrc * pUnit, D2DamageStrc * pDamage, D2UnitStrc * pTarget) {
+    int i;
     D2StatStrc anBonusValues[128];
-    if (!(pnParam && *pnParam == 1)) {
+    if ((pTarget ? pTarget->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
-    int nMonTypeCount = pnParam[1];
+    int nMonTypeCount = pTarget->nClassId;
     D2MonStatsTxt* pMonStatsTxt = nMonTypeCount >= 0 && nMonTypeCount < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nMonTypeCount : nullptr;
     if (!pMonStatsTxt) {
       return;
@@ -767,26 +766,19 @@ static void __stdcall DAMAGE_ApplyMonsterTypeBonusDamage(D2UnitStrc * pUnit, D2D
 
     nMonTypeCount = (int)nMonTypeCountShort;
     int32_t nBonusCount = D2Common::Stats::StatsEx::STATLIST_GetItemStatBonusValues(pUnit, 0xb4, anBonusValues, 0x80);
-    int i = 0;
     D2DataTableTxtStrc* pDataTbl = sgptDataTable;
-    if (nBonusCount <= 0) {
-      return;
-    }
-
-    do {
+    for (i = 0; i < nBonusCount; i++) {
       uint32_t nMonTypeId;
       nMonTypeId = (uint32_t)(uint16_t)anBonusValues[i].wSubIndex;
       if (nMonTypeId && (int)nMonTypeId < pDataTbl->nTxtMonTypeSize && nMonTypeCount > 0 && nMonTypeCount < pDataTbl->nTxtMonTypeSize && *(uint32_t*)((uint8_t*)pDataTbl->pTxtMonTypeUnknown + (pDataTbl->nMonTypeEquivRowDwords * nMonTypeCount + ((int)nMonTypeId >> 5)) * 4) & gadwBitMasks[nMonTypeId & 0x1f]) {
         pDamage->dwEnDmgPct += anBonusValues[i].nStatValue;
         pDataTbl = sgptDataTable;
       }
-
-      i++;
-    } while (i < nBonusCount);
+    }
 }
 
 // Server-side computation of a unit's full outgoing attack damage into pDmgStrc. Recalcs dual-wield/equipped weapon stats for weapon slot nParam, then accumulates: target-AC penetration and demon/undead/monster-type bonus vs monster targets; physical damage with crit/deadly-strike/critical-strike rolls (doubles phys, sets wResultFlags 0x2000); per-element (fire/light/cold/magic) rolls scaled by the bParam attack-rating-percent (0x80=100%); life/mana/stamina leech, poison (+length), cold/stun/burn lengths; and damage-conversion (nConvType) reallocating phys into an element. Dispatches the on-attack unit event and applies monster crit. bParam defaults to 0x80 if 0.
-void __fastcall DAMAGE_CalculateOffensiveDamage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDmgStrc, int32_t nParam, uint8_t bParam) {
+void __fastcall DAMAGE_CalculateOffensiveDamage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDmgStrc, int32_t bResetWeaponStats, uint8_t byScale) {
     int32_t nStatResult;
     int32_t nConvDmg;
     int nStatValue;
@@ -806,11 +798,11 @@ void __fastcall DAMAGE_CalculateOffensiveDamage(::SGAMEDATA * pGame, D2UnitStrc 
     if (!pTarget) {
       return;
     }
-    if (!bParam) {
-      bParam = 0x80;
+    if (!byScale) {
+      byScale = 0x80;
     }
 
-    PLAYER::Player::EQUIPMENT_RecalcDualWieldWeaponStats(pUnit, nParam);
+    PLAYER::Player::EQUIPMENT_RecalcDualWieldWeaponStats(pUnit, bResetWeaponStats);
     eD2UnitType eAttackerType;
     eAttackerType = pUnit->eUnitType;
     eD2UnitType eTargetType;
@@ -836,19 +828,19 @@ void __fastcall DAMAGE_CalculateOffensiveDamage(::SGAMEDATA * pGame, D2UnitStrc 
         }
       }
 
-      DAMAGE_ApplyUndeadBonusDamage((int32_t)pDmgStrc, pUnit, pTarget);
-      DAMAGE_ApplyMonsterTypeBonusDamage(pUnit, pDmgStrc, (int*)pTarget);
+      DAMAGE_ApplyUndeadBonusDamage(pDmgStrc, pUnit, pTarget);
+      DAMAGE_ApplyMonsterTypeBonusDamage(pUnit, pDmgStrc, pTarget);
     }
     if (!(pDmgStrc->dwHitFlags & 1)) {
-      nElemDmgResult = DAMAGE_CalculatePhysicalDamage(pUnit, 1, nullptr, 0, 0, pDmgStrc->dwEnDmgPct, pDmgStrc->dwPhysDamage, bParam);
+      nElemDmgResult = DAMAGE_CalculatePhysicalDamage(pUnit, 1, nullptr, 0, 0, pDmgStrc->dwEnDmgPct, pDmgStrc->dwPhysDamage, byScale);
       pDmgStrc->dwPhysDamage = nElemDmgResult;
-      if (!nParam && (pActiveWeapon = PLAYER::Player::PLAYER_GetActiveWeaponForSkill(pUnit) , pActiveWeapon != 0) && (nConvDmg = D2Common::Skills::SKILLS_GetItemBonusDamage(pUnit, pActiveWeapon, nullptr, 2) , nConvDmg > 0 && (nCritChance = D2Client::Seed::RollBetweenMinAndMax(&pUnit->sSeed, 0, 100) , nCritChance < nConvDmg)) || (nStatValue = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_critical_strike, 0) , nStatValue > 0 && (nConvDmg = D2Client::Seed::RollBetweenMinAndMax(&pUnit->sSeed, 0, 100) , nConvDmg < nStatValue)) || (nConvDmg = D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_deadlystrike, 0) , nConvDmg > 0 && (nDeadlyStrikeRoll = D2Client::Seed::RollBetweenMinAndMax(&pUnit->sSeed, 0, 100) , nDeadlyStrikeRoll < nConvDmg))) {
+      if (!bResetWeaponStats && (pActiveWeapon = PLAYER::Player::PLAYER_GetActiveWeaponForSkill(pUnit) , pActiveWeapon != 0) && (nConvDmg = D2Common::Skills::SKILLS_GetItemBonusDamage(pUnit, pActiveWeapon, nullptr, 2) , nConvDmg > 0 && (nCritChance = D2Client::Seed::RollBetweenMinAndMax(&pUnit->sSeed, 0, 100) , nCritChance < nConvDmg)) || (nStatValue = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_critical_strike, 0) , nStatValue > 0 && (nConvDmg = D2Client::Seed::RollBetweenMinAndMax(&pUnit->sSeed, 0, 100) , nConvDmg < nStatValue)) || (nConvDmg = D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_deadlystrike, 0) , nConvDmg > 0 && (nDeadlyStrikeRoll = D2Client::Seed::RollBetweenMinAndMax(&pUnit->sSeed, 0, 100) , nDeadlyStrikeRoll < nConvDmg))) {
         pDmgStrc->wResultFlags |= 0x2000;
         pDmgStrc->dwPhysDamage *= 2;
       }
     }
-    if (bParam != 0x80) {
-      nWeaponScalePct = (uint32_t)bParam;
+    if (byScale != 0x80) {
+      nWeaponScalePct = (uint32_t)byScale;
       nElemDmgResult = DAMAGE_RollElementalDamageWithBonus(UNITSTAT_firemindam, UNITSTAT_passive_fire_mastery, 0, 0, pDmgStrc->dwFireDmg, pUnit, UNITSTAT_firemaxdam);
       pDmgStrc->dwFireDmg = (int)(nElemDmgResult * nWeaponScalePct) / 128;
       nElemDmgResult = DAMAGE_RollElementalDamageWithBonus(UNITSTAT_lightmindam, UNITSTAT_passive_ltng_mastery, 0, 0, pDmgStrc->dwLtngDamage, pUnit, UNITSTAT_lightmaxdam);
@@ -873,15 +865,15 @@ void __fastcall DAMAGE_CalculateOffensiveDamage(::SGAMEDATA * pGame, D2UnitStrc 
       if (!nElemDmgResult) {
         if (!(pDmgStrc->dwHitFlags & 4)) {
           nElemRoll = DAMAGE_RollElementalDamageWithBonus(UNITSTAT_lifedrainmindam, ~UNITSTAT_strength, 0, 0, pDmgStrc->dwLifeLeech, pUnit, UNITSTAT_lifedrainmaxdam);
-          pDmgStrc->dwLifeLeech += (int)(nElemRoll * bParam) / 128;
+          pDmgStrc->dwLifeLeech += (int)(nElemRoll * byScale) / 128;
         }
         if (!(pDmgStrc->dwHitFlags & 8)) {
           nElemRoll = DAMAGE_RollElementalDamageWithBonus(UNITSTAT_manadrainmindam, ~UNITSTAT_strength, 0, 0, pDmgStrc->dwManaLeech, pUnit, UNITSTAT_manadrainmaxdam);
-          pDmgStrc->dwManaLeech += (int)(nElemRoll * bParam) / 128;
+          pDmgStrc->dwManaLeech += (int)(nElemRoll * byScale) / 128;
         }
         if (!(pDmgStrc->dwHitFlags & 0x10)) {
           nElemRoll = DAMAGE_RollElementalDamageWithBonus(UNITSTAT_stamdrainmindam, ~UNITSTAT_strength, 0, 0, pDmgStrc->dwStamLeech, pUnit, UNITSTAT_stamdrainmaxdam);
-          pDmgStrc->dwStamLeech += (int)(nElemRoll * bParam) / 128;
+          pDmgStrc->dwStamLeech += (int)(nElemRoll * byScale) / 128;
         }
 
         goto roll_common_damage;
@@ -921,7 +913,7 @@ void __fastcall DAMAGE_CalculateOffensiveDamage(::SGAMEDATA * pGame, D2UnitStrc 
       nPoisMastery = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_pois_mastery, 0);
     }
 
-    nWeaponScalePct = (uint32_t)bParam;
+    nWeaponScalePct = (uint32_t)byScale;
     nElemRoll = DAMAGE_RollPhysicalDamageRange(nPoisMinStat, nPoisMastery, pUnit, nStatValue, nPoisMastery, pDmgStrc->dwPoisDamage);
     nStatValue = (int)(nElemRoll * nWeaponScalePct) / 128;
     pDmgStrc->dwPoisDamage = nStatValue;
@@ -949,12 +941,12 @@ void __fastcall DAMAGE_CalculateOffensiveDamage(::SGAMEDATA * pGame, D2UnitStrc 
 
     nStatValue = pDmgStrc->dwBurnDmg;
     nElemRoll = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnit->sSeed, 1);
-    nLeechPct = nStatValue * (uint32_t)bParam + 0x13c + nElemRoll;
+    nLeechPct = nStatValue * (uint32_t)byScale + 0x13c + nElemRoll;
     nWeaponScalePct = (int)nLeechPct < 0 ? 0 : nLeechPct;
     pDmgStrc->dwBurnDmg += (int)nWeaponScalePct / 128;
     if (pDmgStrc->dwBurnLen) {
       nStatValue = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_firelength, 0);
-      pDmgStrc->dwBurnLen += (int)(nStatValue * (uint32_t)bParam) / 128;
+      pDmgStrc->dwBurnLen += (int)(nStatValue * (uint32_t)byScale) / 128;
     }
     if ((eAttackerType == UNIT_PLAYER || nElemDmgResult) && !(pDmgStrc->wResultFlags & 0x20)) {
       SUnitEvent::UNITEVENT_DispatchEventsByType(pGame, 3, pTarget, pUnit, pDmgStrc);
@@ -1019,16 +1011,16 @@ void __fastcall DAMAGE_CalculateOffensiveDamage(::SGAMEDATA * pGame, D2UnitStrc 
       }
     }
 
-    Monsters::ApplyDamageCritical((int*)pUnit, pTarget, pDmgStrc);
-    PLAYER::Player::WEAPON_ApplyEquippedWeaponStats(pUnit, nParam);
+    Monsters::ApplyDamageCritical(pUnit, pTarget, pDmgStrc);
+    PLAYER::Player::WEAPON_ApplyEquippedWeaponStats(pUnit, bResetWeaponStats);
 }
 
 // Computes the effective resistance value for one damage type given a resist-table entry and a damage context. Reads the defender's raw resistance stat, subtracts pierce from the attacker if applicable, applies the difficulty resistance penalty for players (hardcoded -20/-50 for classic, or DifficultyLevels.txt ResistPenalty for LoD). Clamps the result to [-100, maxResist] where maxResist is 75 (or stat-extended up to 95) for players. Special case: physical resistance (damageresist) against a Sanctuary-wielding attacker vs. undead defender is forced to 0. Returns the final clamped resist value.
 static int32_t DAMAGE_CalculateResistance(D2ResistTableEntry * pEntry, D2DamageContext * pCtx) {
+    int nDifficulty;
     eD2States eUnbreakableState;
     BOOL nIsUndeadCheck;
     int32_t nClampedResist;
-    uint8_t nDifficulty;
     int32_t nResistTotal = 0;
     if (pEntry->eResistStat != ~UNITSTAT_strength) {
       nResistTotal = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pCtx->pDefender, pEntry->eResistStat, 0);
@@ -1044,7 +1036,7 @@ static int32_t DAMAGE_CalculateResistance(D2ResistTableEntry * pEntry, D2DamageC
       if (pCtx->pGame->bExpansion) {
         nResistTotal += pCtx->pDiffLevels->ResistPenalty;
       } else {
-        nDifficulty = pCtx->pGame->nDifficulty;
+        nDifficulty = (int)pCtx->pGame->nDifficulty;
         switch (nDifficulty) {
           case 1:
             {
@@ -1114,12 +1106,12 @@ static int32_t DAMAGE_AbsorbDamageByPercent(D2DamageContext * pCtx, D2ResistTabl
 
     int32_t nAbsorbPct;
     nAbsorbPct = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pCtx->pDefender, pEntry->eAbsorbPctStat, 0);
-    if (nAbsorbPct < 0x28) {
+    if (nAbsorbPct >= 0x28) {
+      nAbsorbPct = 0x28;
+    } else {
       if (nAbsorbPct <= 0) {
         goto apply_flat_absorb;
       }
-    } else {
-      nAbsorbPct = 0x28;
     }
 
     nAbsorbPct = D2Client::Stats::D2ApplyPercent(nDamage, nAbsorbPct, 100);
@@ -1130,16 +1122,16 @@ static int32_t DAMAGE_AbsorbDamageByPercent(D2DamageContext * pCtx, D2ResistTabl
     apply_flat_absorb:
     nFlatAbsorbAmt = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pCtx->pDefender, pEntry->eAbsorbFlatStat, 0);
     nFlatAbsorbAmt *= 0x100;
-    if (nFlatAbsorbAmt <= 0) {
-      return nDamage;
-    }
-    if (nFlatAbsorbAmt >= nDamage) {
-      nFlatAbsorbAmt = nDamage;
+    if (nFlatAbsorbAmt > 0) {
+      if (nFlatAbsorbAmt >= nDamage) {
+        nFlatAbsorbAmt = nDamage;
+      }
+
+      pAbsLifePool = &pCtx->pDamage->dwAbsLife;
+      *pAbsLifePool += nFlatAbsorbAmt;
+      nDamage -= nFlatAbsorbAmt;
     }
 
-    pAbsLifePool = &pCtx->pDamage->dwAbsLife;
-    *pAbsLifePool += nFlatAbsorbAmt;
-    nDamage -= nFlatAbsorbAmt;
     return nDamage;
 }
 
@@ -1193,27 +1185,21 @@ static int32_t DAMAGE_CalculateExperienceMultiplier(D2DamageContext * pCtx) {
       return 100;
     }
     if (pDefender->eUnitType == UNIT_PLAYER) {
-      if (pAttackerSave->eUnitType == UNIT_PLAYER) {
-        return 0x11;
+      if (pAttackerSave->eUnitType != UNIT_PLAYER) {
+        uMercType = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pAttackerSave);
+        if (!uMercType) {
+          pAttackerSave = pCtx->pAttacker;
+          uMercType = D2Client::UNIT::CheckFlags(pAttackerSave, UNITFLAG_ISREVIVE);
+          if (!uMercType) {
+            uMercType = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pAttackerSave);
+            if (!uMercType) {
+              return 100;
+            }
+          }
+        }
       }
 
-      uMercType = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pAttackerSave);
-      if (uMercType) {
-        return 0x11;
-      }
-
-      pAttackerSave = pCtx->pAttacker;
-      uMercType = D2Client::UNIT::CheckFlags(pAttackerSave, UNITFLAG_ISREVIVE);
-      if (uMercType) {
-        return 0x11;
-      }
-
-      uMercType = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pAttackerSave);
-      if (uMercType) {
-        return 0x11;
-      }
-
-      return 100;
+      return 0x11;
     }
 
     uMercType = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pDefender);
@@ -1237,18 +1223,16 @@ static int32_t DAMAGE_CalculateExperienceMultiplier(D2DamageContext * pCtx) {
     }
 
     uMercType = D2Common::Monsters::MONSTERS::MONSTERS_CheckMonStatFlag0xc_Bit7(pCtx->pAttacker);
-    if (!uMercType) {
-      return 100;
+    if (uMercType) {
+      pAttackerSave = pCtx->pDefender;
+      uMercType = D2Client::UNIT::CheckFlags(pAttackerSave, UNITFLAG_ISREVIVE);
+      if (uMercType) {
+        uMercType = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pAttackerSave);
+        return (uMercType ? -200 : 0) + 400;
+      }
     }
 
-    pAttackerSave = pCtx->pDefender;
-    uMercType = D2Client::UNIT::CheckFlags(pAttackerSave, UNITFLAG_ISREVIVE);
-    if (!uMercType) {
-      return 100;
-    }
-
-    uMercType = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pAttackerSave);
-    return (uMercType ? -200 : 0) + 400;
+    return 100;
 }
 
 // Zeroes out cold/freeze lengths if defender has UNITSTAT_item_cannotbefrozen, or halves them if they have UNITSTAT_item_halffreezeduration. Also clears poison DoT duration if defender has STATE_shrine_resist_poison, and burn duration if they have STATE_shrine_resist_fire. Modifies pCtx->pDamage in place.
@@ -1268,13 +1252,13 @@ static void DAMAGE_ProcessFreezeAndPoisonImmunity(D2DamageContext * pCtx) {
         }
       }
     }
-    if (0 < pCtx->pDamage->dwPoisLength) {
+    if (pCtx->pDamage->dwPoisLength > 0) {
       eStateResult = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pCtx->pDefender, STATE_shrine_resist_poison);
       if (eStateResult != STATE_none) {
         pCtx->pDamage->dwPoisLength = 0;
       }
     }
-    if (0 >= pCtx->pDamage->dwBurnLen) {
+    if (pCtx->pDamage->dwBurnLen <= 0) {
       return;
     }
 
@@ -1562,19 +1546,20 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
 }
 
 uint32_t __thiscall DAMAGE_GetMonsterDrainEffectiveness(void * pThis, D2UnitStrc * pUnit) {
-    if ((pThis ? *(int*)pThis : 0) != 1) {
-      return 100;
-    }
-    if (!*(int**)((int)pThis + 0x14)) {
-      return 0;
+    if (!(!pThis || *(int*)pThis != 1)) {
+      if (!*(int**)((int)pThis + 0x14)) {
+        return 0;
+      }
+
+      int nMonsterIndex = **(int**)((int)pThis + 0x14);
+      if (!nMonsterIndex) {
+        return 0;
+      }
+
+      return (uint32_t)*(uint8_t*)(*(uint8_t*)((uintptr_t)&pUnit->uSideData + 9) + 0xa0 + nMonsterIndex);
     }
 
-    int nMonsterIndex = **(int**)((int)pThis + 0x14);
-    if (!nMonsterIndex) {
-      return 0;
-    }
-
-    return (uint32_t)*(uint8_t*)(*(uint8_t*)((uintptr_t)&pUnit->uSideData + 9) + 0xa0 + nMonsterIndex);
+    return 100;
 }
 
 // LEECH CALCULATION: % of physical damage dealt, AFTER DR.
@@ -1608,7 +1593,7 @@ static void __stdcall DAMAGE_ApplyLifeAndManaLeech(::SGAMEDATA * pGame, D2UnitSt
     if (!pDmgStrc->dwLifeLeech && !pDmgStrc->dwManaLeech) {
       return;
     }
-    if (!pDefender || pDefender->eUnitType != UNIT_MONSTER) {
+    if ((pDefender ? pDefender->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       pDefender = (D2UnitStrc*)0x64;
     } else {
       if (!pDefender->pUnitData.pUnitDataMonster) {
@@ -1792,7 +1777,7 @@ void __fastcall DAMAGE_ApplyDamageToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
         if (!(pDamage->dwHitFlags & 0x20U)) {
           goto clamp_and_apply_damage;
         }
-        if (-1 < (char)pDamage->dwHitFlags) {
+        if ((char)pDamage->dwHitFlags >= 0) {
           SUnitEvent::UNITEVENT_DispatchEventsByType(pGame, 6, pUnit, pUnit_00, pDamage);
         }
 
@@ -1815,7 +1800,7 @@ void __fastcall DAMAGE_ApplyDamageToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     pDamage->dwPhysDamage = nDamageOrHp;
     DAMAGE_ApplyLifeAndManaLeech(pGame, pUnit_00, pUnit, pDamage);
     if (pVictim == (D2UnitStrc*)0x1 && pDamage->wResultFlags & 1) {
-      Monsters::MONSTER_DispatchUModOnAttack(pGame, (int*)pUnit);
+      Monsters::MONSTER_DispatchUModOnAttack(pGame, pUnit);
     }
 
     DAMAGE_ApplyHealingToUnit(pDamage->dwAbsLife, pUnit_00);
@@ -1891,21 +1876,21 @@ void __fastcall FreeCombat(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 }
 
 // @sourcefile .\UNIT\SUnitDmg.cpp
-void __fastcall DAMAGE_RemoveDamageListEntry(::SGAMEDATA * pGame, int * pnParam, int * pUnit2) {
+void __fastcall DAMAGE_RemoveDamageListEntry(::SGAMEDATA * pGame, D2UnitStrc * pAttacker, D2UnitStrc * pUnit2) {
     D2CombatEntryStrc* pNextCombatEntry;
-    if (!(pnParam && pUnit2 && (D2CombatEntryStrc*)pnParam[0x2b])) {
+    if (!(pAttacker && pUnit2 && (D2CombatEntryStrc*)pAttacker->pCombat)) {
       return;
     }
 
     D2CombatEntryStrc* pPrevCombatEntry = 0;
-    D2CombatEntryStrc* pCombatEntry = (D2CombatEntryStrc*)pnParam[0x2b];
+    D2CombatEntryStrc* pCombatEntry = (D2CombatEntryStrc*)pAttacker->pCombat;
     do {
       D2CombatEntryStrc* pCurCombatEntry;
       pNextCombatEntry = pCombatEntry->pNext;
       pCurCombatEntry = pCombatEntry;
-      if (pCombatEntry->eAttackerType == *pnParam && pCombatEntry->nAttackerGUID == pnParam[3] && pCombatEntry->eDefenderType == *pUnit2 && pCombatEntry->nDefenderGUID == pUnit2[3]) {
+      if (pCombatEntry->eAttackerType == pAttacker->eUnitType && pCombatEntry->nAttackerGUID == pAttacker->nUnitGUID && pCombatEntry->eDefenderType == pUnit2->eUnitType && pCombatEntry->nDefenderGUID == pUnit2->nUnitGUID) {
         if (!pPrevCombatEntry) {
-          pnParam[0x2b] = (int)pNextCombatEntry;
+          pAttacker->pCombat = (uint8_t*)pNextCombatEntry;
         } else {
           pPrevCombatEntry->pNext = pNextCombatEntry;
         }
@@ -1920,27 +1905,27 @@ void __fastcall DAMAGE_RemoveDamageListEntry(::SGAMEDATA * pGame, int * pnParam,
 }
 
 // @sourcefile .\UNIT\SUnitDmg.cpp
-static void __stdcall DAMAGE_AddDamageListEntry(int32_t nGamePtr, int * pnParam1, int * pnParam2, int * pnParam3) {
+static void __stdcall DAMAGE_AddDamageListEntry(::SGAMEDATA * nGamePtr, D2DamageStrc * pDamage, D2UnitStrc * pAttacker, D2UnitStrc * pDefender) {
     int i;
-    if (!((!pnParam3 || *pnParam3 != 2 || pnParam3[1] != 7 && pnParam3[1] != 0xb) && (*pnParam3 == 1 || !*pnParam3))) {
+    if (!((!pDefender || pDefender->eUnitType != UNIT_OBJECT || pDefender->nClassId != 7 && pDefender->nClassId != 0xb) && (pDefender->eUnitType == UNIT_MONSTER || pDefender->eUnitType == UNIT_PLAYER))) {
       return;
     }
 
-    D2CombatEntryStrc* pNewCombatEntry = D2_NEW_POOL_AT(*(D2PoolManagerStrc**)(nGamePtr + 0x1c), D2CombatEntryStrc, ".\\UNIT\\SUnitDmg.cpp", 0x7cb);
-    pNewCombatEntry->field_0 = nGamePtr;
-    pNewCombatEntry->eAttackerType = *pnParam2;
-    pNewCombatEntry->nAttackerGUID = pnParam2[3];
-    pNewCombatEntry->eDefenderType = *pnParam3;
-    pNewCombatEntry->nDefenderGUID = pnParam3[3];
+    D2CombatEntryStrc* pNewCombatEntry = D2_NEW_POOL_AT(nGamePtr->pMemoryPool, D2CombatEntryStrc, ".\\UNIT\\SUnitDmg.cpp", 0x7cb);
+    pNewCombatEntry->field_0 = (uint32_t)(uintptr_t)nGamePtr;
+    pNewCombatEntry->eAttackerType = pAttacker->eUnitType;
+    pNewCombatEntry->nAttackerGUID = pAttacker->nUnitGUID;
+    pNewCombatEntry->eDefenderType = pDefender->eUnitType;
+    pNewCombatEntry->nDefenderGUID = pDefender->nUnitGUID;
     D2CombatEntryStrc* pEntryData = (D2CombatEntryStrc*)&pNewCombatEntry->sDamage;
     for (i = 0x1c; i; i--) {
-      pEntryData->field_0 = *pnParam1;
-      pnParam1++;
+      pEntryData->field_0 = pDamage->dwHitFlags;
+      pDamage = (D2DamageStrc*)&pDamage->wResultFlags;
       pEntryData = (D2CombatEntryStrc*)&pEntryData->eAttackerType;
     }
 
-    pNewCombatEntry->pNext = (D2CombatEntryStrc*)pnParam2[0x2b];
-    pnParam2[0x2b] = (int)pNewCombatEntry;
+    pNewCombatEntry->pNext = (D2CombatEntryStrc*)pAttacker->pCombat;
+    pAttacker->pCombat = (uint8_t*)pNewCombatEntry;
 }
 
 // Returns 1 (no knockback) if unit is frozen, damage is pure poison, or total damage is below 256. Otherwise tests whether damage meets a fraction of max HP threshold (divisor varies by elemental type: physical=16, lightning/drain/burn=8, cold=32, poison=64) with probabilistic fallback rolls. Also checks a monster stat flag (index 3) to allow knockback immunity on specific monster types. Returns 0 if knockback should be applied.
@@ -1978,8 +1963,9 @@ BOOL __stdcall DAMAGE_CheckKnockbackThreshold(D2UnitStrc * pUnit, D2DamageStrc *
       case ELEMENTAL_POISON:
         nKbDivisor = 0x40;
       break;
-      default:
-        nKbDivisor = 0x10;
+      case 12:
+        default:
+          nKbDivisor = 0x10;
       break;
     }
 
@@ -2096,7 +2082,7 @@ void __fastcall SERVER_KillMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Un
       int32_t nAttackerYPos;
       nAttackerYPos = D2Client::Units::GetYPosFromDynamicPathUnit(pAttacker);
       nDirection = D2Common::Units::GetDirectionToCoords(pUnit, D2Client::Units::GetXPosFromDynamicPathUnit(pAttacker), nAttackerYPos);
-      *(uint8_t*)(char*)&nDirection = (uint8_t)nDirection;
+      nDirection = (int32_t)((uint32_t)nDirection & 0xffffff00u | (uint32_t)(uint8_t)nDirection);
     } else {
       *(uint8_t*)(char*)&nDirection = D2Common::PATH::DynamicPath::GetDirection(pUnit->pPath.pDynamicPath);
     }
@@ -2128,7 +2114,7 @@ void __fastcall SERVER_KillMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Un
 }
 
 // Determines the elemental damage type flag for a unit's current attack by round-robining through up to 4 elemental damage types (indexed via gnElementalDamageTypeCallCount mod 4). Checks nParam2 damage ranges; if none are positive falls back to a fire-type flag (0x10 if bit 0x2000 set) or default type 0xD. Returns combined flags ORed with nParam.
-static uint32_t DAMAGE_GetElementalDamageTypeFlags(uint32_t nParam, int32_t nParam2) {
+static uint32_t DAMAGE_GetElementalDamageTypeFlags(uint32_t dwHitClass, int32_t pDamage) {
     // Static local variables (originally global data)
     static int gaDamageTypeStatOffsets[16] = {
     0x24,
@@ -2151,23 +2137,23 @@ static uint32_t DAMAGE_GetElementalDamageTypeFlags(uint32_t nParam, int32_t nPar
     static uint8_t gnElementalDamageTypeCallCount; D2_STATIC_GUARD_BSS(gnElementalDamageTypeCallCount, "D2Game::UNIT::SUnitDmg::DAMAGE_GetElementalDamageTypeFlags::gnElementalDamageTypeCallCount");
 
     uint32_t uDmgTypeFlags = 0;
-    uint32_t uDmgTypeIdx = gnElementalDamageTypeCallCount & 0x80000003;
+    uint32_t uDmgTypeIdx = (int)gnElementalDamageTypeCallCount % 4;
     gnElementalDamageTypeCallCount++;
     int nDmgTypeMax = uDmgTypeIdx + 4;
     do {
       if ((int)uDmgTypeIdx >= nDmgTypeMax) {
-        if (*(uint16_t*)(nParam2 + 4) & 0x2000) {
+        if (*(uint16_t*)(pDamage + 4) & 0x2000) {
           uDmgTypeFlags = 0x10;
         }
 
         break;
       }
-      if (0 < *(int*)(nParam2 + gaDamageTypeStatOffsets[uDmgTypeIdx * 2])) {
+      if (*(int*)(pDamage + gaDamageTypeStatOffsets[uDmgTypeIdx * 2]) > 0) {
         uDmgTypeFlags = gaDamageTypeStatOffsets[uDmgTypeIdx * 2 + 1];
         if (uDmgTypeFlags) {
           break;
         }
-        if (*(uint16_t*)(nParam2 + 4) & 0x2000) {
+        if (*(uint16_t*)(pDamage + 4) & 0x2000) {
           uDmgTypeFlags = 0x10;
         }
 
@@ -2177,12 +2163,11 @@ static uint32_t DAMAGE_GetElementalDamageTypeFlags(uint32_t nParam, int32_t nPar
       uDmgTypeIdx++;
     } while (true);
 
-    if (nParam) {
-      return uDmgTypeFlags | nParam;
+    if (!dwHitClass) {
+      dwHitClass = 0xd;
     }
 
-    nParam = 0xd;
-    return uDmgTypeFlags | nParam;
+    return uDmgTypeFlags | dwHitClass;
 }
 
 // Server-side post-hit reaction dispatcher: given the resolved D2DamageStrc result flags, drives the victim's response. Early-outs if the victim is in town (unless attacker is an inTown monster) or has STATE_uninterruptable (only setting death_delay if the hit was lethal). For players, maps result flags to dodge/avoid/evade/block/gethit/knockback: sets the corresponding state, plays the avoid/evade skill sound, and starts the matching player mode (PLRMODES_StartModeID/MoveToLocation), honoring faster-block-rate timing. For monsters, kills the victim on a lethal flag (SERVER_KillMonster), or dispatches Knockback/GetHit/Block/death-special transitions through the monster AI lifecycle (SetCurrentSkill + MONSTERAI_ExecuteLifecycleTransition) and flags HP-percent resync. __fastcall(pGame,pUnit attacker,pVictim,pDamage); no return value, all effects are side-effects on pVictim.
@@ -2196,7 +2181,7 @@ void __fastcall SERVER_GetHitCalculation(::SGAMEDATA * pGameIn, D2UnitStrc * pUn
     uint32_t uHpPct128;
     int nStatOrFrame;
     eD2Skills eSkill;
-    uint32_t uVar2;
+    uint32_t dwSkillFlags;
     DWORD nAttackerGUID;
     D2SkillStrc* pEvadeSkill;
     D2SkillsTxt* pSkillsTxt;
@@ -2285,7 +2270,7 @@ void __fastcall SERVER_GetHitCalculation(::SGAMEDATA * pGameIn, D2UnitStrc * pUn
               }
             }
 
-            D2Game::Monster::SetAiState(pVictim, (D2UnitStrc*)0x13);
+            D2Game::Monster::SetAiState(pVictim, 0x13);
             return;
           }
           if (wDmgResultFlags & 4) {
@@ -2293,7 +2278,7 @@ void __fastcall SERVER_GetHitCalculation(::SGAMEDATA * pGameIn, D2UnitStrc * pUn
             if (pStatList || (nLastBlockFrame = DAMAGE_CheckKnockbackThreshold(pVictim, pDamage, pDamage->dwHitClass) , !nLastBlockFrame)) {
               D2Game::Monster::MonsterMode::SetCurrentSkill(pVictim, eD2MonsterAnimMode_ns::GetHit, &sMonsterKill);
               D2Game::Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGameLocal, &sMonsterKill, 1);
-              Monsters::MONSTER_DispatchUModOnSpecial(pGameLocal, (int*)pVictim);
+              Monsters::MONSTER_DispatchUModOnSpecial(pGameLocal, pVictim);
               return;
             }
           } else {
@@ -2324,8 +2309,8 @@ void __fastcall SERVER_GetHitCalculation(::SGAMEDATA * pGameIn, D2UnitStrc * pUn
 
           D2Common::Unit::ROOM_LinkUnitToUpdateList(pVictim);
           pVictim->eUnitFlags |= UNITFLAG_UPGRLIFENHITCLASS;
-          D2Game::Monster::SetAiState(pVictim, (D2UnitStrc*)0x13);
-          Monsters::MONSTER_DispatchUModOnSpecial(pGameLocal, (int*)pVictim);
+          D2Game::Monster::SetAiState(pVictim, 0x13);
+          Monsters::MONSTER_DispatchUModOnSpecial(pGameLocal, pVictim);
           return;
         }
       } else {
@@ -2435,8 +2420,8 @@ void __fastcall SERVER_GetHitCalculation(::SGAMEDATA * pGameIn, D2UnitStrc * pUn
           eSkill = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_skill, 0);
           pEvadeSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pVictim, eSkill);
           if (pEvadeSkill) {
-            uVar2 = D2Common::Skills::SKILL_GetFlags(pEvadeSkill);
-            D2Common::Skills::SKILL_SetFlags(pEvadeSkill, uVar2 | 4);
+            dwSkillFlags = D2Common::Skills::SKILL_GetFlags(pEvadeSkill);
+            D2Common::Skills::SKILL_SetFlags(pEvadeSkill, dwSkillFlags | 4);
             if (!pUnit) {
               nAttackerGUID = -1;
               eVictimType = UNIT_COUNT;
@@ -2536,7 +2521,7 @@ static void __stdcall DAMAGE_ReduceEquipmentDurability(::SGAMEDATA * pGame, D2Un
 
 // Resolves a pending deferred-hit combat queue entry between pUnit (attacker) and pVictim. Finds the matching D2CombatEntryStrc, verifies melee range, applies damage via DAMAGE_ApplyDamageToUnit, dispatches hit/defend unit events, applies reflected damage, runs GetHitCalculation, and removes the entry from the queue. No-ops if either unit is null or out of range.
 void __fastcall DAMAGE_ProcessCombatQueueEntry(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pVictim, uint32_t dwParam) {
-    bool _bInMeleeRange;
+    BOOL _bInMeleeRange;
     bool bInMeleeRange;
     eD2UnitType eEntryAttackerType;
     int32_t nGUID;
@@ -2569,7 +2554,7 @@ void __fastcall DAMAGE_ProcessCombatQueueEntry(::SGAMEDATA * pGame, D2UnitStrc *
       pDstDmgData = (D2DamageStrc*)&pDstDmgData->wResultFlags;
     }
 
-    _bInMeleeRange = D2Common::Units::IsInMeleeRange(pUnit, pVictim, (uint32_t)(eEntryAttackerType == UNIT_MONSTER) * 2 + 1);
+    _bInMeleeRange = D2Common::Units::IsInMeleeRange(pUnit, pVictim, eEntryAttackerType == UNIT_MONSTER ? 0x3U : 0x1U);
     ::SGAMEDATA* pGameLocal = pGameCopy;
     if (_bInMeleeRange) {
       uint32_t nHitClass;
@@ -2604,11 +2589,11 @@ void __fastcall DAMAGE_ProcessCombatQueueEntry(::SGAMEDATA * pGame, D2UnitStrc *
       }
 
       SERVER_GetHitCalculation(pGameLocal, pUnit, pVictim, &sDamage);
-      DAMAGE_RemoveDamageListEntry(pGameLocal, (int*)pUnit, (int*)pVictim);
+      DAMAGE_RemoveDamageListEntry(pGameLocal, pUnit, pVictim);
       return;
     }
 
-    DAMAGE_RemoveDamageListEntry(pGameCopy, (int*)pUnit, (int*)pVictim);
+    DAMAGE_RemoveDamageListEntry(pGameCopy, pUnit, pVictim);
 }
 
 D2DamageStrc * __fastcall DAMAGE_FindCombatEntry(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
@@ -2646,44 +2631,57 @@ D2DamageStrc * __fastcall DAMAGE_FindCombatEntry(D2UnitStrc * pUnit, D2UnitStrc 
     return nullptr;
 }
 
-uint32_t __stdcall DAMAGE_RollMinMaxDamageRange(int32_t nParam, uint32_t * pnParam1, uint32_t * pnParam2) {
-    uint64_t nSeedStateGeneral;
-    int64_t nSeedStatePow2;
-    uint32_t nRangeRoll = *pnParam1;
+uint32_t __stdcall DAMAGE_RollMinMaxDamageRange(D2UnitStrc * pUnit, uint32_t * pnMinDamage, uint32_t * pnMaxDamage) {
+    uint32_t uVar1;
+    uint64_t uVar2;
+    D2SeedStrc nSeedStateGeneral;
+    uint32_t nRangeRoll = *pnMinDamage;
     if ((int)nRangeRoll <= 0) {
       nRangeRoll = 0;
-    } else if (nRangeRoll & nRangeRoll - 1) {
-      nSeedStateGeneral = (uint64_t)*(uint32_t*)(nParam + 0x20) * 0x6ac690c5 + (uint64_t)*(uint32_t*)(nParam + 0x24);
-      *(uint64_t*)(nParam + 0x20) = nSeedStateGeneral;
-      nRangeRoll = (uint32_t)((nSeedStateGeneral & 0xffffffff) % (uint64_t)nRangeRoll);
     } else {
-      nSeedStatePow2 = (uint64_t)*(uint32_t*)(nParam + 0x20) * 0x6ac690c5 + (uint64_t)*(uint32_t*)(nParam + 0x24);
-      *(int64_t*)(nParam + 0x20) = nSeedStatePow2;
-      nRangeRoll = nRangeRoll - 1 & (uint32_t)nSeedStatePow2;
+      uVar1 = pUnit->sSeed.nSeedLow;
+      uVar2 = (uint64_t)pUnit->sSeed.nSeedHigh;
+      if (nRangeRoll & nRangeRoll - 1) {
+        nSeedStateGeneral = (D2SeedStrc)((uint64_t)uVar1 * 0x6ac690c5 + uVar2);
+        pUnit->sSeed.nSeedHigh = nSeedStateGeneral.nSeedHigh;
+        pUnit->sSeed.nSeedLow = nSeedStateGeneral.nSeedLow;
+        nRangeRoll = (uint32_t)(nSeedStateGeneral.nSeedLow % nRangeRoll);
+      } else {
+        nSeedStateGeneral = (D2SeedStrc)((uint64_t)uVar1 * 0x6ac690c5 + uVar2);
+        pUnit->sSeed.nSeedHigh = nSeedStateGeneral.nSeedHigh;
+        pUnit->sSeed.nSeedLow = nSeedStateGeneral.nSeedLow;
+        nRangeRoll = nRangeRoll - 1 & nSeedStateGeneral.nSeedLow;
+      }
     }
 
-    *pnParam1 = nRangeRoll;
-    nRangeRoll = *pnParam2;
+    *pnMinDamage = nRangeRoll;
+    nRangeRoll = *pnMaxDamage;
     if ((int)nRangeRoll <= 0) {
       nRangeRoll = 0;
-    } else if (nRangeRoll & nRangeRoll - 1) {
-      nSeedStateGeneral = (uint64_t)*(uint32_t*)(nParam + 0x20) * 0x6ac690c5 + (uint64_t)*(uint32_t*)(nParam + 0x24);
-      *(uint64_t*)(nParam + 0x20) = nSeedStateGeneral;
-      nRangeRoll = (uint32_t)((nSeedStateGeneral & 0xffffffff) % (uint64_t)nRangeRoll);
     } else {
-      nSeedStatePow2 = (uint64_t)*(uint32_t*)(nParam + 0x20) * 0x6ac690c5 + (uint64_t)*(uint32_t*)(nParam + 0x24);
-      *(int64_t*)(nParam + 0x20) = nSeedStatePow2;
-      nRangeRoll = nRangeRoll - 1 & (uint32_t)nSeedStatePow2;
+      uVar2 = (uint64_t)pUnit->sSeed.nSeedHigh;
+      uVar1 = pUnit->sSeed.nSeedLow;
+      if (nRangeRoll & nRangeRoll - 1) {
+        nSeedStateGeneral = (D2SeedStrc)((uint64_t)uVar1 * 0x6ac690c5 + uVar2);
+        pUnit->sSeed.nSeedHigh = nSeedStateGeneral.nSeedHigh;
+        pUnit->sSeed.nSeedLow = nSeedStateGeneral.nSeedLow;
+        nRangeRoll = (uint32_t)(nSeedStateGeneral.nSeedLow % nRangeRoll);
+      } else {
+        nSeedStateGeneral = (D2SeedStrc)((uint64_t)uVar1 * 0x6ac690c5 + uVar2);
+        pUnit->sSeed.nSeedHigh = nSeedStateGeneral.nSeedHigh;
+        pUnit->sSeed.nSeedLow = nSeedStateGeneral.nSeedLow;
+        nRangeRoll = nRangeRoll - 1 & nSeedStateGeneral.nSeedLow;
+      }
     }
 
-    *pnParam2 = nRangeRoll;
-    return (uint32_t)((int)*pnParam1 >= (int)nRangeRoll);
+    *pnMaxDamage = nRangeRoll;
+    return (uint32_t)((int)*pnMinDamage >= (int)nRangeRoll);
 }
 
 // Gives a monster defender the prevent-heal state when a player attacker has item_preventheal (stat 0x75): STATE 0x34 for 120000 frames on armorclass, through SKILLS_SetStateWithExpiryTime with no expire callback. Classes 0x2C0-0x2C5 are exempt. Register arguments: pDefender in ESI, pAttacker in EDI; nothing is returned.
 static void DAMAGE_CheckPreventHealAndSetState(D2UnitStrc * pDefender, D2UnitStrc * pAttacker) {
     D2StateExArgStrc sStateArg;
-    if (!(pAttacker && pAttacker->eUnitType == UNIT_PLAYER && pDefender && pDefender->eUnitType == UNIT_MONSTER)) {
+    if (!(pAttacker && pAttacker->eUnitType == UNIT_PLAYER && (pDefender ? pDefender->eUnitType : UNIT_COUNT) == UNIT_MONSTER)) {
       return;
     }
 
@@ -2911,7 +2909,7 @@ BOOL __fastcall DAMAGE_RollAttackHit(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, in
     return 0;
 }
 
-void __fastcall DAMAGE_CalculateAndApplyDamage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pVictim, D2DamageStrc * pDamage, uint8_t bParam) {
+void __fastcall DAMAGE_CalculateAndApplyDamage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pVictim, D2DamageStrc * pDamage, uint8_t byScale) {
     uint32_t nTotalDamage;
     if (!(pUnit && pVictim)) {
       return;
@@ -2921,7 +2919,7 @@ void __fastcall DAMAGE_CalculateAndApplyDamage(::SGAMEDATA * pGame, D2UnitStrc *
     if (!(pDamage->wResultFlags & 0x8380U) && pDamage->wResultFlags & 1U) {
       uint32_t nCurHp;
       if (!(pDamage->dwHitFlags & 2)) {
-        DAMAGE_CalculateOffensiveDamage(pGame, pUnit, pVictim, pDamage, 0, bParam);
+        DAMAGE_CalculateOffensiveDamage(pGame, pUnit, pVictim, pDamage, 0, byScale);
       }
 
       DAMAGE_ApplyDefensiveReduction(pGame, pUnit, pVictim, pDamage);
@@ -2936,7 +2934,7 @@ void __fastcall DAMAGE_CalculateAndApplyDamage(::SGAMEDATA * pGame, D2UnitStrc *
       }
     }
 
-    DAMAGE_AddDamageListEntry((int32_t)pGame, &pDamage->dwHitFlags, (int*)pUnit, (int*)pVictim);
+    DAMAGE_AddDamageListEntry(pGame, pDamage, pUnit, pVictim);
 }
 
 // Returns the highest weapon-type-conditional skill damage bonus (stat 0x15C) applicable to the unit's currently equipped weapons (left and right arm slots). Iterates all bonus entries; an entry with ITEMTYPE_None1 matches unconditionally. Returns 0 if unit is null or no matching bonus is found.
@@ -2960,38 +2958,36 @@ static int32_t DAMAGE_GetSkillDamageBonus(D2UnitStrc * pUnit) {
 
     int32_t iVar1 = D2Common::Stats::StatsEx::STATLIST_GetItemStatBonusValues(pUnit, 0x15c, aStatEntries, 0x20);
     int32_t nBestBonus = 0;
-    if (0 >= iVar1) {
-      return nBestBonus;
-    }
-
-    do {
+    if (iVar1 > 0) {
       uint32_t bTypeMatch;
-      eItemType = (eD2ItemTypes)(uint16_t)aStatEntries[i].wSubIndex;
-      nBonusVal = aStatEntries[i].nStatValue;
-      if (eItemType == ITEMTYPE_None1 || (pLeftWeapon && (bTypeMatch = D2Common::ITEMS::Items::ITEMS_IsA(pLeftWeapon, eItemType) , bTypeMatch != 0) || pRightWeapon && (bTypeMatch = D2Common::ITEMS::Items::ITEMS_IsA(pRightWeapon, eItemType) , bTypeMatch != 0)) && nBonusVal > nBestBonus) {
-        nBestBonus = nBonusVal;
-      }
+      do {
+        eItemType = (eD2ItemTypes)(uint16_t)aStatEntries[i].wSubIndex;
+        nBonusVal = aStatEntries[i].nStatValue;
+        if (eItemType == ITEMTYPE_None1 || (pLeftWeapon && (bTypeMatch = D2Common::ITEMS::Items::ITEMS_IsA(pLeftWeapon, eItemType) , bTypeMatch != 0) || pRightWeapon && (bTypeMatch = D2Common::ITEMS::Items::ITEMS_IsA(pRightWeapon, eItemType) , bTypeMatch != 0)) && nBonusVal > nBestBonus) {
+          nBestBonus = nBonusVal;
+        }
 
-      i++;
-    } while (i < iVar1);
+        i++;
+      } while (i < iVar1);
+    }
 
     return nBestBonus;
 }
 
 // Rolls a unit's passive defensive avoidance against an incoming attack. For players in Run/Walk mode (or matching monster mode) rolls passive_evade; otherwise checks dodge (passive_dodge) when nParam==0 or avoid (passive_avoid) when nParam!=0, plus a weapon-class-0xD parry/block path keyed on DAMAGE_GetSkillDamageBonus. Uses the unit RNG seed (advances pUnit->sSeed). Returns a result bitcode: 0x10 (block/parry), 8 (evade), 4 (dodge), 2 (avoid), or 0 (none). __fastcall with pUnit in ESI, attacker pUnit2 in EDI.
-static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t bIsMissile, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     int32_t nParryBonus;
     uint32_t nRandRoll;
     int nDodgeChance;
     uint32_t nEvadeRoll;
     int nAvoidChance;
+    D2UnitStrc* pDVar3;
+    int32_t iVar4;
     uint32_t nWeaponClass3;
     int32_t nDebugAddr;
     uint32_t dwSeedLow;
     eD2PlayerAnimMode eAnimMode;
     char* nSeedMod;
-    int32_t nSkillBonus;
-    D2UnitStrc* pDefender;
     uint32_t nWeaponClass2;
     nWeaponClass2 = 0;
     if (pUnit) {
@@ -2999,8 +2995,8 @@ static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc 
       eAnimMode = pUnit->eAnimMode.ePlayerMode;
       if (pUnit->eUnitType == UNIT_PLAYER) {
         if (eAnimMode == eD2PlayerAnimMode_ns::Run || eAnimMode == Walk) {
-          nParam = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_evade, 0);
-          if (nParam <= 0) {
+          bIsMissile = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_evade, 0);
+          if (bIsMissile <= 0) {
             return 0;
           }
 
@@ -3010,16 +3006,13 @@ static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc 
           pUnit->sSeed = DVar1;
           nAvoidChance = DVar1.nSeedLow % 100;
           nSeedMod = "evades";
-          nParryBonus = nParam;
-          nDodgeChance = nAvoidChance;
-          SUnit::GetGamePointer(pUnit2);
-          nullsub_4Arg(pUnit, nParryBonus, nDodgeChance, (uint32_t)nSeedMod);
+          nParryBonus = bIsMissile;
+          SUNITDMG_DebugTraceAvoidRoll(SUnit::GetGamePointer(pUnit2), pUnit2, pUnit, nParryBonus, nAvoidChance, (uint32_t)nSeedMod);
           nRandRoll = 8;
-          if (nAvoidChance < nParam) {
-            return nRandRoll;
+          if (nAvoidChance >= bIsMissile) {
+            nRandRoll = nWeaponClass2;
           }
 
-          nRandRoll = nWeaponClass2;
           return nRandRoll;
         }
 
@@ -3029,11 +3022,10 @@ static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc 
           if (nWeaponClass2 == 0xd) {
             nRandRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
             nDebugAddr = (int32_t)s_block_006e1730;
-            pDefender = pUnit;
-            nSkillBonus = nParryBonus;
+            pDVar3 = pUnit;
+            iVar4 = nParryBonus;
             nWeaponClass3 = nRandRoll;
-            SUnit::GetGamePointer(pUnit2);
-            nullsub_4Arg(pDefender, nSkillBonus, nRandRoll, nDebugAddr);
+            SUNITDMG_DebugTraceAvoidRoll(SUnit::GetGamePointer(pUnit2), pUnit2, pDVar3, iVar4, nRandRoll, nDebugAddr);
             if ((int)nWeaponClass3 < nParryBonus) {
               return 0x10;
             }
@@ -3043,8 +3035,8 @@ static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc 
         goto roll_dodge_or_avoid;
       }
       if (eAnimMode == eD2PlayerAnimMode_ns::Skill3 || eAnimMode == Walk) {
-        nParam = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_evade, 0);
-        if (nParam <= 0) {
+        bIsMissile = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_evade, 0);
+        if (bIsMissile <= 0) {
           return 0;
         }
 
@@ -3059,11 +3051,10 @@ static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc 
       if (nWeaponClass3 == 0xd) {
         nRandRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
         nSeedMod = "block";
-        pDefender = pUnit;
-        nSkillBonus = nParryBonus;
+        pDVar3 = pUnit;
+        iVar4 = nParryBonus;
         nWeaponClass2 = nRandRoll;
-        SUnit::GetGamePointer(pUnit2);
-        nullsub_4Arg(pDefender, nSkillBonus, nRandRoll, (uint32_t)nSeedMod);
+        SUNITDMG_DebugTraceAvoidRoll(SUnit::GetGamePointer(pUnit2), pUnit2, pDVar3, iVar4, nRandRoll, (uint32_t)nSeedMod);
         if ((int)nWeaponClass2 < nParryBonus) {
           return 0x10;
         }
@@ -3071,15 +3062,12 @@ static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc 
     }
 
     roll_dodge_or_avoid:
-    if (!nParam) {
+    if (!bIsMissile) {
       nDodgeChance = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_dodge, 0);
       if (nDodgeChance > 0) {
         nEvadeRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
         nSeedMod = "dodges";
-        nAvoidChance = nDodgeChance;
-        nRandRoll = nEvadeRoll;
-        SUnit::GetGamePointer(pUnit2);
-        nullsub_4Arg(pUnit, nAvoidChance, nRandRoll, (uint32_t)nSeedMod);
+        SUNITDMG_DebugTraceAvoidRoll(SUnit::GetGamePointer(pUnit2), pUnit2, pUnit, nDodgeChance, nEvadeRoll, (uint32_t)nSeedMod);
         if ((int)nEvadeRoll < nDodgeChance) {
           return 4;
         }
@@ -3089,10 +3077,7 @@ static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc 
       if (nDodgeChance > 0) {
         nEvadeRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
         nSeedMod = "avoids";
-        nAvoidChance = nDodgeChance;
-        nRandRoll = nEvadeRoll;
-        SUnit::GetGamePointer(pUnit2);
-        nullsub_4Arg(pUnit, nAvoidChance, nRandRoll, (uint32_t)nSeedMod);
+        SUNITDMG_DebugTraceAvoidRoll(SUnit::GetGamePointer(pUnit2), pUnit2, pUnit, nDodgeChance, nEvadeRoll, (uint32_t)nSeedMod);
         if ((int)nEvadeRoll < nDodgeChance) {
           return 2;
         }
@@ -3101,17 +3086,17 @@ static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc 
     return 0;
 }
 
-uint32_t __fastcall DAMAGE_CheckBlockAndEvasion(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pDefUnit, int32_t nAttackRating, int32_t nParam2) {
+uint32_t __fastcall DAMAGE_CheckBlockAndEvasion(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pDefUnit, int32_t bIsMissile, int32_t bRollBlock) {
     uint32_t uBlockResult;
-    if (!nParam2) {
-      uBlockResult = DAMAGE_CheckDefenseEvasion(nAttackRating, pDefUnit, pUnit);
+    if (!bRollBlock) {
+      uBlockResult = DAMAGE_CheckDefenseEvasion(bIsMissile, pDefUnit, pUnit);
       return uBlockResult;
     }
 
     int bExpansion = pGame->bExpansion;
     int nBlockRate = D2Common::Units::GetBlockRate(pDefUnit, bExpansion);
     if (nBlockRate <= 0) {
-      uBlockResult = DAMAGE_CheckDefenseEvasion(nAttackRating, pDefUnit, pUnit);
+      uBlockResult = DAMAGE_CheckDefenseEvasion(bIsMissile, pDefUnit, pUnit);
       return uBlockResult;
     }
     if (pDefUnit && pDefUnit->eUnitType == UNIT_PLAYER) {
@@ -3126,13 +3111,10 @@ uint32_t __fastcall DAMAGE_CheckBlockAndEvasion(::SGAMEDATA * pGame, D2UnitStrc 
     pDefUnit->sSeed = DVar1;
     int nSeedMod = DVar1.nSeedLow % 100;
     int32_t nDebugAddr = (int32_t)s_blocks_006e1738;
-    D2UnitStrc* pDefender = pDefUnit;
-    int nBlockRateTmp = nBlockRate;
-    int nRandRoll = nSeedMod;
-    SUnit::GetGamePointer(pUnit);
-    nullsub_4Arg(pDefender, nBlockRateTmp, nRandRoll, nDebugAddr);
+    D2UnitStrc* nRandRoll = pDefUnit;
+    SUNITDMG_DebugTraceAvoidRoll(SUnit::GetGamePointer(pUnit), pUnit, nRandRoll, nBlockRate, nSeedMod, nDebugAddr);
     if (nSeedMod >= nBlockRate) {
-      uBlockResult = DAMAGE_CheckDefenseEvasion(nAttackRating, pDefUnit, pUnit);
+      uBlockResult = DAMAGE_CheckDefenseEvasion(bIsMissile, pDefUnit, pUnit);
       return uBlockResult;
     }
 
@@ -3142,13 +3124,13 @@ uint32_t __fastcall DAMAGE_CheckBlockAndEvasion(::SGAMEDATA * pGame, D2UnitStrc 
 // Applies missile hit damage to all units within nRadius of (nCenterX,nCenterY) that pass targeting checks. Builds a UnitFind result set (flags nUnitFlags, default 0x583), skips the owner and owner-owner unless bHitOwner/bHitOwnerOwner are set, requires line-of-sight (COLLISION_LOS), optionally filters through pfnProc callback, then calls MISSMODE_ApplyMissileHitDamage for each hit. Returns 1 if any unit was hit, 0 otherwise.
 void __fastcall DAMAGE_ApplyAreaOfEffectDamage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nCenterX, int32_t nCenterY, int32_t nRadius, D2DamageStrc * pDamage, BOOL bHitOwner, BOOL bHitOwnerOwner, pfnAoEDamageFilter pfnProc, int32_t nUnitFlags) {
     BOOL bBadCodePtr;
-    int32_t iVar1;
     int nCopyIdx;
     D2DamageStrc* pDmgSrc;
     D2DamageStrc* pDmgDst;
     D2DamageStrc sDamage;
     D2UnitFindArgStrc sUnitFindArg;
     D2UnitFindDataStrc sUnitFindData;
+    int32_t nProcResult;
     D2UnitStrc* pTargetUnit;
     int32_t bAnyHit = 0;
     D2UnitStrc* pMissileUnit = pUnit;
@@ -3166,70 +3148,71 @@ void __fastcall DAMAGE_ApplyAreaOfEffectDamage(::SGAMEDATA * pGame, D2UnitStrc *
     sUnitFindArg.nX = nCenterX;
     D2Common::Units::UnitFinds::InitializeUnitFindData(pGame->pMemoryPool, &sUnitFindData, pBestRoom, nCenterX, nCenterY, nRadius, nullptr, &sUnitFindArg);
     D2Common::Units::UnitFinds::UNITFINDS_FindCullRange(&sUnitFindData);
-    D2UnitStrc* pUnit_00 = SUnit::GetOwnerUnit(pGame, pUnit);
-    if (!pUnit_00) {
-      D2Common::Units::UnitFinds::FreeUnitFindData(&sUnitFindData);
-      return;
-    }
-
-    D2UnitStrc* pOwnerOwner = SUnit::GetOwnerUnit(pGame, pUnit_00);
-    int nUnitIdx = 0;
-    if (sUnitFindData.nCountedUnits > 0) {
-      uint32_t bCanAttack;
-      for (; nUnitIdx < sUnitFindData.nCountedUnits; nUnitIdx++) {
-        pTargetUnit = sUnitFindData.pUnitsArray->aFoundUnitsList[nUnitIdx];
-        if ((pOwnerOwner != pTargetUnit || bHitOwnerOwner) && (pUnit_00 != pTargetUnit || bHitOwner)) {
-          bCanAttack = SUnit::UNITS_CheckIfCanAttackTarget(pGameLocal, pUnit_00, pTargetUnit);
-          if (bCanAttack) {
-            bCanAttack = D2Common::Skills::SKILLS_HasLineOfSightToUnit(nCenterX, nCenterY, sUnitFindData.pUnitsArray->aFoundUnitsList[nUnitIdx], 0x805);
+    D2UnitStrc* pOwner = SUnit::GetOwnerUnit(pGame, pUnit);
+    if (pOwner) {
+      D2UnitStrc* pOwnerOwner = SUnit::GetOwnerUnit(pGame, pOwner);
+      int nUnitIdx = 0;
+      if (sUnitFindData.nCountedUnits > 0) {
+        uint32_t bCanAttack;
+        for (; nUnitIdx < sUnitFindData.nCountedUnits; nUnitIdx++) {
+          pTargetUnit = sUnitFindData.pUnitsArray->aFoundUnitsList[nUnitIdx];
+          if ((pOwnerOwner != pTargetUnit || bHitOwnerOwner) && (pOwner != pTargetUnit || bHitOwner)) {
+            bCanAttack = SUnit::UNITS_CheckIfCanAttackTarget(pGameLocal, pOwner, pTargetUnit);
             if (bCanAttack) {
-              pDmgSrc = pDamage;
-              pDmgDst = &sDamage;
-              for (nCopyIdx = 0x1c; nCopyIdx; nCopyIdx--) {
-                pDmgDst->dwHitFlags = pDmgSrc->dwHitFlags;
-                pDmgSrc = (D2DamageStrc*)&pDmgSrc->wResultFlags;
-                pDmgDst = (D2DamageStrc*)&pDmgDst->wResultFlags;
-              }
-
-              if (pfnProc) {
-                /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)pfnProc);
-                if (bBadCodePtr) {
-                  Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xda6);
-                  exit(-1);
+              bCanAttack = D2Common::Skills::SKILLS_HasLineOfSightToUnit(nCenterX, nCenterY, sUnitFindData.pUnitsArray->aFoundUnitsList[nUnitIdx], 0x805);
+              if (bCanAttack) {
+                pDmgSrc = pDamage;
+                pDmgDst = &sDamage;
+                for (nCopyIdx = 0x1c; nCopyIdx; nCopyIdx--) {
+                  pDmgDst->dwHitFlags = pDmgSrc->dwHitFlags;
+                  pDmgSrc = (D2DamageStrc*)&pDmgSrc->wResultFlags;
+                  pDmgDst = (D2DamageStrc*)&pDmgDst->wResultFlags;
                 }
 
-                iVar1 = (*pfnProc)(pGameLocal, pMissileUnit, sUnitFindData.pUnitsArray->aFoundUnitsList[nUnitIdx]);
-                if (!iVar1) {
-                  continue;
-                }
-              }
+                if (pfnProc) {
+                  /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)pfnProc);
+                  if (bBadCodePtr) {
+                    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xda6);
+                    exit(-1);
+                  }
 
-              MISSILES::MissilesMode::MISSMODE_ApplyMissileHitDamage(pGameLocal, pMissileUnit, sUnitFindData.pUnitsArray->aFoundUnitsList[nUnitIdx], &sDamage);
-              bAnyHit = 1;
+                  nProcResult = (*pfnProc)(pGameLocal, pMissileUnit, sUnitFindData.pUnitsArray->aFoundUnitsList[nUnitIdx]);
+                  if (!nProcResult) {
+                    continue;
+                  }
+                }
+
+                MISSILES::MissilesMode::MISSMODE_ApplyMissileHitDamage(pGameLocal, pMissileUnit, sUnitFindData.pUnitsArray->aFoundUnitsList[nUnitIdx], &sDamage);
+                bAnyHit = 1;
+              }
             }
           }
         }
       }
+
+      D2Common::Units::UnitFinds::FreeUnitFindData(&sUnitFindData);
+      return;
     }
 
     D2Common::Units::UnitFinds::FreeUnitFindData(&sUnitFindData);
+    return;
 }
 
-void __fastcall DAMAGE_AddSkillBonusDamage(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, D2DamageStrc * param_1) {
-    SKILLS::SkillsServer::SKILLS_AddRandomSkillDamage(pUnit, &param_1->dwHitFlags, eSkill, nSkillLevel);
-    SKILLS::SkillsServer::SetDamageOnEvent(pUnit, param_1, eSkill, nSkillLevel);
+void __fastcall DAMAGE_AddSkillBonusDamage(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, D2DamageStrc * pDamage) {
+    SKILLS::SkillsServer::SKILLS_AddRandomSkillDamage(pUnit, &pDamage->dwHitFlags, eSkill, nSkillLevel);
+    SKILLS::SkillsServer::SetDamageOnEvent(pUnit, pDamage, eSkill, nSkillLevel);
 }
 
-void __fastcall SKILL_CalculateDamageForEvent(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget, eD2Skills eSkill, int32_t nParam, D2DamageStrc * pDamage) {
+void __fastcall SKILL_CalculateDamageForEvent(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget, eD2Skills eSkill, int32_t nSkillLevel, D2DamageStrc * pDamage) {
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
       return;
     }
 
-    int32_t nMinDmg = D2Common::Skills::SKILL_CalcMinDamage(pUnit, eSkill, nParam, 0);
-    int32_t nMaxDmg = D2Common::Skills::SKILL_CalcMaxDamage(pUnit, eSkill, nParam, 0);
+    int32_t nMinDmg = D2Common::Skills::SKILL_CalcMinDamage(pUnit, eSkill, nSkillLevel, 0);
+    int32_t nMaxDmg = D2Common::Skills::SKILL_CalcMaxDamage(pUnit, eSkill, nSkillLevel, 0);
     uint32_t nPhysDmg = DAMAGE_CalculatePhysicalDamage(pUnit, 0, nullptr, nMinDmg, nMaxDmg, 0, 0, 0x80);
     pDamage->dwPhysDamage = nPhysDmg;
-    SKILLS::SkillsServer::SetDamageOnEvent(pUnit, pDamage, eSkill, nParam);
+    SKILLS::SkillsServer::SetDamageOnEvent(pUnit, pDamage, eSkill, nSkillLevel);
 }
 
 // Scales nExperience by the level-difference penalty between attacker and defender. When defender level > 24 and attacker is active, delegates to D2ApplyPercent with raw levels. Otherwise clamps the difference to 10 and looks up a penalty fraction from gaExperiencePenaultyHigherAttacker or gaExperiencePenaultyHigherDefender, then scales via D2ApplyPercent(exp, pct, 0x100). Returns unmodified experience when penalty is 0x100 (no penalty).
@@ -3295,38 +3278,38 @@ static int32_t EXPERIENCE_ApplyLevelDiffPenaulty(int32_t nExperience, int32_t nD
     return nExperience;
 }
 
-int32_t __fastcall DAMAGE_SafeShiftMultiply(int32_t nParam1, int32_t nParam2, int32_t nShiftBits) {
+int32_t __fastcall DAMAGE_SafeShiftMultiply(int32_t nMultiplicand, int32_t nMultiplier, int32_t nShiftBits) {
     if (!(nShiftBits - 1U <= 0x1e)) {
-      return nParam1;
+      return nMultiplicand;
     }
 
     uint8_t byShift = (uint8_t)nShiftBits;
-    if (nParam1 > 0x7fffffff >> ((char)(nParam2 >> (byShift & 0x1f)) + byShift & 0x1f)) {
-      return (nParam1 >> (byShift & 0x1f)) * nParam2;
+    if (nMultiplicand > 0x7fffffff >> D2_SHIFT_COUNT((char)(nMultiplier >> D2_SHIFT_COUNT(byShift)) + byShift)) {
+      return (nMultiplicand >> D2_SHIFT_COUNT(byShift)) * nMultiplier;
     }
 
-    nParam1 = nParam1 * nParam2 >> (byShift & 0x1f);
-    return nParam1;
+    nMultiplicand = nMultiplicand * nMultiplier >> D2_SHIFT_COUNT(byShift);
+    return nMultiplicand;
 }
 
-static int32_t __stdcall XP_ApplyLevelExpRatio(int32_t nLevel, int32_t nParam) {
-    if (nParam <= 0) {
-      return nParam;
+static int32_t __stdcall XP_ApplyLevelExpRatio(int32_t nLevel, int32_t nExperience) {
+    if (nExperience <= 0) {
+      return nExperience;
     }
 
     DWORD nExpRatioLevel = D2Common::DATATBLS::DataTbls::TXT_Experience_GetExpRatio(nLevel);
     DWORD nExpRatioBase = D2Common::DATATBLS::DataTbls::TXT_Experience_GetExpRatio(0);
     if (!(nExpRatioBase - 1 <= 0x1e)) {
-      return nParam;
+      return nExperience;
     }
 
     uint8_t byShift = (uint8_t)nExpRatioBase;
-    if (nParam > 0x7fffffff >> ((char)((int)nExpRatioLevel >> (byShift & 0x1f)) + byShift & 0x1f)) {
-      return (nParam >> (byShift & 0x1f)) * nExpRatioLevel;
+    if (nExperience > 0x7fffffff >> D2_SHIFT_COUNT((char)((int)nExpRatioLevel >> D2_SHIFT_COUNT(byShift)) + byShift)) {
+      return (nExperience >> D2_SHIFT_COUNT(byShift)) * nExpRatioLevel;
     }
 
-    nParam = (int)(nExpRatioLevel * nParam) >> (byShift & 0x1f);
-    return nParam;
+    nExperience = (int)(nExpRatioLevel * nExperience) >> D2_SHIFT_COUNT(byShift);
+    return nExperience;
 }
 
 // Calculates the experience cap for a mercenary gaining XP. If pUnit is a player, returns nBaseXp unchanged. If pUnit is a player-owned pet/merc, caps the award to 1/64 of the XP needed for the merc's current level (from HirelingTxt expPerLvl). Returns 0 if no valid hireling record is found (non-player-owned unit).
@@ -3428,7 +3411,7 @@ static void __stdcall SERVER_PlayerUpdateExperience(::SGAMEDATA * pGame, int32_t
 }
 
 // Iterator callback used when distributing kill experience to nearby party members. For each candidate player unit (pUnit), checks if dead (early-return), then tests whether the unit is within range of the victim (squared-distance threshold 0x1900). If in range, appends the unit and its level into the pPartyExp accumulator struct (max 8 players); halts fatally if the party array is full.
-BOOL __fastcall ExperienceLoopOverPlayers(uint32_t dwParam, D2UnitStrc * pUnit, D2PartyExperienceStrc * pPartyExp) {
+BOOL __fastcall ExperienceLoopOverPlayers(uint32_t pGame, D2UnitStrc * pUnit, D2PartyExperienceStrc * pPartyExp) {
     int nPlayerCount;
     int32_t nUnitPosX;
     int32_t nUnitPosY;
@@ -3493,7 +3476,7 @@ BOOL __fastcall ExperienceLoopOverPlayers(uint32_t dwParam, D2UnitStrc * pUnit, 
 // Distributes kill XP among all party members near the victim. Calls ExperienceLoopOverPlayers to collect eligible players into D2PartyExperienceStrc. For a solo kill, computes and grants XP directly. For parties, computes each member's share proportionally by level and calls SERVER_PlayerUpdateExperience per member.
 static void __stdcall SERVER_PartyShareExperience(int32_t nBaseExperience, D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2UnitStrc * pVictim, int32_t nAttackerLevel, int32_t nVictimLevel) {
     uint32_t nXpForPlayer;
-    uint64_t nXpShareRatio;
+    uint32_t nXpShareRatio;
     D2PartyExperienceStrc sParty;
     D2UnitStrc* pPartyPlayer;
     memset(&sParty, 0, 0x4c);
@@ -3509,20 +3492,14 @@ static void __stdcall SERVER_PartyShareExperience(int32_t nBaseExperience, D2Uni
     }
 
     int nXpAdj = (sParty.nPlayers - 1) * nBaseExperience * 0x59;
-    nAttackerLevel = 0;
-    if (0 >= sParty.nPlayers) {
-      return;
-    }
-
-    do {
+    for (nAttackerLevel = 0; nAttackerLevel < sParty.nPlayers; nAttackerLevel++) {
       int32_t nPlayerLevel;
       nPlayerLevel = sParty.nPlayerLevels[nAttackerLevel];
       pPartyPlayer = sParty.pPlayers[nAttackerLevel];
       /* This returns a variable in 2 registers, as its 8 bytes long. This is bugging
                          ghidra */ nXpForPlayer = SERVER_CalculateExperienceForUnit(pGame, nVictimLevel, (int)((float)nPlayerLevel * ((float)(nXpAdj / 256 + nBaseExperience) / (float)sParty.nPlayerLevelSum)), pPartyPlayer, nPlayerLevel);
       SERVER_PlayerUpdateExperience(pGame, nPlayerLevel, nXpForPlayer, pPartyPlayer);
-      nAttackerLevel++;
-    } while (nAttackerLevel < sParty.nPlayers);
+    }
 }
 
 // Resolves the player owner responsible for a kill, for XP/credit attribution. Returns pAttacker directly if it is a player. For monsters, walks the ownership chain (GetOwnerUnit) and checks curse stat lists (flag 0x800) on both attacker and victim to find a cursing player owner. Returns null if no player owner is found.
@@ -3609,11 +3586,10 @@ static void __stdcall SERVER_SEND_MercExperience(int32_t nExperience, D2UnitStrc
     }
 
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit2, UNITSTAT_experience, nValue, 0);
-    uint16_t wPacketType = 0xd;
-    uint32_t nNewMercXp = nValue;
-    GAME::SCmd::NET_D2GS_SERVER_Send_0xA1_0xA2_0xA0_MercExperience(SUnit::SUNIT_GetClient(pUnit, ".\\UNIT\\SUnitDmg.cpp", 0xfbd), pUnit2, wPacketType, nMercGUID_00, nNewMercXp);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0xA1_0xA2_0xA0_MercExperience(SUnit::SUNIT_GetClient(pUnit, ".\\UNIT\\SUnitDmg.cpp", 0xfbd), pUnit2, 0xd, nMercGUID_00, nValue);
     int32_t nLevel = nMercLevel;
     do {
+      uint32_t nNewMercXp;
       nOwnerLevel = nLevel + 1;
       nNewMercXp = D2Common::Merc::GetBaseExperience(nOwnerLevel, pHirelingTxt->expPerLvl);
       if (nNewMercXp > nValue) {
@@ -3699,7 +3675,7 @@ void __fastcall DAMAGE_SetUnitToLevel(::SGAMEDATA * pGame, D2UnitStrc * pUnit, i
     int32_t pExpTxtLine;
     D2PetDataStrc* pPetData;
     D2HirelingTxt* pHirelingTxt;
-    int32_t iVar1;
+    int32_t nTargetExp;
     if (!(pUnit && (pUnit->eUnitType == UNIT_PLAYER || pUnit->eUnitType == UNIT_MONSTER))) {
       return;
     }
@@ -3727,8 +3703,8 @@ void __fastcall DAMAGE_SetUnitToLevel(::SGAMEDATA * pGame, D2UnitStrc * pUnit, i
             pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(pGame->bExpansion, pPetData->nType, nCurrentLevel);
             if (pHirelingTxt) {
               pExpTxtLine = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_experience, 0);
-              iVar1 = D2Common::Merc::GetBaseExperience(nTargetLevel, pHirelingTxt->expPerLvl);
-              SERVER_SEND_MercExperience(iVar1 - pExpTxtLine, pUnit, pGame, pOwnerUnit, nCurrentLevel);
+              nTargetExp = D2Common::Merc::GetBaseExperience(nTargetLevel, pHirelingTxt->expPerLvl);
+              SERVER_SEND_MercExperience(nTargetExp - pExpTxtLine, pUnit, pGame, pOwnerUnit, nCurrentLevel);
             }
           }
         }
@@ -3736,10 +3712,11 @@ void __fastcall DAMAGE_SetUnitToLevel(::SGAMEDATA * pGame, D2UnitStrc * pUnit, i
     }
 }
 
-// Server-side melee hit resolution between attacker pUnit and defender pUnit2. Validates both are player/monster, can attack each other, and are within melee range (range widened by nParam2 + the attacker's melee range; monster attackers get +2). Sets a "moving" flag if a player defender is running, then rolls the attack (DAMAGE_RollAttackHit using nParam1) and checks block/evasion (DAMAGE_CheckBlockAndEvasion), folding the resulting STATE_* flags into a packed uint16 result (hit / block / dodge / evade / parry bits, plus an uninterruptable-stun bit). Returns the packed hit-result word (0 = out of range / cannot attack). Custom-register convention.
-uint16_t __stdcall DAMAGE_CalculateHitCheck(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int32_t nParam1, int32_t nParam2, eD2UnitType eUnitType) {
-    bool _bCanAttack;
-    bool _bInMeleeRange;
+// Server-side melee hit resolution between attacker pUnit and defender pUnit2. Validates both are player/monster, can attack each other, and are within melee range (range widened by nParam2 + the attacker's melee range; monster attackers get +2). Sets a "moving" flag if a player defender is running, then rolls the attack (DAMAGE_RollAttackHit using nParam1) and checks block/evasion (DAMAGE_CheckBlockAndEvasion), folding the resulting STATE_* flags into a packed uint16 result (hit / block / dodge / evade / parry bits, plus an uninterruptable-stun bit). Returns the packed hit-result word (0 = out of range / cannot attack).
+// Registers: pGame in ECX and pUnit in EDX (__fastcall); EAX is not an input.
+uint16_t __fastcall DAMAGE_CalculateHitCheck(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int32_t nToHitBonusExtra, int32_t nExtraRange) {
+    uint32_t _bCanAttack;
+    BOOL _bInMeleeRange;
     bool bCanAttack;
     bool bIsMonster;
     bool bInMeleeRange;
@@ -3755,7 +3732,7 @@ uint16_t __stdcall DAMAGE_CalculateHitCheck(::SGAMEDATA * pGame, D2UnitStrc * pU
       return 0;
     }
     if (pUnit2->eUnitType != UNIT_PLAYER) {
-      if (pUnit2->eUnitType == UNIT_MONSTER && (nMeleeRange = Monsters::MONSTER_IsMonsterUnit((int*)pUnit2) , !nMeleeRange)) {
+      if (pUnit2->eUnitType == UNIT_MONSTER && (nMeleeRange = Monsters::MONSTER_IsMonsterUnit(pUnit2) , !nMeleeRange)) {
         return 0;
       }
     } else {
@@ -3765,10 +3742,10 @@ uint16_t __stdcall DAMAGE_CalculateHitCheck(::SGAMEDATA * pGame, D2UnitStrc * pU
     }
 
     int32_t nRangeCheck;
-    nRangeCheck = (uint32_t)(pUnit->eUnitType == UNIT_MONSTER) * 2 + 1;
-    if (nParam2) {
+    nRangeCheck = pUnit->eUnitType == UNIT_MONSTER ? 0x3U : 0x1U;
+    if (nExtraRange) {
       nMeleeRange = D2Common::Units::GetMeleeRange(pUnit);
-      nRangeCheck -= nMeleeRange + nParam2;
+      nRangeCheck -= nMeleeRange + nExtraRange;
     }
 
     _bInMeleeRange = D2Common::Units::IsInMeleeRange(pUnit, pUnit2, nRangeCheck);
@@ -3776,7 +3753,7 @@ uint16_t __stdcall DAMAGE_CalculateHitCheck(::SGAMEDATA * pGame, D2UnitStrc * pU
       return 0;
     }
     if (!wHitFlags) {
-      _bInMeleeRange = DAMAGE_RollAttackHit(pUnit, pUnit2, nParam1, 0);
+      _bInMeleeRange = DAMAGE_RollAttackHit(pUnit, pUnit2, nToHitBonusExtra, 0);
       if (_bInMeleeRange) {
         wHitFlags = 1;
       }
@@ -3806,16 +3783,14 @@ uint16_t __stdcall DAMAGE_CalculateHitCheck(::SGAMEDATA * pGame, D2UnitStrc * pU
     if (wHitFlags & 0x10) {
       wHitFlags &= 0xfffe;
     }
-    if (!(wHitFlags & 1)) {
-      return wHitFlags;
+    if (wHitFlags & 1) {
+      eD2States eUninterruptableState;
+      eUninterruptableState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit2, STATE_uninterruptable);
+      if (eUninterruptableState == STATE_none) {
+        wHitFlags |= 4;
+      }
     }
 
-    eD2States eVar1 = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit2, STATE_uninterruptable);
-    if (eVar1 != STATE_none) {
-      return wHitFlags;
-    }
-
-    wHitFlags |= 4;
     return wHitFlags;
 }
 

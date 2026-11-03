@@ -37,6 +37,25 @@
 typedef void (__stdcall *pfnUIMenuInstance)();
 #endif
 
+static uint8_t gaNewCharDefaultAppearance[16] = {
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0xff,
+    0xff,
+    0xff,
+    0x1,
+    0x1,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0xff
+}; D2_STATIC_GUARD(gaNewCharDefaultAppearance, "gaNewCharDefaultAppearance");
+
 namespace D2Launch::Launcher {
 
 BOOL __stdcall CHARSEL_OnPressLoadCharListForPreferredRealm(D2ControlMsg * pControlMsg) {
@@ -69,7 +88,6 @@ BOOL __stdcall HandleUpdateToExpansion(D2ControlMsg * pControlMsg) {
     uint32_t bUpgradeOk;
     int32_t nJoinResult;
     uint16_t* pwszMessage;
-    uint16_t* pwszFormat;
     uint16_t awszCharName[256];
     uint8_t aszCommandAnsi[256];
     D2CharSelStrc* pSelectedCharacter;
@@ -94,9 +112,7 @@ BOOL __stdcall HandleUpdateToExpansion(D2ControlMsg * pControlMsg) {
         if (!pwszCommandString || !*(short int*)pwszCommandString) {
           bIsExpansion = UpdateSaveFileToExpansion(pSelectedCharacter->szCharname);
           if (!bIsExpansion) {
-            nJoinResult = 1;
-            pwszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x5570);
-            MainMenus::UIMENU_AnotherSmallPopupWithContentAndSomeKindofTypeSelection(pwszMessage, CharSel::UIMENU_CharacterSelectAllGameTypes, nJoinResult);
+            MainMenus::UIMENU_AnotherSmallPopupWithContentAndSomeKindofTypeSelection(D2Lang::StrTable::strtable::GetLocaleString(0x5570), CharSel::UIMENU_CharacterSelectAllGameTypes, 1);
             break;
           }
         } else {
@@ -110,9 +126,7 @@ BOOL __stdcall HandleUpdateToExpansion(D2ControlMsg * pControlMsg) {
               Fog::File::CONTAINER_InitializeBuffer(awszFormattedMsg, 2, 0x100, MainMenus::STRING_ZeroOneWCHAR);
               Fog::File::CONTAINER_InitializeBuffer(awszCharName, 2, 0x100, MainMenus::STRING_ZeroOneWCHAR);
               D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszCharName, pSelectedCharacter->szCharname, 0x100);
-              pwszMessage = awszCharName;
-              pwszFormat = D2Lang::StrTable::strtable::GetLocaleString(0x2b89);
-              D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, awszFormattedMsg, pwszFormat, pwszMessage);
+              D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, awszFormattedMsg, D2Lang::StrTable::strtable::GetLocaleString(0x2b89), awszCharName);
               pwszMessage = awszFormattedMsg;
             }
 
@@ -183,18 +197,17 @@ BOOL __stdcall LAUNCHER_StartGameWithSelectedCharacter(D2ControlMsg * pControlMs
 }
 
 int __fastcall LAUNCHER_InitNetworkLobbyQueue(D2IniConfigStrc * pIniConfig) {
-    if (pIniConfig->pBNetClientCallbacks) {
-      return 1;
+    if (!pIniConfig->pBNetClientCallbacks) {
+      gpBNetCallbacks = Bnclient::NET_InitAndGetLobbyChatQueue();
+      if (!gpBNetCallbacks) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x94);
+        exit(-1);
+      }
+
+      pIniConfig->pBNetClientCallbacks = gpBNetCallbacks;
+      gpBNetCallbacks->pfnSetLoggingFlag((uint32_t)pIniConfig);
     }
 
-    gpBNetCallbacks = Bnclient::NET_InitAndGetLobbyChatQueue();
-    if (!gpBNetCallbacks) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x94);
-      exit(-1);
-    }
-
-    pIniConfig->pBNetClientCallbacks = gpBNetCallbacks;
-    gpBNetCallbacks->pfnSetLoggingFlag((uint32_t)pIniConfig);
     return 1;
 }
 
@@ -215,11 +228,11 @@ BOOL __stdcall LAUNCHER_IsBnetConnectInProgress() {
 }
 
 int __stdcall LAUNCHER_CheckRevisionAndShowDialog(int nFrameIndex) {
-    int iVar1 = gpBNetCallbacks->pfnGetDownloadProgress();
-    if (iVar1 != 0x65) {
-      BOOL BVar2;
-      BVar2 = MainMenus::LAUNCHER_GetPatchDownloadFlag();
-      if (!BVar2) {
+    int nDownloadProgress = gpBNetCallbacks->pfnGetDownloadProgress();
+    if (nDownloadProgress != 0x65) {
+      BOOL bPatchDownload;
+      bPatchDownload = MainMenus::LAUNCHER_GetPatchDownloadFlag();
+      if (!bPatchDownload) {
         MainMenus::MAINMENU_UpdateProgressBar();
         return 1;
       }
@@ -294,13 +307,11 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
     int nTitleStrId;
     int nPopupType;
     uint16_t nBodyStrId;
-    uint16_t* pwszClearCursor;
     uint16_t awszCharName[512];
     uint16_t awszFooter[512];
     uint16_t awszTitle[512];
     uint16_t awszBody[512];
-    size_t cchBufferSize;
-    eOogErrorCode eVar1 = pErrorData->eErrorCode;
+    eOogErrorCode eErrorCode = pErrorData->eErrorCode;
     for (nTitleStrId = 0; nTitleStrId < 0x200; nTitleStrId++) {
       awszBody[nTitleStrId] = L'\0';
     }
@@ -318,7 +329,7 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
     int nFooterStrId = -1;
     awszTitle[0] = L'\0';
     awszFooter[0] = L'\0';
-    switch (eVar1) {
+    switch (eErrorCode) {
       case OOG_ERROR_1:
         nTitleStrId = 0x147d;
       nBodyStrId = 0x1443;
@@ -334,7 +345,7 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
 
       case OOG_ERROR_7:
         nTitleStrId = 0x147f;
-      nBodyStrId = eVar1 != OOG_ERROR_3 ? 0x2aa0 : 0x1442;
+      nBodyStrId = eErrorCode != OOG_ERROR_3 ? 0x2aa0 : 0x1442;
       nFooterStrId = 0x144a;
       nPopupType = 2;
       break;
@@ -342,7 +353,7 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
 
       case OOG_ERROR_8:
         nTitleStrId = 0x147f;
-      nBodyStrId = eVar1 != OOG_ERROR_LOGIN_FAILED ? 0x2aa1 : 0x144f;
+      nBodyStrId = eErrorCode != OOG_ERROR_LOGIN_FAILED ? 0x2aa1 : 0x144f;
       nPopupType = 1;
       break;
       case OOG_ERROR_5:
@@ -362,15 +373,9 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
       }
 
       D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszCharName, (char*)pErrorData->pCustomData, 0x200);
-      cchBufferSize = 0x200;
-      pwszClearCursor = D2Lang::StrTable::strtable::GetLocaleString(0x147f);
-      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszTitle, pwszClearCursor, cchBufferSize);
-      cchBufferSize = 0x200;
-      pwszClearCursor = D2Lang::StrTable::strtable::GetLocaleString(pErrorData->eErrorCode != OOG_ERROR_CHAR_NAME_DIALOG ? 0x2aa2 : 0x1450);
-      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszBody, pwszClearCursor, cchBufferSize);
-      cchBufferSize = 0x200;
-      pwszClearCursor = D2Lang::StrTable::strtable::GetLocaleString(0x1451);
-      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszFooter, pwszClearCursor, cchBufferSize);
+      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszTitle, D2Lang::StrTable::strtable::GetLocaleString(0x147f), 0x200);
+      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszBody, D2Lang::StrTable::strtable::GetLocaleString(pErrorData->eErrorCode != OOG_ERROR_CHAR_NAME_DIALOG ? 0x2aa2 : 0x1450), 0x200);
+      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszFooter, D2Lang::StrTable::strtable::GetLocaleString(0x1451), 0x200);
       MainMenus::UIMENU_CrashingCantTestIt(awszTitle, awszBody, awszCharName, awszFooter, MainMenus::UIMENU_MainMenu);
       return 0;
       case OOG_ERROR_11:
@@ -492,9 +497,7 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
       break;
       case OOG_ERROR_CUSTOM_MESSAGE:
         D2Lang::Unicode::UNISYS::STRING_ConvertCharToWchar(awszBody, (char*)pErrorData->pCustomData, 0x200);
-      cchBufferSize = 0x200;
-      pwszClearCursor = D2Lang::StrTable::strtable::GetLocaleString(0x147c);
-      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszTitle, pwszClearCursor, cchBufferSize);
+      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszTitle, D2Lang::StrTable::strtable::GetLocaleString(0x147c), 0x200);
       MainMenus::UIMENU_CreatePopupWithContent(awszTitle, awszBody, MainMenus::UIMENU_MainMenuAgain);
       return 0;
       default:
@@ -518,12 +521,11 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
     } else {
       MainMenus::UIMENU_CreatePopupWithContentAndFooter(awszTitle, awszBody, awszFooter, pfnOnClose);
     }
-    if (!bDisconnectOnClose) {
-      return 0;
+    if (bDisconnectOnClose) {
+      D2MCPClient::McpConnect::FreeMCP();
+      gpBNetCallbacks->pfnDisconnect();
     }
 
-    D2MCPClient::McpConnect::FreeMCP();
-    gpBNetCallbacks->pfnDisconnect();
     return 0;
 }
 

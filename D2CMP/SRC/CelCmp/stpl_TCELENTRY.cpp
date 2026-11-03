@@ -15,7 +15,7 @@
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Storm/H/CCritSect.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 
@@ -25,7 +25,6 @@
 template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Clear() {
     int* pBackLink;
     int* pObject;
-    uint32_t uLinkOffset;
     while (true) {
       int nNext;
       pObject = (int*)this->m_terminator.m_next;
@@ -35,25 +34,18 @@ template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Clear() {
 
       nNext = *pObject;
       if (nNext) {
-        uLinkOffset = pObject[1];
-        if ((int)uLinkOffset < 0) {
-          pBackLink = (int*)~uLinkOffset;
-        } else {
-          pBackLink = (int*)((int)pObject + (uLinkOffset - *(int*)(nNext + 4)));
-        }
-
+        pBackLink = (int*)D2_StormNextLink(pObject, -1);
         *pBackLink = nNext;
         *(int*)(*pObject + 4) = pObject[1];
         *pObject = 0;
         pObject[1] = 0;
       }
 
-      Storm::SMem::SMemFree(pObject, s___AUTCELENTRY___00741f14, -2, 0);
+      Storm::Source::SMem::SMemFree(pObject, s___AUTCELENTRY___00741f14, -2, 0);
     }
 }
 
 template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::DeleteNode(::TCELENTRY * ptr) {
-    uint32_t uLinkOffset;
     ::TCELENTRY* pTVar1 = ptr;
     if (!ptr) {
       pTVar1 = (::TCELENTRY*)&this->m_terminator;
@@ -63,19 +55,13 @@ template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::DeleteNode(::T
     TSLink<::TCELENTRY>* nNext = ptr->m_link.m_prevlink;
     if (nNext) {
       int* pTargetLink;
-      uLinkOffset = ptr->m_link.m_next;
-      if ((int)uLinkOffset < 0) {
-        pTargetLink = (int*)~uLinkOffset;
-      } else {
-        pTargetLink = (int*)((int)ptr + (uLinkOffset - nNext->m_next));
-      }
-
+      pTargetLink = (int*)D2_StormNextLink(ptr, -1);
       *pTargetLink = (int)nNext;
       ptr->m_link.m_prevlink->m_next = ptr->m_link.m_next;
       ptr->m_link.m_prevlink = 0;
       ptr->m_link.m_next = 0;
     }
 
-    Storm::SMem::SMemFree(ptr, s___AUTCELENTRY___00741f14, -2, 0);
+    Storm::Source::SMem::SMemFree(ptr, s___AUTCELENTRY___00741f14, -2, 0);
     return (::TCELENTRY*)((int)uReturnLink <= 0 ? 0 : uReturnLink);
 }

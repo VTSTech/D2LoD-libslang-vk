@@ -31,13 +31,18 @@ struct __attribute__((packed)) D2BinFieldInputStrc {
     /* 0x10 */ void * fpLinker; // by eType: struct D2TxtLinkStrc** (CODE*/NAME*), PFN_TxtKeyToWord* (KEY_WORD), PFN_TxtFieldLinker* (LINKER_*)
 };
 
+union D2TxtCodeBufUnion {
+    /* 0x00 */ uint32_t dwCode;
+    /* 0x00 */ char szCode[32];
+};
+
 namespace Fog::Src::Excel {
 
 // Function declarations
 // @sourcefile .\Src\Excel\Excel.cpp
 void __stdcall TXT_FreeBinFieldExcel(struct D2BinFieldExcelStrc * pBinFieldExcel);
 size_t __stdcall TXT_GetLinesCountFromBinFieldExcel(struct D2BinFieldExcelStrc * pBinFieldExcel);
-int __stdcall FOG_ParseBinField(int pOutMapping, struct D2BinFieldExcelStrc * pBinFieldExcel, struct D2BinFieldInputStrc * pBinFieldInput);
+int __stdcall FOG_ParseBinField(short * pOutMapping, struct D2BinFieldExcelStrc * pBinFieldExcel, struct D2BinFieldInputStrc * pBinFieldInput);
 struct D2TxtLinkStrc * __stdcall STRUCT_CreateTxtLinkStrc(char * szFile, int nLine);
 // @sourcefile .\Src\Excel\Excel.cpp
 void __fastcall STRUCT_FreeTxtLinkNode(struct D2TxtLinkNodeStrc * pTxtLinkNode);
@@ -45,9 +50,9 @@ void __fastcall STRUCT_FreeTxtLinkNode(struct D2TxtLinkNodeStrc * pTxtLinkNode);
 void __stdcall STRUCT_FreeTxtLink(struct D2TxtLinkStrc * pTxtLink);
 int32_t __stdcall GetClassIdFromName(struct D2TxtLinkStrc * pTxtLink, uint32_t pItemsTxt, uint32_t dwParam3);
 BOOL __stdcall FOG_GetTxtLinkRecord(struct D2TxtLinkStrc * pTxtLink, int nRecordId, void * pResult);
-uint32_t __stdcall FillUpTxtLinkSub0x08(struct D2TxtLinkStrc * pTxtLink, char * nItemCode);
-int __fastcall FOG_GetRecordField(struct D2TxtLinkNodeStrc * pClientSideData, int nParam);
-int __stdcall FOG_ParseIntField(int * pnParam, int nParam1, int nParam2);
+uint32_t __stdcall FOG_AddTxtLinkRecord(struct D2TxtLinkStrc * pTxtLink, char * nItemCode);
+int __fastcall FOG_GetRecordField(struct D2TxtLinkNodeStrc * pClientSideData, int nLinkIndex);
+int __stdcall FOG_ParseIntField(int * pTxtLink, int nLinkIndex, int nParam2);
 int32_t __stdcall GetLinkNodeIndex(struct D2TxtLinkStrc * pLink, char * szItemCode, uint32_t dwParam3);
 // @sourcefile .\Src\Excel\Excel.cpp
 int __stdcall FOG_ParseStringField(struct D2TxtLinkStrc * pTxtLink, char * szText);

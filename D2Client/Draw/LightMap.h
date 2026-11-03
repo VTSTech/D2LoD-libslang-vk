@@ -27,10 +27,7 @@ struct D2ColorInfo2 {
 };
 
 struct D2LightMapCellStrc {
-    D2LightMapCellStrc() = default;
-    D2LightMapCellStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2LightMapCellStrc(int a0, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4) : nCollisionGrid(a0), nCellIntensity(a1), nRed(a2), nGreen(a3), nBlue(a4) {}
 
     /* 0x00 */ int nCollisionGrid; // Collision flags: 1 = blocks player/missile
     /* 0x04 */ uint8_t nCellIntensity; // Light intensity 0-255
@@ -44,7 +41,7 @@ namespace D2Client::Draw::LightMap {
 // Function declarations
 struct D2LightMapStrc * __fastcall AllocLightMap(struct D2UnitStrc * pUnit, int32_t nLightType, int32_t nDiameter, uint8_t nGamma, uint8_t nRed, uint8_t nGreen, uint8_t nBlue);
 void __fastcall SetRadiusY(struct D2LightMapStrc * pLightMap, int32_t nValue);
-void __fastcall LIGHTMAP_SetRadius(struct D2LightMapStrc * pLightMap, int32_t nParam);
+void __fastcall LIGHTMAP_SetRadius(struct D2LightMapStrc * pLightMap, int32_t nDiameter);
 int32_t __fastcall GetRadiusX(struct D2LightMapStrc * pLightMap);
 void __fastcall SetRGB(struct D2LightMapStrc * pLightMap, uint8_t nRed, uint8_t nGreen, uint8_t nBlue);
 void __fastcall FreeLightMap(struct D2LightMapStrc * pLightMap);
@@ -65,6 +62,8 @@ int __stdcall LIGHTMAP_GetQualityLevel();
 // Rebuilds the lightmap for the box +/-0x18 around the UI player, then updates every live light.
 void __stdcall dLightMapUpdate();
 void __stdcall LIGHTMAP_FreeAll();
+// Client-side light-map activation callback. Iterates the gpLightMap linked list looking for dynamic (nLightType==2) entries. For each, resolves the owning unit (client- or server-side lookup via bUnknown flag) and checks whether the light radius edge (±nRadiusX>>3 cells in X and Y) touches pRoom via DRLGROOM_FindBetterNearbyRoom. If the light bleeds into pRoom, marks bPixelMapReady=0 so the renderer will rebuild the pixel map for that room on the next frame.
+void __fastcall ACTCALLBACKFN(struct D2RoomStrc * pRoom);
 // 11 internal functions (defined in .cpp)
 
 } // namespace D2Client::Draw::LightMap

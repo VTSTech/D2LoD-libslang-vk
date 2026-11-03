@@ -23,7 +23,6 @@
 #include "D2Common/Drlg/DrlgGrid.h"
 #include "D2Common/Drlg/DrlgRoom.h"
 #include "D2Common/Drlg/DrlgVer.h"
-#include "D2Common/Drlg/Maze.h"
 #include "D2Common/Drlg/OutJung.h"
 #include "D2Common/Drlg/OutSiege.h"
 #include "D2Common/Drlg/Outdoors.h"
@@ -92,19 +91,19 @@ int32_t __fastcall DRLGOUTPLACE_GetAdjacentRoadPresetId(int32_t nDirX, int32_t n
 
 // Iterates all four border edges of an outdoor DRLG level grid, scanning inward from each edge and marking contiguous non-solid cells with flag 0x100 (blank/border) until a solid cell is encountered. Used during outdoor level generation to suppress tile rendering at level boundaries.
 void __fastcall SetBlankBorderGridCells(D2DrlgLevelStrc * pLevel) {
-    int iVar3;
-    uint32_t nGridFlags;
     int32_t nGridX;
     int32_t nScanX;
     int nY;
     int aDirTable[16];
     int32_t nBorderX;
+    int nDx;
+    int nDy;
     D2DrlgLevelDataWildernessLevel* pDVar1 = pLevel->pDrlgLevelData.pDrlgLevelOutdoorsData;
     aDirTable[6] = -1;
     aDirTable[0xb] = -1;
     aDirTable[0xe] = -1;
     aDirTable[0xf] = -1;
-    int* piVar4 = aDirTable + 1;
+    int* pDirRow = aDirTable + 1;
     aDirTable[0] = 0;
     aDirTable[1] = 0;
     aDirTable[2] = 1;
@@ -120,34 +119,34 @@ void __fastcall SetBlankBorderGridCells(D2DrlgLevelStrc * pLevel) {
     D2DrlgGridStrc* pDrlgGrid = &pDVar1->sGridOutdoor;
     int nDirCount = 4;
     do {
-      int iVar2;
+      uint32_t nGridFlags;
       nGridX = 0;
-      if (piVar4[-1]) {
+      if (pDirRow[-1]) {
         nGridX = pDVar1->nGridCoordsWidth - 1;
       }
 
       nY = 0;
-      if (*piVar4) {
+      if (*pDirRow) {
         nY = pDVar1->nGridCoordsHeight - 1;
       }
 
-      iVar2 = piVar4[1];
-      iVar3 = piVar4[2];
+      nDx = pDirRow[1];
+      nDy = pDirRow[2];
       nGridFlags = DrlgGrid::GetGridFlags(pDrlgGrid, nGridX, nY);
       while (!(nGridFlags & 1)) {
         nGridFlags = DrlgGrid::GetGridFlags(pDrlgGrid, nGridX, nY);
         nScanX = nGridX;
         while (!(nGridFlags & 1)) {
           DrlgGrid::AlterGridFlag(pDrlgGrid, nScanX, nY, 0x100, 0);
-          nScanX += iVar2;
+          nScanX += nDx;
           nGridFlags = DrlgGrid::GetGridFlags(pDrlgGrid, nScanX, nY);
         }
 
-        nY += iVar3;
+        nY += nDy;
         nGridFlags = DrlgGrid::GetGridFlags(pDrlgGrid, nGridX, nY);
       }
 
-      piVar4 += 4;
+      pDirRow += 4;
       nDirCount--;
     } while (nDirCount);
 }
@@ -164,7 +163,7 @@ void __fastcall SetOutGridLinkFlags(D2DrlgLevelStrc * pLevel) {
         nLinkVisFlag = Outdoors::GetOutLinkVisFlag(pLevel, pDrlgVertex);
         byDirection = pDrlgVertex->nDirection;
         DrlgGrid::DRLGGRID_SetEdgeGridFlags(&pLevelData->sGridLink, pDrlgVertex, nLinkVisFlag, 0, 1);
-        DrlgGrid::DRLGGRID_SetEdgeGridFlags(&pLevelData->sGridOutdoor, pDrlgVertex, (uint32_t)(byDirection != 0) * 2 + 1, 0, 1);
+        DrlgGrid::DRLGGRID_SetEdgeGridFlags(&pLevelData->sGridOutdoor, pDrlgVertex, byDirection != 0 ? 0x3U : 0x1U, 0, 1);
       }
 
       bHasNext = pNextVertex != pLevelData->pVertices;
@@ -238,17 +237,17 @@ void __fastcall PlaceAct1245OutdoorBorders(D2DrlgLevelStrc * pLevel) {
       nCurY = pVertexCopy->nPosY;
       nX = pNextVertex->nPosX;
       nY = pNextVertex->nPosY;
-      if (!park_24) {
-        park_1c = nCurY - nY;
-      } else {
+      if (park_24) {
         park_1c = nCornerPresetId - nX;
+      } else {
+        park_1c = nCurY - nY;
       }
       if (park_1c < 0) {
         park_1c = -park_1c;
       }
 
       park_5 = pVertexCopy->nDirection;
-      park_38 = (uint32_t)(park_5 != 0) * 2 + 1;
+      park_38 = park_5 != 0 ? 0x3U : 0x1U;
       switch (park_18->nLevelType) {
         case 2:
           nRoadType = (uint32_t)!park_5;
@@ -410,7 +409,7 @@ void __fastcall PlaceAct1245OutdoorBorders(D2DrlgLevelStrc * pLevel) {
           spawn_vertex_preset:
           if (nCornerPresetId == 0x13) {
             if (pCurVertex->nDirection == 1) {
-              nCornerPresetId = (pNextVertex->nDirection != 1) + 0x13;
+              nCornerPresetId = pNextVertex->nDirection != 1 ? 0x14 : 0x13;
             } else {
               nCornerPresetId = 0x15;
             }
@@ -509,10 +508,10 @@ static void __stdcall DRLGACT_SetWarpConnectionsBetweenTwoAreas(D2DrlgStrc * pDr
 // Computes the direction between the two levels' coordinate rects, then calls AllocDrlgOrth
 // on the RoomEx at offset +0x264 of the level data struct.
 // Used as a callback during level chain parsing to establish orthogonal room linkage.
-void DRLGLEVEL_AllocOrthForAdjacentLevel(D2DrlgStrc * pDrlg, int32_t pLevelData, eD2LevelId eLevel) {
-    int pLevelDataBase = *(int*)(pLevelData + 0x14);
+void DRLGLEVEL_AllocOrthForAdjacentLevel(D2DrlgStrc * pDrlg, D2DrlgLevelStrc * pLevelData, eD2LevelId eLevel) {
+    int pLevelDataBase = *(int*)&pLevelData->pDrlgLevelData;
     D2DrlgLevelStrc* pLevel = GetLevelAndAlloc(pDrlg, eLevel);
-    eDrlgDirection eDirection = GetDirectionFromCoordinates((D2DrlgCoordsStrc*)(pLevelData + 0x1c), &pLevel->sCoordinatesAndSize);
+    eDrlgDirection eDirection = GetDirectionFromCoordinates(&pLevelData->sCoordinatesAndSize, &pLevel->sCoordinatesAndSize);
     DrlgRoom::AllocDrlgOrth((D2DrlgOrthStrc**)(pLevelDataBase + 0x264), pLevel, eDirection, (uint32_t)(pLevel->eDrlgType == 2));
 }
 
@@ -521,7 +520,6 @@ static void __stdcall DRLGLEVEL_AllocDrlgLevelFromLevelIdToLevelId(D2DrlgStrc * 
     int* pWarpIds;
     D2DrlgLevelStrc* pLevel;
     eDrlgDirection eDirection;
-    int nWarpOffset;
     int nVisCount;
     D2DrlgLevelDataWildernessLevel* pLevelData;
     for (; (int)nLevelIdStart <= (int)eLevel; nLevelIdStart += LEVEL_RogueEncampment) {
@@ -530,30 +528,25 @@ static void __stdcall DRLGLEVEL_AllocDrlgLevelFromLevelIdToLevelId(D2DrlgStrc * 
       if (pCurLevel->eDrlgType == 3) {
         pVisArray = DrlgRoom::DRLGWARP_GetVisArrayFromLevelId(pDrlg, nLevelIdStart);
         pWarpIds = DrlgRoom::DRLGACTMISC_GetWarpsIdIfExists(pDrlg, nLevelIdStart);
-        nWarpOffset = (int)pWarpIds - (int)pVisArray;
-        nVisCount = 8;
-        do {
-          if (*pVisArray && *(int*)(nWarpOffset + (int)pVisArray) == -1) {
+        for (nVisCount = 0; nVisCount < 8; nVisCount++) {
+          if (pVisArray[nVisCount] && pWarpIds[nVisCount] == -1) {
             pLevelData = pCurLevel->pDrlgLevelData.pDrlgLevelOutdoorsData;
-            pLevel = GetLevelAndAlloc(pCurLevel->pDrlg, *pVisArray);
+            pLevel = GetLevelAndAlloc(pCurLevel->pDrlg, pVisArray[nVisCount]);
             eDirection = GetDirectionFromCoordinates(&pCurLevel->sCoordinatesAndSize, &pLevel->sCoordinatesAndSize);
             DrlgRoom::AllocDrlgOrth(&pLevelData->pOrthData, pLevel, eDirection, (uint32_t)(pLevel->eDrlgType == 2));
           }
-
-          pVisArray++;
-          nVisCount--;
-        } while (nVisCount);
+        }
       }
     }
 }
 
 // Calculates placement coordinates for a sub-level within the outdoor grid, writing results to pOutCoords.
-static void __stdcall DRLGOUTPLACE_CalcSubLevelPlacement(int nHeight, int nWidth, D2DrlgSubLevelPlaceStrc * pOutCoords, D2DrlgSubLevelPlaceStrc * dwParam4, int32_t dwParam5) {
+static void __stdcall DRLGOUTPLACE_CalcSubLevelPlacement(int nHeight, int nWidth, D2DrlgSubLevelPlaceStrc * pOutCoords, D2DrlgSubLevelPlaceStrc * pBasePlace, int32_t nDirection) {
     int nOffsetX;
     nOffsetX = 0;
     int nOffsetY;
     nOffsetY = 0;
-    switch (dwParam5) {
+    switch (nDirection) {
       case 0:
         nOffsetX = 0;
       nOffsetY = -nHeight;
@@ -580,11 +573,11 @@ static void __stdcall DRLGOUTPLACE_CalcSubLevelPlacement(int nHeight, int nWidth
 
     nOffsetY -= nOffsetY >> 0x1f;
     store_placement:
-    pOutCoords->sCoords.WorldPosition.x = dwParam4->sCoords.WorldPosition.x + nOffsetX;
-    pOutCoords->sCoords.WorldPosition.y = dwParam4->sCoords.WorldPosition.y + nOffsetY;
+    pOutCoords->sCoords.WorldPosition.x = pBasePlace->sCoords.WorldPosition.x + nOffsetX;
+    pOutCoords->sCoords.WorldPosition.y = pBasePlace->sCoords.WorldPosition.y + nOffsetY;
     pOutCoords->sCoords.WorldSize.x = nWidth;
     pOutCoords->sCoords.WorldSize.y = nHeight;
-    pOutCoords->nDirection = dwParam5;
+    pOutCoords->nDirection = nDirection;
 }
 
 // Server-side DRLG out-of-placement generator for the Spider Forest level (LEVEL_SpiderForest). Places three procedurally-connected sub-levels (ids 0x4c..0x4e) inside the forest using the drlg RNG seed: picks non-overlapping room placements (FreeRoomEx), allocates four scratch tile maps from the level memory pool, carves a maze of connecting paths/exits between sub-levels (flood/adjacency passes building per-cell connection-flag bitmasks 0x10/0x20/0x40/0x80), maps cell flags to tile codes via the gdwOutPlaceMap* lookup tables, writes the resulting grids back into each sub-level, sorts the three sub-levels, then GetLevelAndAllocs each and stores coords/size/automap. Frees the scratch maps and returns the last allocated sub-level. Halts via Fog ErrorManager on overflow/invalid tile. pLevel passed in EAX (custom convention); mutates pDrlg->nSeed throughout.
@@ -606,12 +599,12 @@ static D2DrlgLevelStrc * DRLGLEVEL_FixDrlgLevelForSpiderForest(D2DrlgLevelStrc *
     int nBottomRow;
     uint32_t* pRowPtr;
     int nGridX;
-    uint32_t uVar6;
+    uint32_t uVar5;
     int nCellIdx;
-    POINT* pPVar7;
+    POINT* pPVar6;
     D2DrlgSubLevelPlaceStrc* pCoords1;
     int nAdjIdx;
-    uint32_t* puVar8;
+    uint32_t* pRecordCursor;
     bool bSwapped;
     D2DrlgSubLevelPlaceStrc aSwapBuffer;
     D2DrlgSubLevelPlaceStrc aSubLevelRecords[3];
@@ -638,10 +631,10 @@ static D2DrlgLevelStrc * DRLGLEVEL_FixDrlgLevelForSpiderForest(D2DrlgLevelStrc *
     iVar3 = pSpiderForestDefs->SizeY[pDrlg->nDifficulty];
     D2PoolManagerStrc* pPoolManagerStrc;
     pPoolManagerStrc = pDrlg->pMemoryPool;
-    int iVar5;
-    iVar5 = pSpiderForestDefs->SizeX[pDrlg->nDifficulty];
+    int nWidth;
+    nWidth = pSpiderForestDefs->SizeX[pDrlg->nDifficulty];
     int iVar1;
-    iVar1 = iVar5 / 32;
+    iVar1 = nWidth / 32;
     int nMinX;
     nMinX = pLevel->sCoordinatesAndSize.WorldPosition.x;
     int iVar2;
@@ -649,7 +642,7 @@ static D2DrlgLevelStrc * DRLGLEVEL_FixDrlgLevelForSpiderForest(D2DrlgLevelStrc *
     int nGridY;
     nGridY = pLevel->sCoordinatesAndSize.WorldPosition.y;
     int nMaxX;
-    nMaxX = nMinX + iVar5;
+    nMaxX = nMinX + nWidth;
     int nMinY;
     nMinY = nGridY - iVar3;
     uint32_t nSubLevelCount;
@@ -660,7 +653,7 @@ static D2DrlgLevelStrc * DRLGLEVEL_FixDrlgLevelForSpiderForest(D2DrlgLevelStrc *
     aSubLevelRecords[0].nDirection = 0;
     D2DrlgSubLevelPlaceStrc* pSwapSrc;
     pSwapSrc = aSubLevelRecords + 1;
-    aSubLevelRecords[0].sCoords.WorldSize.x = iVar5;
+    aSubLevelRecords[0].sCoords.WorldSize.x = nWidth;
     aSubLevelRecords[0].sCoords.WorldSize.y = iVar3;
     do {
       if ((int)nSubLevelCount <= 0) {
@@ -683,7 +676,7 @@ static D2DrlgLevelStrc * DRLGLEVEL_FixDrlgLevelForSpiderForest(D2DrlgLevelStrc *
 
       sNewSeed = D2_SEED_NEXT(pDrlg->nSeed);
       pDrlg->nSeed = sNewSeed;
-      DRLGOUTPLACE_CalcSubLevelPlacement(iVar3, iVar5, pSwapSrc, aSubLevelRecords + nRandIdx, sNewSeed.nSeedLow % 5);
+      DRLGOUTPLACE_CalcSubLevelPlacement(iVar3, nWidth, pSwapSrc, aSubLevelRecords + nRandIdx, sNewSeed.nSeedLow % 5);
       nGridX = 0;
       if ((int)nSubLevelCount > 0) {
         pCoords1 = aSubLevelRecords;
@@ -736,549 +729,520 @@ static D2DrlgLevelStrc * DRLGLEVEL_FixDrlgLevelForSpiderForest(D2DrlgLevelStrc *
         if ((int)uVar4 < 0) {
           bSwapped = (uVar4 - 1 | -32) == -1;
         }
-        if (bSwapped) {
-          uVar6 = nGridY - nMinY;
-          uVar4 = uVar6 & 0x8000001f;
-          bSwapped = !uVar4;
-          if ((int)uVar4 < 0) {
-            bSwapped = (uVar4 - 1 | -32) == -1;
-          }
-          if (!bSwapped) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x64e);
-            exit(-1);
+        if (!bSwapped) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x64d);
+          exit(-1);
+        }
+
+        uVar5 = nGridY - nMinY;
+        uVar4 = uVar5 & 0x8000001f;
+        bSwapped = !uVar4;
+        if ((int)uVar4 < 0) {
+          bSwapped = (uVar4 - 1 | -32) == -1;
+        }
+        if (!bSwapped) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x64e);
+          exit(-1);
+        }
+
+        iVar3 = (int)uVar5 / 32 + 2;
+        nWidth = (int)nConnFlags / 32 + 2;
+        nSize = iVar3 * nWidth * 4;
+        pSubLevelMap = (int32_t*)D2_ALLOC_POOL_AT(pPoolManagerStrc, nSize, ".\\DRLG\\OutPlace.cpp", 0x658);
+        pDistWorkMap = (int32_t*)D2_ALLOC_POOL_AT(pPoolManagerStrc, nSize, ".\\DRLG\\OutPlace.cpp", 0x659);
+        pDistMap = (int32_t*)D2_ALLOC_POOL_AT(pPoolManagerStrc, nSize, ".\\DRLG\\OutPlace.cpp", 0x65a);
+        pSubLevelDistMap = (int32_t*)D2_ALLOC_POOL_AT(pPoolManagerStrc, nSize, ".\\DRLG\\OutPlace.cpp", 0x65b);
+        build_grids:
+        memset(pSubLevelMap, 0, nSize);
+        memset(pDistWorkMap, 0, nSize);
+        memset(pDistMap, 0, nSize);
+        memset(pSubLevelDistMap, 0, nSize);
+        nSubIdx = 0;
+        do {
+          nGridY = aSubLevelRecords[nSubIdx].sCoords.WorldPosition.x - nMinX;
+          nGridX = aSubLevelRecords[nSubIdx].sCoords.WorldPosition.y - nMinY;
+          nGridY = nGridY / 32 + 1;
+          nGridX = nGridX / 32;
+          bNoOverlap = nGridX + 1;
+          aSubLevelRecords[nSubIdx].nGridX = nGridY;
+          aSubLevelRecords[nSubIdx].nGridY = bNoOverlap;
+          pSubGridData = (int32_t*)D2_ALLOC_POOL_AT(pPoolManagerStrc, iVar2 * iVar1 * 4, ".\\DRLG\\OutPlace.cpp", 0x66f);
+          aSubLevelRecords[nSubIdx].pCellMap = pSubGridData;
+          if (!nSubIdx) {
+            sNewSeed = D2_SEED_NEXT(pDrlg->nSeed);
+            nConnFlags = sNewSeed.nSeedLow & 1;
+            pDrlg->nSeed = sNewSeed;
+          } else {
+            nConnFlags = aSubLevelRecords[nSubIdx].nDirection % 2;
+            nConnFlags = (uint32_t)(nConnFlags == 1);
           }
 
-          iVar3 = (int)uVar6 / 32 + 2;
-          iVar5 = (int)nConnFlags / 32 + 2;
-          nSize = iVar3 * iVar5 * 4;
-          pSubLevelMap = (int32_t*)D2_ALLOC_POOL_AT(pPoolManagerStrc, nSize, ".\\DRLG\\OutPlace.cpp", 0x658);
-          pDistWorkMap = (int32_t*)D2_ALLOC_POOL_AT(pPoolManagerStrc, nSize, ".\\DRLG\\OutPlace.cpp", 0x659);
-          pDistMap = (int32_t*)D2_ALLOC_POOL_AT(pPoolManagerStrc, nSize, ".\\DRLG\\OutPlace.cpp", 0x65a);
-          pSubLevelDistMap = (int32_t*)D2_ALLOC_POOL_AT(pPoolManagerStrc, nSize, ".\\DRLG\\OutPlace.cpp", 0x65b);
-          build_grids:
-          memset(pSubLevelMap, 0, nSize);
-          memset(pDistWorkMap, 0, nSize);
-          memset(pDistMap, 0, nSize);
-          memset(pSubLevelDistMap, 0, nSize);
-          nSubIdx = 0;
+          nBottomRow = nGridX + iVar2;
+          nFlipState = nConnFlags;
           do {
-            nGridY = aSubLevelRecords[nSubIdx].sCoords.WorldPosition.x - nMinX;
-            nGridX = aSubLevelRecords[nSubIdx].sCoords.WorldPosition.y - nMinY;
-            nGridY = nGridY / 32 + 1;
-            nGridX = nGridX / 32;
-            bNoOverlap = nGridX + 1;
-            aSubLevelRecords[nSubIdx].nGridX = nGridY;
-            aSubLevelRecords[nSubIdx].nGridY = bNoOverlap;
-            pSubGridData = (int32_t*)D2_ALLOC_POOL_AT(pPoolManagerStrc, iVar2 * iVar1 * 4, ".\\DRLG\\OutPlace.cpp", 0x66f);
-            aSubLevelRecords[nSubIdx].pCellMap = pSubGridData;
-            if (!nSubIdx) {
-              sNewSeed = D2_SEED_NEXT(pDrlg->nSeed);
-              nConnFlags = sNewSeed.nSeedLow & 1;
-              pDrlg->nSeed = sNewSeed;
-            } else {
-              nConnFlags = aSubLevelRecords[nSubIdx].nDirection & 0x80000001;
-              if ((int)nConnFlags < 0) {
-                nConnFlags = (nConnFlags - 1 | -2) + 1;
-              }
+            if (iVar2 > 0) {
+              pExitCount = (D2DrlgSubLevelPlaceStrc**)(pDistWorkMap + bNoOverlap * nWidth + nGridY);
+              nSubOffset = iVar2;
+              do {
+                if (iVar1 > 0) {
+                  pCellPtr = pExitCount;
+                  nAdjIdx = iVar1;
+                  do {
+                    *(int32_t*)((int)pSubLevelMap - (int)pDistWorkMap + (int)pCellPtr) = nSubIdx + 1;
+                    *pCellPtr = 0;
+                    *(uint32_t*)((int)pDistMap - (int)pDistWorkMap + (int)pCellPtr) = 0;
+                    *(uint32_t*)((int)pSubLevelDistMap - (int)pDistWorkMap + (int)pCellPtr) = 0;
+                    pCellPtr++;
+                    nAdjIdx--;
+                    nConnFlags = nFlipState;
+                  } while (nAdjIdx);
+                }
 
-              nConnFlags = (uint32_t)(nConnFlags == 1);
+                pExitCount += nWidth;
+                nSubOffset--;
+              } while (nSubOffset);
             }
 
-            nBottomRow = nGridX + iVar2;
-            nFlipState = nConnFlags;
-            do {
-              if (iVar2 > 0) {
-                pExitCount = (D2DrlgSubLevelPlaceStrc**)(pDistWorkMap + bNoOverlap * iVar5 + nGridY);
-                nSubOffset = iVar2;
-                do {
-                  if (iVar1 > 0) {
-                    pCellPtr = pExitCount;
-                    nAdjIdx = iVar1;
-                    do {
-                      *(int32_t*)((int)pSubLevelMap - (int)pDistWorkMap + (int)pCellPtr) = nSubIdx + 1;
-                      *pCellPtr = 0;
-                      *(uint32_t*)((int)pDistMap - (int)pDistWorkMap + (int)pCellPtr) = 0;
-                      *(uint32_t*)((int)pSubLevelDistMap - (int)pDistWorkMap + (int)pCellPtr) = 0;
-                      pCellPtr++;
-                      nAdjIdx--;
-                      nConnFlags = nFlipState;
-                    } while (nAdjIdx);
-                  }
+            nExitCol = nConnFlags + nGridY;
+            if (nSubIdx) {
+              pDistMap[nWidth * nBottomRow + nExitCol] = 1;
+              pDistMap[(uint32_t)!nConnFlags * 2 - 1 + nWidth * nBottomRow + nExitCol] = 2;
+            }
 
-                  pExitCount += iVar5;
-                  nSubOffset--;
-                } while (nSubOffset);
-              }
+            nSubOffset = 0;
+            if (aSubLevelRecords[nSubIdx].nLinkCount > 0) {
+              pExitCount = aSubLevelRecords[nSubIdx].apLinks;
+              do {
+                switch ((*pExitCount)->nDirection) {
+                  case 0:
+                    pDistMap[bNoOverlap * nWidth + nGridY] = 1;
+                  break;
+                  case 1:
+                    pDistMap[(nGridX + 4) * nWidth + nGridY] = 1;
+                  break;
+                  case 2:
+                    nAdjIdx = nGridX + 4;
+                  pDistMap[nAdjIdx * nWidth + nGridY + 1] = 1;
+                  break;
+                  case 3:
+                    pDistMap[(nGridX + 2) * nWidth + nGridY] = 1;
+                  break;
+                  case 4:
+                    nAdjIdx = nGridX + 2;
+                  pDistMap[nAdjIdx * nWidth + nGridY + 1] = 1;
+                }
 
-              nExitCol = nConnFlags + nGridY;
-              if (nSubIdx) {
-                pDistMap[iVar5 * nBottomRow + nExitCol] = 1;
-                pDistMap[(uint32_t)!nConnFlags * 2 - 1 + iVar5 * nBottomRow + nExitCol] = 2;
-              }
+                pExitCount++;
+                nSubOffset++;
+              } while (nSubOffset < aSubLevelRecords[nSubIdx].nLinkCount);
+            }
 
-              nSubOffset = 0;
-              if (aSubLevelRecords[nSubIdx].nLinkCount > 0) {
-                pExitCount = aSubLevelRecords[nSubIdx].apLinks;
-                do {
-                  switch ((*pExitCount)->nDirection) {
-                    case 0:
-                      pDistMap[bNoOverlap * iVar5 + nGridY] = 1;
-                    break;
-                    case 1:
-                      pDistMap[(nGridX + 4) * iVar5 + nGridY] = 1;
-                    break;
-                    case 2:
-                      nAdjIdx = nGridX + 4;
-                    pDistMap[nAdjIdx * iVar5 + nGridY + 1] = 1;
-                    break;
-                    case 3:
-                      pDistMap[(nGridX + 2) * iVar5 + nGridY] = 1;
-                    break;
-                    case 4:
-                      nAdjIdx = nGridX + 2;
-                    pDistMap[nAdjIdx * iVar5 + nGridY + 1] = 1;
-                  }
-
-                  pExitCount++;
-                  nSubOffset++;
-                } while (nSubOffset < aSubLevelRecords[nSubIdx].nLinkCount);
-              }
-
-              pExitCount = 0;
-              nRandIdx = (uint32_t)(nSubIdx != 0);
-              if (nBottomRow >= bNoOverlap) {
-                nCellIdx = iVar5 * nBottomRow;
-                nAdjIdx = (nSubIdx + 1) * 100;
-                nRowIter = nBottomRow;
-                do {
-                  pDistWorkMap[nExitCol + nCellIdx] = nAdjIdx;
-                  nAdjIdx++;
-                  if (!pExitCount || nRowIter == bNoOverlap) {
-                    step_up_row:
-                    pExitCount = (D2DrlgSubLevelPlaceStrc**)((int)pExitCount + 1);
-                    if ((int)pExitCount >= 2 && 1 < nRowIter) {
-                      nExitDistIdx = (uint32_t)!nConnFlags * 2 - 1 + nCellIdx + nExitCol;
-                      if (!pDistMap[nExitDistIdx]) {
-                        nRandIdx++;
-                        pDistMap[nExitDistIdx] = 2;
-                      }
-                    }
-
-                    nRowIter--;
-                    nCellIdx -= iVar5;
-                  } else {
-                    sNewSeed = D2_SEED_NEXT(pDrlg->nSeed);
-                    pDrlg->nSeed.nSeedHigh = sNewSeed.nSeedHigh;
-                    pDrlg->nSeed.nSeedLow = sNewSeed.nSeedLow;
-                    nConnFlags = nFlipState;
-                    if (sNewSeed.nSeedLow % 3) {
-                      goto step_up_row;
-                    }
-
-                    pExitCount = 0;
-                    if (!nFlipState) {
-                      nConnFlags = 1;
-                      nExitCol++;
-                      nFlipState = 1;
-                    } else {
-                      nExitCol--;
-                      nConnFlags = (uint32_t)pExitCount;
-                      nFlipState = (uint32_t)pExitCount;
+            pExitCount = 0;
+            nRandIdx = (uint32_t)(nSubIdx != 0);
+            if (nBottomRow >= bNoOverlap) {
+              nCellIdx = nWidth * nBottomRow;
+              nAdjIdx = (nSubIdx + 1) * 100;
+              nRowIter = nBottomRow;
+              do {
+                pDistWorkMap[nExitCol + nCellIdx] = nAdjIdx;
+                nAdjIdx++;
+                if (!pExitCount || nRowIter == bNoOverlap) {
+                  step_up_row:
+                  pExitCount = (D2DrlgSubLevelPlaceStrc**)((int)pExitCount + 1);
+                  if ((int)pExitCount >= 2 && 1 < nRowIter) {
+                    nExitDistIdx = (uint32_t)!nConnFlags * 2 - 1 + nCellIdx + nExitCol;
+                    if (!pDistMap[nExitDistIdx]) {
+                      nRandIdx++;
+                      pDistMap[nExitDistIdx] = 2;
                     }
                   }
-                } while (nRowIter >= bNoOverlap);
-              }
-            } while ((int)nRandIdx < 2);
 
-            trim_exit_candidates:
-            if ((int)nRandIdx > 3) {
-              if ((int)nRandIdx <= 0) {
-                nRandExitIdx = 0;
-              } else {
-                uSeedHigh64 = (uint64_t)pDrlg->nSeed.nSeedHigh;
-                nConnFlags = pDrlg->nSeed.nSeedLow;
-                if (!(nRandIdx & nRandIdx - 1)) {
-                  sNewSeed = (D2SeedStrc)((uint64_t)nConnFlags * 0x6ac690c5 + uSeedHigh64);
-                  pDrlg->nSeed.nSeedHigh = sNewSeed.nSeedHigh;
-                  pDrlg->nSeed.nSeedLow = sNewSeed.nSeedLow;
-                  nRandExitIdx = nRandIdx - 1 & sNewSeed.nSeedLow;
+                  nRowIter--;
+                  nCellIdx -= nWidth;
                 } else {
-                  sNewSeed = (D2SeedStrc)((uint64_t)nConnFlags * 0x6ac690c5 + uSeedHigh64);
+                  sNewSeed = D2_SEED_NEXT(pDrlg->nSeed);
                   pDrlg->nSeed.nSeedHigh = sNewSeed.nSeedHigh;
                   pDrlg->nSeed.nSeedLow = sNewSeed.nSeedLow;
-                  nRandExitIdx = (uint32_t)(sNewSeed.nSeedLow % nRandIdx);
+                  nConnFlags = nFlipState;
+                  if (sNewSeed.nSeedLow % 3) {
+                    goto step_up_row;
+                  }
+
+                  pExitCount = 0;
+                  if (nFlipState) {
+                    nExitCol--;
+                    nConnFlags = (uint32_t)pExitCount;
+                    nFlipState = (uint32_t)pExitCount;
+                  } else {
+                    nConnFlags = 1;
+                    nExitCol++;
+                    nFlipState = 1;
+                  }
+                }
+              } while (nRowIter >= bNoOverlap);
+            }
+          } while ((int)nRandIdx < 2);
+
+          trim_exit_candidates:
+          if ((int)nRandIdx > 3) {
+            if ((int)nRandIdx <= 0) {
+              nRandExitIdx = 0;
+            } else {
+              uSeedHigh64 = (uint64_t)pDrlg->nSeed.nSeedHigh;
+              nConnFlags = pDrlg->nSeed.nSeedLow;
+              if (nRandIdx & nRandIdx - 1) {
+                sNewSeed = (D2SeedStrc)((uint64_t)nConnFlags * 0x6ac690c5 + uSeedHigh64);
+                pDrlg->nSeed.nSeedHigh = sNewSeed.nSeedHigh;
+                pDrlg->nSeed.nSeedLow = sNewSeed.nSeedLow;
+                nRandExitIdx = (uint32_t)(sNewSeed.nSeedLow % nRandIdx);
+              } else {
+                sNewSeed = (D2SeedStrc)((uint64_t)nConnFlags * 0x6ac690c5 + uSeedHigh64);
+                pDrlg->nSeed.nSeedHigh = sNewSeed.nSeedHigh;
+                pDrlg->nSeed.nSeedLow = sNewSeed.nSeedLow;
+                nRandExitIdx = nRandIdx - 1 & sNewSeed.nSeedLow;
+              }
+            }
+
+            bSwapped = false;
+            pExitCount = 0;
+            nRowIter = 0;
+            if (iVar2 > 0) {
+              nGridX = bNoOverlap * nWidth + nGridY;
+              do {
+                if (bSwapped) {
+                  break;
+                }
+
+                nBottomRow = 0;
+                if (iVar1 > 0) {
+                  do {
+                    if (bSwapped) {
+                      break;
+                    }
+                    if (pDistMap[nGridX + nBottomRow] == 2) {
+                      if ((D2DrlgSubLevelPlaceStrc**)nRandExitIdx == pExitCount) {
+                        pDistMap[nGridX + nBottomRow] = 0;
+                        bSwapped = true;
+                        nRandIdx--;
+                      }
+
+                      pExitCount = (D2DrlgSubLevelPlaceStrc**)((int)pExitCount + 1);
+                    }
+
+                    nBottomRow++;
+                  } while (nBottomRow < iVar1);
+                }
+
+                nGridX += nWidth;
+                nRowIter++;
+              } while (nRowIter < iVar2);
+            }
+
+            goto trim_exit_candidates;
+          }
+          nSubIdx++;
+        } while (nSubIdx < 3);
+
+        for (nRowIter = 0; nRowIter < iVar3; nRowIter++) {
+          nExitCol = 0;
+          if (nWidth > 0) {
+            nGridY = nWidth * nRowIter;
+            pSubLevelRowPtr = pSubLevelMap + nGridY;
+            nSubIdx = (int32_t)(pDistWorkMap + nGridY + 1);
+            pFlagsRow = (uint32_t*)(pSubLevelDistMap + nGridY - 1);
+            do {
+              nGridY = *pSubLevelRowPtr;
+              pCellPtr = 0;
+              nRandExitIdx = 0x7fffffff;
+              pExitCount = 0;
+              if (*(int*)((int)pDistMap - (int)pSubLevelMap + (int)pSubLevelRowPtr) == 1) {
+                bNoOverlap = (nRowIter - 1) * nWidth + nExitCol;
+                nGridX = pDistWorkMap[bNoOverlap];
+                if (nGridX && nGridX < 0x7fffffff && pSubLevelMap[bNoOverlap] == nGridY) {
+                  pCellPtr = (D2DrlgSubLevelPlaceStrc**)0x8;
+                  pExitCount = (D2DrlgSubLevelPlaceStrc**)0x8;
+                  nRandExitIdx = nGridX;
+                }
+
+                nBottomRow = (nRowIter + 1) * nWidth + nExitCol;
+                nGridX = pDistWorkMap[nBottomRow];
+                if (nGridX && nGridX < (int)nRandExitIdx) {
+                  pCellPtr = pExitCount;
+                  if (pSubLevelMap[nBottomRow] == nGridY) {
+                    pExitCount = (D2DrlgSubLevelPlaceStrc**)0x4;
+                    pCellPtr = (D2DrlgSubLevelPlaceStrc**)4;
+                    nRandExitIdx = nGridX;
+                  }
+                }
+
+                nGridX = *(int*)nSubIdx;
+                if (nGridX && nGridX < (int)nRandExitIdx) {
+                  pCellPtr = pExitCount;
+                  if (*(int*)((int)pSubLevelMap + (nSubIdx - (int)pDistWorkMap)) == nGridY) {
+                    nRandExitIdx = nGridX;
+                    pCellPtr = (D2DrlgSubLevelPlaceStrc**)2;
+                  }
+                }
+
+                nGridX = *(int*)((int)pDistWorkMap - (int)pSubLevelDistMap + (int)pFlagsRow);
+                if (nGridX && nGridX < (int)nRandExitIdx && *(int*)((int)pSubLevelMap - (int)pSubLevelDistMap + (int)pFlagsRow) == nGridY) {
+                  pCellPtr = (D2DrlgSubLevelPlaceStrc**)0x1;
+                }
+                if ((uint32_t)pCellPtr & 8) {
+                  pSubLevelDistMap[bNoOverlap] |= 4;
+                }
+                if ((uint32_t)pCellPtr & 4) {
+                  pSubLevelDistMap[nBottomRow] |= 8;
+                }
+                if ((uint32_t)pCellPtr & 2) {
+                  pFlagsRow[2] |= 1;
+                }
+                if ((uint32_t)pCellPtr & 1) {
+                  *pFlagsRow |= 2;
+                }
+                if (pDistMap[bNoOverlap] == 1 && pSubLevelMap[bNoOverlap] != nGridY) {
+                  pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 8);
+                }
+                if (pDistMap[nBottomRow] == 1 && pSubLevelMap[nBottomRow] != nGridY) {
+                  pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 4);
+                }
+
+                pAdjPtr = (int*)((int)pSubLevelMap + (nSubIdx - (int)pDistWorkMap));
+                if (*(int*)((int)pAdjPtr + ((int)pDistMap - (int)pSubLevelMap)) == 1 && *pAdjPtr != nGridY) {
+                  pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 2);
+                }
+                if (*(int*)((int)pDistMap - (int)pSubLevelDistMap + (int)pFlagsRow) == 1 && *(int*)((int)pSubLevelMap - (int)pSubLevelDistMap + (int)pFlagsRow) != nGridY) {
+                  pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 1);
                 }
               }
 
-              bSwapped = false;
-              pExitCount = 0;
-              nRowIter = 0;
-              if (iVar2 > 0) {
-                nGridX = bNoOverlap * iVar5 + nGridY;
+              nGridY = *(int*)(nSubIdx - 4);
+              if (nGridY) {
+                nGridX = nGridY - pDistWorkMap[(nRowIter - 1) * nWidth + nExitCol];
+                if (nGridX < 0) {
+                  nGridX = -nGridX;
+                }
+                if (nGridX == 1) {
+                  pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 8);
+                }
+
+                nGridX = nGridY - pDistWorkMap[(nRowIter + 1) * nWidth + nExitCol];
+                if (nGridX < 0) {
+                  nGridX = -nGridX;
+                }
+                if (nGridX == 1) {
+                  pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 4);
+                }
+
+                nGridX = nGridY - *(int*)nSubIdx;
+                if (nGridX < 0) {
+                  nGridX = -nGridX;
+                }
+                if (nGridX == 1) {
+                  pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 2);
+                }
+
+                nGridY -= *(int*)((int)pDistWorkMap - (int)pSubLevelDistMap + (int)pFlagsRow);
+                if (nGridY < 0) {
+                  nGridY = -nGridY;
+                }
+                if (nGridY == 1) {
+                  pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 1);
+                }
+              }
+
+              pFlagsRow[1] |= (uint32_t)pCellPtr;
+              pSubLevelRowPtr++;
+              nSubIdx += 4;
+              nExitCol++;
+              pFlagsRow++;
+            } while (nExitCol < nWidth);
+          }
+        }
+
+        for (nGridY = 0; nGridY < iVar3; nGridY++) {
+          nExitCol = 0;
+          if (nWidth > 0) {
+            pConnFlags = (uint32_t*)(pSubLevelDistMap + nWidth * nGridY);
+            nGridX = (int)pSubLevelMap - (int)pDistMap;
+            do {
+              nConnFlags = *pConnFlags;
+              pAdjPtr = (int*)((int)pDistMap - (int)pSubLevelDistMap + (int)pConnFlags);
+              bNoOverlap = *(int*)((int)pAdjPtr + nGridX);
+              sNewSeed = D2_SEED_NEXT(pDrlg->nSeed);
+              uVar4 = sNewSeed.nSeedLow & 3;
+              bSwapped = !nConnFlags;
+              pDrlg->nSeed = sNewSeed;
+              if (*pAdjPtr == 2) {
+                nSubIdx = 0;
+                bFoundExit = true;
                 do {
-                  if (bSwapped) {
+                  if (!bFoundExit) {
                     break;
                   }
 
-                  nBottomRow = 0;
-                  if (iVar1 > 0) {
-                    do {
-                      if (bSwapped) {
-                        break;
-                      }
-                      if (pDistMap[nGridX + nBottomRow] == 2) {
-                        if ((D2DrlgSubLevelPlaceStrc**)nRandExitIdx == pExitCount) {
-                          pDistMap[nGridX + nBottomRow] = 0;
-                          bSwapped = true;
-                          nRandIdx--;
-                        }
+                  uVar5 = (int)(nSubIdx + uVar4) % 4;
+                  switch (uVar5) {
+                    case 0:
+                      nBottomRow = (nGridY - 1) * nWidth + nExitCol;
+                    if (pSubLevelMap[nBottomRow] == bNoOverlap && pSubLevelDistMap[nBottomRow] && pSubLevelDistMap[nBottomRow] < 0xf) {
+                      nConnFlags |= 0x80;
+                      stop_same_region_search:
+                      bFoundExit = false;
+                    }
 
-                        pExitCount = (D2DrlgSubLevelPlaceStrc**)((int)pExitCount + 1);
-                      }
+                    break;
+                    case 1:
+                      nBottomRow = (nGridY + 1) * nWidth + nExitCol;
+                    if (pSubLevelMap[nBottomRow] == bNoOverlap && pSubLevelDistMap[nBottomRow] && pSubLevelDistMap[nBottomRow] < 0xf) {
+                      nConnFlags |= 0x40;
+                      goto stop_same_region_search;
+                    }
 
-                      nBottomRow++;
-                    } while (nBottomRow < iVar1);
+                    break;
+                    case 2:
+                      if (*(int*)((int)pAdjPtr + nGridX + 4) == bNoOverlap && pConnFlags[1] && (int)pConnFlags[1] < 0xf) {
+                        nConnFlags |= 0x20;
+                        goto stop_same_region_search;
+                      }
+                    break;
+                    case 3:
+                      if (*(int*)((int)pAdjPtr + nGridX - 4) == bNoOverlap && pConnFlags[-1] && (int)pConnFlags[-1] < 0xf) {
+                        nConnFlags |= 0x10;
+                        goto stop_same_region_search;
+                      }
                   }
 
-                  nGridX += iVar5;
-                  nRowIter++;
-                } while (nRowIter < iVar2);
-              }
+                  nSubIdx++;
+                } while (nSubIdx < 4);
 
-              goto trim_exit_candidates;
-            }
-            nSubIdx++;
-          } while (nSubIdx < 3);
-
-          nRowIter = 0;
-          if (iVar3 > 0) {
-            do {
-              nExitCol = 0;
-              if (iVar5 > 0) {
-                nGridY = iVar5 * nRowIter;
-                pSubLevelRowPtr = pSubLevelMap + nGridY;
-                nSubIdx = (int32_t)(pDistWorkMap + nGridY + 1);
-                pFlagsRow = (uint32_t*)(pSubLevelDistMap + nGridY - 1);
-                do {
-                  nGridY = *pSubLevelRowPtr;
-                  pCellPtr = 0;
-                  nRandExitIdx = 0x7fffffff;
-                  pExitCount = 0;
-                  if (*(int*)((int)pDistMap - (int)pSubLevelMap + (int)pSubLevelRowPtr) == 1) {
-                    bNoOverlap = (nRowIter - 1) * iVar5 + nExitCol;
-                    nGridX = pDistWorkMap[bNoOverlap];
-                    if (nGridX && nGridX < 0x7fffffff && pSubLevelMap[bNoOverlap] == nGridY) {
-                      pCellPtr = (D2DrlgSubLevelPlaceStrc**)0x8;
-                      pExitCount = (D2DrlgSubLevelPlaceStrc**)0x8;
-                      nRandExitIdx = nGridX;
-                    }
-
-                    nBottomRow = (nRowIter + 1) * iVar5 + nExitCol;
-                    nGridX = pDistWorkMap[nBottomRow];
-                    if (nGridX && nGridX < (int)nRandExitIdx) {
-                      pCellPtr = pExitCount;
-                      if (pSubLevelMap[nBottomRow] == nGridY) {
-                        pExitCount = (D2DrlgSubLevelPlaceStrc**)0x4;
-                        pCellPtr = (D2DrlgSubLevelPlaceStrc**)4;
-                        nRandExitIdx = nGridX;
-                      }
-                    }
-
-                    nGridX = *(int*)nSubIdx;
-                    if (nGridX && nGridX < (int)nRandExitIdx) {
-                      pCellPtr = pExitCount;
-                      if (*(int*)((int)pSubLevelMap + (nSubIdx - (int)pDistWorkMap)) == nGridY) {
-                        nRandExitIdx = nGridX;
-                        pCellPtr = (D2DrlgSubLevelPlaceStrc**)2;
-                      }
-                    }
-
-                    nGridX = *(int*)((int)pDistWorkMap - (int)pSubLevelDistMap + (int)pFlagsRow);
-                    if (nGridX && nGridX < (int)nRandExitIdx && *(int*)((int)pSubLevelMap - (int)pSubLevelDistMap + (int)pFlagsRow) == nGridY) {
-                      pCellPtr = (D2DrlgSubLevelPlaceStrc**)0x1;
-                    }
-                    if ((uint32_t)pCellPtr & 8) {
-                      pSubLevelDistMap[bNoOverlap] |= 4;
-                    }
-                    if ((uint32_t)pCellPtr & 4) {
-                      pSubLevelDistMap[nBottomRow] |= 8;
-                    }
-                    if ((uint32_t)pCellPtr & 2) {
-                      pFlagsRow[2] |= 1;
-                    }
-                    if ((uint32_t)pCellPtr & 1) {
-                      *pFlagsRow |= 2;
-                    }
-                    if (pDistMap[bNoOverlap] == 1 && pSubLevelMap[bNoOverlap] != nGridY) {
-                      pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 8);
-                    }
-                    if (pDistMap[nBottomRow] == 1 && pSubLevelMap[nBottomRow] != nGridY) {
-                      pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 4);
-                    }
-
-                    pAdjPtr = (int*)((int)pSubLevelMap + (nSubIdx - (int)pDistWorkMap));
-                    if (*(int*)((int)pAdjPtr + ((int)pDistMap - (int)pSubLevelMap)) == 1 && *pAdjPtr != nGridY) {
-                      pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 2);
-                    }
-                    if (*(int*)((int)pDistMap - (int)pSubLevelDistMap + (int)pFlagsRow) == 1 && *(int*)((int)pSubLevelMap - (int)pSubLevelDistMap + (int)pFlagsRow) != nGridY) {
-                      pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 1);
-                    }
-                  }
-
-                  nGridY = *(int*)(nSubIdx - 4);
-                  if (nGridY) {
-                    nGridX = nGridY - pDistWorkMap[(nRowIter - 1) * iVar5 + nExitCol];
-                    if (nGridX < 0) {
-                      nGridX = -nGridX;
-                    }
-                    if (nGridX == 1) {
-                      pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 8);
-                    }
-
-                    nGridX = nGridY - pDistWorkMap[(nRowIter + 1) * iVar5 + nExitCol];
-                    if (nGridX < 0) {
-                      nGridX = -nGridX;
-                    }
-                    if (nGridX == 1) {
-                      pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 4);
-                    }
-
-                    nGridX = nGridY - *(int*)nSubIdx;
-                    if (nGridX < 0) {
-                      nGridX = -nGridX;
-                    }
-                    if (nGridX == 1) {
-                      pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 2);
-                    }
-
-                    nGridY -= *(int*)((int)pDistWorkMap - (int)pSubLevelDistMap + (int)pFlagsRow);
-                    if (nGridY < 0) {
-                      nGridY = -nGridY;
-                    }
-                    if (nGridY == 1) {
-                      pCellPtr = (D2DrlgSubLevelPlaceStrc**)((uint32_t)pCellPtr | 1);
-                    }
-                  }
-
-                  pFlagsRow[1] |= (uint32_t)pCellPtr;
-                  pSubLevelRowPtr++;
-                  nSubIdx += 4;
-                  nExitCol++;
-                  pFlagsRow++;
-                } while (nExitCol < iVar5);
-              }
-
-              nRowIter++;
-            } while (nRowIter < iVar3);
-          }
-
-          for (nGridY = 0; nGridY < iVar3; nGridY++) {
-            nExitCol = 0;
-            if (iVar5 > 0) {
-              pConnFlags = (uint32_t*)(pSubLevelDistMap + iVar5 * nGridY);
-              nGridX = (int)pSubLevelMap - (int)pDistMap;
-              do {
-                nConnFlags = *pConnFlags;
-                pAdjPtr = (int*)((int)pDistMap - (int)pSubLevelDistMap + (int)pConnFlags);
-                bNoOverlap = *(int*)((int)pAdjPtr + nGridX);
-                sNewSeed = D2_SEED_NEXT(pDrlg->nSeed);
-                uVar4 = sNewSeed.nSeedLow & 3;
-                bSwapped = !nConnFlags;
-                pDrlg->nSeed = sNewSeed;
-                if (*pAdjPtr == 2) {
+                if (!nConnFlags) {
+                  goto build_grids;
+                }
+                if (bSwapped) {
                   nSubIdx = 0;
-                  bFoundExit = true;
+                  bSwapped = true;
                   do {
-                    if (!bFoundExit) {
+                    if (!bSwapped) {
                       break;
                     }
 
-                    uVar6 = nSubIdx + uVar4 & 0x80000003;
-                    if ((int)uVar6 < 0) {
-                      uVar6 = (uVar6 - 1 | -4) + 1;
-                    }
-
-                    switch (uVar6) {
+                    uVar5 = (int)(nSubIdx + uVar4) % 4;
+                    switch (uVar5) {
                       case 0:
-                        nBottomRow = (nGridY - 1) * iVar5 + nExitCol;
-                      if (pSubLevelMap[nBottomRow] == bNoOverlap && pSubLevelDistMap[nBottomRow] && pSubLevelDistMap[nBottomRow] < 0xf) {
+                        nBottomRow = (nGridY - 1) * nWidth + nExitCol;
+                      if (pSubLevelMap[nBottomRow] != bNoOverlap && pDistMap[nBottomRow] == 2) {
                         nConnFlags |= 0x80;
-                        stop_same_region_search:
-                        bFoundExit = false;
+                        stop_other_region_search:
+                        bSwapped = false;
                       }
 
                       break;
                       case 1:
-                        nBottomRow = (nGridY + 1) * iVar5 + nExitCol;
-                      if (pSubLevelMap[nBottomRow] == bNoOverlap && pSubLevelDistMap[nBottomRow] && pSubLevelDistMap[nBottomRow] < 0xf) {
+                        nBottomRow = (nGridY + 1) * nWidth + nExitCol;
+                      if (pSubLevelMap[nBottomRow] != bNoOverlap && pDistMap[nBottomRow] == 2) {
                         nConnFlags |= 0x40;
-                        goto stop_same_region_search;
+                        goto stop_other_region_search;
                       }
 
                       break;
                       case 2:
-                        if (*(int*)((int)pAdjPtr + nGridX + 4) == bNoOverlap && pConnFlags[1] && (int)pConnFlags[1] < 0xf) {
+                        if (*(int*)((int)pAdjPtr + nGridX + 4) != bNoOverlap && pAdjPtr[1] == 2) {
                           nConnFlags |= 0x20;
-                          goto stop_same_region_search;
+                          goto stop_other_region_search;
                         }
                       break;
                       case 3:
-                        if (*(int*)((int)pAdjPtr + nGridX - 4) == bNoOverlap && pConnFlags[-1] && (int)pConnFlags[-1] < 0xf) {
+                        if (*(int*)((int)pAdjPtr + nGridX - 4) != bNoOverlap && pAdjPtr[-1] == 2) {
                           nConnFlags |= 0x10;
-                          goto stop_same_region_search;
+                          goto stop_other_region_search;
                         }
                     }
 
                     nSubIdx++;
                   } while (nSubIdx < 4);
 
-                  if (!nConnFlags) {
-                    goto build_grids;
+                  sNewSeed = D2_SEED_NEXT_VAL(sNewSeed);
+                  pDrlg->nSeed.nSeedHigh = sNewSeed.nSeedHigh;
+                  pDrlg->nSeed.nSeedLow = sNewSeed.nSeedLow;
+                  if (!(sNewSeed.nSeedLow & 1) || (bFoundExit = true , !bSwapped)) {
+                    bFoundExit = false;
                   }
-                  if (bSwapped) {
-                    nSubIdx = 0;
-                    bSwapped = true;
-                    do {
-                      if (!bSwapped) {
-                        break;
-                      }
 
-                      uVar6 = nSubIdx + uVar4 & 0x80000003;
-                      if ((int)uVar6 < 0) {
-                        uVar6 = (uVar6 - 1 | -4) + 1;
-                      }
-
-                      switch (uVar6) {
-                        case 0:
-                          nBottomRow = (nGridY - 1) * iVar5 + nExitCol;
-                        if (pSubLevelMap[nBottomRow] != bNoOverlap && pDistMap[nBottomRow] == 2) {
-                          nConnFlags |= 0x80;
-                          stop_other_region_search:
-                          bSwapped = false;
-                        }
-
-                        break;
-                        case 1:
-                          nBottomRow = (nGridY + 1) * iVar5 + nExitCol;
-                        if (pSubLevelMap[nBottomRow] != bNoOverlap && pDistMap[nBottomRow] == 2) {
-                          nConnFlags |= 0x40;
-                          goto stop_other_region_search;
-                        }
-
-                        break;
-                        case 2:
-                          if (*(int*)((int)pAdjPtr + nGridX + 4) != bNoOverlap && pAdjPtr[1] == 2) {
-                            nConnFlags |= 0x20;
-                            goto stop_other_region_search;
-                          }
-                        break;
-                        case 3:
-                          if (*(int*)((int)pAdjPtr + nGridX - 4) != bNoOverlap && pAdjPtr[-1] == 2) {
-                            nConnFlags |= 0x10;
-                            goto stop_other_region_search;
-                          }
-                      }
-
-                      nSubIdx++;
-                    } while (nSubIdx < 4);
-
-                    sNewSeed = D2_SEED_NEXT_VAL(sNewSeed);
-                    pDrlg->nSeed.nSeedHigh = sNewSeed.nSeedHigh;
-                    pDrlg->nSeed.nSeedLow = sNewSeed.nSeedLow;
-                    if (!(sNewSeed.nSeedLow & 1) || (bFoundExit = true , !bSwapped)) {
-                      bFoundExit = false;
+                  sNewSeed = D2_SEED_NEXT_VAL(sNewSeed);
+                  pDrlg->nSeed = sNewSeed;
+                  nSubIdx = 0;
+                  do {
+                    if (!bFoundExit) {
+                      break;
                     }
 
-                    sNewSeed = D2_SEED_NEXT_VAL(sNewSeed);
-                    pDrlg->nSeed = sNewSeed;
-                    nSubIdx = 0;
-                    do {
-                      if (!bFoundExit) {
-                        break;
-                      }
+                    uVar4 = (int)((sNewSeed.nSeedLow & 3) + nSubIdx) % 4;
+                    switch (uVar4) {
+                      case 0:
+                        if (pSubLevelDistMap[(nGridY - 1) * nWidth + nExitCol] && pSubLevelDistMap[(nGridY - 1) * nWidth + nExitCol] < 0xf && (char)nConnFlags >= 0) {
+                          nConnFlags |= 0x80;
+                          stop_extra_link_search:
+                          bFoundExit = false;
+                        }
+                      break;
+                      case 1:
+                        if (pSubLevelDistMap[(nGridY + 1) * nWidth + nExitCol] && pSubLevelDistMap[(nGridY + 1) * nWidth + nExitCol] < 0xf && !(nConnFlags & 0x40)) {
+                          nConnFlags |= 0x40;
+                          goto stop_extra_link_search;
+                        }
+                      break;
+                      case 2:
+                        if (pConnFlags[1] && (int)pConnFlags[1] < 0xf && !(nConnFlags & 0x20)) {
+                          nConnFlags |= 0x20;
+                          goto stop_extra_link_search;
+                        }
+                      break;
+                      case 3:
+                        if (pConnFlags[-1] && (int)pConnFlags[-1] < 0xf && !(nConnFlags & 0x10)) {
+                          nConnFlags |= 0x10;
+                          goto stop_extra_link_search;
+                        }
+                    }
 
-                      uVar4 = (sNewSeed.nSeedLow & 3) + nSubIdx & 0x80000003;
-                      if ((int)uVar4 < 0) {
-                        uVar4 = (uVar4 - 1 | -4) + 1;
-                      }
-
-                      switch (uVar4) {
-                        case 0:
-                          if (pSubLevelDistMap[(nGridY - 1) * iVar5 + nExitCol] && pSubLevelDistMap[(nGridY - 1) * iVar5 + nExitCol] < 0xf && -1 < (char)nConnFlags) {
-                            nConnFlags |= 0x80;
-                            stop_extra_link_search:
-                            bFoundExit = false;
-                          }
-                        break;
-                        case 1:
-                          if (pSubLevelDistMap[(nGridY + 1) * iVar5 + nExitCol] && pSubLevelDistMap[(nGridY + 1) * iVar5 + nExitCol] < 0xf && !(nConnFlags & 0x40)) {
-                            nConnFlags |= 0x40;
-                            goto stop_extra_link_search;
-                          }
-                        break;
-                        case 2:
-                          if (pConnFlags[1] && (int)pConnFlags[1] < 0xf && !(nConnFlags & 0x20)) {
-                            nConnFlags |= 0x20;
-                            goto stop_extra_link_search;
-                          }
-                        break;
-                        case 3:
-                          if (pConnFlags[-1] && (int)pConnFlags[-1] < 0xf && !(nConnFlags & 0x10)) {
-                            nConnFlags |= 0x10;
-                            goto stop_extra_link_search;
-                          }
-                      }
-
-                      nSubIdx++;
-                    } while (nSubIdx < 4);
-                  }
-                  if ((char)nConnFlags < '\0') {
-                    pSubLevelDistMap[(nGridY - 1) * iVar5 + nExitCol] |= 0x40;
-                  }
-                  if (nConnFlags & 0x40) {
-                    pSubLevelDistMap[(nGridY + 1) * iVar5 + nExitCol] |= 0x80;
-                  }
-                  if (nConnFlags & 0x20) {
-                    pConnFlags[1] |= 0x10;
-                  }
-                  if (nConnFlags & 0x10) {
-                    pConnFlags[-1] |= 0x20;
-                  }
-
-                  *pAdjPtr = 0;
+                    nSubIdx++;
+                  } while (nSubIdx < 4);
+                }
+                if ((char)nConnFlags < '\0') {
+                  pSubLevelDistMap[(nGridY - 1) * nWidth + nExitCol] |= 0x40;
+                }
+                if (nConnFlags & 0x40) {
+                  pSubLevelDistMap[(nGridY + 1) * nWidth + nExitCol] |= 0x80;
+                }
+                if (nConnFlags & 0x20) {
+                  pConnFlags[1] |= 0x10;
+                }
+                if (nConnFlags & 0x10) {
+                  pConnFlags[-1] |= 0x20;
                 }
 
-                *pConnFlags |= nConnFlags;
-                nExitCol++;
-                pConnFlags++;
-              } while (nExitCol < iVar5);
-            }
-          }
+                *pAdjPtr = 0;
+              }
 
-          nGridY = 0;
-          pConnFlags = (uint32_t*)pSubLevelDistMap;
-          if (iVar3 > 0) {
-            do {
-              nGridX = 0;
-              pRowPtr = pConnFlags;
-              if (iVar5 > 0) {
-                do {
-                  nConnFlags = *pRowPtr;
-                  uVar4 = nConnFlags & 0x8000000f;
-                  if ((int)uVar4 < 0) {
-                    uVar4 = (uVar4 - 1 | -16) + 1;
-                  }
-                  if (!uVar4) {
-                    if ((int)nConnFlags >= 0x10) {
-                      uVar4 = gaWildernessLevelSeedOffsets[((int)nConnFlags >> 4) + 0x59];
-                      if (!uVar4) {
-                        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x799);
-                        exit(-1);
-                      }
-                    }
-                  } else if ((int)nConnFlags < 0x10) {
-                    uVar4 += 0x211;
-                  } else {
+              *pConnFlags |= nConnFlags;
+              nExitCol++;
+              pConnFlags++;
+            } while (nExitCol < nWidth);
+          }
+        }
+
+        nGridY = 0;
+        pConnFlags = (uint32_t*)pSubLevelDistMap;
+        if (iVar3 > 0) {
+          do {
+            nGridX = 0;
+            pRowPtr = pConnFlags;
+            if (nWidth > 0) {
+              do {
+                nConnFlags = *pRowPtr;
+                uVar4 = (int)nConnFlags % 16;
+                if (uVar4) {
+                  if ((int)nConnFlags >= 0x10) {
                     if (nConnFlags & 0x10) {
                       uVar4 = gaWildernessLevelSeedOffsets[uVar4 * 4 + 0x66];
                     }
@@ -1295,117 +1259,119 @@ static D2DrlgLevelStrc * DRLGLEVEL_FixDrlgLevelForSpiderForest(D2DrlgLevelStrc *
                       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x78c);
                       exit(-1);
                     }
+                  } else {
+                    uVar4 += 0x211;
                   }
-
-                  *pRowPtr = uVar4;
-                  nGridX++;
-                  pRowPtr++;
-                } while (nGridX < iVar5);
-              }
-
-              nGridY++;
-              pConnFlags += iVar5;
-            } while (nGridY < iVar3);
-          }
-
-          nSubOffset = 0;
-          do {
-            iVar3 = 0;
-            nGridY = 0;
-            if (iVar2 > 0) {
-              do {
-                nGridX = 0;
-                if (iVar1 > 0) {
-                  bNoOverlap = *(int*)((int)aSubLevelRecords[0].apLinks + nSubOffset + 0x14);
-                  do {
-                    *(int32_t*)(bNoOverlap + iVar3 * 4) = pSubLevelDistMap[(*(int*)((int)aSubLevelRecords[0].apLinks + nSubOffset + 0x10) + nGridY) * iVar5 + nGridX + *(int*)((int)aSubLevelRecords[0].apLinks + nSubOffset + 0xc)];
-                    bNoOverlap = *(int*)((int)aSubLevelRecords[0].apLinks + nSubOffset + 0x14);
-                    if (*(int*)(bNoOverlap + iVar3 * 4) > 0x23e) {
-                      pAdjPtr = (int*)((int)aSubLevelRecords[0].apLinks + nSubOffset + 0x18);
-                      (*pAdjPtr)++;
+                } else {
+                  if ((int)nConnFlags >= 0x10) {
+                    uVar4 = gaWildernessLevelSeedOffsets[((int)nConnFlags >> 4) + 0x59];
+                    if (!uVar4) {
+                      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x799);
+                      exit(-1);
                     }
-
-                    nGridX++;
-                    iVar3++;
-                  } while (nGridX < iVar1);
+                  }
                 }
 
-                nGridY++;
-              } while (nGridY < iVar2);
+                *pRowPtr = uVar4;
+                nGridX++;
+                pRowPtr++;
+              } while (nGridX < nWidth);
             }
 
-            nSubOffset += 0x38;
-          } while (nSubOffset < 0xa8);
+            nGridY++;
+            pConnFlags += nWidth;
+          } while (nGridY < iVar3);
+        }
 
+        nSubOffset = 0;
+        do {
+          iVar3 = 0;
+          for (nGridY = 0; nGridY < iVar2; nGridY++) {
+            nGridX = 0;
+            if (iVar1 > 0) {
+              bNoOverlap = *(int*)((int)aSubLevelRecords[0].apLinks + nSubOffset + 0x14);
+              do {
+                *(int32_t*)(bNoOverlap + iVar3 * 4) = pSubLevelDistMap[(*(int*)((int)aSubLevelRecords[0].apLinks + nSubOffset + 0x10) + nGridY) * nWidth + nGridX + *(int*)((int)aSubLevelRecords[0].apLinks + nSubOffset + 0xc)];
+                bNoOverlap = *(int*)((int)aSubLevelRecords[0].apLinks + nSubOffset + 0x14);
+                if (*(int*)(bNoOverlap + iVar3 * 4) > 0x23e) {
+                  pAdjPtr = (int*)((int)aSubLevelRecords[0].apLinks + nSubOffset + 0x18);
+                  (*pAdjPtr)++;
+                }
+
+                nGridX++;
+                iVar3++;
+              } while (nGridX < iVar1);
+            }
+          }
+
+          nSubOffset += 0x38;
+        } while (nSubOffset < 0xa8);
+
+        do {
+          bSwapped = false;
+          pSubLevelSizeYSrc = &aSubLevelRecords[1].sCoords.WorldPosition.y;
+          nSortPass = 2;
           do {
-            bSwapped = false;
-            pSubLevelSizeYSrc = &aSubLevelRecords[1].sCoords.WorldPosition.y;
-            nSortPass = 2;
-            do {
-              if (*pSubLevelSizeYSrc > pSubLevelSizeYSrc[-0xe]) {
-                pPVar7 = (POINT*)(pSubLevelSizeYSrc - 1);
-                pSwapSrc = &aSwapBuffer;
-                for (iVar3 = 0xe; iVar3; iVar3--) {
-                  pSwapSrc->sCoords.WorldPosition.x = pPVar7->x;
-                  pPVar7 = (POINT*)&pPVar7->y;
-                  pSwapSrc = (D2DrlgSubLevelPlaceStrc*)&pSwapSrc->sCoords.WorldPosition.y;
-                }
-
-                pAdjPtr = (int*)(pSubLevelSizeYSrc - 0xf);
-                pPVar7 = (POINT*)(pSubLevelSizeYSrc - 1);
-                for (iVar3 = 0xe; iVar3; iVar3--) {
-                  pPVar7->x = *pAdjPtr;
-                  pAdjPtr++;
-                  pPVar7 = (POINT*)&pPVar7->y;
-                }
-
-                pSwapSrc = &aSwapBuffer;
-                pAdjPtr = (int*)(pSubLevelSizeYSrc - 0xf);
-                for (iVar3 = 0xe; iVar3; iVar3--) {
-                  *pAdjPtr = pSwapSrc->sCoords.WorldPosition.x;
-                  pSwapSrc = (D2DrlgSubLevelPlaceStrc*)&pSwapSrc->sCoords.WorldPosition.y;
-                  pAdjPtr++;
-                }
-
-                bSwapped = true;
+            if (*pSubLevelSizeYSrc > pSubLevelSizeYSrc[-0xe]) {
+              pPVar6 = (POINT*)(pSubLevelSizeYSrc - 1);
+              pSwapSrc = &aSwapBuffer;
+              for (iVar3 = 0xe; iVar3; iVar3--) {
+                pSwapSrc->sCoords.WorldPosition.x = pPVar6->x;
+                pPVar6 = (POINT*)&pPVar6->y;
+                pSwapSrc = (D2DrlgSubLevelPlaceStrc*)&pSwapSrc->sCoords.WorldPosition.y;
               }
 
-              pSubLevelSizeYSrc += 0xe;
-              nSortPass--;
-            } while (nSortPass);
-          } while (bSwapped);
+              pAdjPtr = (int*)(pSubLevelSizeYSrc - 0xf);
+              pPVar6 = (POINT*)(pSubLevelSizeYSrc - 1);
+              for (iVar3 = 0xe; iVar3; iVar3--) {
+                pPVar6->x = *pAdjPtr;
+                pAdjPtr++;
+                pPVar6 = (POINT*)&pPVar6->y;
+              }
 
-          iVar3 = 0;
-          puVar8 = (uint32_t*)&aSubLevelRecords[0].field_0x34;
-          do {
-            pSubLevel = GetLevelAndAlloc(pDrlg, iVar3 + 0x4c);
-            pSubLevel->pAutomapEx = (void*)puVar8[-1];
-            pSubLevel->nUnknown_1B8 = *puVar8;
-            pSubLevel->sCoordinatesAndSize.WorldPosition.x = puVar8[-0xd];
-            pSubLevel->sCoordinatesAndSize.WorldPosition.y = puVar8[-0xc];
-            pSubLevel->sCoordinatesAndSize.WorldSize.x = puVar8[-0xb];
-            pSubLevelSizeYSrc = (LONG*)(puVar8 - 10);
-            iVar3++;
-            puVar8 += 0xe;
-            pSubLevel->sCoordinatesAndSize.WorldSize.y = *pSubLevelSizeYSrc;
-          } while (iVar3 < 3);
+              pSwapSrc = &aSwapBuffer;
+              pAdjPtr = (int*)(pSubLevelSizeYSrc - 0xf);
+              for (iVar3 = 0xe; iVar3; iVar3--) {
+                *pAdjPtr = pSwapSrc->sCoords.WorldPosition.x;
+                pSwapSrc = (D2DrlgSubLevelPlaceStrc*)&pSwapSrc->sCoords.WorldPosition.y;
+                pAdjPtr++;
+              }
 
-          D2_FREE_POOL_AT(pPoolManagerStrc, pSubLevelMap, ".\\DRLG\\OutPlace.cpp", 0x7d2);
-          D2_FREE_POOL_AT(pPoolManagerStrc, pDistWorkMap, ".\\DRLG\\OutPlace.cpp", 0x7d3);
-          D2_FREE_POOL_AT(pPoolManagerStrc, pDistMap, ".\\DRLG\\OutPlace.cpp", 0x7d4);
-          D2_FREE_POOL_AT(pPoolManagerStrc, pSubLevelDistMap, ".\\DRLG\\OutPlace.cpp", 0x7d5);
-          return pSubLevel;
-        } else {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x64d);
-          exit(-1);
-        }
+              bSwapped = true;
+            }
+
+            pSubLevelSizeYSrc += 0xe;
+            nSortPass--;
+          } while (nSortPass);
+        } while (bSwapped);
+
+        iVar3 = 0;
+        pRecordCursor = (uint32_t*)&aSubLevelRecords[0].field_0x34;
+        do {
+          pSubLevel = GetLevelAndAlloc(pDrlg, iVar3 + 0x4c);
+          pSubLevel->pAutomapEx = (void*)pRecordCursor[-1];
+          pSubLevel->nSpecialPresetCellCount = *pRecordCursor;
+          pSubLevel->sCoordinatesAndSize.WorldPosition.x = pRecordCursor[-0xd];
+          pSubLevel->sCoordinatesAndSize.WorldPosition.y = pRecordCursor[-0xc];
+          pSubLevel->sCoordinatesAndSize.WorldSize.x = pRecordCursor[-0xb];
+          pSubLevelSizeYSrc = (LONG*)(pRecordCursor - 10);
+          iVar3++;
+          pRecordCursor += 0xe;
+          pSubLevel->sCoordinatesAndSize.WorldSize.y = *pSubLevelSizeYSrc;
+        } while (iVar3 < 3);
+
+        D2_FREE_POOL_AT(pPoolManagerStrc, pSubLevelMap, ".\\DRLG\\OutPlace.cpp", 0x7d2);
+        D2_FREE_POOL_AT(pPoolManagerStrc, pDistWorkMap, ".\\DRLG\\OutPlace.cpp", 0x7d3);
+        D2_FREE_POOL_AT(pPoolManagerStrc, pDistMap, ".\\DRLG\\OutPlace.cpp", 0x7d4);
+        D2_FREE_POOL_AT(pPoolManagerStrc, pSubLevelDistMap, ".\\DRLG\\OutPlace.cpp", 0x7d5);
+        return pSubLevel;
       }
     } while (true);
 }
 
 int32_t __stdcall DRLGLEVEL_FixDrlgLevelForLowerKurast(D2DrlgLevelStrc * pLevel) {
     D2DrlgLevelStrc* pSubLevel;
-    uint8_t byDifficulty;
+    int nDifficulty;
     int nSubSizeX;
     int nSubSizeY;
     D2DrlgStrc* pDrlgActMisc = pLevel->pDrlg;
@@ -1416,9 +1382,9 @@ int32_t __stdcall DRLGLEVEL_FixDrlgLevelForLowerKurast(D2DrlgLevelStrc * pLevel)
     do {
       D2LevelDefsTxt* pLevelDefs;
       pLevelDefs = DATATBLS::LvlTbls::TXT_LevelDefs_GetLine(eLevel);
-      byDifficulty = pDrlgActMisc->nDifficulty;
-      nSubSizeY = pLevelDefs->SizeY[byDifficulty];
-      nSubSizeX = pLevelDefs->SizeX[byDifficulty];
+      nDifficulty = (int)pDrlgActMisc->nDifficulty;
+      nSubSizeY = pLevelDefs->SizeY[nDifficulty];
+      nSubSizeX = pLevelDefs->SizeX[nDifficulty];
       nYOffset -= nSubSizeY;
       pSubLevel = GetLevelAndAlloc(pDrlgActMisc, eLevel);
       eLevel += LEVEL_RogueEncampment;

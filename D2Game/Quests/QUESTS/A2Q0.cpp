@@ -111,19 +111,19 @@ void __fastcall Q08_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 }
 
 // A2Q0 QUEST_SpokeToJerhyn — fpStatusFilter. Always returns false: this pseudo-quest has no journal/status entry to filter.
-bool __fastcall Q08_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown) {
+bool __fastcall Q08_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode) {
     return false;
 }
 
 // A2Q0 QUEST_SpokeToJerhyn — fpActiveFilter. For Jerhyn (nTargetClassId 0xc9): quest is "active" (return true) only while SpokeToJerhyn is not yet Completed. All other NPCs / completed -> false.
 bool __fastcall Q08_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
-    if (nTargetClassId != 0xc9) {
-      /* Otherwise: inactive */ return false;
-    }
-
-    BOOL BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SpokeToJerhyn, QUESTSTATE_Completed);
-    /* If not state completed: active */ if (!BVar1) {
-      return true;
+    if (nTargetClassId == 0xc9) {
+      BOOL BVar1;
+      /* GetQuestState(pBitBuffer, QUEST_SpokeToJerhyn, QUESTSTATE_Completed=0) —
+                         active iff not yet completed */ BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SpokeToJerhyn, QUESTSTATE_Completed);
+      /* If not state completed: active */ if (!BVar1) {
+        return true;
+      }
     }
 
     /* Otherwise: inactive */ return false;
@@ -161,7 +161,7 @@ void __fastcall Q08_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q08_Callback00_NpcActivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[10] = Q08_Callback10_PlayerLeavesGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q08_Callback13_PlayerStartedGame;
-    pQuestData->pNpcMessages = &A2Q0::aNpcGossipData;
+    pQuestData->pNpcMessages = A2Q0::aNpcGossipData;
     pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;

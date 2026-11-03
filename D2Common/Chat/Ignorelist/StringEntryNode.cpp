@@ -3,7 +3,7 @@
 #include "D2Common/Chat/Ignorelist/StringEntryNode.h"
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Storm/H/stpl.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -13,11 +13,10 @@ namespace D2Common::Chat::Ignorelist::StringEntryNode {
 
 ::StringEntryNode * __thiscall ScalarDeletingDestructor(::StringEntryNode * pThis, uint32_t dwFlags) {
     pThis->Destructor();
-    if (!(dwFlags & 1 && pThis)) {
-      return pThis;
+    if (dwFlags & 1 && pThis) {
+      Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     }
 
-    Storm::SMem::SMemFree(pThis, "delete", -1, 0);
     return pThis;
 }
 

@@ -4,7 +4,6 @@
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Monster.h"
@@ -15,22 +14,22 @@
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
 #include "D2Common/D2UnitStrc.h"
-#include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/Preset.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Seed.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
+#include "D2Hell/D2Hell.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
 #include "Storm/Source/SFile.h"
-#include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -50,14 +49,20 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2GamePalShiftGreenBloodStrc) == 0x
 #endif
 
 
+static void * gpMonsterPalShiftList = 0; D2_STATIC_GUARD(gpMonsterPalShiftList, "gpMonsterPalShiftList");
+static void * gpPalShiftEntryListHead = 0; D2_STATIC_GUARD(gpPalShiftEntryListHead, "gpPalShiftEntryListHead");
+static uint8_t PalShift_RandTransform[7680] = {}; D2_STATIC_GUARD(PalShift_RandTransform, "PalShift_RandTransform");
+static int gbPalShiftRandTransformLoaded = 0; D2_STATIC_GUARD(gbPalShiftRandTransformLoaded, "gbPalShiftRandTransformLoaded");
+static D2GamePalShiftGreenBloodStrc * PalShift_GreenBlood = 0; D2_STATIC_GUARD(PalShift_GreenBlood, "PalShift_GreenBlood");
+
 namespace D2Client::GAME::PalShift {
 
 // @sourcefile .\GAME\PalShift.cpp
 void __stdcall AllocPalShift_GreenBlood() {
-    bool _bFileExists;
+    BOOL _bFileExists;
     bool bFileExists;
     D2MPQFileStrc* pFileHandle;
-    _bFileExists = D2Common::DATATBLS::DataTbls::CheckIfFileExists(nullptr, "Data\\Global\\Monsters\\GreenBlood.dat", &pFileHandle, 1);
+    _bFileExists = D2Hell::CheckIfFileExists(nullptr, "Data\\Global\\Monsters\\GreenBlood.dat", &pFileHandle, 1);
     if (!_bFileExists) {
       return;
     }
@@ -65,12 +70,13 @@ void __stdcall AllocPalShift_GreenBlood() {
     D2GamePalShiftGreenBloodStrc* pGreenBlood = D2_NEW_AT(D2GamePalShiftGreenBloodStrc, ".\\GAME\\PalShift.cpp", 0x52);
     PalShift_GreenBlood = pGreenBlood;
     memset(pGreenBlood, 0, 0x100);
-    D2FILE_ReadFile(nullptr, pFileHandle, pGreenBlood, 0x100);
-    D2FILE_CloseFile(nullptr, pFileHandle);
+    D2Hell::D2FILE_ReadFile(nullptr, pFileHandle, pGreenBlood, 0x100);
+    D2Hell::D2FILE_CloseFile(nullptr, pFileHandle);
 }
 
 // @sourcefile .\GAME\PalShift.cpp
 void __stdcall InitPal() {
+    int i;
     D2MPQFileStrc* pGreenBloodFile;
     D2MPQFileStrc* pRandTransformFile;
     size_t nAllocSize = sgptDataTable->nTxtMonStatsSize * 8;
@@ -78,23 +84,19 @@ void __stdcall InitPal() {
     gpMonsterPalShiftList = pPalShiftList;
     memset(pPalShiftList, 0, nAllocSize);
     int nMonStatsCount = sgptDataTable->nTxtMonStatsSize;
-    if (nMonStatsCount > 0) {
-      int i = 0;
-      do {
-        *(int*)((int)pPalShiftList + i * 8) = i;
-        i++;
-      } while (i < nMonStatsCount);
+    for (i = 0; i < nMonStatsCount; i++) {
+      *(int*)((int)pPalShiftList + i * 8) = i;
     }
 
     gpPalShiftEntryListHead = 0;
-    BOOL bFileExists = D2Common::DATATBLS::DataTbls::CheckIfFileExists(nullptr, "Data\\Global\\Monsters\\RandTransforms.dat", &pRandTransformFile, 1);
+    BOOL bFileExists = D2Hell::CheckIfFileExists(nullptr, "Data\\Global\\Monsters\\RandTransforms.dat", &pRandTransformFile, 1);
     if (bFileExists) {
-      D2FILE_ReadFile(nullptr, pRandTransformFile, PalShift_RandTransform, 0x1e00);
-      D2FILE_CloseFile(nullptr, pRandTransformFile);
+      D2Hell::D2FILE_ReadFile(nullptr, pRandTransformFile, PalShift_RandTransform, 0x1e00);
+      D2Hell::D2FILE_CloseFile(nullptr, pRandTransformFile);
       gbPalShiftRandTransformLoaded = 1;
     }
 
-    bFileExists = D2Common::DATATBLS::DataTbls::CheckIfFileExists(nullptr, "Data\\Global\\Monsters\\GreenBlood.dat", &pGreenBloodFile, 1);
+    bFileExists = D2Hell::CheckIfFileExists(nullptr, "Data\\Global\\Monsters\\GreenBlood.dat", &pGreenBloodFile, 1);
     if (!bFileExists) {
       return;
     }
@@ -102,8 +104,8 @@ void __stdcall InitPal() {
     D2GamePalShiftGreenBloodStrc* pGreenBlood = D2_NEW_AT(D2GamePalShiftGreenBloodStrc, ".\\GAME\\PalShift.cpp", 0x52);
     PalShift_GreenBlood = pGreenBlood;
     memset(pGreenBlood, 0, 0x100);
-    D2FILE_ReadFile(nullptr, pGreenBloodFile, pGreenBlood, 0x100);
-    D2FILE_CloseFile(nullptr, pGreenBloodFile);
+    D2Hell::D2FILE_ReadFile(nullptr, pGreenBloodFile, pGreenBlood, 0x100);
+    D2Hell::D2FILE_CloseFile(nullptr, pGreenBloodFile);
 }
 
 // @sourcefile .\GAME\PalShift.cpp
@@ -154,7 +156,8 @@ static void PALSHIFT_ApplyGreenBloodPalette(uint8_t * pPaletteData, int32_t nMon
     }
 
     int nMonStatsExId = (int)sgptDataTable->pTxtMonStats[nMonsterId].MonStatsEx;
-    if (!(nMonStatsExId >= 0 && nMonStatsExId < sgptDataTable->nTxtMonStatsExSize && sgptDataTable->pTxtMonStatsEx + nMonStatsExId && sgptDataTable->pTxtMonStatsEx[nMonStatsExId].byLocalBlood == 2)) {
+    D2MonStats2Txt* pMonStatsExTxt;
+    if (!((pMonStatsExTxt = nMonStatsExId >= 0 && nMonStatsExId < sgptDataTable->nTxtMonStatsExSize ? sgptDataTable->pTxtMonStatsEx + nMonStatsExId : nullptr) && pMonStatsExTxt->byLocalBlood == 2)) {
       return;
     }
 
@@ -220,28 +223,28 @@ void __fastcall PALSHIFT_LoadMonsterPalShift(int32_t nMonsterId) {
       cCode1 = '\0';
     }
 
-    szMonsterCode[3] = 0;
-    szMonsterCode[2] = 0;
+    szMonsterCode[3] = '\0';
+    szMonsterCode[2] = '\0';
     memcpy(szFilePath, "Data\\Global\\Monsters\\", 0x16);
+    szMonsterCode[1] = cCode1;
+    szMonsterCode[0] = cCode0;
     strcat(szFilePath, szMonsterCode);
-    char* pSrc = (char*)((uintptr_t)&iMonIdx + 3);
+    char* pSrc = (char*)((uintptr_t)&szFilePath - 1);
     do {
       pPathEnd2 = pSrc;
       pSrc = pPathEnd2 + 1;
     } while (pPathEnd2[1] != '\0');
 
-    szMonsterCode[1] = cCode1;
-    szMonsterCode[0] = cCode0;
     memcpy(pPathEnd2 + 1, "\\Cof\\palshift.dat", 0x12);
-    BOOL bFileExists = D2Common::DATATBLS::DataTbls::CheckIfFileExists(nullptr, szFilePath, &pFileHandle, 1);
+    BOOL bFileExists = D2Hell::CheckIfFileExists(nullptr, szFilePath, &pFileHandle, 1);
     if (!bFileExists) {
       return;
     }
 
     int* pPalShiftEntry = (int*)D2_ALLOC_AT(0x1008, ".\\GAME\\PalShift.cpp", 0xf4);
     memset(pPalShiftEntry, 0, 0x1008);
-    D2FILE_ReadFile(nullptr, pFileHandle, pPalShiftEntry + 1, 0x800);
-    D2FILE_CloseFile(nullptr, pFileHandle);
+    D2Hell::D2FILE_ReadFile(nullptr, pFileHandle, pPalShiftEntry + 1, 0x800);
+    D2Hell::D2FILE_CloseFile(nullptr, pFileHandle);
     PALSHIFT_ApplyGreenBloodPalette((uint8_t*)pPalShiftEntry, nMonsterId);
     *pPalShiftEntry = nMonsterId;
     pPalShiftEntry[0x401] = (int)gpPalShiftEntryListHead;
@@ -263,6 +266,7 @@ void __fastcall PALSHIFT_LoadMonsterPalShift(int32_t nMonsterId) {
 
 // @sourcefile .\GAME\PalShift.cpp
 void __stdcall PALSHIFT_InitPalShiftTable() {
+    int i;
     void* pPalShiftList;
     while (gpPalShiftEntryListHead) {
       pPalShiftList = *(void**)((int)gpPalShiftEntryListHead + 0x1004);
@@ -277,12 +281,8 @@ void __stdcall PALSHIFT_InitPalShiftTable() {
 
     pPalShiftList = gpMonsterPalShiftList;
     memset(gpMonsterPalShiftList, 0, nTxtMonStatsCount * 8);
-    if (nTxtMonStatsCount > 0) {
-      int i = 0;
-      do {
-        *(int*)((int)pPalShiftList + i * 8) = i;
-        i++;
-      } while (i < nTxtMonStatsCount);
+    for (i = 0; i < nTxtMonStatsCount; i++) {
+      *(int*)((int)pPalShiftList + i * 8) = i;
     }
 
     PALSHIFT_LoadMonsterPalShift(0x16b);
@@ -295,7 +295,7 @@ void __stdcall PALSHIFT_InitPalShiftTable() {
 D2GamePalShiftRandTransformStrc * * __fastcall PALSHIFT_GetMonsterTransform(D2UnitStrc * pUnit) {
     BOOL nBloodFlag;
     D2MonStats2Txt* pMonStats2;
-    if (!pUnit || pUnit->eUnitType != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return nullptr;
     }
 
@@ -319,13 +319,13 @@ D2GamePalShiftRandTransformStrc * * __fastcall PALSHIFT_GetMonsterTransform(D2Un
       break;
       default:
         if (gbPalShiftRandTransformLoaded) {
-          if (nPalShiftIndex - 8U > 0x1d) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x160);
-            exit(-1);
+          if (nPalShiftIndex - 8U <= 0x1d) {
+            return (D2GamePalShiftRandTransformStrc**)(PalShift_RandTransform + (nPalShiftIndex - 8U) * 0x100);
+            return (D2GamePalShiftRandTransformStrc**)(PalShift_RandTransform + (nPalShiftIndex - 8U) * 0x100);
           }
 
-          return (D2GamePalShiftRandTransformStrc**)(PalShift_RandTransform + (nPalShiftIndex - 8U) * 0x100);
-          return (D2GamePalShiftRandTransformStrc**)(PalShift_RandTransform + (nPalShiftIndex - 8U) * 0x100);
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x160);
+          exit(-1);
         }
       case 2:
 
@@ -353,13 +353,13 @@ D2GamePalShiftRandTransformStrc * * __fastcall PALSHIFT_GetMonsterTransform(D2Un
     return (D2GamePalShiftRandTransformStrc**)(nPalShiftIndex * 0x100 + 4 + pPalShiftEntryPtr);
 }
 
-int32_t __fastcall PALSHIFT_GenerateShiftDuration(int32_t pUnitSeedBase, uint32_t nSeedInput) {
+int32_t __fastcall PALSHIFT_GenerateShiftDuration(D2UnitStrc * pUnitSeedBase, uint32_t nSeedInput) {
     if (!pUnitSeedBase) {
       return 9;
     }
 
-    D2SeedStrc* pSeed = (D2SeedStrc*)(pUnitSeedBase + 0x20);
-    D2Common::Seed::InitSeed_Param_666(pSeed, (nSeedInput & 0xffff) + *(int*)(pUnitSeedBase + 4));
+    D2SeedStrc* pSeed = &pUnitSeedBase->sSeed;
+    D2Common::Seed::InitSeed_Param_666(pSeed, (nSeedInput & 0xffff) + pUnitSeedBase->nClassId);
     D2SeedStrc qwRandState = D2_SEED_NEXT(*pSeed);
     *pSeed = qwRandState;
     return qwRandState.nSeedLow % 0x1e + 9;

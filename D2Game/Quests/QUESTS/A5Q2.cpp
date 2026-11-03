@@ -31,6 +31,7 @@
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
+#include "D2Game/Quests/QUESTS/A4Q2.h"
 #include "D2Game/UNIT/Party.h"
 #include "D2Game/UNIT/PlayerList.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -138,11 +139,10 @@ BOOL __fastcall Q32_UpdateQuestStep(::SGAMEDATA * pGame, D2UnitStrc * pUnit, voi
       D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_Step0x02);
       return 0;
     }
-    if (pQuestData->nStateFlag != 3) {
-      return 0;
+    if (pQuestData->nStateFlag == 3) {
+      D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_Step0x03);
     }
 
-    D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_Step0x03);
     return 0;
 }
 
@@ -158,7 +158,6 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     // Static local variables (originally global data)
     static uint32_t aQ32RewardItemCodes[3] = { 0x20373072, 0x20383072, 0x20393072 }; D2_STATIC_GUARD(aQ32RewardItemCodes, "D2Game::Quests::QUESTS::A5Q2::Q32_Callback11_ScrollMessage::aQ32RewardItemCodes");
 
-    uint32_t pBitBuffer_00;
     BOOL bQuestState;
     D2UnitStrc* pRewardItem;
     D2ClientStrc* pClient;
@@ -167,9 +166,10 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     D2QuestDataA5Q2Strc* pA5Q2DataRaw;
     int nRewardCount;
     bool bRewardGranted;
+    bool bAnyRewardGiven;
     int32_t nErrorLine;
-    uint16_t uVar1 = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
-    D2QuestDataA1Q1Strc* pDVar2 = pQuestData->pQuestSpecificData.pA1Q1;
+    uint16_t nMsgIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    D2QuestDataA1Q1Strc* pDVar1 = pQuestData->pQuestSpecificData.pA1Q1;
     if (pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo != 0x203) {
       return;
     }
@@ -178,13 +178,13 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     *(uint32_t*)(char*)&pBitBuffer2 = (uint32_t)(uintptr_t)pBitBuffer;
-    if (uVar1 == 0x4e80) {
-      pDVar2->bQuestCompleted = true;
+    if (nMsgIndex == 0x4e80) {
+      pDVar1->bQuestCompleted = true;
       QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q2.cpp", 0x100);
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q32_UpdateQuestStep);
     } else {
-      bool bVar3;
-      if (uVar1 != 0x4e8e) {
+      uint32_t pBitBuffer_00;
+      if (nMsgIndex != 0x4e8e) {
         return;
       }
 
@@ -193,7 +193,7 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         return;
       }
 
-      bVar3 = false;
+      bAnyRewardGiven = false;
       /* GetQuestState(JustCompleted=0xd): just-rescued self game -> run sequence
                          filter, broadcast 0xd, detach handler[2] once */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_JustCompleted);
       if (bQuestState) {
@@ -231,13 +231,13 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
           pRewardItem = ITEM_RewardItemInInventory(pQuestArgs->pGame, pQuestArgs->pPlayer, aQ32RewardItemCodes[iRewardIdx], 0, QUALITY_NORMAL, 1);
           pBitBuffer_00 = *(uint32_t*)(char*)&pBitBuffer2;
           if (pRewardItem) {
-            bVar3 = true;
+            bAnyRewardGiven = true;
           }
 
           iRewardIdx++;
         } while (iRewardIdx < nRewardCount);
 
-        if (bVar3) {
+        if (bAnyRewardGiven) {
           /* SetQuestState(Completed=0): reward taken -> quest finished */ D2Common::QuestRecord::SetQuestState((D2BitBufferStrc*)*(uint32_t*)(char*)&pBitBuffer2, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
           /* UnsetQuestState(RewardAwaits=1): clear pending-reward flag now that reward
                          was granted */ D2Common::QuestRecord::UnsetQuestState((D2BitBufferStrc*)pBitBuffer_00, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
@@ -443,22 +443,17 @@ BOOL __fastcall Q32_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_Completed);
-    if (bQuestState == 1) {
-      return 0;
+    if (bQuestState != 1) {
+      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_RewardAwaits);
+      if (bQuestState != 1) {
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_JustCompleted);
+        if (bQuestState != 1) {
+          D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_CannotCompleteQuestInGame);
+          QUEST_SendQuestStatePacket(pUnit, 0x20, 0);
+        }
+      }
     }
 
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_RewardAwaits);
-    if (bQuestState == 1) {
-      return 0;
-    }
-
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_JustCompleted);
-    if (bQuestState == 1) {
-      return 0;
-    }
-
-    D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_CannotCompleteQuestInGame);
-    QUEST_SendQuestStatePacket(pUnit, 0x20, 0);
     return 0;
 }
 
@@ -552,28 +547,23 @@ void __fastcall Q32_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
       pBarricadeRoom = D2Common::Units::UNITS_GetRoom(pQuestArgs->pTarget);
       if (pBarricadeRoom) {
         D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pBarricadeRoom, &pAdjacentRooms, (int*)&nAdjacentCount);
-        nRoomIdx = 0;
         pQuestData = pQuestData2;
-        if (nAdjacentCount > 0) {
-          do {
-            pQuestData = pQuestData2;
-            pQuestArgs = pQuestArgs2;
-            for (pPrisoner = pAdjacentRooms[nRoomIdx]->pUnitList; pQuestData2 = pQuestData , pQuestArgs2 = pQuestArgs , pPrisoner != 0; pPrisoner = pPrisoner->pRoomNext) {
-              if (pPrisoner->eUnitType == UNIT_MONSTER && pPrisoner->nClassId == 0x216 && pPrisoner->eAnimMode.ePlayerMode != Kick && pPrisoner->eAnimMode.ePlayerMode != Death) {
-                nBarricadeGroup = D2Common::Collision::GetCollisionDistance(pPrisoner, pQuestArgs->pTarget);
-                if (nBarricadeGroup < 0xf) {
-                  pQuestSpecificData->anWussieMonsterGUIDs[pQuestSpecificData->nWussieMonsterCount] = pPrisoner->nUnitGUID;
-                  pQuestSpecificData->nWussieMonsterCount++;
-                  pQuestSpecificData->nPrisonersFreed++;
-                }
+        for (nRoomIdx = 0; nRoomIdx < nAdjacentCount; nRoomIdx++) {
+          pQuestData = pQuestData2;
+          pQuestArgs = pQuestArgs2;
+          for (pPrisoner = pAdjacentRooms[nRoomIdx]->pUnitList; pQuestData2 = pQuestData , pQuestArgs2 = pQuestArgs , pPrisoner != 0; pPrisoner = pPrisoner->pRoomNext) {
+            if (pPrisoner->eUnitType == UNIT_MONSTER && pPrisoner->nClassId == 0x216 && pPrisoner->eAnimMode.ePlayerMode != Kick && pPrisoner->eAnimMode.ePlayerMode != Death) {
+              nBarricadeGroup = D2Common::Collision::GetCollisionDistance(pPrisoner, pQuestArgs->pTarget);
+              if (nBarricadeGroup < 0xf) {
+                pQuestSpecificData->anWussieMonsterGUIDs[pQuestSpecificData->nWussieMonsterCount] = pPrisoner->nUnitGUID;
+                pQuestSpecificData->nWussieMonsterCount++;
+                pQuestSpecificData->nPrisonersFreed++;
               }
-
-              pQuestData = pQuestData2;
-              pQuestArgs = pQuestArgs2;
             }
 
-            nRoomIdx++;
-          } while (nRoomIdx < nAdjacentCount);
+            pQuestData = pQuestData2;
+            pQuestArgs = pQuestArgs2;
+          }
         }
       }
     }
@@ -697,11 +687,10 @@ bool __fastcall Q32_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 bool __fastcall Q32_SequenceFilter(D2QuestDataStrc * pQuestData) {
     bool bBadPtr;
     if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction != '\0') {
-      if (pQuestData->nStateFlag) {
-        return true;
+      if (!pQuestData->nStateFlag) {
+        pQuestData->nStateFlag = 1;
       }
 
-      pQuestData->nStateFlag = 1;
       return true;
     }
 
@@ -840,7 +829,7 @@ int32_t __fastcall Q32_SpawnBarricadePrisoners(D2QuestDataStrc * pQuestData, int
 // barricade (max 3 groups) by (game,object) pair, records the barricade object, then calls Q32_SpawnBarricadePrisoners
 // to populate that group with caged barbarians (field_0xA4 += spawned) and marks the group slot initialized.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q2.cpp
-void __fastcall Objects_InitFn62(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn62_CagedWussie(D2ObjectInitFnArg * pInitArg) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_RescueOnMountArreat);
     D2QuestDataA5Q2Strc* pA5Q2Data = pQuestData->pQuestSpecificData.pA5Q2;
     if (pQuestData->bIsNotIntroduction == '\0') {
@@ -891,16 +880,14 @@ void __fastcall Objects_InitFn62(D2ObjectInitFnArg * pInitArg) {
 BOOL __fastcall Q32_PropagateCompleteToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_RescueOnMountArreat, QUESTSTATE_JustCompleted);
-    if (!bJustCompleted) {
-      return 0;
+    if (bJustCompleted) {
+      uint16_t nPartyId;
+      nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+      if (nPartyId != 0xffff) {
+        UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q32_SetCompleteForPartyMember, 0);
+      }
     }
 
-    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == 0xffff) {
-      return 0;
-    }
-
-    UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q32_SetCompleteForPartyMember, 0);
     return 0;
 }
 
@@ -910,11 +897,10 @@ BOOL __fastcall Q32_PropagateCompleteToParty(::SGAMEDATA * pGame, D2UnitStrc * p
 BOOL __fastcall Q32_PlayCompletionSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_RescueOnMountArreat, QUESTSTATE_JustCompleted);
-    if (!bJustCompleted) {
-      return 0;
+    if (bJustCompleted) {
+      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x51, pUnit);
     }
 
-    UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x51, pUnit);
     return 0;
 }
 
@@ -922,15 +908,14 @@ BOOL __fastcall Q32_PlayCompletionSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 // Returns 1 if the given unit (nParam) belongs to a barricade group whose 'all prisoners dead' kill-count byte
 // (group[+0x18] / +0x54) is set, i.e. that group's barbarians were slaughtered. Used by barricade/AI logic to
 // detect a botched ("wussie") group. Quest must be in log (bIsNotIntroduction).
-BOOL __fastcall Q32_CheckWussieBarricade(::SGAMEDATA * pGame, int32_t nParam) {
+BOOL __fastcall Q32_CheckWussieBarricade(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_RescueOnMountArreat);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
-      return 0;
-    }
-
-    int32_t nBarricadeGroup = Q32_FindBarricadeGroup(pQuestData, (D2UnitStrc*)nParam);
-    if (nBarricadeGroup >= 0 && pQuestData->pQuestSpecificData.pA1Q4->sQuestGUID1.aPlayerGUID[nBarricadeGroup + 0x18]) {
-      return 1;
+    if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
+      int32_t nBarricadeGroup;
+      nBarricadeGroup = Q32_FindBarricadeGroup(pQuestData, pUnit);
+      if (nBarricadeGroup >= 0 && pQuestData->pQuestSpecificData.pA1Q4->sQuestGUID1.aPlayerGUID[nBarricadeGroup + 0x18]) {
+        return 1;
+      }
     }
 
     return 0;
@@ -940,14 +925,14 @@ BOOL __fastcall Q32_CheckWussieBarricade(::SGAMEDATA * pGame, int32_t nParam) {
 // Maps nBarricadeGroupId to a group via Q32_FindBarricadeGroup, increments that group's kill count
 // (group[+0x18]); when it exceeds 4 (>=5 = whole group of 5 barbarians dead) sets the group's 'all dead'
 // byte (+0x54). No QuestRecord access.
-void __thiscall Q32_IncrementWussieKillCount(::SGAMEDATA * pGameStrc, int32_t nBarricadeGroupId) {
+void __thiscall Q32_IncrementWussieKillCount(::SGAMEDATA * pGameStrc, D2UnitStrc * nBarricadeGroupId) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGameStrc, QUESTINT_RescueOnMountArreat);
     if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
       return;
     }
 
     D2QuestDataA5Q2Strc* pA5Q2Data = (D2QuestDataA5Q2Strc*)pQuestData->pQuestSpecificData.pA5Q2;
-    int32_t nGroupIndex = Q32_FindBarricadeGroup(pQuestData, (D2UnitStrc*)nBarricadeGroupId);
+    int32_t nGroupIndex = Q32_FindBarricadeGroup(pQuestData, nBarricadeGroupId);
     if (nGroupIndex < 0) {
       return;
     }
@@ -977,6 +962,7 @@ void __fastcall Q32_OnBarricadeDestroyed(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     POINT sPortalCoords;
     D2RoomStrc** ppAdjacentRooms;
     uint32_t nRoomCount;
+    eD2QuestState eSurvivalTierState;
     ::SGAMEDATA* pGameLoop;
     D2UnitStrc* pIterUnit;
     ::SGAMEDATA* pGameSaved;
@@ -1081,15 +1067,12 @@ void __fastcall Q32_OnBarricadeDestroyed(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 
     pQuestSpecificDataSaved->anBarricadePortalGUID[nGroupIndex] = nCollisionDist;
     GAME::Event::SetEvent(pQuestData->pGame, pPortalUnit, 7, pQuestData->pGame->dwGameFrame + 0x19, 0, 0);
-    BOOL bQuestStateResult;
-    bQuestStateResult = 0;
-    pAttackerRoom = D2Common::Units::UNITS_GetRoom(pPortalUnit);
-    D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pAttackerRoom, bQuestStateResult);
+    D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(D2Common::Units::UNITS_GetRoom(pPortalUnit), 0);
     update_rescue_progress:
     pPlayerData = D2Common::Units::GetPlayerData(pUnitSaved);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGameSaved->nDifficulty];
     if (pQuestSpecificData->nTotalPrisonersToFree == pQuestSpecificData->nPrisonersKilledByMonsters + pQuestSpecificData->nPrisonersFreed && pQuestSpecificData->abGroupAllFreed[0] && pQuestSpecificData->abGroupAllFreed[1] && pQuestSpecificData->abGroupAllFreed[2]) {
-      eD2QuestState eSurvivalTierState;
+      BOOL bQuestStateResult;
       if (pQuestSpecificData->nPrisonersFreed > 0xb) {
         pQuestData->nQuestPacketFlags = '\0';
         QUEST_SetStateAndBroadcast(pQuestData, 3, nullptr, (::fpExecuteOnUnitFunction)Q32_NotifyQuestState, true);
@@ -1237,14 +1220,14 @@ void __fastcall Q32_PrisonerTimerCallback(D2QuestDataStrc * pQuestData, D2UnitSt
 // For the barricade group containing nParam, if its portal-spawned flag (group[+0x44]) is set, finds the escape
 // portal unit by GUID (group[+0xe]) and returns it via ppPortalOut (returns 1). Else returns 0. Used to locate
 // the prisoner-escape town portal created by Q32_OnBarricadeDestroyed.
-BOOL __fastcall Q32_FindBarricadePortal(::SGAMEDATA * pGame, int32_t nParam, D2UnitStrc * * ppPortalOut) {
+BOOL __fastcall Q32_FindBarricadePortal(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * * ppPortalOut) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_RescueOnMountArreat);
     if (!pQuestData) {
       return 0;
     }
 
     D2QuestDataA5Q2Strc* pA5Q2Data = (D2QuestDataA5Q2Strc*)pQuestData->pQuestSpecificData.pA5Q2;
-    int32_t nGroupIndex = Q32_FindBarricadeGroup(pQuestData, (D2UnitStrc*)nParam);
+    int32_t nGroupIndex = Q32_FindBarricadeGroup(pQuestData, pUnit);
     if (!(nGroupIndex >= 0 && pA5Q2Data->abBarricadePortalSpawned[nGroupIndex])) {
       return 0;
     }

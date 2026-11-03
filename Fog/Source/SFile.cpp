@@ -19,17 +19,16 @@
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
+static BOOL D2Ini_bUseDirect = 0x0; D2_STATIC_GUARD(D2Ini_bUseDirect, "D2Ini_bUseDirect");
+
 namespace Fog::Source::SFile {
 
-static double gdFogJulianDaysPerYear = 365.25; D2_STATIC_GUARD(gdFogJulianDaysPerYear, "Fog::Source::SFile::gdFogJulianDaysPerYear");
-static double gdFogJulianDaysPerMonth = 30.6001000000000; D2_STATIC_GUARD(gdFogJulianDaysPerMonth, "Fog::Source::SFile::gdFogJulianDaysPerMonth");
-
-void __fastcall SFILE_InitializeFileSystem(BOOL bResult, uint32_t dwParam) {
+void __fastcall SFILE_InitializeFileSystem(BOOL bResult, BOOL bSeekOptimization) {
     uint32_t dwSysOptionBuf[2];
     Storm::Source::SFile::SFileSetBasePath(".\\");
     Storm::Source::SFile::SFileEnableDirectAccess(bResult);
     Storm::Source::SFile::SFileSetIoErrorMode(0, nullptr);
-    Storm::Source::SFile::SFileEnableSeekOptimization(dwParam);
+    Storm::Source::SFile::SFileEnableSeekOptimization(bSeekOptimization);
     dwSysOptionBuf[0] = 0x8000;
     D2Ini_bUseDirect = bResult;
     Storm::Source::SSystem::SSYSTEM_SetSystemOption(2, dwSysOptionBuf, 4);
@@ -49,8 +48,8 @@ void __fastcall ERRORMANAGER_FCloseFile(D2MPQFileStrc * pMPQFile) {
 
 // NOTE: Register params: pFileHandle (ECX): D2MPQFileStrc *, pOutputBuffer (EDX): void *
 int __fastcall ERRORMANAGER_FReadFile(D2MPQFileStrc * pFileHandle, void * pOutputBuffer, uint32_t nBytesToRead, uint32_t * pBytesRead, LPOVERLAPPED lpOverlapped, D2StormAsyncCompletionStrc * pCompletion, int dwReadFlags) {
-    int iVar1 = Storm::Source::SFile::SFileReadFileEx2(pFileHandle, pOutputBuffer, nBytesToRead, pBytesRead, lpOverlapped, dwReadFlags, pCompletion);
-    return iVar1;
+    int nResult = Storm::Source::SFile::SFileReadFileEx2(pFileHandle, pOutputBuffer, nBytesToRead, pBytesRead, lpOverlapped, dwReadFlags, pCompletion);
+    return nResult;
 }
 
 // Thunk to Storm's SFILE_GetFileSize. PUSH EDX; PUSH ECX; CALL 00416370; RET - it tail-calls and returns that DWORD in EAX. Typed void, its callers dropped the result and tested an unassigned local, which fired the line-95 assert in the file-size path non-deterministically.
@@ -61,8 +60,8 @@ DWORD __fastcall ERRORMANAGER_FGetFileSize(D2MPQFileStrc * pFileHandle, LPDWORD 
 
 // @wasnamed SFILE_SeekFileWrapper
 // @basis internal. NOT an exported Storm symbol. Renamed only to follow its callee: a __fastcall thunk whose entire body forwards to SFileSetFilePointer (004165a0) and discards the result.
-DWORD __fastcall SFILE_SetFilePointerThunk(D2MPQFileStrc * pFileHandle, int32_t nOffset, int * pnParam, uint32_t nParam) {
-    DWORD DVar1 = Storm::Source::SFile::SFileSetFilePointer(pFileHandle, nOffset, pnParam, nParam);
+DWORD __fastcall SFILE_SetFilePointerThunk(D2MPQFileStrc * pFileHandle, int32_t nOffset, int * pnOffsetHigh, uint32_t dwMoveMethod) {
+    DWORD DVar1 = Storm::Source::SFile::SFileSetFilePointer(pFileHandle, nOffset, pnOffsetHigh, dwMoveMethod);
     return DVar1;
 }
 
@@ -161,17 +160,17 @@ int __fastcall SFILE_EnsurePathEndsWithBackslash(char * szText1, uint32_t nMaxLe
 
 int __fastcall SFILE_GetExecutableDirectory(char * szText, DWORD nSize) {
     DWORD dwLength = GetModuleFileNameA((HMODULE)0x0, szText, nSize);
-    if (!(dwLength && dwLength != nSize)) {
-      return 0;
-    }
+    if (dwLength && dwLength != nSize) {
+      char* pszLastSlash;
+      pszLastSlash = Storm::Source::SSTR::SStrChrR(szText, '\\');
+      if (pszLastSlash) {
+        pszLastSlash[1] = '\0';
+      }
 
-    char* pszLastSlash = Storm::Source::SSTR::SStrChrR(szText, '\\');
-    if (!pszLastSlash) {
       return 1;
     }
 
-    pszLastSlash[1] = '\0';
-    return 1;
+    return 0;
 }
 
 int __fastcall SFILE_GetInstallPath(LPSTR lpFilename, DWORD nSize) {
@@ -190,10 +189,7 @@ int __fastcall SFILE_GetInstallPath(LPSTR lpFilename, DWORD nSize) {
     }
 
     /* DWORD nSize for GetModuleFileNameA */ /* LPSTR lpFilename for GetModuleFileNameA */ /* HMODULE hModule for GetModuleFileNameA */ dwAttributes = GetModuleFileNameA((HMODULE)0x0, lpFilename, nSize);
-    if (!dwAttributes) {
-      return 0;
-    }
-    if (dwAttributes == nSize) {
+    if (!dwAttributes || dwAttributes == nSize) {
       return 0;
     }
 
@@ -203,21 +199,21 @@ int __fastcall SFILE_GetInstallPath(LPSTR lpFilename, DWORD nSize) {
       pszSlashOrEnd[1] = '\0';
     }
 
-    Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "InstallPath", 0, lpFilename);
+    Storm::Source::SReg::SRegSaveString("Diablo II", "InstallPath", 0, lpFilename);
     ensure_trailing_backslash:
     if (!nSize) {
       return 0;
     }
-    uint32_t uVar1 = Storm::Source::SSTR::SStrLen(lpFilename);
-    if (!(!uVar1 || lpFilename[uVar1 - 1] != '\\')) {
+    uint32_t nLen = Storm::Source::SSTR::SStrLen(lpFilename);
+    if (!(nLen <= 0 || lpFilename[nLen - 1] != '\\')) {
       return 1;
     }
-    if (uVar1 + 1 == nSize) {
+    if (nLen + 1 == nSize) {
       return 0;
     }
 
-    lpFilename[uVar1] = '\\';
-    lpFilename[uVar1 + 1] = '\0';
+    lpFilename[nLen] = '\\';
+    lpFilename[nLen + 1] = '\0';
     return 1;
 }
 
@@ -257,7 +253,7 @@ BOOL __stdcall GetUseDirectCommand() {
 }
 
 static bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen) {
-    int iVar1;
+    int nResult;
     char szAppDataPath[260];
     char* pszSubPath;
     if (!nMaxLen) {
@@ -269,17 +265,17 @@ static bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen) {
     }
 
     uint32_t bKnownFolderOk = Engine::Application::PATH_GetKnownFolderPath(szOutPath, nMaxLen);
-    if ((char)bKnownFolderOk == '\0') {
-      iVar1 = SHGetFolderPathA(0, 5, 0, 0, szAppDataPath);
-      if (iVar1) {
+    if ((char)bKnownFolderOk != '\0') {
+      SFILE_EnsurePathEndsWithBackslash(szOutPath, nMaxLen);
+      pszSubPath = "Diablo II";
+    } else {
+      nResult = SHGetFolderPathA(0, 5, 0, 0, szAppDataPath);
+      if (nResult) {
         return false;
       }
 
       SFILE_EnsurePathEndsWithBackslash(szOutPath, nMaxLen);
       pszSubPath = "Diablo II\\Save";
-    } else {
-      SFILE_EnsurePathEndsWithBackslash(szOutPath, nMaxLen);
-      pszSubPath = "Diablo II";
     }
 
     Storm::Source::SSTR::SStrPack(szOutPath, pszSubPath, nMaxLen);
@@ -311,10 +307,10 @@ int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot) 
     DWORD dwAttributes = GetFileAttributesA(szSrcRoot);
     if (dwAttributes == -1) {
       dwAttributes = GetLastError();
-      return 2 - (uint32_t)(dwAttributes != 2);
+      return dwAttributes != 2 ? 0x1U : 0x2U;
     }
     /* LPCSTR lpFileName for GetFileAttributesA */ if (dwAttributes & 0x10) {
-      uint32_t uVar1;
+      uint32_t nLen;
       dwAttributes = GetFileAttributesA(szDstRoot);
       if (dwAttributes & 0x10) {
         if (dwAttributes == -1) {
@@ -323,10 +319,10 @@ int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot) 
             return 1;
           }
 
-          uVar1 = Storm::Source::SSTR::SStrLen(szDstDir);
-          if ((!uVar1 || szSrcPath[uVar1 + 0x103] != '\\') && uVar1 != 0x103) {
-            szDstDir[uVar1] = '\\';
-            szDstDir[uVar1 + 1] = '\0';
+          nLen = Storm::Source::SSTR::SStrLen(szDstDir);
+          if ((nLen <= 0 || szSrcPath[nLen + 0x103] != '\\') && nLen != 0x103) {
+            szDstDir[nLen] = '\\';
+            szDstDir[nLen + 1] = '\0';
           }
 
           SafeCreateDirectoryTree(szDstDir);
@@ -468,13 +464,13 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
     DWORD dwAttributes;
     char* pcLen;
     int nMoveResult;
-    uint32_t uVar1;
+    uint32_t nLen;
     char szOldSavePath[260];
     char szNewSavePath[260];
     char cChar;
     *pBuffer = '\0';
     int32_t bRead;
-    bRead = Storm::Source::SReg::SRegLoadString("Diablo II", "%s%s.d2s", 1, pBuffer, nSize);
+    bRead = Storm::Source::SReg::SRegLoadString("Diablo II", "NewSavePath", 1, pBuffer, nSize);
     if (!bRead) {
       bool bGotSavePath;
       dwAttributes = GetLastError();
@@ -495,13 +491,13 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
               if (nMoveResult == 1) {
                 pcLen = szOldSavePath;
               } else {
-                uVar1 = Storm::Source::SSTR::SStrLen(szNewSavePath);
-                if ((!uVar1 || szOldSavePath[uVar1 + 0x103] != '\\') && uVar1 != 0x103) {
-                  szNewSavePath[uVar1] = '\\';
-                  szNewSavePath[uVar1 + 1] = '\0';
+                nLen = Storm::Source::SSTR::SStrLen(szNewSavePath);
+                if ((nLen <= 0 || szOldSavePath[nLen + 0x103] != '\\') && nLen != 0x103) {
+                  szNewSavePath[nLen] = '\\';
+                  szNewSavePath[nLen + 1] = '\0';
                 }
 
-                Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "%s%s.d2s", 1, szNewSavePath);
+                Storm::Source::SReg::SRegSaveString("Diablo II", "NewSavePath", 1, szNewSavePath);
                 pcLen = szNewSavePath;
               }
 
@@ -518,26 +514,26 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
       use_default_save_path:
       SFILE_GetSaveGamePath(pBuffer, nSize);
       if (nSize) {
-        uVar1 = Storm::Source::SSTR::SStrLen(pBuffer);
-        if ((!uVar1 || pBuffer[uVar1 - 1] != '\\') && uVar1 + 1 != nSize) {
-          pBuffer[uVar1] = '\\';
-          pBuffer[uVar1 + 1] = '\0';
+        nLen = Storm::Source::SSTR::SStrLen(pBuffer);
+        if ((nLen <= 0 || pBuffer[nLen - 1] != '\\') && nLen + 1 != nSize) {
+          pBuffer[nLen] = '\\';
+          pBuffer[nLen + 1] = '\0';
         }
       }
 
-      Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "%s%s.d2s", 1, pBuffer);
+      Storm::Source::SReg::SRegSaveString("Diablo II", "NewSavePath", 1, pBuffer);
     } else if (*pBuffer == '\0') {
       goto use_default_save_path;
     }
     if (nSize) {
-      uVar1 = Storm::Source::SSTR::SStrLen(pBuffer);
-      if (!uVar1 || pBuffer[uVar1 - 1] != '\\') {
-        if (uVar1 + 1 == nSize) {
+      nLen = Storm::Source::SSTR::SStrLen(pBuffer);
+      if (nLen <= 0 || pBuffer[nLen - 1] != '\\') {
+        if (nLen + 1 == nSize) {
           return;
         }
 
-        pBuffer[uVar1] = '\\';
-        pBuffer[uVar1 + 1] = '\0';
+        pBuffer[nLen] = '\\';
+        pBuffer[nLen + 1] = '\0';
       }
 
       SafeCreateDirectoryTree(pBuffer);
@@ -592,12 +588,12 @@ int32_t __fastcall SFILE_JulianDayNumber(int32_t nYear, int32_t nMonth, int32_t 
     long double fMonthDays = CRT_Floor((double)nJulian * 30.6001);
     long double fYearDays = CRT_Floor((double)nYearAdj * 365.25);
     nJulian = (int)(fYearDays + (long double)(double)fMonthDays + (long double)nDay + (long double)1720995.0);
-    if (0x8fc1c >= (nMonth + nYear * 0xc) * 0x1f + nDay) {
-      return nJulian;
+    if ((nMonth + nYear * 0xc) * 0x1f + nDay >= 0x8fc1d) {
+      int nCentury;
+      nCentury = (int)((double)nYearAdj * 0.01);
+      nJulian += 2 - (int)((double)nCentury * -0.25) - nCentury;
     }
 
-    int nCentury = (int)((double)nYearAdj * 0.01);
-    nJulian += 2 - (int)((double)nCentury * -0.25) - nCentury;
     return nJulian;
 }
 
@@ -615,9 +611,9 @@ void __fastcall SFILE_GregorianCalendarFromJulian(int32_t nJulianDay, int * pYea
     }
 
     nYearsSinceEpoch = (int)(((double)(nJulianDay - 0x2534ca) - 122.1) / 365.25 + 6680.0);
-    int iVar1 = (int)((double)(nYearsSinceEpoch * 0x16d) + (double)nYearsSinceEpoch * 0.25);
-    int nMonth = (int)((double)(nJulianDay + 0x5f4 - iVar1) / 30.6001);
-    *pDay = nJulianDay + 0x5f4 - (int)((double)nMonth * 30.6001) - iVar1;
+    int nDaysBeforeYear = (int)((double)(nYearsSinceEpoch * 0x16d) + (double)nYearsSinceEpoch * 0.25);
+    int nMonth = (int)((double)(nJulianDay + 0x5f4 - nDaysBeforeYear) / 30.6001);
+    *pDay = nJulianDay + 0x5f4 - (int)((double)nMonth * 30.6001) - nDaysBeforeYear;
     *pMonth = nMonth - 1;
     if (0xc < nMonth - 1) {
       *pMonth = nMonth - 0xd;
@@ -663,57 +659,51 @@ void __fastcall SFILE_DeleteOldLogFiles(char * szLogPrefix) {
 }
 
 void __stdcall LOGFILE_StoreGameStartupInfo() {
-    // Frame slots -8268..-4152 are ONE object: &nNameSize is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      DWORD nNameSize;
-      char szAppPath[4096];
-      char szOsName[13];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 4116, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     _SYSTEMTIME systemTime;
+    char szAppPath[4096];
+    char szOsName[13];
     char szComputerName[64];
     Src::LogManager::LOGFILE_WriteStringToFile("------------------------------------------------------");
     /* LPSYSTEMTIME lpSystemTime for GetLocalTime */ GetLocalTime(&systemTime);
     Src::LogManager::LOGFILE_WriteStringToFile("%04d-%02d-%02d %02d:%02d:%02d", (uint32_t)systemTime.wYear, (uint32_t)systemTime.wMonth, (uint32_t)systemTime.wDay, (uint32_t)systemTime.wHour, (uint32_t)systemTime.wMinute, (uint32_t)systemTime.wSecond);
     switch (g_eOSType) {
       case 1:
-        memcpy(__frame0.szOsName, "Windows NT", 0xb);
+        memcpy(szOsName, "Windows NT", 0xb);
       break;
       case 2:
-        memcpy(__frame0.szOsName, "Windows 2000", 0xd);
+        memcpy(szOsName, "Windows 2000", 0xd);
       break;
       case 3:
-        __frame0.szOsName[4] = 'o';
-      __frame0.szOsName[5] = 'w';
-      __frame0.szOsName[6] = 's';
-      __frame0.szOsName[7] = ' ';
-      memcpy(__frame0.szOsName, "Wind", 4);
-      __frame0.szOsName[8] = 'X';
-      __frame0.szOsName[9] = 'P';
-      __frame0.szOsName[10] = '\0';
+        szOsName[4] = 'o';
+      szOsName[5] = 'w';
+      szOsName[6] = 's';
+      szOsName[7] = ' ';
+      memcpy(szOsName, "Wind", 4);
+      szOsName[8] = 'X';
+      szOsName[9] = 'P';
+      szOsName[10] = '\0';
       break;
       case 4:
-        memcpy(__frame0.szOsName, "Windows .Net", 0xd);
-      break;
-      default:
-        __frame0.szOsName[4] = 'o';
-      __frame0.szOsName[5] = 'w';
-      __frame0.szOsName[6] = 'n';
-      __frame0.szOsName[7] = '\0';
-      memcpy(__frame0.szOsName, "unkn", 4);
+        memcpy(szOsName, "Windows .Net", 0xd);
       break;
       case 9:
-        memcpy(__frame0.szOsName, "MacO", 4);
-      __frame0.szOsName[4] = 'S';
-      __frame0.szOsName[5] = '\0';
+        memcpy(szOsName, "MacO", 4);
+      szOsName[4] = 'S';
+      szOsName[5] = '\0';
       break;
       case 10:
-        memcpy(__frame0.szOsName, "MacOS X", 8);
+        memcpy(szOsName, "MacOS X", 8);
+      break;
+      default:
+        szOsName[4] = 'o';
+      szOsName[5] = 'w';
+      szOsName[6] = 'n';
+      szOsName[7] = '\0';
+      memcpy(szOsName, "unkn", 4);
+      break;
     }
 
-    Src::LogManager::LOGFILE_WriteStringToFile("%s running under %s (Version %.3f)", "Diablo II", __frame0.szOsName, (double)(float)fGameVersion);
+    Src::LogManager::LOGFILE_WriteStringToFile("%s running under %s (Version %.3f)", "Diablo II", szOsName, (double)fGameVersion);
     Src::LogManager::LogCpuInfo();
     float fMemBytes = (float)g_dwTotalPhysicalMemory;
     if (g_dwTotalPhysicalMemory < 0) {
@@ -721,15 +711,15 @@ void __stdcall LOGFILE_StoreGameStartupInfo() {
     }
 
     Src::LogManager::LOGFILE_WriteStringToFile("Total Physical Memory: %.2fMB", (double)(fMemBytes * 9.536743e-07));
-    BOOL bGotName = Debug::FILETOOLS_GetExecutableFolderPath(__frame0.szAppPath, 0x1000);
+    BOOL bGotName = Debug::FILETOOLS_GetExecutableFolderPath(szAppPath, 0x1000);
     if (bGotName) {
-      Src::LogManager::LOGFILE_WriteStringToFile("Application Path: %s", __frame0.szAppPath);
+      Src::LogManager::LOGFILE_WriteStringToFile("Application Path: %s", szAppPath);
     }
 
     char* pszArg = Src::Safesock::NET_GetLocalIp();
     Src::LogManager::LOGFILE_WriteStringToFile("Local IP: %s", pszArg);
-    __frame0.nNameSize = 0x40;
-    bGotName = GetComputerNameA(szComputerName, &__frame0.nNameSize);
+    DWORD nNameSize = 0x40;
+    bGotName = GetComputerNameA(szComputerName, &nNameSize);
     if (!bGotName) {
       szComputerName[0] = '\0';
     }
@@ -740,7 +730,7 @@ void __stdcall LOGFILE_StoreGameStartupInfo() {
 }
 
 // JMP thunk
-void __fastcall FILETOOLS_SetLogFilePathWithoutDateAndExtension2(FILE * szSuffix) {
+void __fastcall FILETOOLS_SetLogFilePathWithoutDateAndExtension2(char * szSuffix) {
     ::Fog::Src::LogManager::FILETOOLS_SetLogFilePathWithoutDateAndExtension2(szSuffix);
 }
 

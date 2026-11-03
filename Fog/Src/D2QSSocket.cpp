@@ -9,8 +9,8 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/QServer/QServer.h"
 #include "Fog/Src/Safesock.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
-#include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -30,7 +30,21 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2QSSocketStrc) == 0x194, "D2_NEW_A
 #endif
 
 
+#ifndef RECON_FPTD_fpD2QSSocketPacketHandler
+#define RECON_FPTD_fpD2QSSocketPacketHandler
+typedef int (__stdcall *fpD2QSSocketPacketHandler)(void * pContext);
+#endif
+
 namespace Fog::Src::D2QSSocket {
+
+void __stdcall QSSOCKET_SetCallbackHandler1(D2QSSocketStrc * pQSSocket, void * fpCallback, void * pContext) {
+    if (!pQSSocket) {
+      return;
+    }
+
+    pQSSocket->pfnPacketHandler = (fpD2QSSocketPacketHandler)fpCallback;
+    pQSSocket->pHandlerContext = pContext;
+}
 
 int __fastcall NET_MCP_CLIENT_SendPacketToSafesocket(D2NetDataStrc * pSafesocket, char * pBytes, size_t nSize) {
     if (!pSafesocket || pSafesocket->bBlocked) {
@@ -56,7 +70,7 @@ int __fastcall NET_MCP_CLIENT_SendPacketToSafesocket(D2NetDataStrc * pSafesocket
     return nBytesSent;
 }
 
-bool __stdcall QSSOCKET_SendWithTimeout(D2QSSocketStrc * pQSSocket, char * pBuffer, uint16_t nLength) {
+BOOL __stdcall QSSOCKET_SendWithTimeout(D2QSSocketStrc * pQSSocket, char * pBuffer, uint16_t nLength) {
     uint16_t nBytesSentActual;
     D2NetDataStrc* pSafesock;
     if (pQSSocket) {
@@ -71,11 +85,11 @@ bool __stdcall QSSOCKET_SendWithTimeout(D2QSSocketStrc * pQSSocket, char * pBuff
         }
 
         Safesock::LeaveCriticalSection_Safesock(pQSSocket->pSafesock);
-        return nLength == nBytesSentActual;
+        return (uint32_t)(nLength == nBytesSentActual);
       }
     }
 
-    return false;
+    return 0;
 }
 
 int __stdcall ReadBytesFromSocket(D2QSSocketStrc * pMCPQSocket, char * pOutBuf, int nMaxBytes) {
@@ -92,29 +106,29 @@ static int __stdcall ProcessReceivedData(D2QSSocketStrc * pQServerStrc, void * p
     BOOL bBadHandlerPtr;
     int iVar2;
     uint16_t wMsgSize;
-    void* pParam;
-    uint32_t uVar3;
+    void* pMessage;
+    uint32_t nPacketLen;
     size_t _Size;
     uint16_t wPacketSize;
-    void* pvVar4 = pBuffer;
+    void* pvVar3 = pBuffer;
     do {
       int iVar1;
-      wPacketSize = *(uint16_t*)(pQServerStrc->nSizeFieldOffset + (int)pvVar4);
-      uVar3 = (uint32_t)wPacketSize;
+      wPacketSize = *(uint16_t*)(pQServerStrc->nSizeFieldOffset + (int)pvVar3);
+      nPacketLen = (uint32_t)wPacketSize;
       iVar2 = pQServerStrc->nHeaderSize;
-      iVar1 = (int)pBuffer + (nBufferSize - (int)pvVar4);
-      if (iVar1 < iVar2 || iVar1 < (int)uVar3) {
-        _Size = (int)pBuffer + (nBufferSize - (int)pvVar4);
-        memcpy(pBuffer, pvVar4, _Size);
+      iVar1 = (int)pBuffer + (nBufferSize - (int)pvVar3);
+      if (iVar1 < iVar2 || iVar1 < (int)nPacketLen) {
+        _Size = (int)pBuffer + (nBufferSize - (int)pvVar3);
+        memcpy(pBuffer, pvVar3, _Size);
         return _Size;
       }
-      if (0x2063 < uVar3) {
+      if (0x2063 < (int32_t)nPacketLen) {
         ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0xfb);
         exit(-1);
       }
 
       wMsgSize = wPacketSize - (short int)iVar2;
-      pParam = (void*)(iVar2 + (int)pvVar4);
+      pMessage = (void*)(iVar2 + (int)pvVar3);
       if (pQServerStrc->pfnPacketHandler) {
         /* FARPROC lpfn for IsBadCodePtr */ bBadHandlerPtr = IsBadCodePtr((FARPROC)pQServerStrc->pfnPacketHandler);
         if (bBadHandlerPtr) {
@@ -124,33 +138,33 @@ static int __stdcall ProcessReceivedData(D2QSSocketStrc * pQServerStrc, void * p
 
         iVar2 = pQServerStrc->pfnPacketHandler(pQServerStrc->pHandlerContext);
         if (!iVar2) {
-          if (0 < pQServerStrc->nSizeFieldOffset) {
-            pParam = pvVar4;
+          if (pQServerStrc->nSizeFieldOffset > 0) {
+            pMessage = pvVar3;
             wMsgSize = wPacketSize;
           }
 
-          D2QSQueue::FOG_EnqueueMessage(&pQServerStrc->aQueue, pParam, wMsgSize);
+          D2QSQueue::FOG_EnqueueMessage(&pQServerStrc->aQueue, pMessage, wMsgSize);
           /* HANDLE hEvent for SetEvent */ SetEvent(pQServerStrc->pEvent);
-          pvVar4 = (void*)((int)pvVar4 + uVar3);
+          pvVar3 = (void*)((int)pvVar3 + nPacketLen);
           continue;
         }
       } else {
-        D2QSQueue::FOG_EnqueueMessage(&pQServerStrc->aQueue, pParam, wMsgSize);
+        D2QSQueue::FOG_EnqueueMessage(&pQServerStrc->aQueue, pMessage, wMsgSize);
         /* HANDLE hEvent for SetEvent */ SetEvent(pQServerStrc->pEvent);
       }
 
-      pvVar4 = (void*)((int)pvVar4 + uVar3);
+      pvVar3 = (void*)((int)pvVar3 + nPacketLen);
     } while (true);
 }
 
-void __stdcall QSSOCKET_SetCallbackHandler2(D2QSSocketStrc * pQSSocket, int nHeaderSize, int nSizeFieldOffset, int nUnknown0x120) {
+void __stdcall QSSOCKET_SetCallbackHandler2(D2QSSocketStrc * pQSSocket, int nHeaderSize, int nSizeFieldOffset, int nHeaderLeadByte) {
     if (!pQSSocket) {
       return;
     }
 
     pQSSocket->nHeaderSize = nHeaderSize;
     pQSSocket->nSizeFieldOffset = nSizeFieldOffset;
-    pQSSocket->nHeaderLeadByte = nUnknown0x120;
+    pQSSocket->nHeaderLeadByte = nHeaderLeadByte;
 }
 
 // NOTE: Register param types inferred (medium confidence): pQSSocketStrc (ESI): D2QSSocketStrc *
@@ -278,7 +292,7 @@ int __stdcall ReceiveLoopCallback(D2QSSocketStrc * pQSSocket) {
 
 // lpStartAddress parameter of CreateThread
 DWORD __stdcall QSSOCKET_ThreadEntryPoint(void * lpThreadParam) {
-    D2NetDataStrc* pSafesock = Safesock::Create_Flag0((char*)((int)lpThreadParam + 8), (u_short)*(uint32_t*)((int)lpThreadParam + 0x10c), (LPTHREAD_START_ROUTINE)ReceiveLoopCallback, lpThreadParam, (char*)((int)lpThreadParam + 0x128));
+    D2NetDataStrc* pSafesock = Safesock::SAFESOCK_CreateBlocking((char*)((int)lpThreadParam + 8), *(int*)((int)lpThreadParam + 0x10c), (LPTHREAD_START_ROUTINE)ReceiveLoopCallback, lpThreadParam, (char*)((int)lpThreadParam + 0x128));
     *(D2NetDataStrc**)((int)lpThreadParam + 0x110) = (D2NetDataStrc*)pSafesock;
     return 1;
 }
@@ -326,40 +340,38 @@ void __stdcall D2QSSOCKET_BlockSocketIfValid(D2QSSocketStrc * pQSSocket) {
 
 // @sourcefile .\Src\D2QSSocket.cpp
 D2QSSocketStrc * __stdcall STRUCT_D2QSSocket_Init(char * szIpAddress, int nPort, char * szName) {
-    D2QSSocketStrc* pD2QSSocket;
     char cCurChar;
     int32_t dwErrorCode;
     if (!szIpAddress) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x242);
       exit(-1);
     } else {
-      char* pszScan;
-      pszScan = szIpAddress;
-      pszScan = pszScan + strlen(pszScan) + 1;
-      if (!((uint32_t)((int)pszScan - (int)(szIpAddress + 1)) < 0x103)) {
+      D2QSSocketStrc* pD2QSSocket;
+      int nLen = (int)strlen(szIpAddress);
+      if (!((uint32_t)nLen < 0x103)) {
         ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x243);
         exit(-1);
       }
 
       pD2QSSocket = D2_NEW_AT(D2QSSocketStrc, ".\\Src\\D2QSSocket.cpp", 0x245);
-      if (!pD2QSSocket) {
-        return pD2QSSocket;
+      if (pD2QSSocket) {
+        memset(pD2QSSocket, 0, 0x194);
+        Storm::Source::SSTR::SStrCopy(pD2QSSocket->szIpAddress, szIpAddress, 0x104);
+        if (szName) {
+          dwErrorCode = 4;
+          Storm::Source::SSTR::SStrCopy(pD2QSSocket->szName, szName, 4);
+        } else {
+          dwErrorCode = 0x40;
+          szName = "UNKNOWN";
+          Storm::Source::SSTR::SStrCopy(pD2QSSocket->szName, szName, 0x40);
+        }
+
+        pD2QSSocket->nPort = nPort;
+        D2QSQueue::D2QSQUEUE_Initialize(&pD2QSSocket->aQueue);
+        pD2QSSocket->nHeaderSize = 2;
+        pD2QSSocket->nSizeFieldOffset = 0;
       }
 
-      memset(pD2QSSocket, 0, 0x194);
-      Storm::Source::SSTR::SStrCopy(pD2QSSocket->szIpAddress, szIpAddress, 0x104);
-      if (szName) {
-        dwErrorCode = 4;
-      } else {
-        dwErrorCode = 0x40;
-        szName = "UNKNOWN";
-      }
-
-      Storm::Source::SSTR::SStrCopy(pD2QSSocket->szName, szName, dwErrorCode);
-      pD2QSSocket->nPort = nPort;
-      D2QSQueue::D2QSQUEUE_Initialize(&pD2QSSocket->aQueue);
-      pD2QSSocket->nHeaderSize = 2;
-      pD2QSSocket->nSizeFieldOffset = 0;
       return pD2QSSocket;
     }
 }
@@ -381,12 +393,13 @@ void __stdcall FreeD2QSSocket(D2QSSocketStrc * pSocket) {
     D2_FREE_AT(pSocket, ".\\Src\\D2QSSocket.cpp", 0x27c);
 }
 
-void __stdcall QSSOCKET_WaitForEvent(D2QSSocketStrc * pQSSocket, DWORD dwTimeout) {
+DWORD __stdcall QSSOCKET_WaitForEvent(D2QSSocketStrc * pQSSocket, DWORD dwTimeout) {
     if (!pQSSocket) {
-      return;
+      return 0;
     }
 
-    /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ WaitForSingleObject(pQSSocket->pEvent, dwTimeout);
+    DWORD DVar1 = WaitForSingleObject(pQSSocket->pEvent, dwTimeout);
+    return DVar1;
 }
 
 D2NetDataStrc * __stdcall NET_D2QSocket_GetSafesock(D2QSSocketStrc * pQSSocket) {
@@ -405,14 +418,14 @@ void __stdcall QSSOCKET_SignalEvent(D2QSSocketStrc * pQSSocket) {
     /* HANDLE hEvent for SetEvent */ SetEvent(pQSSocket->pEvent);
 }
 
-int __stdcall NET_MCP_CLIENT_SendPacketToQSocket(D2QSSocketStrc * pQSocket, char * pBytes, short nSize) {
-    int iVar1;
+int __stdcall NET_MCP_CLIENT_SendPacketToQSocket(D2QSSocketStrc * pQSocket, char * pBytes, uint16_t nSize) {
+    int nResult;
     if (pQSocket) {
       D2NetDataStrc* pSafesocket;
       pSafesocket = pQSocket->pSafesock;
       if (pSafesocket && pSafesocket->bConnected) {
-        iVar1 = NET_MCP_CLIENT_SendPacketToSafesocket(pSafesocket, pBytes, (uint32_t)(uint16_t)nSize);
-        return iVar1;
+        nResult = NET_MCP_CLIENT_SendPacketToSafesocket(pSafesocket, pBytes, (uint32_t)nSize);
+        return nResult;
       }
     }
 
@@ -420,7 +433,7 @@ int __stdcall NET_MCP_CLIENT_SendPacketToQSocket(D2QSSocketStrc * pQSocket, char
 }
 
 int32_t __stdcall NET_MCP_CLIENT_Send(D2QSSocketStrc * pQSocket, char * pBytes, uint16_t nDataSizeNoHeader) {
-    uint16_t _nDataSizeNoHeader;
+    uint32_t _nDataSizeNoHeader;
     uint32_t nTotalSendSize;
     uint8_t abLenHeader[4];
     uint8_t aSendBuf[8292];
@@ -436,11 +449,11 @@ int32_t __stdcall NET_MCP_CLIENT_Send(D2QSSocketStrc * pQSocket, char * pBytes, 
       }
 
       _nDataSizeNoHeader = (uint32_t)nDataSize;
-      Storm::Source::SSystem::SMemCopy(aSendBuf + 3, pBytes, _nDataSizeNoHeader - 1);
+      Storm::Source::SMem::SMemCopy(aSendBuf + 3, pBytes, _nDataSizeNoHeader - 1);
       *(uint16_t*)((char*)&abLenHeader + 2) = nDataSize + 3;
       abLenHeader[1] = *pBytes;
       abLenHeader[0] = (uint8_t)pQSocket->nHeaderLeadByte;
-      Storm::Source::SSystem::SMemCopy(aSendBuf, abLenHeader, 4);
+      Storm::Source::SMem::SMemCopy(aSendBuf, abLenHeader, 4);
       nTotalSendSize = _nDataSizeNoHeader + 3;
     } else {
       *(uint16_t*)(char*)&abLenHeader = nDataSize + 2;
@@ -449,18 +462,18 @@ int32_t __stdcall NET_MCP_CLIENT_Send(D2QSSocketStrc * pQSocket, char * pBytes, 
         exit(-1);
       }
 
-      Storm::Source::SSystem::SMemCopy(aSendBuf, abLenHeader, 2);
+      Storm::Source::SMem::SMemCopy(aSendBuf, abLenHeader, 2);
       if (!pBytes) {
         _nDataSizeNoHeader = 0;
       }
 
       nTotalSendSize = _nDataSizeNoHeader + 2;
       if (pBytes && nTotalSendSize < 0x2064) {
-        Storm::Source::SSystem::SMemCopy(aSendBuf + 2, pBytes, _nDataSizeNoHeader);
+        Storm::Source::SMem::SMemCopy(aSendBuf + 2, pBytes, _nDataSizeNoHeader);
       }
     }
 
-    int nSendResult = NET_MCP_CLIENT_SendPacketToQSocket(pQSocket, (char*)aSendBuf, (short int)nTotalSendSize);
+    int nSendResult = NET_MCP_CLIENT_SendPacketToQSocket(pQSocket, (char*)aSendBuf, (uint16_t)nTotalSendSize);
     return nSendResult + (_nDataSizeNoHeader - nTotalSendSize);
 }
 

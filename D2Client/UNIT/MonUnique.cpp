@@ -10,7 +10,6 @@
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/RosterPets.h"
 #include "D2Client/SKILLS/Skills.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/UI/Inv.h"
@@ -37,6 +36,7 @@
 #include "D2Common/DATATBLS/MonsterTbls.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/Preset.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Seed.h"
@@ -96,7 +96,7 @@ void __fastcall SetBossId(D2UnitStrc * pUnit, int16_t nBossId) {
     pUnit->pUnitData.pUnitDataMonster->nBossNo = nBossId;
 }
 
-uint16_t __fastcall GetBossId(D2UnitStrc * pUnit) {
+int16_t __fastcall GetBossId(D2UnitStrc * pUnit) {
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataMonster : 0)) {
       return 0;
     }
@@ -104,12 +104,13 @@ uint16_t __fastcall GetBossId(D2UnitStrc * pUnit) {
     return pUnit->pUnitData.pUnitDataMonster->nBossNo;
 }
 
-BOOL CheckMonTypeForMonster(D2UnitStrc * pUnit, eD2MonsterType eMonsterType, uint8_t byMonTypeMaskHi) {
+// Registers: pUnit in ECX; nTypeFlagMask in DX is tested against the monster's type flags (callers pass 2, 8, 0x80).
+BOOL __fastcall CheckMonTypeForMonster(D2UnitStrc * pUnit, uint16_t nTypeFlagMask) {
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataMonster : 0)) {
       return 0;
     }
 
-    return (uint32_t)((pUnit->pUnitData.pUnitDataMonster->eMonsterType & (uint16_t)((uint16_t)(uint8_t)byMonTypeMaskHi << 8 | (uint16_t)(uint8_t)eMonsterType)) != 0);
+    return (uint32_t)((pUnit->pUnitData.pUnitDataMonster->eMonsterType & nTypeFlagMask) != 0);
 }
 
 void __fastcall SetUnsetMonsterType(D2UnitStrc * pUnit, uint16_t eMonsterType, BOOL bSetUnset) {
@@ -163,16 +164,13 @@ void __fastcall DefineSuperMonster(D2UnitStrc * pUnit, int32_t eModifier, int32_
 }; D2_STATIC_GUARD(gaChampionModifierTitles, "D2Client::UNIT::MonUnique::DefineSuperMonster::gaChampionModifierTitles");
 
     D2SuperUniquesTxt* pSuperUniqueTxt;
-    uint16_t* pWVar2;
-    uint16_t* pFmtStr;
     uint16_t* wszFormat;
     uint16_t wNameId;
     int nClassId;
     uint32_t nNameSeed;
     int nChampTitleIdx;
-    int iVar3;
+    int nMonClassId;
     D2MonStatsTxt* pMonStatsTxt;
-    uint32_t uVar4;
     uint16_t wszName[300];
     char szSpace[8];
     D2UnitDataMonsterStrc* pMonData;
@@ -225,9 +223,9 @@ void __fastcall DefineSuperMonster(D2UnitStrc * pUnit, int32_t eModifier, int32_
         }
       }
 
-      iVar3 = pUnit->nClassId;
+      nMonClassId = pUnit->nClassId;
     } else {
-      iVar3 = -1;
+      nMonClassId = -1;
     }
 
     BOOL BVar1;
@@ -242,17 +240,13 @@ void __fastcall DefineSuperMonster(D2UnitStrc * pUnit, int32_t eModifier, int32_
         nChampTitleIdx++;
       } while (nChampTitleIdx < 4);
 
-      if (iVar3 < 0 || iVar3 >= sgptDataTable->nTxtMonStatsSize) {
+      if (nMonClassId < 0 || nMonClassId >= sgptDataTable->nTxtMonStatsSize) {
         pMonStatsTxt = 0;
       } else {
-        pMonStatsTxt = sgptDataTable->pTxtMonStats + iVar3;
+        pMonStatsTxt = sgptDataTable->pTxtMonStats + nMonClassId;
       }
 
-      uVar4 = 0;
-      pLocaleName = D2Lang::StrTable::strtable::GetLocaleString(pMonStatsTxt->NameStr);
-      pWVar2 = D2Lang::StrTable::strtable::GetLocaleString((uint16_t)gaChampionModifierTitles[nChampTitleIdx * 2 + 1]);
-      pFmtStr = D2Lang::StrTable::strtable::GetLocaleString(0x2b40);
-      UI::Inv::wsprintf(wszName, pFmtStr, pWVar2, pLocaleName, uVar4);
+      UI::Inv::wsprintf(wszName, D2Lang::StrTable::strtable::GetLocaleString(0x2b40), D2Lang::StrTable::strtable::GetLocaleString((uint16_t)gaChampionModifierTitles[nChampTitleIdx * 2 + 1]), D2Lang::StrTable::strtable::GetLocaleString(pMonStatsTxt->NameStr), 0);
       D2Common::Monsters::MONSTERS::SetSuperUniqueName(pUnit, wszName);
       return;
     }
@@ -263,15 +257,15 @@ void __fastcall DefineSuperMonster(D2UnitStrc * pUnit, int32_t eModifier, int32_
       D2Common::Monsters::MONSTERS::SetSuperUniqueName(pUnit, pLocaleName);
       return;
     }
-    if (iVar3 <= 0x220) {
-      if (iVar3 == 0x220) {
+    if (nMonClassId <= 0x220) {
+      if (nMonClassId == 0x220) {
         name_baal:
         pLocaleName = D2Lang::StrTable::strtable::GetLocaleString(0xbf5);
         D2Common::Monsters::MONSTERS::SetSuperUniqueName(pUnit, pLocaleName);
         return;
       }
 
-      switch (iVar3) {
+      switch (nMonClassId) {
         case 0x9c:
           pLocaleName = D2Lang::StrTable::strtable::GetLocaleString(0xbcd);
         D2Common::Monsters::MONSTERS::SetSuperUniqueName(pUnit, pLocaleName);
@@ -288,7 +282,7 @@ void __fastcall DefineSuperMonster(D2UnitStrc * pUnit, int32_t eModifier, int32_
           goto set_name_izual;
       }
     } else {
-      switch (iVar3) {
+      switch (nMonClassId) {
         case 0x2c0:
           set_name_mephisto:
           pLocaleName = D2Lang::StrTable::strtable::GetLocaleString(0xbf6);
@@ -318,19 +312,19 @@ void __fastcall DefineSuperMonster(D2UnitStrc * pUnit, int32_t eModifier, int32_
       }
     }
 
-    uVar4 = 0;
+    uint32_t uVar3 = 0;
     pLocaleName = D2Common::DATATBLS::MonsterTbls::MONSTER_GetRandomUniqueSuffix(pUnit);
-    pWVar2 = D2Common::DATATBLS::MonsterTbls::MONSTER_GetRandomUniquePrefix(pUnit);
-    pFmtStr = D2Lang::StrTable::strtable::GetLocaleString(0x6b9);
-    UI::Inv::wsprintf(wszName, pFmtStr, pWVar2, pLocaleName, uVar4);
+    uint16_t* pWVar2 = D2Common::DATATBLS::MonsterTbls::MONSTER_GetRandomUniquePrefix(pUnit);
+    uint16_t* pFmtStr = D2Lang::StrTable::strtable::GetLocaleString(0x6b9);
+    UI::Inv::wsprintf(wszName, pFmtStr, pWVar2, pLocaleName, uVar3);
     uint32_t nRandPct = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
     if ((int)nRandPct < 0x32) {
-      uVar4 = 0;
+      uVar3 = 0;
       pLocaleName = D2Common::DATATBLS::MonsterTbls::MONSTER_GetRandomUniqueAppelation(pUnit);
       pWVar2 = D2Common::DATATBLS::MonsterTbls::MONSTER_GetRandomUniqueSuffix(pUnit);
       pFmtStr = D2Common::DATATBLS::MonsterTbls::MONSTER_GetRandomUniquePrefix(pUnit);
       wszFormat = D2Lang::StrTable::strtable::GetLocaleString(0x6ba);
-      UI::Inv::wsprintf(wszName, wszFormat, pFmtStr, pWVar2, pLocaleName, uVar4);
+      UI::Inv::wsprintf(wszName, wszFormat, pFmtStr, pWVar2, pLocaleName, uVar3);
     }
 
     D2Common::Monsters::MONSTERS::SetSuperUniqueName(pUnit, wszName);
@@ -401,7 +395,7 @@ void __fastcall SetResistances(D2UnitStrc * pUnit, int32_t eModifier, int32_t bA
     int nColdRes = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_coldresist, 0);
     int nPoisonRes = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_poisonresist, 0);
     int nDmgRes = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_damageresist, 0);
-    int iVar1 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_magicresist, 0);
+    int nCurMagicRes = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_magicresist, 0);
     bApply = (int32_t)(99 < nFireRes);
     if (99 < nLightRes) {
       bApply++;
@@ -415,10 +409,10 @@ void __fastcall SetResistances(D2UnitStrc * pUnit, int32_t eModifier, int32_t bA
     if (99 < nDmgRes) {
       bApply++;
     }
-    if (iVar1 >= 100) {
+    if (nCurMagicRes >= 100) {
       bApply++;
     }
-    if ((uint32_t)bApply >= 2) {
+    if ((int32_t)(uint32_t)bApply >= 2) {
       return;
     }
     if (eModifier == 8) {
@@ -428,14 +422,14 @@ void __fastcall SetResistances(D2UnitStrc * pUnit, int32_t eModifier, int32_t bA
           bApply++;
         }
       }
-      if ((uint32_t)bApply < 2) {
+      if ((int32_t)(uint32_t)bApply < 2) {
         if (nFireRes < 100) {
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_fireresist, nFireRes + 0x28, 0);
           if (nFireRes + 0x28 >= 100) {
             bApply++;
           }
         }
-        if ((uint32_t)bApply < 2 && nLightRes < 100) {
+        if ((int32_t)(uint32_t)bApply < 2 && nLightRes < 100) {
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_lightresist, nLightRes + 0x28, 0);
           if (nLightRes + 0x28 >= 100) {
             return;
@@ -460,7 +454,7 @@ void __fastcall SetResistances(D2UnitStrc * pUnit, int32_t eModifier, int32_t bA
         return;
       }
       if (eModifier == 0x19) {
-        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_magicresist, iVar1 + 0x14, 0);
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_magicresist, nCurMagicRes + 0x14, 0);
         return;
       }
       if (eModifier == 0x1b) {
@@ -470,14 +464,14 @@ void __fastcall SetResistances(D2UnitStrc * pUnit, int32_t eModifier, int32_t bA
             bApply++;
           }
         }
-        if ((uint32_t)bApply < 2) {
+        if ((int32_t)(uint32_t)bApply < 2) {
           if (nFireRes < 0x4b) {
             D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_fireresist, nFireRes + 0x14, 0);
             if (nFireRes + 0x14 >= 100) {
               bApply++;
             }
           }
-          if ((uint32_t)bApply < 2 && nLightRes < 0x4b) {
+          if ((int32_t)(uint32_t)bApply < 2 && nLightRes < 0x4b) {
             D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_lightresist, nLightRes + 0x14, 0);
             if (nLightRes + 0x14 >= 100) {
               return;
@@ -542,7 +536,7 @@ void __fastcall MONUNIQUE_ApplyModifierEffects(D2UnitStrc * pUnit) {
 }; D2_STATIC_GUARD(gapMonUniqueModInitFuncs, "D2Client::UNIT::MonUnique::MONUNIQUE_ApplyModifierEffects::gapMonUniqueModInitFuncs");
 
     uint32_t bApply;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
@@ -653,17 +647,14 @@ void __fastcall MakeMonsterCorpseExplodeAttack(D2UnitStrc * pUnit, int32_t nUMod
 
 void __fastcall MONUNIQUE_SpawnDeathMissile(D2UnitStrc * pUnit, int32_t eModifier, int32_t bApply) {
     int32_t nVelocity;
-    int nLevel;
+    int32_t nTotalFrames;
     eD2Skills eSkill;
     if (!(bApply || eModifier != 0x12)) {
       return;
     }
-
-    int32_t nTotalFrames = (int32_t)pUnit;
     if (eModifier == 0x2a && (!pUnit || pUnit->eAnimMode.ePlayerMode == Death)) {
       nVelocity = D2Common::DATATBLS::MissileTbls::MISSILETBLS_CalculateVelocity(0x5a, 0);
-      nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-      SKILLS::Skills::SKILL_SpawnMissilesAtTarget(pUnit, pUnit, MISSILE_Nova, ~MISSILE_Arrow, SKILL_Attack, nLevel, nVelocity);
+      SKILLS::Skills::SKILL_SpawnMissilesAtTarget(pUnit, pUnit, MISSILE_Nova, ~MISSILE_Arrow, SKILL_Attack, D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0), nVelocity);
     }
 
     D2Common::Units::GetShiftedFrameMetrics(pUnit, &bApply, &nTotalFrames);
@@ -671,12 +662,10 @@ void __fastcall MONUNIQUE_SpawnDeathMissile(D2UnitStrc * pUnit, int32_t eModifie
       return;
     }
     if (eModifier == 10) {
-      int32_t nX;
+      int nLevel;
       nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
       eSkill = SKILL_Attack;
-      nVelocity = Units::GetYPosFromDynamicPathUnit(pUnit);
-      nX = Units::GetXPosFromDynamicPathUnit(pUnit);
-      Missile::MakeMissileAtXY(pUnit, MISSILE_Corpsepoisoncloud, nX, nVelocity, eSkill, nLevel);
+      Missile::MakeMissileAtXY(pUnit, MISSILE_Corpsepoisoncloud, Units::GetXPosFromDynamicPathUnit(pUnit), Units::GetYPosFromDynamicPathUnit(pUnit), eSkill, nLevel);
       return;
     }
     if (eModifier != 0x12) {
@@ -739,23 +728,27 @@ static void __stdcall MONUNIQUE_SpawnDirectionalMissiles(D2UnitStrc * pUnit, eMi
     eD2UnitType eUnitType = pUnit->eUnitType;
     sSkillArg.nFlags = 0x21;
     sSkillArg.pOwner = pUnit;
+    int nXValue;
     if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-      sSkillArg.nX = pUnit->pPath.pStaticPath->nPosX;
+      nXValue = pUnit->pPath.pStaticPath->nPosX;
     } else if (pUnit->pPath.pDynamicPath) {
-      sSkillArg.nX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+      nXValue = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
     } else {
-      sSkillArg.nX = 0;
+      nXValue = 0;
     }
 
+    sSkillArg.nX = nXValue;
     eUnitType = pUnit->eUnitType;
+    int nYValue;
     if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-      sSkillArg.nY = pUnit->pPath.pStaticPath->nPosY;
+      nYValue = pUnit->pPath.pStaticPath->nPosY;
     } else if (pUnit->pPath.pDynamicPath) {
-      sSkillArg.nY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+      nYValue = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
     } else {
-      sSkillArg.nY = 0;
+      nYValue = 0;
     }
 
+    sSkillArg.nY = nYValue;
     sSkillArg.eSkillNo = SKILL_Attack;
     sSkillArg.nMissileTxtNo = eMissileId;
     if (eMissileId != MISSILE_Queenpoisoncloud) {
@@ -860,7 +853,7 @@ void __fastcall MONUNIQUE_ApplyModifierNihlathak(D2UnitStrc * pUnit, int32_t nUM
       return;
     }
 
-    BOOL bIsMultishot = CheckMonTypeForMonster(pOwnerUnit, MONTYPE_MULTISHOT, '\0');
+    BOOL bIsMultishot = CheckMonTypeForMonster(pOwnerUnit, 0x80);
     if (bIsMultishot) {
       return;
     }

@@ -5,7 +5,7 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/SKILLS/SkillsPal.h"
+#include "D2Client/GAME/SCmd.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Common/D2BitBufferStrc.h"
@@ -24,6 +24,7 @@
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/Drlg/Preset.h"
+#include "D2Common/Merc.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/QuestRecord.h"
 #include "D2Common/Unit.h"
@@ -44,6 +45,7 @@
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
+#include "D2Game/Quests/QUESTS/A4Q2.h"
 #include "D2Game/SKILLS/SkillsServer.h"
 #include "D2Game/UNIT/Party.h"
 #include "D2Game/UNIT/PlayerList.h"
@@ -88,7 +90,7 @@ namespace D2Game::Quests::QUESTS::A5Q6 {
 // A5Q6 Eve of Destruction (final quest: kill Baal in the Worldstone Chamber). [orig: BaalsDeathNotificator]
 // Per-player iterate callback: pushes the quest UI/journal update (quest id 0x24) to a player IF their record is in a "Baal dealt with" state. Sends update only when quest is Completed OR FinishedInPreviousGame, but NOT yet flagged JustCompleted and NOT CannotCompleteQuestInGame; otherwise returns without sending. Used to sync Baal-death quest bits to clients.
 BOOL __fastcall SendQuestBitsIfNeeded(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    bool _bQuestState;
+    BOOL _bQuestState;
     bool bQuestState;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
@@ -126,11 +128,10 @@ BOOL __fastcall CreateObject0x235Tentacle4(::SGAMEDATA * pGame, D2UnitStrc * pUn
       ptSpawnPos.x += 5;
       pSpawnRoom = D2Common::Units::UNITS_GetRoom(pUnit);
       FindSpawnableLocation(pRoom, &ptSpawnPos, 5, 0x400, &pSpawnRoom, 0x12, 100);
-      if (!pSpawnRoom) {
-        return 1;
+      if (pSpawnRoom) {
+        UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x235, ptSpawnPos.x, ptSpawnPos.y, pGame, pSpawnRoom, 1, 1, nullptr);
       }
 
-      UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x235, ptSpawnPos.x, ptSpawnPos.y, pGame, pSpawnRoom, 1, 1, nullptr);
       return 1;
     }
 
@@ -139,13 +140,13 @@ BOOL __fastcall CreateObject0x235Tentacle4(::SGAMEDATA * pGame, D2UnitStrc * pUn
 
 // A5Q6 Eve of Destruction (state-fn slot 2). When the target monster is class 0x209 (Baal) and the tentacle object hasn't been created yet, iterate players and spawn the 0x235 tentacle object near each (CreateObject0x235Tentacle4), then latch bCreatedTentacle. One-shot Baal-encounter prop spawner.
 void __fastcall Q36_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    D2QuestDataA5Q6Strc* pvVar1 = pQuestData->pQuestSpecificData.pA5Q6;
-    if (!(pQuestArgs->pTarget && (short int)pQuestArgs->pTarget->nClassId == 0x209 && !pvVar1->bCreatedTentacle)) {
+    D2QuestDataA5Q6Strc* pA5Q6Data = pQuestData->pQuestSpecificData.pA5Q6;
+    if (!(pQuestArgs->pTarget && (short int)pQuestArgs->pTarget->nClassId == 0x209 && !pA5Q6Data->bCreatedTentacle)) {
       return;
     }
 
     UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, pQuestArgs->pPlayer, (::fpExecuteOnUnitFunction)CreateObject0x235Tentacle4);
-    pvVar1->bCreatedTentacle = 1;
+    pA5Q6Data->bCreatedTentacle = 1;
 }
 
 // A5Q6 Eve of Destruction. Per-player iterate callback: drives the journal "in progress" sub-steps. If the player's quest is neither Completed(0) nor RewardAwaits(1), and they are in Act V, read the live quest nStateFlag: nStateFlag==2 -> set record state Step0x02; nStateFlag==3 -> set record state Step0x03. Mirrors the server-side quest progression flag into the player's saved quest record bits.
@@ -188,11 +189,10 @@ BOOL __fastcall SetStep0x2And0x3(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void *
                          quest-started journal step */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_Step0x02);
       return 0;
     }
-    if (pQuestData->nStateFlag != 3) {
-      return 0;
+    if (pQuestData->nStateFlag == 3) {
+      D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_Step0x03);
     }
 
-    D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_Step0x03);
     return 0;
 }
 
@@ -246,7 +246,7 @@ void __fastcall Q36_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     // Static local variables (originally global data)
     static int32_t gdwQuestCallbackAddressQ36[6] = { -0x1, -0x1, -0x1, 0x0, 0x1, 0x2 }; D2_STATIC_GUARD(gdwQuestCallbackAddressQ36, "D2Game::Quests::QUESTS::A5Q6::Q36_Callback00_NpcActivate::gdwQuestCallbackAddressQ36");
 
-    bool _bQuestState;
+    BOOL _bQuestState;
     bool bQuestState;
     eD2MonsterClassId nTargetClassId;
     eD2QuestState eQuestState;
@@ -458,8 +458,7 @@ static void __stdcall Q36_CompleteQuestAndSetStatus(D2UnitStrc * pUnit, D2BitBuf
       return;
     }
 
-    int32_t* pnPlayersInWorldstone = &pQuestData->pQuestSpecificData.pA5Q6->nPlayersInWorldstone;
-    (*pnPlayersInWorldstone)++;
+    pQuestData->pQuestSpecificData.pA5Q6->nPlayersInWorldstone++;
 }
 
 // A5Q6 Eve of Destruction. Per-player iterate callback: if this player's quest is JustCompleted(0xd), look up their party and propagate Baal-kill credit to every party member via ExecuteFunctionForEveryPartyMember(Q36_SetCompleteForPartyMember).
@@ -467,64 +466,60 @@ BOOL __fastcall Q36_PropagateCompleteToParty(::SGAMEDATA * pGame, D2UnitStrc * p
     /* GetQuestState(QUEST_EveOfDestruction, 0xd=JustCompleted) — only propagate
                          to party if self player just killed Baal */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_EveOfDestruction, QUESTSTATE_JustCompleted);
-    if (!BVar2) {
-      return 0;
+    if (BVar2) {
+      uint16_t nPartyId;
+      nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+      if (nPartyId != 0xffff) {
+        UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q36_SetCompleteForPartyMember, 0);
+      }
     }
 
-    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == 0xffff) {
-      return 0;
-    }
-
-    UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q36_SetCompleteForPartyMember, 0);
     return 0;
 }
 
 // A5Q6 Eve of Destruction. Per-player iterate callback: for any player whose quest is not RewardAwaits(1), set record CannotCompleteQuestInGame(0xe) and send the quest-state packet (quest 0x24). Marks players who were not present for the Baal kill so they can't re-complete it in this game instance.
 BOOL __fastcall SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    bool _bQuestState;
+    BOOL _bQuestState;
     bool bQuestState;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     /* GetQuestState(QUEST_EveOfDestruction, ==1 RewardAwaits) — skip if reward
                          pending; else mark CannotComplete */ _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_Completed);
-    if (_bQuestState == 1) {
-      return 0;
+    if (_bQuestState != 1) {
+      /* SetQuestState(QUEST_EveOfDestruction, 0xe=CannotCompleteQuestInGame) —
+                         player wasn't present for Baal kill */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_CannotCompleteQuestInGame);
+      QUEST_SendQuestStatePacket(pUnit, 0x24, 0);
     }
 
-    /* SetQuestState(QUEST_EveOfDestruction, 0xe=CannotCompleteQuestInGame) —
-                         player wasn't present for Baal kill */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_CannotCompleteQuestInGame);
-    QUEST_SendQuestStatePacket(pUnit, 0x24, 0);
     return 0;
 }
 
 // A5Q6 Eve of Destruction. Per-player iterate callback: if the player's quest is JustCompleted(0xd), send the 0x5d quest-state packet (quest 0x24, byte2=2) and trigger the on-unit completion event/sound (0x53). Pushes the Baal-completion FX to the client.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q6.cpp
 BOOL __fastcall Q36_SendCompletionNotification(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    bool _bJustCompleted;
+    BOOL _bJustCompleted;
     bool bJustCompleted;
-    D2GSPacketSrv0x5D abyQuestPacket;
     /* GetQuestState(QUEST_EveOfDestruction, 0xd=JustCompleted) — only send
                          completion FX/packet if just killed Baal */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     _bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_EveOfDestruction, QUESTSTATE_JustCompleted);
-    if (!_bJustCompleted) {
-      return 0;
+    if (_bJustCompleted) {
+      D2ClientStrc* pClient;
+      pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q6.cpp", 0x1d8);
+      D2GSPacketSrv0x5D abyQuestPacket;
+      memset(&abyQuestPacket, 0, sizeof(abyQuestPacket));
+      abyQuestPacket.nPacketId = ']';
+      abyQuestPacket.nQuestId = '$';
+      abyQuestPacket.nAlertFlags = '\x02';
+      GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, &abyQuestPacket);
+      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x53, pUnit);
     }
 
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q6.cpp", 0x1d8);
-    abyQuestPacket.nExtra = 0;
-    abyQuestPacket.nPacketId = ']';
-    abyQuestPacket.nQuestId = '$';
-    abyQuestPacket.nAlertFlags = '\x02';
-    abyQuestPacket.nFilterStatus = '\0';
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, &abyQuestPacket);
-    UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x53, pUnit);
     return 0;
 }
 
 // A5Q6 Eve of Destruction. Per-player iterate callback (called as Baal dies): if the player is not yet Completed(0) AND is standing in LEVEL_TheWorldstoneChamber (level id 0x84) and is neither Completed nor RewardAwaits, call Q36_CompleteQuestAndSetStatus to give them the kill. This is the "present at the Baal kill" credit check.
 BOOL __fastcall Q36_CheckWorldstoneChamber(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    bool _bQuestState;
+    BOOL _bQuestState;
     bool bQuestState;
     /* GetQuestState(QUEST_EveOfDestruction, 0=Completed) — bail if already
                          complete */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
@@ -562,7 +557,7 @@ BOOL __fastcall Q36_CheckWorldstoneChamber(::SGAMEDATA * pGame, D2UnitStrc * pUn
 
 // A5Q6 Eve of Destruction — BAAL DEATH HANDLER (state-fn slot 8). Fires when Baal is killed. NotifyPlayers(0x13); sets live quest state to 4 and broadcasts; then iterates all players: Q36_CheckWorldstoneChamber (credit those present), Q36_PropagateCompleteToParty (party credit), SetCannotComplete (lock out absentees), Q36_SendCompletionNotification (client FX). Rolls and drops quest gold reward (difficulty-scaled) per player in the chamber, saves char to client, sets nStateFlag=5. Finally spawns the red Baal-death portal/missile (0x271) and toggles the room portal flag — the exit portal to town.
 void __fastcall Q36_Callback_08_CompleteQuest(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    bool _bQuestCompleted;
+    BOOL _bQuestCompleted;
     bool bQuestCompleted;
     int nBaseGold;
     int32_t nGoldAmount;
@@ -608,7 +603,7 @@ void __fastcall Q36_Callback_08_CompleteQuest(D2QuestDataStrc * pQuestData, D2Qu
           }
 
           for (i = 0; i < pA5Q6Data->nPlayersInWorldstone; i++) {
-            QUEST_StubEmpty(0x5f);
+            QUEST_StubEmpty(pQuestData, pQuestArgs, 0x5f);
             nGoldAmount = D2Client::SEED_RollRange(GetQuestControlSeed(pQuestData->pGame), nBaseGold + 0x5dc, nGoldCap);
             ITEMS::Items::Drop::DROP_SpawnGoldOnGround(pQuestData->pGame, pQuestArgs->pTarget, nGoldAmount);
           }
@@ -672,7 +667,7 @@ BOOL __fastcall Q36_SendQuestSpecialPacketCallback(::SGAMEDATA * pGame, D2UnitSt
 // A5Q6 Eve of Destruction (state-fn slot 3). Quest-accept / "talked to Tyrael" handler. On gossip index 0x6d sends the special quest packet. When the activation index==0x6d and live nStateFlag==2: if player not Completed/RewardAwaits, advance live quest to nStateFlag 3, broadcast "in progress" (state 1), and propagate sub-steps to all players (SetStep0x2And0x3). For index>0x82 advances to state 2. Drives the player's acceptance of the final-assault quest.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q6.cpp
 void __fastcall Q36_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    bool _bQuestState;
+    BOOL _bQuestState;
     bool bQuestState;
     ::SGAMEDATA* pGame;
     D2BitBufferStrc* pBitBuffer;
@@ -724,7 +719,7 @@ void __fastcall Q36_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 bool __fastcall Q36_ActiveFilter(D2QuestDataStrc * pQuestData, eD2MonsterClassId nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
     bool bQuestState;
     eD2QuestState eQuestState;
-    if ((uint32_t)(nTargetClassId - MonsterUnitAncientStatue1) <= 2) {
+    if (nTargetClassId >= MonsterUnitAncientStatue1 && nTargetClassId <= MonsterUnitAncientStatue1 + 0x2) {
       D2QuestDataStrc* pA5Q5QuestData;
       pA5Q5QuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_RiteOfPassage);
       if (pA5Q5QuestData && pA5Q5QuestData->pQuestSpecificData.pA5Q5->bAncientsSpawned && !pA5Q5QuestData->pQuestSpecificData.pA5Q5->nAncientsAlive && pQuestData->nStateFlag == 1 && !pQuestData->pQuestSpecificData.pA5Q6->bAnyaTransformed) {
@@ -733,66 +728,63 @@ bool __fastcall Q36_ActiveFilter(D2QuestDataStrc * pQuestData, eD2MonsterClassId
     }
 
     BOOL BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_Completed);
-    if (!(BVar1 && true)) {
-      return false;
-    }
-
-    switch (nTargetClassId) {
-      case MonsterUnitLarzuk:
-        eQuestState = QUESTSTATE_Step0x04;
-      break;
-      case MonsterUnitDrehya1:
-        eQuestState = QUESTSTATE_Step0x09;
-      break;
-      case MonsterUnitMalah:
-        eQuestState = QUESTSTATE_Step0x06;
-      break;
-      default:
-        return false;
-      case MonsterUnitQualkehk:
-        eQuestState = QUESTSTATE_Step0x08;
-      break;
-      case MonsterUnitDeckardCain6:
-        /* GetQuestState(QUEST_EveOfDestruction, 0xa=Step0x10) — NPC 0x208: suppress
+    if (BVar1 && true) {
+      switch (nTargetClassId) {
+        case MonsterUnitLarzuk:
+          eQuestState = QUESTSTATE_Step0x04;
+        break;
+        case MonsterUnitDrehya1:
+          eQuestState = QUESTSTATE_Step0x09;
+        break;
+        case MonsterUnitMalah:
+          eQuestState = QUESTSTATE_Step0x06;
+        break;
+        default:
+          return false;
+        case MonsterUnitQualkehk:
+          eQuestState = QUESTSTATE_Step0x08;
+        break;
+        case MonsterUnitDeckardCain6:
+          /* GetQuestState(QUEST_EveOfDestruction, 0xa=Step0x10) — NPC 0x208: suppress
                          gossip once final Step0x10 (left act) set */ BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_Step0x10);
-      if (BVar1) {
-        return false;
+        if (BVar1) {
+          return false;
+        }
+
+        eQuestState = QUESTSTATE_Step0x05;
+        break;
+        case MonsterUnitTyrael3:
+          eQuestState = QUESTSTATE_Step0x07;
       }
 
-      eQuestState = QUESTSTATE_Step0x05;
-      break;
-      case MonsterUnitTyrael3:
-        eQuestState = QUESTSTATE_Step0x07;
-    }
-
-    /* GetQuestState(QUEST_EveOfDestruction, eStep) — per-NPC Step bit
+      /* GetQuestState(QUEST_EveOfDestruction, eStep) — per-NPC Step bit
                          (0x1ff->Step0x04, 0x200->Step0x09, 0x201->Step0x06, 0x203->Step0x08,
                          0x208->Step0x05, 0x209->Step0x07); offer gossip only if NOT yet set */ BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, eQuestState);
-    if (BVar1) {
-      return false;
+      if (!BVar1) {
+        return true;
+      }
     }
 
-    return true;
+    return false;
 }
 
 // A5Q6 Eve of Destruction. fpSequenceFilter (linked to prerequisite QUEST_PrisonOfIce / Anya rescue). When this quest is active and not yet started (nStateFlag==0), latch bAnyaTransformed, force live nStateFlag=2, broadcast "in progress" (state 1), and push sub-steps to all players. Kicks the final quest into motion once Anya/prereq conditions are met.
 bool __fastcall Q36_SequenceFilter(D2QuestDataStrc * pQuestData) {
     D2QuestDataStrc* pA5Q6EveQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_EveOfDestruction);
-    if (!(pA5Q6EveQuestData->bIsNotIntroduction != '\0' && !pA5Q6EveQuestData->nStateFlag)) {
-      return true;
+    if (pA5Q6EveQuestData->bIsNotIntroduction != '\0' && !pA5Q6EveQuestData->nStateFlag) {
+      pA5Q6EveQuestData->pQuestSpecificData.pA5Q6->bAnyaTransformed = 1;
+      pA5Q6EveQuestData->nStateFlag = 2;
+      pA5Q6EveQuestData->nQuestPacketFlags = '\0';
+      QUEST_SetStateAndBroadcast(pA5Q6EveQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)SendQuestBitsIfNeeded, true);
+      UNIT::SUnit::IteratePlayerOrMonsterUnits(pA5Q6EveQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)SetStep0x2And0x3);
     }
 
-    pA5Q6EveQuestData->pQuestSpecificData.pA5Q6->bAnyaTransformed = 1;
-    pA5Q6EveQuestData->nStateFlag = 2;
-    pA5Q6EveQuestData->nQuestPacketFlags = '\0';
-    QUEST_SetStateAndBroadcast(pA5Q6EveQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)SendQuestBitsIfNeeded, true);
-    UNIT::SUnit::IteratePlayerOrMonsterUnits(pA5Q6EveQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)SetStep0x2And0x3);
     return true;
 }
 
 // A5Q6 Eve of Destruction (state-fn slot 0xe). If the player's quest is Completed(0), set Step0x10 (the "departed act V / acknowledged completion" bit). Small post-completion bookkeeping callback.
 void __fastcall Q36_Callback14_PlayerJoinedGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    bool _bQuestCompleted;
+    BOOL _bQuestCompleted;
     bool bQuestCompleted;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
@@ -810,7 +802,7 @@ void __fastcall Q36_Callback14_PlayerJoinedGame(D2QuestDataStrc * pQuestData, D2
 // A5Q6 Eve of Destruction (state-fn slot 0xd). Quest-load / late-join reconciliation. If the player has NOT completed (not Completed, not FinishedInPreviousGame, not RewardAwaits) but has progressed (Step0x03 set, or Step0x02 -> mark bAnyaTransformed): restore live quest nStateFlag to 3 (in-progress). If already completed/finished: set Step0x10 and push client status 5 (act done). Reconstructs quest progression for a joining/loading player.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q6.cpp
 void __fastcall Q36_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    bool _bQuestState;
+    BOOL _bQuestState;
     bool bQuestState;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
@@ -864,7 +856,7 @@ void __fastcall Q36_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q36_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q36_Callback13_PlayerStartedGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xe] = Q36_Callback14_PlayerJoinedGame;
-    pQuestData->pNpcMessages = &A5Q6::aNpcGossipData;
+    pQuestData->pNpcMessages = A5Q6::aNpcGossipData;
     pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     D2QuestDataA5Q6Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA5Q6Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q6.cpp", 0x329);
@@ -908,7 +900,7 @@ BOOL __fastcall Q36_IsBaalAlive(::SGAMEDATA * pGame) {
 }
 
 // A5Q6 Eve of Destruction. Object init fn 75: tags the object with the quest's barricade-coord field then sets that field to 2 (one-time init flag). Worldstone-area quest object setup.
-void __fastcall Objects_InitFn75(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn75_BaalsPortal(D2ObjectInitFnArg * pInitArg) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_EveOfDestruction);
     D2QuestDataA5Q6Strc* pA5Q6SpecificData = pQuestData->pQuestSpecificData.pA5Q6;
     D2Common::Units::SetupUpdateFlag(pInitArg->pObject, pA5Q6SpecificData->nField_0x94);
@@ -941,7 +933,7 @@ BOOL __fastcall OBJOP_A5Q6_WorldstoneLevelTransition(D2ObjectOperateFnArg * pOpe
 }
 
 // A5Q6 Eve of Destruction. Object init fn 77: tags the object with the quest's item-count field then sets it to 2 (marks Tyrael's red end-portal as spawned/active). Pairs with OBJOP_A5Q6_TyraelPortalToEnd which only operates when count==2.
-void __fastcall Objects_InitFn77(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn77_LastPortal(D2ObjectInitFnArg * pInitArg) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_EveOfDestruction);
     D2QuestDataA5Q6Strc* pQuestSpecificA1Q3 = pQuestData->pQuestSpecificData.pA5Q6;
     D2Common::Units::SetupUpdateFlag(pInitArg->pObject, pQuestSpecificA1Q3->nField_0x9C);
@@ -971,7 +963,7 @@ BOOL __fastcall OBJOP_A5Q6_TyraelPortalToEnd(D2ObjectOperateFnArg * pOperation) 
         nTradeTick = PLAYER::Player::GetPlayerTradeTickOrBusy(pOperation->pAttacker);
         if (!nTradeTick) {
           UNIT::SUnit::ClearInteractInfo(pOperation->pAttacker);
-          pPlayerData->dwTradeTick = 1;
+          pPlayerData->bCutscenePending = 1;
           GAME::SCmd::NET_D2GS_SERVER_Send_0x61_CanGoToAct(pClient, 7);
           /* SetQuestState(QUEST_EveOfDestruction, 0xa=Step0x10) — mark "returned to
                          town via Tyrael's portal" */ D2Common::QuestRecord::SetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Step0x10);
@@ -986,7 +978,7 @@ BOOL __fastcall OBJOP_A5Q6_TyraelPortalToEnd(D2ObjectOperateFnArg * pOperation) 
 }
 
 // A5Q6 Eve of Destruction object-init fn 79. One-time (guarded by init flag): rolls up to 10 times for a random MonStats id with zoo!=0 and stores it in the quest-specific struct as the quest's random monster seed; on failure falls back to id 0. After latching the init flag, broadcasts the quest-special packet to all players via Q36_SendQuestSpecialPacketCallback.
-void __fastcall Objects_InitFn79(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn79_Zoo(D2ObjectInitFnArg * pInitArg) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_EveOfDestruction);
     D2QuestDataA5Q6Strc* pQuestSpecificA1Q4 = pQuestData->pQuestSpecificData.pA5Q6;
     if (pQuestSpecificA1Q4->field_0xA0 != '\0') {

@@ -14,7 +14,6 @@
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2Win/Forms.h"
-#include "D2Win/Forms/D2WinImageEx.h"
 #include "D2Win/Src/D2Comp.h"
 #include "D2Win/Src/D2WinAccountList.h"
 #include "D2Win/Src/D2WinButton.h"
@@ -37,7 +36,6 @@
 #include "Storm/Storm.h"
 #include "Storm/WindowHandle.h"
 #include "globals/globals.h"
-#include "support/d2_control.h"
 #include "D2Client/UI/Panel.h"
 #include "D2Game/D2QuestDataStrc.h"
 #include "D2Win/D2WinAccountList.h"
@@ -269,7 +267,7 @@ D2ControlStrc * __stdcall FORMS_CreateAnyForm(FORMS_PredefinedFormStrc * pForm) 
         pAnimImage = D2WinAnimImage(pForm->aParams[0], pForm->aParams[1], pForm->aParams[2], pForm->aParams[3], pBackgroundDC6, pForm->nExtraParam, pForm->fpOnPressCallback, (FORMS_AnimFrameStrc*)pForm->pTypeArg1, pForm->nLabelAsLocaleStringId, (fpD2WinAnimImageNotify)pForm->pTypeArg2);
       return (D2ControlStrc*)pAnimImage;
       case FORM_ImageEx:
-        pImageEx = Forms::D2WinImageEx(pForm->aParams[0], pForm->aParams[1], pForm->aParams[2], pForm->aParams[3], pBackgroundDC6, pForm->nExtraParam, pForm->nLabelAsLocaleStringId);
+        pImageEx = D2WinImage::D2WINIMAGE_CreateImageEx(pForm->aParams[0], pForm->aParams[1], pForm->aParams[2], pForm->aParams[3], pBackgroundDC6, pForm->nExtraParam, pForm->nLabelAsLocaleStringId);
       return (D2ControlStrc*)pImageEx;
       case FORM_Scrollbar:
         pScrollbar = D2WinScrollbar::D2WinScrollbar(pForm->aParams[0], pForm->aParams[1], pForm->aParams[2], pForm->aParams[3], pBackgroundDC6, pForm->fpOnPressCallback);
@@ -322,7 +320,7 @@ void __stdcall FORMS_DestroyAnyForm(D2ControlStrc * * pForm) {
       *pForm = 0;
       return;
       case FORM_ImageEx:
-        D2WinImage::FORMS_DestroyD2WinImageEx((::D2WinImageEx*)pWinEditBox_00);
+        D2WinImage::FORMS_DestroyD2WinImageEx((D2WinImageEx*)pWinEditBox_00);
       *pForm = 0;
       return;
       case FORM_AnimImage:
@@ -383,7 +381,6 @@ BOOL __fastcall D2WINMAIN_GetControlVisible(D2ControlStrc * pControl) {
     }
 
     return pControl->dwState & gadwBitMasks[0];
-    return pControl->dwState & gadwBitMasks[0];
 }
 
 // Sets (bActive != 0) or clears bit 2 (gadwBitMasks[2] = 4) of pControl->dwState (+0x8); halts (line 844) on NULL.
@@ -410,7 +407,6 @@ BOOL __fastcall D2WINMAIN_IsControlActive(D2ControlStrc * pControl) {
       exit(-1);
     }
 
-    return pControl->dwState & gadwBitMasks[2];
     return pControl->dwState & gadwBitMasks[2];
 }
 
@@ -463,16 +459,10 @@ void __stdcall DRAW_UI_Sprites() {
 }
 
 void __stdcall RENDERER_DrawOutOfGameScene() {
-    // Frame slots -12..-4 are ONE object: &nScreenWidth is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int32_t nScreenWidth;
-      int nScreenHeight;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int nPosition;
     D2GfxDataStrc sGfxData;
+    int32_t nScreenWidth;
+    int nScreenHeight;
     DC6* pBackgroundDC6;
     int32_t nSceneState = D2gfx::D2GFX::D2GFX_EndCutSceneReturnSceneState();
     D2ControlStrc* pForm = D2Client::Forms::pFormsList;
@@ -490,7 +480,7 @@ void __stdcall RENDERER_DrawOutOfGameScene() {
       return;
     }
 
-    D2gfx::D2GFX::D2GFX_GetScreenSize(&__frame0.nScreenWidth, &__frame0.nScreenHeight);
+    D2gfx::D2GFX::D2GFX_GetScreenSize(&nScreenWidth, &nScreenHeight);
     BOOL bSceneBegun = D2gfx::D2GFX::D2GFX_BeginScene(0, 0, 0, 0);
     if (bSceneBegun) {
       int nPositionX;
@@ -516,7 +506,7 @@ void __stdcall RENDERER_DrawOutOfGameScene() {
 
         nPosition = 0;
         do {
-          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nPosition, __frame0.nScreenHeight - 1, -1, DRAW_SOLID, nullptr);
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nPosition, nScreenHeight - 1, -1, DRAW_SOLID, nullptr);
           sGfxData.nFrameNumber++;
           nPosition += 0x100;
           pForm = D2Client::Forms::pFormsList;
@@ -532,7 +522,7 @@ void __stdcall RENDERER_DrawOutOfGameScene() {
       DRAW_UI_Sprites();
       pForm = D2Client::Forms::pFormsList;
       if (gnInitialFormState) {
-        D2gfx::D2GFX::D2GFX_DrawSolidRectAlpha(0, 0, __frame0.nScreenWidth, __frame0.nScreenHeight, 0, 0x7f);
+        D2gfx::D2GFX::D2GFX_DrawSolidRectAlpha(0, 0, nScreenWidth, nScreenHeight, 0, 0x7f);
         pForm = D2Client::Forms::pFormsList;
       }
 
@@ -549,13 +539,13 @@ void __stdcall RENDERER_DrawOutOfGameScene() {
     D2WINMAIN_FreeLeadingFormControls();
 }
 
-LRESULT __stdcall WndProc(HWND hWnd, uint32_t uMsg, uint32_t nParam, LPARAM lParam) {
+LRESULT __stdcall WndProc(HWND hWnd, uint32_t uMsg, uint32_t nWParam, LPARAM lParam) {
     int32_t lResult;
     if (!gbGfxWindowCreated) {
       return 0;
     }
     if (D2Client::GAME::Record::pWndProcB) {
-      lResult = (*D2Client::GAME::Record::pWndProcB)(hWnd, uMsg, nParam, lParam);
+      lResult = (*D2Client::GAME::Record::pWndProcB)(hWnd, uMsg, nWParam, lParam);
       return lResult;
     }
 
@@ -567,12 +557,12 @@ LRESULT __stdcall WndProc(HWND hWnd, uint32_t uMsg, uint32_t nParam, LPARAM lPar
       return 0;
     }
 
-    BOOL bDispatched = Storm::WindowHandle::SMsgDispatchMessage(hWnd, uMsg, nParam, lParam, &bHandled, (LRESULT*)&lReturnValue);
+    BOOL bDispatched = Storm::WindowHandle::SMsgDispatchMessage(hWnd, uMsg, nWParam, lParam, &bHandled, (LRESULT*)&lReturnValue);
     if (bDispatched && bHandled) {
       return lReturnValue;
     }
 
-    /* LPARAM lParam for DefWindowProcA */ /* WPARAM wParam for DefWindowProcA */ /* UINT Msg for DefWindowProcA */ /* HWND hWnd for DefWindowProcA */ lResult = DefWindowProcA(hWnd, uMsg, nParam, lParam);
+    /* LPARAM lParam for DefWindowProcA */ /* WPARAM wParam for DefWindowProcA */ /* UINT Msg for DefWindowProcA */ /* HWND hWnd for DefWindowProcA */ lResult = DefWindowProcA(hWnd, uMsg, nWParam, lParam);
     return lResult;
 }
 
@@ -688,7 +678,7 @@ void __stdcall INPUT_FormDeactivate(D2UIMouseMsgStrc * pMsg) {
     Storm::SMsgBreakHandlerChain(pMsg);
 }
 
-void __stdcall D2WIN_HandleSystemCommand(int32_t nParam) {
+void __stdcall D2WIN_HandleSystemCommand(D2UIMouseMsgStrc * pMsg) {
     HWND hGameWnd;
     HMONITOR hMonitor;
     DWORD dwResolutionMode;
@@ -711,14 +701,14 @@ void __stdcall D2WIN_HandleSystemCommand(int32_t nParam) {
     int nTargetWidth;
     int nTargetHeight;
     tagRECT* pRcDesktop;
-    uint16_t uSysCmd = *(uint16_t*)(nParam + 8) & 0xfff0;
+    uint16_t uSysCmd = *(uint16_t*)&pMsg->nWParam & 0xfff0;
     if (uSysCmd != 0xf130 && uSysCmd != 0xf100) {
       uint32_t bIsFullscreen;
       if (uSysCmd == 0xf010) {
         bIsFullscreen = D2gfx::D2GFX::IsFullscreen();
         if (bIsFullscreen) {
-          *(uint32_t*)(nParam + 0x18) = 1;
-          *(uint32_t*)(nParam + 0x1c) = 0;
+          pMsg->bHandled = 1;
+          pMsg->dwResult = 0;
           return;
         }
       } else if (uSysCmd == 0xf030 && (bIsFullscreen = D2gfx::D2GFX::IsFullscreen() , !bIsFullscreen)) {
@@ -790,24 +780,24 @@ void __stdcall D2WIN_HandleSystemCommand(int32_t nParam) {
           D2gfx::D2GFX::D2GFX_UpdateWindowSize(dwResolutionMode);
         }
 
-        *(uint32_t*)(nParam + 0x18) = 1;
-        *(uint32_t*)(nParam + 0x1c) = 0;
+        pMsg->bHandled = 1;
+        pMsg->dwResult = 0;
       }
 
       return;
     }
 
-    *(uint32_t*)(nParam + 0x18) = 1;
-    *(uint32_t*)(nParam + 0x1c) = 0;
+    pMsg->bHandled = 1;
+    pMsg->dwResult = 0;
 }
 
-void __stdcall D2WIN_HandleActivation(int32_t nParam) {
+void __stdcall D2WIN_HandleActivation(D2UIMouseMsgStrc * pMsg) {
     // Static local variables (originally global data)
     static uint32_t gnSavedMusicVolume; D2_STATIC_GUARD_BSS(gnSavedMusicVolume, "D2Win::Src::D2WinMain::D2WIN_HandleActivation::gnSavedMusicVolume");
     static uint32_t gbWindowDeactivated; D2_STATIC_GUARD_BSS(gbWindowDeactivated, "D2Win::Src::D2WinMain::D2WIN_HandleActivation::gbWindowDeactivated");
 
-    gbWindowIsActive = (uint32_t)(*(int*)(nParam + 8) != 0);
-    if (*(int*)(nParam + 8)) {
+    gbWindowIsActive = (uint32_t)(pMsg->nWParam != 0);
+    if (pMsg->nWParam) {
       uint32_t nErrorState;
       nErrorState = Fog::Src::ErrorManager::GetErrorState();
       if (!nErrorState) {
@@ -833,7 +823,7 @@ void __stdcall D2WIN_HandleActivation(int32_t nParam) {
       D2gfx::D2GFX::D2GFX_EndCutSceneReturnSceneState();
     }
 
-    *(uint32_t*)(nParam + 0x18) = 0;
+    pMsg->bHandled = 0;
 }
 
 // Writes the screenshot DIB out as a JPEG through Intel JPEG Library (IJL11.DLL).
@@ -899,33 +889,25 @@ static void __stdcall D2WIN_SaveScreenshotToFile(uint8_t * pDibBytes, LPCSTR szF
 
 // @sourcefile .\Src\D2WinMain.cpp
 void __fastcall D2WIN_TakeThrottledScreenshot(LPCSTR szFileName) {
-    // Frame slots -12..-4 are ONE object: &nScreenWidth is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nScreenWidth;
-      int nScreenHeight;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     DWORD dwTickCount = GetTickCount();
     if (!(dwTickCount - gdwLastScreenshotTick >= 1000 || szFileName)) {
       return;
     }
 
-    __frame0.nScreenWidth = 0;
-    __frame0.nScreenHeight = 0;
-    D2gfx::D2GFX::D2GFX_GetScreenSize(&__frame0.nScreenWidth, &__frame0.nScreenHeight);
-    uint8_t* pBuffer = (uint8_t*)D2_ALLOC_AT(__frame0.nScreenHeight * __frame0.nScreenWidth * 3, ".\\Src\\D2WinMain.cpp", 0x6a7);
+    int nScreenWidth = 0;
+    int nScreenHeight = 0;
+    D2gfx::D2GFX::D2GFX_GetScreenSize(&nScreenWidth, &nScreenHeight);
+    uint8_t* pBuffer = (uint8_t*)D2_ALLOC_AT(nScreenHeight * nScreenWidth * 3, ".\\Src\\D2WinMain.cpp", 0x6a7);
     BOOL bGotBackBuffer = D2gfx::D2GFX::D2GFX_GetBackBuffer(pBuffer);
     if (bGotBackBuffer) {
-      D2WIN_SaveScreenshotToFile(pBuffer, szFileName, __frame0.nScreenWidth, __frame0.nScreenHeight);
+      D2WIN_SaveScreenshotToFile(pBuffer, szFileName, nScreenWidth, nScreenHeight);
     }
 
     gdwLastScreenshotTick = dwTickCount;
     D2_FREE_AT(pBuffer, ".\\Src\\D2WinMain.cpp", 0x6b4);
 }
 
-void __stdcall D2WIN_ToggleMusicOptions(int32_t nParam) {
+void __stdcall D2WIN_ToggleMusicOptions(D2UIMouseMsgStrc * pMsg) {
     if (!gbFormActivated) {
       return;
     }
@@ -943,8 +925,8 @@ void __stdcall D2WIN_ToggleMusicOptions(int32_t nParam) {
     }
 
     D2Sound::Src::D2SoundFast::SOUND_SetOptionsMusic((uint32_t)!bMusicEnabled);
-    *(uint32_t*)(nParam + 0x18) = 1;
-    *(uint32_t*)(nParam + 0x1c) = 0;
+    pMsg->bHandled = 1;
+    pMsg->dwResult = 0;
 }
 
 int32_t __stdcall D2WIN_FindClosestControlToMouse(D2ControlStrc * pControl1, D2ControlStrc * pControl2) {
@@ -1076,8 +1058,8 @@ void __stdcall D2WINMAIN_SetCursorVisible(BOOL bVisible) {
     gbCursorVisible = bVisible;
 }
 
-void __stdcall SetUnsetFlag0x08(D2ControlStrc * pControl, int32_t nParam) {
-    if (nParam) {
+void __stdcall SetUnsetFlag0x08(D2ControlStrc * pControl, int32_t bSet) {
+    if (bSet) {
       pControl->dwState |= gadwBitMasks[3];
       return;
     }
@@ -1095,9 +1077,9 @@ uint32_t __stdcall D2WINMAIN_GetWinMainState() {
     return gnWinMainState;
 }
 
-BOOL __stdcall FORMS_SetGlobalFormImage(D2ControlStrc * pControl, int32_t nParam) {
+BOOL __stdcall FORMS_SetGlobalFormImage(D2ControlStrc * pControl, int32_t nInitialFormState) {
     D2Client::Forms::pFormImage = pControl;
-    gnInitialFormState = nParam;
+    gnInitialFormState = nInitialFormState;
     return 1;
 }
 
@@ -1115,25 +1097,25 @@ D2ControlStrc * __stdcall D2WINMAIN_GetFormImage() {
     return D2Client::Forms::pFormImage;
 }
 
-void __stdcall D2WIN_HandleCursorHide(int32_t nParam) {
+void __stdcall D2WIN_HandleCursorHide(D2UIMouseMsgStrc * pMsg) {
     gbCursorVisible = 0;
-    if (*(int*)(nParam + 8) == 2) {
+    if (pMsg->nWParam == 2) {
       D2gfx::D2GFX::UpdateOSCursorVisibilty(0);
     }
 
-    *(uint32_t*)(nParam + 0x1c) = 0;
-    *(uint32_t*)(nParam + 0x18) = 0;
+    pMsg->dwResult = 0;
+    pMsg->bHandled = 0;
 }
 
-void __stdcall D2WIN_HandleMouseLeave(int32_t nParam) {
+void __stdcall D2WIN_HandleMouseLeave(D2UIMouseMsgStrc * pMsg) {
     gbMouseInWindow = 0;
     if (D2GFX_eRendererMode != RENDERER_Glide) {
       gbCursorVisible = 0;
     }
 
     D2gfx::D2GFX::UpdateOSCursorVisibilty(0);
-    *(uint32_t*)(nParam + 0x18) = 0;
-    *(uint32_t*)(nParam + 0x1c) = 0;
+    pMsg->bHandled = 0;
+    pMsg->dwResult = 0;
 }
 
 BOOL __stdcall D2GFX_PreSetupBeforeCreatingWindow(HINSTANCE hInstance, eD2RendererMode eRenderedMode, BOOL bWindowed, BOOL bDontUseCompression) {
@@ -1162,7 +1144,6 @@ void __stdcall MessagePump(pfnFramePump pfnFrameCallback) {
     uint32_t nBudgetAccum = 0;
     while (gbMessageLoopActive) {
       BOOL hasMessage;
-      D2CONTROL_Pump(); D2LOUD_GuardPump();   // in-process test channel: applies queued input on THIS thread; loud build: walks the guard zones
       /* UINT wRemoveMsg for PeekMessageA */ /* UINT wMsgFilterMax for PeekMessageA */ /* UINT wMsgFilterMin for PeekMessageA */ /* HWND hWnd for PeekMessageA */ /* LPMSG lpMsg for PeekMessageA */ hasMessage = PeekMessageA(&windowMsg, (HWND)0x0, 0, 0, 0);
       if (hasMessage) {
         /* UINT wMsgFilterMax for GetMessageA */ /* UINT wMsgFilterMin for GetMessageA */ /* HWND hWnd for GetMessageA */ /* LPMSG lpMsg for GetMessageA */ gbMessageLoopActive = GetMessageA(&windowMsg, (HWND)0x0, 0, 0);
@@ -1218,7 +1199,7 @@ void __stdcall MessagePump(pfnFramePump pfnFrameCallback) {
 
 void __stdcall MOUSE_CaptureMousePosition(HWND * phWnd) {
     uint32_t Y;
-    bool bVar2;
+    bool bXOutOfRange;
     tagTRACKMOUSEEVENT sTrackMouseEvent;
     int nScreenHeight;
     HWND* ppHVar1 = phWnd;
@@ -1247,7 +1228,7 @@ void __stdcall MOUSE_CaptureMousePosition(HWND * phWnd) {
       }
 
       Y = nScreenHeight;
-      if ((int)nRawY > nScreenHeight || (bVar2 = (int)phWnd < nRawX , nRawX = nClampedX , Y = nRawY , bVar2)) {
+      if ((int)nRawY > nScreenHeight || (bXOutOfRange = (int)phWnd < nRawX , nRawX = nClampedX , Y = nRawY , bXOutOfRange)) {
         /* int Y for SetCursorPos */ /* int X for SetCursorPos */ SetCursorPos(nClampedX, Y);
         nRawX = nClampedX;
         nRawY = Y;
@@ -1284,40 +1265,32 @@ void __stdcall INPUT_FormTabKey(D2UIMouseMsgStrc * pMsg) {
 
 // @sourcefile .\Src\D2WinMain.cpp
 void __stdcall TakeScreenshot() {
-    // Frame slots -12..-4 are ONE object: &nScreenWidth is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nScreenWidth;
-      int nScreenHeight;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     DWORD dwTickCount = GetTickCount();
     if (!(dwTickCount - gdwLastScreenshotTick >= 1000)) {
       return;
     }
 
-    __frame0.nScreenWidth = 0;
-    __frame0.nScreenHeight = 0;
-    D2gfx::D2GFX::D2GFX_GetScreenSize(&__frame0.nScreenWidth, &__frame0.nScreenHeight);
-    uint8_t* pBuffer = (uint8_t*)D2_ALLOC_AT(__frame0.nScreenHeight * __frame0.nScreenWidth * 3, ".\\Src\\D2WinMain.cpp", 0x6a7);
+    int nScreenWidth = 0;
+    int nScreenHeight = 0;
+    D2gfx::D2GFX::D2GFX_GetScreenSize(&nScreenWidth, &nScreenHeight);
+    uint8_t* pBuffer = (uint8_t*)D2_ALLOC_AT(nScreenHeight * nScreenWidth * 3, ".\\Src\\D2WinMain.cpp", 0x6a7);
     BOOL bGotBackBuffer = D2gfx::D2GFX::D2GFX_GetBackBuffer(pBuffer);
     if (bGotBackBuffer) {
-      D2WIN_SaveScreenshotToFile(pBuffer, (LPCSTR)0x0, __frame0.nScreenWidth, __frame0.nScreenHeight);
+      D2WIN_SaveScreenshotToFile(pBuffer, (LPCSTR)0x0, nScreenWidth, nScreenHeight);
     }
 
     gdwLastScreenshotTick = dwTickCount;
     D2_FREE_AT(pBuffer, ".\\Src\\D2WinMain.cpp", 0x6b4);
 }
 
-void __stdcall D2WIN_Unused_Placeholder_5(int32_t nParam) {
+void __stdcall D2WIN_TakeScreenshotMsgHandler(D2UIMouseMsgStrc * pMsg) {
     TakeScreenshot();
-    *(uint32_t*)(nParam + 0x18) = 1;
-    *(uint32_t*)(nParam + 0x1c) = 0;
+    pMsg->bHandled = 1;
+    pMsg->dwResult = 0;
 }
 
 void __stdcall INPUT_FormMouseHandler(D2UIMouseMsgStrc * pMsg) {
-    int iVar1;
+    int nMouseX;
     MOUSE_CaptureMousePosition(&pMsg->hWnd);
     BOOL bHandled;
     bHandled = D2WinPopup::D2WINPOPUP_IsActiveAndVisible();
@@ -1340,28 +1313,28 @@ void __stdcall INPUT_FormMouseHandler(D2UIMouseMsgStrc * pMsg) {
 
       case 0x204:
         gnWinMainState = 1;
-      iVar1 = D2Client::Mouse::nPosX;
+      nMouseX = D2Client::Mouse::nPosX;
       if (pControl) {
         do {
           if (pControl->fpDrawAnim) {
             bHandled = pControl->fpDrawAnim(pControl);
-            iVar1 = D2Client::Mouse::nPosX;
+            nMouseX = D2Client::Mouse::nPosX;
             if (bHandled) {
               push_hit_control:
               pMsg->hWnd = (HWND)pControl;
-              iVar1 = D2Client::Mouse::nPosX;
+              nMouseX = D2Client::Mouse::nPosX;
               if (pControl->fpPush) {
                 gnFormControlCount++;
                 bHandled = pControl->fpPush((D2ControlMsg*)pMsg);
                 gnFormControlCount--;
-                iVar1 = D2Client::Mouse::nPosX;
+                nMouseX = D2Client::Mouse::nPosX;
                 if (bHandled) {
                   break;
                 }
               }
             }
           } else {
-            if (iVar1 >= pControl->dwPosX && D2Client::Mouse::nPosY >= pControl->dwPosY - pControl->dwSizeY && iVar1 < pControl->dwSizeX + pControl->dwPosX && D2Client::Mouse::nPosY < pControl->dwPosY) {
+            if (nMouseX >= pControl->dwPosX && D2Client::Mouse::nPosY >= pControl->dwPosY - pControl->dwSizeY && nMouseX < pControl->dwSizeX + pControl->dwPosX && D2Client::Mouse::nPosY < pControl->dwPosY) {
               goto push_hit_control;
             }
           }

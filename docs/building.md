@@ -46,4 +46,5 @@ start it from there:
 d2.exe -w
 ```
 
-`-w` runs it in a window.
+`-w` runs it in a window. Releases ship this exe renamed to `d2vp.exe` — same
+binary, a name that says Vanilla+; a locally built `d2.exe` behaves identically.

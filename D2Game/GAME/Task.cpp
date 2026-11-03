@@ -3,21 +3,25 @@
 #include "D2Game/GAME/Task.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
+#include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2RoomStrc.h"
+#include "D2Common/D2StatListExStrc.h"
 #include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Game/GAME/Clients.h"
+#include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Server.h"
 #include "D2Game/GAME/Server/ServerCmd.h"
 #include "D2Game/GAME/Targets.h"
+#include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitInactive.h"
+#include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
-#include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "Fog/Fog.h"
 
@@ -145,11 +149,10 @@ uint32_t __stdcall TASK_GetTimestamp() {
 D2TaskQueueSlotStrc * __stdcall TASK_EnterQueueCriticalSection(uint32_t nSlotToken) {
     EnterCriticalSection(aTaskQueueCriticalSections + (nSlotToken & 0x1f));
     D2TaskQueueSlotStrc* pDVar1 = gaTaskQueueHeadArray[nSlotToken & 0x1f];
-    if (pDVar1) {
-      return pDVar1;
+    if (!pDVar1) {
+      LeaveCriticalSection(aTaskQueueCriticalSections + (nSlotToken & 0x1f));
     }
 
-    LeaveCriticalSection(aTaskQueueCriticalSections + (nSlotToken & 0x1f));
     return pDVar1;
 }
 
@@ -401,6 +404,10 @@ void __stdcall TASK_GameTickCallback(uint32_t nParam, D2TaskNodeStrc * pTaskNode
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0088caa8);
 }
 
+void __stdcall thunk_QueryPerformanceFrequency_B() {
+    /* LARGE_INTEGER * lpFrequency for QueryPerformanceFrequency */ gbPerformanceCounterAvailable = QueryPerformanceFrequency(&gnPerformanceFrequency);
+}
+
 // @sourcefile .\GAME\Task.cpp
 void __stdcall TASK_FreeAllSlots() {
     D2LinkNodeStrc* pSlotLink;
@@ -531,28 +538,28 @@ int32_t __fastcall TASK_DequeueReadyTask(uint32_t nSlotToken, D2TaskNodeStrc * *
     int32_t nResult = 100;
     *ppTaskOut = 0;
     EnterCriticalSection(aTaskQueueCriticalSections + (nSlotToken & 0x1f));
-    D2TaskQueueSlotStrc* pDVar1 = gaTaskQueueHeadArray[nSlotToken & 0x1f];
-    if (!pDVar1) {
+    D2TaskQueueSlotStrc* pQueueSlot = gaTaskQueueHeadArray[nSlotToken & 0x1f];
+    if (!pQueueSlot) {
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(aTaskQueueCriticalSections + (nSlotToken & 0x1f));
       return 100;
     }
 
-    PD2TaskNodeLink pReadyTask = pDVar1->sTaskList.pPrev;
-    if (pReadyTask != &pDVar1->sTaskList && pReadyTask) {
-      uint32_t uVar2;
-      uVar2 = TASK_GetTimestamp();
-      nResult = ((D2TaskNodeStrc*)((char*)pReadyTask - 0xc))->dwTimestamp - uVar2;
+    PD2TaskNodeLink pReadyTask = pQueueSlot->sTaskList.pPrev;
+    if (pReadyTask != &pQueueSlot->sTaskList && pReadyTask) {
+      uint32_t uVar1;
+      uVar1 = TASK_GetTimestamp();
+      nResult = ((D2TaskNodeStrc*)((char*)pReadyTask - 0xc))->dwTimestamp - uVar1;
       if (nResult <= 0) {
         TASK_UnlinkTaskFromList(pReadyTask);
         *ppTaskOut = (D2TaskNodeStrc*)((char*)pReadyTask - 0xc);
       }
     }
-    if (pDVar1->nSlotIndex >= 0x20) {
+    if (pQueueSlot->nSlotIndex >= 0x20) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x97);
       exit(-1);
     }
 
-    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(aTaskQueueCriticalSections + pDVar1->nSlotIndex);
+    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(aTaskQueueCriticalSections + pQueueSlot->nSlotIndex);
     return nResult;
 }
 
@@ -569,8 +576,19 @@ BOOL __stdcall TASK_ReturnTrue() {
     return 1;
 }
 
-void __stdcall TASK_Nop() {
+// Registers: pItem (ECX) is passed by the callers but not read.
+void __fastcall TASK_Nop(D2UnitStrc * pItem) {
 
+}
+
+void StaticInit_CriticalSection_0088caa8() {
+    InitializeCriticalSection(&lpCriticalSection_0088caa8);
+    atexit(StaticFini_CriticalSection_0088caa8);
+}
+
+void StaticInit_aTaskQueueCriticalSections() {
+    _eh_vector_constructor_iterator_(aTaskQueueCriticalSections, 0x18, 0x20, Fog::Src::LogManager::InitCriticalSection, Fog::THREADING_DeleteCriticalSection_Thunk);
+    atexit(StaticFini_aTaskQueueCriticalSections);
 }
 
 void StaticFini_CriticalSection_0088caa8() {

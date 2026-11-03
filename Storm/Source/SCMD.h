@@ -56,13 +56,13 @@ namespace Storm::Source {
 // Function declarations
 uint32_t __thiscall SCMD_GetListOffset(::SCMD * pThis, int nBaseOffset);
 ::SCMD * __thiscall SCMD_GetListHead(::SCMD * pThis, ::SCMD * pNode);
-void __thiscall SCMD_MoveToList(::SCMD * pThis, ::SCMD * pNode, int nParam, ::SCMD * pScmd);
+void __thiscall SCMD_MoveToList(::SCMD * pThis, ::SCMD * pNode, int nInsertMode, ::SCMD * pScmd);
 uint32_t __thiscall SCMD_GetNextOffset(::SCMD * pThis, ::SCMD * pNode);
 void __thiscall SCMD_UnlinkNode(::SCMD * pThis, ::SCMD * pNode);
 uint32_t __thiscall SCMD_GetHandler(::SCMD * pThis, int nNodeOffset);
 void __fastcall SCMD_ClearList(struct D2StormListHead * nListPtr);
 void __fastcall SCMD_ClearAll(struct D2StormListHead * nListPtr);
-::SCMD * __thiscall SCMD_AllocNode(::SCMD * pThis, int nInsertMode, int nParam, uint32_t nParam2);
+::SCMD * __thiscall SCMD_AllocNode(::SCMD * pThis, int nInsertMode, int nExtraSize, uint32_t dwAllocFlags);
 ::SCMD * __thiscall SCMD_FreeNode(::SCMD * pThis, uint8_t bFreeMemory);
 // Registers one command-line argument definition into Storm's command list.
 // @oracle SCmdRegisterArgument
@@ -110,7 +110,7 @@ BOOL __fastcall SCMD_ProcessString(uint32_t * ppszCursor, int * pCmdCtx, uint32_
 // @oracle-source Storm export vector SCmdGetBool @100cbc84 -> code 10008b10 in Mac PPC 1.10b Storm
 // @rename-basis Cross-architecture body match, with the field offsets carrying the argument. PPC 10008b10 reads r3 only - one argument - then walks the two command-list heads at +8, compares node +0xc against the id and returns node +0x3c (10008b60: lwz r0,0xc(r3); cmplw r0,r25; 10008b6c: lwz r3,0x3c(r3)). This function does precisely that through the shared helper 006c4d70 and, unlike SCMD_GetUserData 006c4ca0 which returns the unrelated +0x38 field raw, normalises to a strict BOOL - which is what GetBool means. MWCC inlined the lookup; MSVC factored it out.
 // @former-name SCMD_ValidateCommand
-bool __stdcall SCmdGetBool(int nCmdId);
+BOOL __stdcall SCmdGetBool(int nCmdId);
 // Tokenises a command string and dispatches each token against the registered command list, optionally skipping the first token. Reports 0x8510006d through the error callback when a required argument was not supplied.
 // @oracle SCmdProcess
 // @oracle-source Storm export vector SCmdProcess @100cbc94 -> code 100086c0 = the traceback-named function .SCmdProcess, in Mac PPC 1.10b Storm
@@ -123,6 +123,8 @@ int __stdcall SCmdProcess(char * szCommandLine, int bSkipFirstToken, pfnSCmdUnkn
 // @rename-basis Cross-architecture body match. PPC 10008640 is a two-argument function that saves both arguments, calls the OS command-line getter at 1006e100, then calls .SCmdProcess with (result, 1, arg1, arg2). This function is the same two-argument wrapper with GetCommandLineA in that slot. It is the only SCmd function that reads the process command line rather than a caller-supplied string.
 // @former-name SCMD_ParseCommandLineFromOS
 void __stdcall SCmdProcessCommandLine(pfnSCmdUnknownArgCallback pfnUnknownCallback, pfnSCmdErrorCallback pfnErrorCallback);
+void StaticInit_gStormCmdListBackslash();
+void StaticInit_gStormCmdListSlash();
 // Runs at exit: removes every element from the Storm command-argument list gStormCmdListHeadBackslash, then unlinks the list head itself.
 void StaticFini_gStormCmdListBackslash();
 // Runs at exit: removes every element from the Storm command-argument list gStormCmdListHeadSlash, then unlinks the list head itself.

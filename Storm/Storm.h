@@ -7,12 +7,10 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "Storm/Source/SSystem.h"
+#include "Storm/Source/SFile.h"
 
 // Forward declarations
 struct D2MPQFileStrc;
-struct D2StormAudioStreamRec;
-struct IDirectSoundBuffer;
 struct D2StormAsyncCompletionStrc;
 #ifndef RECON_FPTD_fnStormAsyncCompletion
 #define RECON_FPTD_fnStormAsyncCompletion
@@ -60,7 +58,5 @@ namespace Storm {
 // Function declarations
 // @blizzard SMsgBreakHandlerChain (SMSG.CPP)
 int __stdcall SMsgBreakHandlerChain(void * pUnderMouse);
-void StaticFini_Empty_6cb400();
-void StaticFini_gFaultHandlerList();
 
 } // namespace Storm

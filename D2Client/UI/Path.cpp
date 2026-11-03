@@ -34,6 +34,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Panel.h"
+#include "D2Client/UI/VanillaPlusCore.h" // VP: [issue #26 / R92] wide-layout guards
 #include "D2Common/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
 
@@ -53,10 +54,13 @@ void __fastcall TypeOfUiOverlayOverWorld(uint32_t eBorderType) {
           MouseYRelatedB = 0;
         break;
         case 1:
-          MouseYRelatedB = -(ScreenSizeX / 4);
+          // VP: [issue #26 / R95] no-panel-shift - the world keeps the
+          // border-0 camera (no quarter slide) on the wide stops while
+          // d2vp.ini no_panel_shift=1; retail slide otherwise.
+          MouseYRelatedB = PANELSHIFT_NoShiftWorld() ? 0 : -(ScreenSizeX / 4);
         break;
         case 2:
-          MouseYRelatedB = ScreenSizeX / 4;
+          MouseYRelatedB = PANELSHIFT_NoShiftWorld() ? 0 : ScreenSizeX / 4;
       }
     }
 
@@ -68,9 +72,59 @@ void __fastcall TypeOfUiOverlayOverWorld(uint32_t eBorderType) {
         GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
       break;
       case 1:
+        // VP-BEGIN [issue #26 / R95]: no-panel-shift - a single open panel
+        // takes the border-0 view rect verbatim (full unpanned window, no
+        // rcExtendedView widening): the world renders exactly like the
+        // field-proven both-panels-open case and the panel overdraws its own
+        // rect. No GAMEDATA_ClearQueuedClicks - world clicking stays active
+        // (retail single-panel semantics, and with the world unpanned the
+        // margins are clickable world again). The R92 wide guard below stays
+        // for the vanilla slide (no_panel_shift=0).
+        if (PANELSHIFT_NoShiftWorld()) {
+          GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
+          return;
+        }
+        // VP-BEGIN [issue #26 / R92]: wide-UI layouts (1280x720) keep the tile
+        // walk at the full panned span. Retail narrows the walk to the free
+        // half (right cut -quarter) because the open panel reaches the screen
+        // edge at 640x480/800x600; the 800-class panel floats 240 px inboard
+        // at 720p, so the retail cut left the outer margin strip unrendered
+        // ("black triangles ... all black outside of panel" - issue #26).
+        // The pan itself (-quarter via MouseYRelatedB) is untouched: the
+        // mouse->world mapping rides the same offset.
+        if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+          GAME::View::SetViewRectangleSize(D2GameView, -nViewOffsetX, 0, WindowSizeX + nViewOffsetX, WindowSizeY);
+          D2GameView->rcExtendedView.right += nViewOffsetX; // DrawFloorTile rejects outside this rect
+          return;
+        }
         GAME::View::SetViewRectangleSize(D2GameView, -nViewOffsetX, 0, WindowSizeX - nViewOffsetX, WindowSizeY);
       return;
       case 2:
+        // VP-BEGIN [issue #26 / R95]: no-panel-shift - mirror of the case-1
+        // guard above: border-0 view rect verbatim, no rcExtendedView
+        // widening, world clicking stays active. The R92+R93 wide guard
+        // below stays for the vanilla slide (no_panel_shift=0).
+        if (PANELSHIFT_NoShiftWorld()) {
+          GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
+          return;
+        }
+        // VP-BEGIN [issue #26 / R92+R93]: wide-UI layouts (1280x720) keep the
+        // tile walk at the full panned span. R92 widened the walk by flipping
+        // the LEFT edge to -quarter; R93 corrects that: pView.left doubles as
+        // the NON-perspective wall-tile pan origin (screen_x = pView.left -
+        // nCenterX + tile anchor in the dWallPass / WALL2 alpha / shadow
+        // passes), so it must stay at retail's +quarter - the case-2 world
+        // pan is +quarter and the software paths would draw walls detached
+        // from the floor otherwise. The extra span rides the RIGHT edge
+        // instead: +3*quarter keeps width = window + 2*quarter (the span the
+        // perspective path needs and the span WALL2_AllocDrawList's grid
+        // column count / rcCull derive from); the floor-side left-margin
+        // coverage rides the rcExtendedView.left widening below.
+        if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+          GAME::View::SetViewRectangleSize(D2GameView, nViewOffsetX, 0, WindowSizeX + 3 * nViewOffsetX, WindowSizeY);
+          D2GameView->rcExtendedView.left -= nViewOffsetX;
+          return;
+        }
         GAME::View::SetViewRectangleSize(D2GameView, nViewOffsetX, 0, WindowSizeX + nViewOffsetX, WindowSizeY);
       return;
       case 3:
@@ -102,8 +156,7 @@ void __fastcall ConvertCoordToPerspectiveView(int * pX, int * pY) {
     uint32_t bPerspective = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
     if (bPerspective) {
       int nDiv;
-      nDiv = (int)((uint64_t)((int64_t)nY * -0x66666667) >> 0x20);
-      nY += (nDiv >> 4) - (nDiv >> 0x1f);
+      nY += nY / -40;
       nX += (0x28 - ((int)((nY >> 0x1f & 3U) + nY) >> 2)) * (nX - ScreenSizeX / 2) / (ScreenSizeX / 2);
     }
 
@@ -115,9 +168,10 @@ void __fastcall ConvertCoordToPerspectiveView(int * pX, int * pY) {
 }
 
 void __fastcall DRAW_DrawRoomUnits(D2RoomStrc * pRoom) {
+    int32_t nCoord;
     int nYStart;
-    int32_t iVar4;
     int nYEnd;
+    uint32_t i;
     int nScreenX;
     D2RoomStrc** ppAdjacentRooms;
     uint32_t nRoomCount;
@@ -127,35 +181,28 @@ void __fastcall DRAW_DrawRoomUnits(D2RoomStrc * pRoom) {
     D2UnitStrc* pUnit;
     D2RoomStrc* pRoomSaved = pRoom;
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &ppAdjacentRooms, (int*)&nRoomCount);
-    uint32_t i = 0;
-    if (nRoomCount <= 0) {
-      return;
-    }
-
-    do {
+    for (i = 0; i < nRoomCount; i++) {
       for (pUnit = pRoom->pUnitList; pUnit; pUnit = pUnit->pRoomNext) {
-        iVar4 = D2Common::Units::GetTargetX(pUnit);
-        nScreenX = iVar4 - MouseXOffset;
-        iVar4 = D2Common::Units::GetTargetY(pUnit);
-        D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nScreenX, iVar4 - MouseYOffset, nScreenX + 4, iVar4 - MouseYOffset + 4, 0xff, DRAW_SOLID);
+        nCoord = D2Common::Units::GetTargetX(pUnit);
+        nScreenX = nCoord - MouseXOffset;
+        nCoord = D2Common::Units::GetTargetY(pUnit);
+        D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nScreenX, nCoord - MouseYOffset, nScreenX + 4, nCoord - MouseYOffset + 4, 0xff, DRAW_SOLID);
         if (pUnit && pUnit->eUnitType == UNIT_WARP) {
           for (pGfxInfo = pUnit->pGfxInfo; pGfxInfo; pGfxInfo = *(D2GfxInfoStrc**)(pGfxInfo->nComponentFlags + 0x20)) {
             nYEnd = *(int*)(pGfxInfo->nComponentFlags + 4) - MouseYOffset;
             nScreenX = *(int*)pGfxInfo->nComponentFlags - MouseXOffset;
             nLineAlpha = 0xff;
             nColor_lcl = 0xff;
-            iVar4 = D2Common::Units::GetTargetY(pUnit);
-            nYStart = iVar4 - MouseYOffset;
-            iVar4 = D2Common::Units::GetTargetX(pUnit);
-            D2gfx::D2GFX::D2GFX_DrawLine(iVar4 - MouseXOffset, nYStart, nScreenX, nYEnd, nColor_lcl, nLineAlpha);
+            nCoord = D2Common::Units::GetTargetY(pUnit);
+            nYStart = nCoord - MouseYOffset;
+            nCoord = D2Common::Units::GetTargetX(pUnit);
+            D2gfx::D2GFX::D2GFX_DrawLine(nCoord - MouseXOffset, nYStart, nScreenX, nYEnd, nColor_lcl, nLineAlpha);
           }
         }
 
         pRoom = pRoomSaved;
       }
-
-      i++;
-    } while (i < nRoomCount);
+    }
 }
 
 void __fastcall DEBUG_DrawRoomBoundsRect(int32_t nX, int32_t nY, BYTE bColor) {
@@ -241,6 +288,7 @@ void __stdcall DEBUG_DrawUnitShadowBounds(D2UnitStrc * pUnit) {
 }
 
 void __stdcall DEBUG_DrawWarpUnitBounds() {
+    uint32_t i;
     D2RoomStrc** ppAdjacentRooms;
     uint32_t nRoomCount;
     D2UnitStrc* pUnit;
@@ -250,20 +298,13 @@ void __stdcall DEBUG_DrawWarpUnitBounds() {
     }
 
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &ppAdjacentRooms, (int*)&nRoomCount);
-    uint32_t i = 0;
-    if (nRoomCount <= 0) {
-      return;
-    }
-
-    do {
+    for (i = 0; i < nRoomCount; i++) {
       for (pUnit = pRoom->pUnitList; pUnit; pUnit = pUnit->pRoomNext) {
         if (pUnit->eUnitType == UNIT_WARP) {
           DEBUG_DrawUnitShadowBounds(pUnit);
         }
       }
-
-      i++;
-    } while (i < nRoomCount);
+    }
 }
 
 void __stdcall DRAW_UpdateMouseWorldOffsets() {
@@ -364,7 +405,7 @@ void __stdcall DRAW_DrawRoomWallTiles(D2RoomStrc * pRoom) {
           nScreenY = (*pTile + roomCoords.sTileRect.top) * 5 + 3;
           D2Common::Drlg::Transform::CoordsMapToScreen(&nScreenX, &nScreenY);
           if (pTile[4] != 0xf && (pTile[2] & 0x1c000U) == 0x4000) {
-            nTileFlags = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetTileCount((int32_t)pTile[3]);
+            nTileFlags = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetTileCount((D2TileLibraryEntryStrc*)pTile[3]);
             if (nTileFlags & 4) {
               rect.right = nScreenX + 0x20 - MouseXOffset;
               rect.left = rect.right - 0x10;

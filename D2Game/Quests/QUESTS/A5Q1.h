@@ -40,7 +40,7 @@ void __fastcall Q31_Callback10_PlayerLeavesGame(struct D2QuestDataStrc * pQuestD
 // A5Q1: per-player "am I near Shenk's room?" check, run after Shenk dies. Skips if quest already Completed. Compares player's current room (and its adjacent rooms) against the saved Shenk-room GUID; if the player witnessed the kill, sets RewardAwaits(1) + JustCompleted(0xd) on their quest record so Larzuk will offer the socket reward. Iterator cb, returns 0.
 BOOL __fastcall Q31_CheckNearShenk(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
 // A5Q1 party-member completion stamp: for each party member, if Siege not already Completed(0)/RewardAwaits(1)/JustCompleted(0xd) AND they are physically in Act 5, set RewardAwaits(1)+JustCompleted(0xd) so the whole party gets credit for Shenk's death.
-void __fastcall Q31_SetCompleteForPartyMember(int32_t pGameRaw, struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame);
+void __fastcall Q31_SetCompleteForPartyMember(::SGAMEDATA * pGameRaw, struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame);
 // A5Q1: if this player just completed the quest (JustCompleted 0xd) and is in a party, propagate completion to every party member via Q31_SetCompleteForPartyMember.
 BOOL __fastcall Q31_PropagateCompleteToParty(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
 // A5Q1: per-player, if not Completed(0)/RewardAwaits(1)/JustCompleted(0xd), set CannotCompleteQuestInGame(0xe) and push a quest-update packet (id 0x1f) - marks players who were not present for Shenk's kill as unable to finish this session.
@@ -66,7 +66,7 @@ void __fastcall Q31_ClaimReward(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // A5Q1 object init fn 70: empty stub (no-op). Placeholder object initializer slot.
 void __fastcall Objects_InitFn70(struct D2ObjectInitFnArg * pInitArg);
 // A5Q1 object init fn 71: spawns Shenk the Overseer (monstats 0x1ff) once per quest at a valid location in the room, records his unit GUID + spawn-guard flags, and copies the preset DRLG map file for his AI. Guards via per-quest "already spawned" byte. No quest-record bit changes.
-void __fastcall Objects_InitFn71(struct D2ObjectInitFnArg * pInitArg);
+void __fastcall Objects_InitFn71_LarzukStandard(struct D2ObjectInitFnArg * pInitArg);
 // A5Q1 death hook: when a monster dies, if it is boss 0x2a (Shenk the Overseer) and quest progress<2 with intro shown, broadcast state 2 (Shenk slain) which drives the state-8 completion fan-out.
 void __fastcall Q31_OnOverseerDeath(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // A5Q1 preset-object load hook: when the Shenk preset object loads, copies its preset object list into the quest data; if Shenk was already spawned and his unit still exists, re-attaches the DRLG map file to his AI. No quest-record bit changes.

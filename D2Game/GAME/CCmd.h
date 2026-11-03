@@ -22,7 +22,7 @@ struct __attribute__((packed)) D2GSMsg67GameLogonSPStrc {
     /* 0x13 */ uint8_t nTemplate;
     /* 0x14 */ uint8_t nDifficulty;
     /* 0x15 */ char szCharName[16];
-    /* 0x25 */ int16_t field_0x25;
+    /* 0x25 */ int16_t nArena;
     /* 0x27 */ eD2ArenaFlags eArenaFlags;
     /* 0x2B */ uint8_t field_0x2b;
     /* 0x2C */ uint8_t field_0x2c;
@@ -34,7 +34,7 @@ struct __attribute__((packed)) D2GSMsg68GameLogonMultiStrc {
     /* 0x01 */ uint32_t dwGameHash;
     /* 0x05 */ uint16_t nGameToken;
     /* 0x07 */ uint8_t nCharClass;
-    /* 0x08 */ uint32_t field_0x8; // IsTokenFirstGame rejects anything but 0xE
+    /* 0x08 */ uint32_t dwClientVersion; // IsTokenFirstGame rejects anything but 0xE
     /* 0x0C */ uint8_t field_0xc;
     /* 0x0D */ uint8_t field_0xd;
     /* 0x0E */ uint8_t field_0xe;
@@ -78,7 +78,8 @@ namespace D2Game::GAME::CCmd {
 // Function declarations
 // D2GS server-side dispatcher for the game-setup / session control packet family (opcodes 0x67..0x70, indexed by pPacket[1]-0x67). Reads the client id from pPacket[0] and routes: 0=GAMELOGON_SP (single-player create via GAME_CreateSingleplayerGame), 1=GAMELOGON_MULTI (token-first-game anti-cheat check, NET_D2GS_SERVER_IsValidChecks then NET_D2GS_SERVER_SrvJoinGame), 2=LEAVEGAME, 3=REQUESTHOSTEDGAMES, 4=JOINGAME (SrvJoinAct), 5=UPLOADSAVE (halts unrecoverably if save size >0x1fff), 6=PING (NET_SendPong), 7=FINDME_6E, 9=force-disconnect (sets QServer nForceTimeoutDisconnect). Most branches gate the action behind a per-command validity/allowed check. Returns via Fog::Debug::GuardStack. pCritSec is the clients-list critical section (released on the force-disconnect path). NOTE: several gate booleans (bSetupCheckResult, bServerValidRequest, bFindMeCheckResult) read as uninitialized in decompile due to lost register-param/inlined-return storage.
 // @sourcefile .\GAME\CCmd.cpp
-void __fastcall NET_D2GS_SERVER_ProcessClientMessage_GameSetup(struct D2GSClientMsgEnvelopeStrc * pPacket);
+// Registers: pPacket in ECX; nPacketSize in EDX (the received length) is passed but not read.
+void __fastcall NET_D2GS_SERVER_ProcessClientMessage_GameSetup(struct D2GSClientMsgEnvelopeStrc * pPacket, int32_t nPacketSize);
 // IN-GAME PACKET HANDLER: Processes player actions (movement, skills, items).
 // Packet dispatch via table at 0x006E0D18 (103 opcodes):
 // - 0x01-0x05: Movement (walk, run, teleport)
