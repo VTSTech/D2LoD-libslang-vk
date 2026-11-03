@@ -1001,7 +1001,7 @@ BOOL __fastcall ITEM_UpdateChargedSkillStat(D2UnitStrc * pUnit, int32_t nSkillId
     BOOL nChargeValue;
     uint32_t nLevel;
     uint32_t nChargeCount;
-    uint32_t nStatParamPacked = (nSkillId << (sgptDataTable->nChargedSkillLevelBits & 0x1f)) + (sgptDataTable->dwChargedSkillLevelMask & nStatLevel);
+    uint32_t nStatParamPacked = (nSkillId << D2_SHIFT_COUNT(sgptDataTable->nChargedSkillLevelBits)) + (sgptDataTable->dwChargedSkillLevelMask & nStatLevel);
     for (pStatList = D2Common::Stats::StatsEx::GetStatsByFlags(pUnit, 0x40); pStatList; pStatList = D2Common::Stats::StatsEx::STATLIST_FindStatListWithFlags(pStatList, 0x40)) {
       int nStatValue;
       nStatValue = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_item_charged_skill, nStatParamPacked);
@@ -1049,7 +1049,7 @@ void __fastcall ITEM_HandleStatUpdatePacket(DWORD nUnitGUID, char bSetStat, eD2U
     if (eUnitStat == UNITSTAT_item_charged_skill) {
       pPlayerUnit_lcl = Player::GetPlayerUnit_UI();
       if (pPlayerUnit_lcl) {
-        ITEM_UpdateChargedSkillStat(pItem, (uint32_t)(nStatParam >> (sgptDataTable->nChargedSkillLevelBits & 0x1f)), sgptDataTable->dwChargedSkillLevelMask & (uint32_t)nStatParam, nValue & 0xff);
+        ITEM_UpdateChargedSkillStat(pItem, (uint32_t)(nStatParam >> D2_SHIFT_COUNT(sgptDataTable->nChargedSkillLevelBits)), sgptDataTable->dwChargedSkillLevelMask & (uint32_t)nStatParam, nValue & 0xff);
         return;
       }
     } else {
@@ -1522,13 +1522,13 @@ void __fastcall HandleItemOnGround(uint8_t * pBuffer) {
     }
 
     pItem = ITEM_CreateItemFromGroundPacket(StItemDetails.x, StItemDetails.y, 0, pBuffer, &StItemDetails);
-    if (pItem) {
-      ITEM_RemoveUninterruptableState(pItem);
-      return;
-    } else {
+    if (!pItem) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x405);
       exit(-1);
     }
+
+    ITEM_RemoveUninterruptableState(pItem);
+    return;
 }
 
 // Places pUnit (an item) into pUnit2's inventory at the given grid coords (nItemX, nYPos), then calls INVENTORY_PlaceItemAtCoords for the resolved inventory page. If the item belongs to the local player: plays a pickup sound (nParam==1) or refreshes cursor item (otherwise). Handles Horadric Cube quest trigger for scroll/tome items (nParam==3). Client-side only (calls D2Client functions).

@@ -426,7 +426,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     nStatValue = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pCubeItem, eStatId, 0);
-                                    if (nStatValue < nFileIndex >> (bHasMaxSockets & 0x1f)) {
+                                    if (nStatValue < nFileIndex >> D2_SHIFT_COUNT(bHasMaxSockets)) {
                                       continue;
                                     }
                                   }
@@ -443,7 +443,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     nFileIndex = pRecipe->nValue;
                                     bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nStatValue = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pCubeItem, eStatId, 0);
-                                    if (nStatValue > nFileIndex >> (bHasMaxSockets & 0x1f)) {
+                                    if (nStatValue > nFileIndex >> D2_SHIFT_COUNT(bHasMaxSockets)) {
                                       continue;
                                     }
                                   }
@@ -460,7 +460,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     nStatValue = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pCubeItem, eStatId, 0);
-                                    bCodeMatches = nStatValue == nFileIndex >> (bHasMaxSockets & 0x1f);
+                                    bCodeMatches = nStatValue == nFileIndex >> D2_SHIFT_COUNT(bHasMaxSockets);
                                     goto reject_if_equal;
                                   }
 
@@ -476,7 +476,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     nStatValue = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pCubeItem, eStatId, 0);
-                                    if (nStatValue != nFileIndex >> (bHasMaxSockets & 0x1f)) {
+                                    if (nStatValue != nFileIndex >> D2_SHIFT_COUNT(bHasMaxSockets)) {
                                       continue;
                                     }
                                   }
@@ -493,7 +493,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     nFileIndex = pRecipe->nValue;
                                     bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nSocketCount = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pCubeItem, eStatId, 0);
-                                    if (nSocketCount < nFileIndex >> (bHasMaxSockets & 0x1f)) {
+                                    if (nSocketCount < nFileIndex >> D2_SHIFT_COUNT(bHasMaxSockets)) {
                                       continue;
                                     }
                                   }
@@ -510,7 +510,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     nSocketCount = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pCubeItem, eStatId, 0);
-                                    if (nSocketCount > nFileIndex >> (bHasMaxSockets & 0x1f)) {
+                                    if (nSocketCount > nFileIndex >> D2_SHIFT_COUNT(bHasMaxSockets)) {
                                       continue;
                                     }
                                   }
@@ -527,7 +527,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     nSocketCount = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pCubeItem, eStatId, 0);
-                                    bCodeMatches = nSocketCount == nFileIndex >> (bHasMaxSockets & 0x1f);
+                                    bCodeMatches = nSocketCount == nFileIndex >> D2_SHIFT_COUNT(bHasMaxSockets);
                                     goto reject_if_equal;
                                   }
 
@@ -543,7 +543,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     nFileIndex = pRecipe->nValue;
                                     bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nSocketCount = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pCubeItem, eStatId, 0);
-                                    if (nSocketCount != nFileIndex >> (bHasMaxSockets & 0x1f)) {
+                                    if (nSocketCount != nFileIndex >> D2_SHIFT_COUNT(bHasMaxSockets)) {
                                       continue;
                                     }
                                   }
@@ -560,7 +560,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     nSocketCount = D2Common::Stats::StatsEx::STATLIST_GetStatBonusFromLists(pCubeItem, eStatId, 0);
-                                    if (nSocketCount < nFileIndex >> (bHasMaxSockets & 0x1f)) {
+                                    if (nSocketCount < nFileIndex >> D2_SHIFT_COUNT(bHasMaxSockets)) {
                                       continue;
                                     }
                                   }
@@ -577,7 +577,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     nSocketCount = D2Common::Stats::StatsEx::STATLIST_GetStatBonusFromLists(pCubeItem, eStatId, 0);
-                                    if (nSocketCount > nFileIndex >> (bHasMaxSockets & 0x1f)) {
+                                    if (nSocketCount > nFileIndex >> D2_SHIFT_COUNT(bHasMaxSockets)) {
                                       continue;
                                     }
                                   }
@@ -594,7 +594,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     nFileIndex = pRecipe->nValue;
                                     bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nSocketCount = D2Common::Stats::StatsEx::STATLIST_GetStatBonusFromLists(pCubeItem, eStatId, 0);
-                                    bCodeMatches = nSocketCount == nFileIndex >> (bHasMaxSockets & 0x1f);
+                                    bCodeMatches = nSocketCount == nFileIndex >> D2_SHIFT_COUNT(bHasMaxSockets);
                                     goto reject_if_equal;
                                   }
 
@@ -610,7 +610,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     nSocketCount = D2Common::Stats::StatsEx::STATLIST_GetStatBonusFromLists(pCubeItem, eStatId, 0);
-                                    if (nSocketCount != nFileIndex >> (bHasMaxSockets & 0x1f)) {
+                                    if (nSocketCount != nFileIndex >> D2_SHIFT_COUNT(bHasMaxSockets)) {
                                       continue;
                                     }
                                   }
@@ -1385,7 +1385,7 @@ static void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc
             byBitShift = pStatCostTxt->valshift;
             nOperand = pRecipe->nValue;
             nStatValue = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayer, pRecipe->nParam, 0);
-            if (nStatValue < nOperand >> (byBitShift & 0x1f)) {
+            if (nStatValue < nOperand >> D2_SHIFT_COUNT(byBitShift)) {
               continue;
             }
           }
@@ -1402,7 +1402,7 @@ static void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc
             byBitShift = pStatCostTxt->valshift;
             nOperand = pRecipe->nValue;
             nStatValue = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayer, pRecipe->nParam, 0);
-            if (nStatValue > nOperand >> (byBitShift & 0x1f)) {
+            if (nStatValue > nOperand >> D2_SHIFT_COUNT(byBitShift)) {
               continue;
             }
           }
@@ -1419,7 +1419,7 @@ static void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc
             byBitShift = pStatCostTxt->valshift;
             nOperand = pRecipe->nValue;
             nStatValue = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayer, pRecipe->nParam, 0);
-            if (nStatValue == nOperand >> (byBitShift & 0x1f)) {
+            if (nStatValue == nOperand >> D2_SHIFT_COUNT(byBitShift)) {
               continue;
             }
           }
@@ -1433,7 +1433,7 @@ static void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc
               continue;
             }
 
-            nThreshold = pRecipe->nValue >> (pStatCostTxt->valshift & 0x1fU);
+            nThreshold = pRecipe->nValue >> D2_SHIFT_COUNT(pStatCostTxt->valshift);
             nOperand = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayer, pRecipe->nParam, 0);
             require_stat_equal:
             bConditionMet = nOperand == nThreshold;
@@ -1456,7 +1456,7 @@ static void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc
             byBitShift = pStatCostTxt->valshift;
             nOperand = pRecipe->nValue;
             nScratch = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pPlayer, pRecipe->nParam, 0);
-            if (nScratch < nOperand >> (byBitShift & 0x1f)) {
+            if (nScratch < nOperand >> D2_SHIFT_COUNT(byBitShift)) {
               continue;
             }
           }
@@ -1473,7 +1473,7 @@ static void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc
             byBitShift = pStatCostTxt->valshift;
             nOperand = pRecipe->nValue;
             nScratch = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pPlayer, pRecipe->nParam, 0);
-            if (nScratch > nOperand >> (byBitShift & 0x1f)) {
+            if (nScratch > nOperand >> D2_SHIFT_COUNT(byBitShift)) {
               continue;
             }
           }
@@ -1490,7 +1490,7 @@ static void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc
             byBitShift = pStatCostTxt->valshift;
             nOperand = pRecipe->nValue;
             nScratch = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pPlayer, pRecipe->nParam, 0);
-            if (nScratch == nOperand >> (byBitShift & 0x1f)) {
+            if (nScratch == nOperand >> D2_SHIFT_COUNT(byBitShift)) {
               continue;
             }
           }
@@ -1501,7 +1501,7 @@ static void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc
           if ((int)eStatId >= 0 && (int)eStatId <= sgptDataTable->nTxtItemStatCostSize) {
             pStatCostTxt = D2Client::GAME::SCmd::TXT_ItemStatCost_GetLine(eStatId);
             if (pStatCostTxt) {
-              nThreshold = pRecipe->nValue >> (pStatCostTxt->valshift & 0x1fU);
+              nThreshold = pRecipe->nValue >> D2_SHIFT_COUNT(pStatCostTxt->valshift);
               nOperand = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pPlayer, pRecipe->nParam, 0);
               goto require_stat_equal;
             }
@@ -1521,7 +1521,7 @@ static void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc
             byBitShift = pStatCostTxt->valshift;
             nOperand = pRecipe->nValue;
             nScratch = D2Common::Stats::StatsEx::STATLIST_GetStatBonusFromLists(pPlayer, pRecipe->nParam, 0);
-            if (nScratch < nOperand >> (byBitShift & 0x1f)) {
+            if (nScratch < nOperand >> D2_SHIFT_COUNT(byBitShift)) {
               continue;
             }
           }
@@ -1538,7 +1538,7 @@ static void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc
             byBitShift = pStatCostTxt->valshift;
             nOperand = pRecipe->nValue;
             nScratch = D2Common::Stats::StatsEx::STATLIST_GetStatBonusFromLists(pPlayer, pRecipe->nParam, 0);
-            if (nScratch > nOperand >> (byBitShift & 0x1f)) {
+            if (nScratch > nOperand >> D2_SHIFT_COUNT(byBitShift)) {
               continue;
             }
           }
@@ -1555,7 +1555,7 @@ static void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc
             byBitShift = pStatCostTxt->valshift;
             nOperand = pRecipe->nValue;
             nScratch = D2Common::Stats::StatsEx::STATLIST_GetStatBonusFromLists(pPlayer, pRecipe->nParam, 0);
-            if (nScratch == nOperand >> (byBitShift & 0x1f)) {
+            if (nScratch == nOperand >> D2_SHIFT_COUNT(byBitShift)) {
               continue;
             }
           }
@@ -1566,7 +1566,7 @@ static void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc
           if ((int)eStatId >= 0 && (int)eStatId <= sgptDataTable->nTxtItemStatCostSize) {
             pStatCostTxt = D2Client::GAME::SCmd::TXT_ItemStatCost_GetLine(eStatId);
             if (pStatCostTxt) {
-              nThreshold = pRecipe->nValue >> (pStatCostTxt->valshift & 0x1fU);
+              nThreshold = pRecipe->nValue >> D2_SHIFT_COUNT(pStatCostTxt->valshift);
               nOperand = D2Common::Stats::StatsEx::STATLIST_GetStatBonusFromLists(pPlayer, pRecipe->nParam, 0);
               goto require_stat_equal;
             }

@@ -173,6 +173,7 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
       Storm::Source::SReg::SRegSaveValue("Diablo II", "Resolution", 0, 0);
     }
     if (!pD2IniData->bNOSOUND && geD2ApplicationMode != APPMODE_server) {
+<<<<<<< HEAD
       // [sound fix] bSOUNDBKG is a bool (ini struct offset 0x224), not a window handle —
       // passing it made SOUND_Initialize see hwnd=0/1 and the DDA music stream bind to a
       // dead window (the round-3 directx log's hwnd=00000000). The game window exists by
@@ -180,6 +181,9 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
       D2BOOT_MarkFmt("SOUND_Initialize enter (hwnd=%08lx)", (unsigned long)D2gfx::D2GFX::GetHwnd()); // [d2boot] pins a pre-sound freeze (enter written, done never) and reports the init verdict
       D2Sound::Sound::SOUND_Initialize(*(uint32_t*)pD2IniData->bD2ExpMpqExistsOrLanugageCode, D2gfx::D2GFX::GetHwnd());
       D2BOOT_MarkFmt("SOUND_Initialize done (dsoundInit=%d eax=%d)", (int)D2Sound::SOUND_GetDirectSoundInitializedFlag(), (int)D2Sound::SOUND_GetEAXEnabledFlag()); // [d2boot] dsoundInit=0 means the whole engine failed to start: no menu music, no effects
+=======
+      D2Sound::Sound::SOUND_Initialize(*(uint32_t*)pD2IniData->bD2ExpMpqExistsOrLanugageCode, (uint32_t)pD2IniData->bSOUNDBKG);
+>>>>>>> 0fe2eda8
       __frame0.bSoundInit = 1;
     }
     D2BOOT_Mark("setup ok -> entering mode loop"); // [d2boot]

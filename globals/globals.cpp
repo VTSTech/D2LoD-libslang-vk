@@ -28585,6 +28585,19 @@ char * gaLanguageNames_007273a8[15] = {
 
 uint32_t gnCursorInvTypeAutoOpenC[5] = { 0x0, 0x1, 0x4, 0x2, 0x6 }; D2_GLOBAL_GUARD(gnCursorInvTypeAutoOpenC, "gnCursorInvTypeAutoOpenC");
 
+int gaUnitSoundIdsAmazon[11] = {
+    0xb3e,
+    0xb43,
+    0xb89,
+    0xb8d,
+    0xb8b,
+    0xb76,
+    0xb78,
+    0xb8f,
+    0xb79,
+    0xb91,
+    0xad0
+}; D2_GLOBAL_GUARD(gaUnitSoundIdsAmazon, "gaUnitSoundIdsAmazon");
 eD2Sounds eD2Sounds_ARRAY_00727f48[12] = {
     SOUND_NONE,
     SOUND_NONE,
@@ -30298,13 +30311,93 @@ eD2Sounds eD2Sounds_ARRAY_007295c8[12] = {
 // VP: vanilla-plus - class sound tables restored to retail 1.14d Game.exe .data values
 // (recovered verbatim; see globals.h). Amazon's table was missing entirely from the
 // decompile - its slot pointed at the orphaned bUnitSoundTableInit flag byte.
-int gaUnitSoundIdsAmazon[11] = { 2878, 2883, 2953, 2957, 2955, 2934, 2936, 2959, 2937, 2961, 2768 }; D2_GLOBAL_GUARD(gaUnitSoundIdsAmazon, "gaUnitSoundIdsAmazon");
-int gaUnitSoundIdsBarbarian[11] = { 2902, 2907, 3031, 3035, 3033, 3012, 3014, 3037, 3015, 3039, 2816 }; D2_GLOBAL_GUARD(gaUnitSoundIdsBarbarian, "gaUnitSoundIdsBarbarian");
-int gaUnitSoundIdsNecromancer[11] = { 2894, 2899, 3109, 3113, 3111, 3090, 3092, 3115, 3093, 3117, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsNecromancer, "gaUnitSoundIdsNecromancer");
-int gaUnitSoundIdsPaladin[11] = { 2886, 2891, 3187, 3191, 3189, 3168, 3170, 3193, 3171, 3195, 2768 }; D2_GLOBAL_GUARD(gaUnitSoundIdsPaladin, "gaUnitSoundIdsPaladin");
-int gaUnitSoundIdsSorceress[11] = { 2910, 2915, 3265, 3269, 3267, 3246, 3248, 3271, 3249, 3273, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsSorceress, "gaUnitSoundIdsSorceress");
-int gaUnitSoundIdsAssassin[11] = { 2918, 2923, 3343, 3347, 3345, 3324, 3326, 3349, 3327, 3351, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsAssassin, "gaUnitSoundIdsAssassin");
-int gaUnitSoundIdsDruid[11] = { 2926, 2931, 3421, 3425, 3423, 3402, 3404, 3427, 3405, 3429, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsDruid, "gaUnitSoundIdsDruid");
+// [R99 supersession] upstream 0fe2eda8 (Ghidra 1870 sound names) recovered the retail
+// tables themselves; Amazon's retail definition now lives at its upstream site (after
+// gnCursorInvTypeAutoOpenC) and the six siblings below are upstream's recovered forms.
+// The fork's hand-builds (identical values, decimal spelling) are retired.
+int gaUnitSoundIdsBarbarian[11] = {
+    0xb56,
+    0xb5b,
+    0xbd7,
+    0xbdb,
+    0xbd9,
+    0xbc4,
+    0xbc6,
+    0xbdd,
+    0xbc7,
+    0xbdf,
+    0xb00
+}; D2_GLOBAL_GUARD(gaUnitSoundIdsBarbarian, "gaUnitSoundIdsBarbarian");
+
+int gaUnitSoundIdsNecromancer[11] = {
+    0xb4e,
+    0xb53,
+    0xc25,
+    0xc29,
+    0xc27,
+    0xc12,
+    0xc14,
+    0xc2b,
+    0xc15,
+    0xc2d,
+    0xaa0
+}; D2_GLOBAL_GUARD(gaUnitSoundIdsNecromancer, "gaUnitSoundIdsNecromancer");
+
+int gaUnitSoundIdsPaladin[11] = {
+    0xb46,
+    0xb4b,
+    0xc73,
+    0xc77,
+    0xc75,
+    0xc60,
+    0xc62,
+    0xc79,
+    0xc63,
+    0xc7b,
+    0xad0
+}; D2_GLOBAL_GUARD(gaUnitSoundIdsPaladin, "gaUnitSoundIdsPaladin");
+
+int gaUnitSoundIdsSorceress[11] = {
+    0xb5e,
+    0xb63,
+    0xcc1,
+    0xcc5,
+    0xcc3,
+    0xcae,
+    0xcb0,
+    0xcc7,
+    0xcb1,
+    0xcc9,
+    0xaa0
+}; D2_GLOBAL_GUARD(gaUnitSoundIdsSorceress, "gaUnitSoundIdsSorceress");
+
+int gaUnitSoundIdsAssassin[11] = {
+    0xb66,
+    0xb6b,
+    0xd0f,
+    0xd13,
+    0xd11,
+    0xcfc,
+    0xcfe,
+    0xd15,
+    0xcff,
+    0xd17,
+    0xaa0
+}; D2_GLOBAL_GUARD(gaUnitSoundIdsAssassin, "gaUnitSoundIdsAssassin");
+
+int gaUnitSoundIdsDruid[11] = {
+    0xb6e,
+    0xb73,
+    0xd5d,
+    0xd61,
+    0xd5f,
+    0xd4a,
+    0xd4c,
+    0xd63,
+    0xd4d,
+    0xd65,
+    0xaa0
+}; D2_GLOBAL_GUARD(gaUnitSoundIdsDruid, "gaUnitSoundIdsDruid");
 
 char * gaLanguageNames_0072a300[15] = {
     s_English_006cc81c,
@@ -38078,6 +38171,8 @@ void * TxnScopeContext = (void *)0x00000000; D2_GLOBAL_GUARD(TxnScopeContext, "T
 uint32_t LockCount = 0x0; D2_GLOBAL_GUARD(LockCount, "LockCount");
 void * ResourceRetValue = (void *)0x00000000; D2_GLOBAL_GUARD(ResourceRetValue, "ResourceRetValue");
 // VP: vanilla-plus - per-class player sound tables (see globals.h). Real contents recovered from the retail 1.14d Game.exe static .data - they are NOT runtime-filled (the decompile's "bUnitSoundTableInit" 1-byte stub sat at .data 0x727eac, which is gaUnitSoundIdsAmazon[0]'s low byte, and the six sibling 1-byte stubs were the first bytes of the contiguous 0x729f00..0x72a008 block). Anchors: gaUnitSoundTableByClassId = .data 0x72a008, entry order [Ama,Sorc,Nec,Pal,Barb,Dru,Ass] matching the decompiled initializer. Rows decoded against the LoD sounds.txt row order: [0]/[1] hit/death bases, [2]..[7] event 0x13/0x15/0x16/0x17/0x14/0x18 barks (0x17 = cantcarry, the inventory-full pickup-fail voice), [8] chat_a_1 (anim events 0x19-0x20 select [8], [8]+2 .. [8]+14), [9] act1_complete_andariel (quest events 0x21-0x53 are linear: id = [9] + event - 0x21, so 0x53 = [9]+0x32 = act5_defeat_baal), [10] footstep block base (barb heavy / ama+pal medium / sor+nec+dru+ass light; materials add +0/+4/+8/+0xc/+0x10/+0x14, running +0x18).
+// [R99 supersession] upstream 0fe2eda8 (Ghidra 1870 sound names and evidence) landed the retail forms of all
+// seven tables - values verified identical to this hand-recovery; the upstream spellings above are canonical.
 
 // =============================================================================
 // Uninitialized data (BSS)
