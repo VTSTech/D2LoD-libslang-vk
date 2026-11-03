@@ -127,6 +127,21 @@ New d2vp.ini option: `[features] no_panel_shift=1`. Retail slides the whole game
 - [x] **44. Regression (vanilla slide):** set `no_panel_shift=0` (or delete the key) — the retail quarter-screen slide returns with a single panel (world moves left/right, both panels = no slide), and everything renders as in R94 (both-panels margins green). — Slide-returns leg CONFIRMED 2026-11-03 (owner msg predating their ini edit: "Everything still moves when a panel is open" = the vanilla slide intact with the key absent); the renders-as-R94 leg rides the 45 check.
 - [ ] **45. Both panels:** with the option on, both panels open — unchanged from R94: world visible and correct in both outer margins. (Owner's "All blackness appears fixed in Glide" covers this implicitly; an explicit pass is still owed.)
 
+### R100 regression + fix (2026-11-04, owner: "when set to 1, player, npc, campfire get pushed into wrong locations")
+
+The R99 upstream merge (Ghidra 1864-1877 library rounds) landed the retail
+bodies for the unit-sprite draw path — sprites, shadows, selection rings,
+hover text — and those bodies hand-pan sprites ±quarter off the REAL border
+in the perspective branch. The R95 neutralizer only covered the terrain
+passes, so with `no_panel_shift=1` the world stayed put while units (and
+their anchored overlays) panned one quarter sideways. R100 routes all 14
+unit-anchored world-render consumers through `PANELSHIFT_BorderForWorld`
+(CHANGELOG [R100] has the decode; the R95 field pass never saw this because
+the pre-1864 unit bodies had no border handling at all).
+
+- [ ] **41a. Unit lock re-check (R100):** repeat check 41 at 1280x720, perspective ON, `no_panel_shift=1`: player, NPCs, objects (campfires), their shadows, selection rings and hover text must all stay **exactly where they were** when a single panel opens — no quarter-screen displacement relative to the terrain. Also glance at the mercenary HP bar, other players' name plates (Alt), the warp tooltip and ground-item labels: all must stay glued to their units.
+- [ ] **41b. Vanilla slide untouched (R100):** with `no_panel_shift=0`, single panel open: units, their shadows/labels and the world all slide together as one (retail behavior, byte-identical to pre-R100).
+
 ### Registry watch (owner environment, 2026-11-03 — not a build bug)
 
 One D3D session "didn't go in game" across many builds **including R83** (owner smoke-tested) until the registry was restored to fresh 1.14d install values — a corrupted D2 video-options registry value (owner suspicion: one of the slider values). Vanilla+ itself writes no registry values (d2vp.ini lives next to the exe; `portable_save=1` explicitly avoids the registry). If D3D ever again boots to a black screen / fails to enter game across builds that previously worked: restore the fresh-install video-settings registry values before suspecting the build, and note which value was corrupt.

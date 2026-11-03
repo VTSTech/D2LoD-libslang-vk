@@ -5350,7 +5350,7 @@ void __fastcall TEXT_DrawMonsterHoverText(D2UnitStrc * pUnit) {
     D2Common::Units::GetTargetCoords(pUnit, &ptScreenPos2);
     ptScreenPos2.x -= lprcTextOverheadRect.left;
     ptScreenPos2.y += -0x1e - lprcTextOverheadRect.top;
-    nBorderType = Path::DRAW_GetTypeOfBorder();
+    nBorderType = PANELSHIFT_BorderForWorld(Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit sprite path rides the border-0 camera
     switch (nBorderType) {
       case 1:
         {
@@ -5424,7 +5424,7 @@ void __fastcall TEXT_DrawObjectHoverText(D2UnitStrc * pUnit) {
     D2Common::Units::GetTargetCoords(pUnit, &ptScreenPos);
     ptScreenPos.x -= lprcTextOverheadRect.left;
     ptScreenPos.y += -10 - lprcTextOverheadRect.top;
-    nBorderType = Path::DRAW_GetTypeOfBorder();
+    nBorderType = PANELSHIFT_BorderForWorld(Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit sprite path rides the border-0 camera
     switch (nBorderType) {
       case 1:
         {

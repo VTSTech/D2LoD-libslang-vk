@@ -196,7 +196,7 @@ void __stdcall DRAW_AltItems() {
               }
 
               D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nWorldOffsetX, nPrecisionX, 0, &nItemPosX, &nPerspY);
-              uBorderType = Path::DRAW_GetTypeOfBorder();
+              uBorderType = PANELSHIFT_BorderForWorld(Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit sprite path rides the border-0 camera
               nColorIdx = nPerspY;
               switch (uBorderType) {
                 case 1:

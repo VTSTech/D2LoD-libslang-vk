@@ -20,6 +20,7 @@
 #include "D2Client/GAME/Select.h"
 #include "D2Client/GAME/Wall2.h"
 #include "D2Client/Source/ClientEngine.h"
+#include "D2Client/UI/VanillaPlusCore.h" // VP: PANELSHIFT_BorderForWorld unit-sprite call sites
 #include "D2Client/UI/Draw.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/SkillDesc.h"
@@ -643,7 +644,7 @@ void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t 
       pAdjustY = &nScreenY;
       pAdjustX = &nScreenX;
       D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(D2Common::Units::GetPrecisionX(pUnit), D2Common::Units::GetPrecisionY(pUnit), 0, pAdjustX, pAdjustY);
-      bPerspective = UI::Path::DRAW_GetTypeOfBorder();
+      bPerspective = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit sprite path rides the border-0 camera
       switch (bPerspective) {
         case 1:
           {
@@ -2810,7 +2811,7 @@ static D2GfxInfoUnkStrc * __stdcall GFX_DrawUnitComponents(int32_t nWorldX, uint
     uint32_t bPerspective;
     bPerspective = nCofFrameCount;
     uint32_t nBorderType;
-    nBorderType = UI::Path::DRAW_GetTypeOfBorder();
+    nBorderType = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit sprite path rides the border-0 camera
     if (nCofFrameCount) {
       switch (nBorderType) {
         case 1:
@@ -3105,7 +3106,7 @@ BOOL __fastcall GFX_DrawUnitShadow(D2UnitStrc * pUnit) {
     int32_t nParticleY = Particle::PARTICLE_GetPosYShifted(pUnit);
     int32_t nShadowY = nParticleY + nOffsetY;
     if (bPerspective) {
-      nBorderType = UI::Path::DRAW_GetTypeOfBorder();
+      nBorderType = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit sprite path rides the border-0 camera
       switch (nBorderType) {
         case 1:
           {
@@ -3262,7 +3263,7 @@ int32_t __fastcall DrawUnitShadows(D2UnitStrc * pUnit) {
 
     nResult = nDrawY;
     if (pCofLayerDataBase) {
-      nCallResult2 = UI::Path::DRAW_GetTypeOfBorder();
+      nCallResult2 = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit sprite path rides the border-0 camera
       switch (nCallResult2) {
         case 1:
           {
@@ -3430,7 +3431,7 @@ BOOL __fastcall GFX_DrawUnitColoredShape(D2UnitStrc * pUnit) {
     nTargetY = D2Common::Units::GetTargetY(pUnit);
     nDrawY = nTargetY + nOffsetY;
     if (nPerspActive) {
-      nBorderType = UI::Path::DRAW_GetTypeOfBorder();
+      nBorderType = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit sprite path rides the border-0 camera
       switch (nBorderType) {
         case 1:
           {
@@ -3520,7 +3521,7 @@ BOOL __fastcall GFX_DrawUnitSelectionShape(D2UnitStrc * pUnit) {
       pScreenYOut = &__frame0.nScreenY;
       pScreenXOut = &__frame0.nScreenX;
       D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(D2Common::Units::GetPrecisionX(pUnit), D2Common::Units::GetPrecisionY(pUnit), nCoord, pScreenXOut, pScreenYOut);
-      nCallResult = UI::Path::DRAW_GetTypeOfBorder();
+      nCallResult = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit sprite path rides the border-0 camera
       switch (nCallResult) {
         case 1:
           {
@@ -3747,7 +3748,7 @@ BOOL __fastcall DRAW_WORLD_Unit_1(D2UnitStrc * pUnit, uint32_t nGamma, uint32_t 
     nErrLine = UI::Path::DRAW_GetWorldOffsetY();
     nDrawY = nDrawY + nYoffset - nErrLine;
     if (bPerspective) {
-      nGfxTimerOrBorder = UI::Path::DRAW_GetTypeOfBorder();
+      nGfxTimerOrBorder = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit sprite path rides the border-0 camera
       switch (nGfxTimerOrBorder) {
         case 1:
           {

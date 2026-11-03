@@ -17,6 +17,7 @@
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
+#include "D2Client/UI/VanillaPlusCore.h" // VP: PANELSHIFT_BorderForWorld unit-sprite call site
 #include "D2Common/COMPOSIT/Composit.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
@@ -1025,7 +1026,7 @@ uint32_t __fastcall GFXUTIL_GetUnitCofDirectionOnScreen(D2UnitStrc * pUnit, uint
       pYAdjust = &__frame0.nScreenY;
       pXAdjust = &__frame0.nScreenX;
       D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(D2Common::Units::GetPrecisionX(pUnit), D2Common::Units::GetPrecisionY(pUnit), 0, pXAdjust, pYAdjust);
-      nResult = UI::Path::DRAW_GetTypeOfBorder();
+      nResult = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit sprite path rides the border-0 camera
       switch (nResult) {
         case 1:
           {

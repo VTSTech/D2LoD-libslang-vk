@@ -16,6 +16,51 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
 
 - Nothing yet — the next round's entry goes here.
 
+## [R100] — 2026-11-04 (issue #26 round 8: the unit-sprite pan follow-up — `no_panel_shift` keeps units at the border-0 camera; self-ID `Vanilla+0.0.7-R100`)
+
+Field report against the R99 build (owner): "clean build successful.
+no_panel_shift is still missing. with it set to 0 shifts normally, when set
+to 1, player, npc, campfire get pushed into wrong locations."
+
+### The decode — the R99 merge re-armed the unit-sprite pan
+
+The R95 feature was verified green in Glide with perspective ON ("no
+shifting is observed when opening a panel"), so the regression is real and
+it came later: the upstream Ghidra 1864-1877 library rounds merged in R99
+landed the **retail bodies** for the unit-sprite draw path
+(`DRAW_WORLD_Unit_1`, `GFX_DrawUnitSelectionShape`, …). The R95-era copies
+had no border handling at all (units rode the view rect, which the R95
+border-0 view-rect fix already covers); the retail bodies compute the sprite
+screen-x the vanilla way in the perspective branch:
+`AdjustPerspectivePosition` + a hand-applied **±quarter pan keyed on the
+REAL window border**. `PANELSHIFT_BorderForWorld` covered every terrain pass
+(floor/wall/roof/shadow, weather, automap — R95) but not this path, so with
+`no_panel_shift=1` the world stayed at the border-0 camera while players,
+monsters, objects (campfires), their shadows, selection rings, hover text
+and ground-item labels still panned one quarter sideways. `no_panel_shift=0`
+stays correct because there the sprite pan matches the world pan.
+
+### The fix — the unit path rides the same neutralizer
+
+All 14 unit-anchored world-render consumers now route their border read
+through `PANELSHIFT_BorderForWorld` (the 1/2→0 neutralizer; border 3 passes
+through; real border untouched when the feature is off):
+
+- `D2Client/Engine/Gfx.cpp` ×7 — unit sprites, state overlays, shadows
+  (`GFX_DrawUnitShadow`, `DrawUnitShadows`), colored/selection shapes,
+  `DRAW_WORLD_Unit_1`
+- `D2Client/Engine/GfxUtil.cpp` ×1 — `GFXUTIL_GetUnitCofDirectionOnScreen`
+- `D2Client/UI/Text.cpp` ×2 — `TEXT_DrawMonsterHoverText`,
+  `TEXT_DrawObjectHoverText`
+- `D2Client/UI/ShowItems.cpp` ×1 — ground-item label perspective anchor
+  (the label cull keeps the real border, per charter)
+- `D2Client/UI/ui.cpp` ×3 — mercenary HP bar, player name plates
+  (`UI_DrawPlayerNameOverhead`), unit/warp tooltip anchor
+
+UI/interaction consumers keep reading the real border (panel click rects,
+`HitTestScreen`, label culls, mouse warps — charter rule). Gate suite: 5 new
+R100 gates pin the call-site counts (377 total).
+
 ## [R98] — 2026-11-03 (issue #26 round 7: the D3D flat wall iterator wrap — ROOT CAUSE FIXED; self-ID `Vanilla+0.0.7-R98`)
 
 The R97 guard fired on the first field pass — outcome (b), the mark IS the

@@ -97,6 +97,10 @@ BOOL __stdcall PANELSHIFT_NoShiftWorld();
 // unchanged. Border 3 passes through - it already renders unpanned. World
 // culling and clipping only: UI/interaction consumers (panel click rects,
 // label culls, selection guards) keep reading the real border type.
+// R100: the unit-sprite draw path routes its real-border read through this
+// too - the Ghidra-1864+ retail bodies hand-pan sprites/shadows/selection
+// rings/hover text +/-quarter in the perspective branch and must follow the
+// border-0 camera whenever the world does (no_panel_shift=1).
 uint32_t __stdcall PANELSHIFT_BorderForWorld(uint32_t eBorderType);
 
 // [vanilla-plus alt-toggle] Config-gated Alt-key ground-item-label toggle

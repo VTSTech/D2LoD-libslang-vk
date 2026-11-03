@@ -707,7 +707,7 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # to halt line=200 - the D3D floor/subtile texture-cache promote range checks -
 # on the first frame after a runtime 1 -> 0 flip; R97 guards both promote
 # callers and re-arms the probes, see the R97 rows below)
-gate "res: self-id 0.0.7-R98"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R98' 1
+gate "res: self-id 0.0.7-R100"                D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R100' 1
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the
@@ -899,6 +899,15 @@ gate "noshift: world-draw origins (R95)"   D2Client/GAME/Draw.cpp          'PANE
 gate "noshift: weather clips (R95)"        D2Client/Draw/Weather.cpp       'PANELSHIFT_BorderForWorld\(UI::Path::DRAW_GetTypeOfBorder\(\)\)' 3
 gate "noshift: automap pan (R95)"          D2Client/UI/Automap.cpp         'PANELSHIFT_BorderForWorld\(Path::DRAW_GetTypeOfBorder\(\)\)' 1
 gate "noshift: config cache bust (R95)"    D2Client/UI/VanillaPlusCore.cpp 'dwNoPanelShiftLastCheck = 0' 2
+# R100: the unit-sprite draw path (Ghidra-1864+ retail bodies hand-pan
+# sprites/shadows/selection rings/hover text +/-quarter off the REAL border
+# in the perspective branch) must ride the same border-0 camera as the
+# terrain passes when no_panel_shift=1.
+gate "noshift: unit sprite pan (R100)"      D2Client/Engine/Gfx.cpp         'PANELSHIFT_BorderForWorld\(UI::Path::DRAW_GetTypeOfBorder\(\)\)' 7
+gate "noshift: unit cof direction (R100)"   D2Client/Engine/GfxUtil.cpp     'PANELSHIFT_BorderForWorld\(UI::Path::DRAW_GetTypeOfBorder\(\)\)' 1
+gate "noshift: unit hover text (R100)"      D2Client/UI/Text.cpp            'PANELSHIFT_BorderForWorld\(Path::DRAW_GetTypeOfBorder\(\)\)' 2
+gate "noshift: item label anchor (R100)"    D2Client/UI/ShowItems.cpp       'PANELSHIFT_BorderForWorld\(Path::DRAW_GetTypeOfBorder\(\)\)' 1
+gate "noshift: unit overlays (R100)"        D2Client/UI/ui.cpp              'PANELSHIFT_BorderForWorld\(Path::DRAW_GetTypeOfBorder\(\)\)' 3
 
 # ---- [issue #26 / R96] D3D perspective-toggle death triage probes -------------
 # Owner field report (R95): toggling perspective in D3D kills the process;

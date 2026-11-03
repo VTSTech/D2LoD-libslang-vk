@@ -842,7 +842,7 @@ void __stdcall UI_DrawMercenaryHealthBar() {
     }
 
     D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nCoord, nWorldOffset, 0, &nScreenX, &nScreenY);
-    eBorderType = Path::DRAW_GetTypeOfBorder();
+    eBorderType = PANELSHIFT_BorderForWorld(Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit-anchored overlay rides the border-0 camera
     switch (eBorderType) {
       case 1:
         {
@@ -1057,7 +1057,7 @@ void __fastcall UI_DrawPlayerNameOverhead(D2UnitStrc * pUnit) {
     int nCenterY;
     int nCenterX;
     POINT ptScreen;
-    uint32_t eBorderType = Path::DRAW_GetTypeOfBorder();
+    uint32_t eBorderType = PANELSHIFT_BorderForWorld(Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit-anchored overlay rides the border-0 camera
     if (eBorderType == 3) {
       return;
     }
@@ -2384,7 +2384,7 @@ void __fastcall DRAW_UnitUnderMouse(D2UnitStrc * pUnit) {
       }
 
       D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nX, nY, 0, &__frame0.nScreenX, (int*)&__frame0.pLevelTxtResult);
-      nResult = Path::DRAW_GetTypeOfBorder();
+      nResult = PANELSHIFT_BorderForWorld(Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R100] no-panel-shift - unit-anchored overlay rides the border-0 camera
       switch (nResult) {
         case 1:
           {
