@@ -215,13 +215,23 @@ gate "class sound tables right-sized [11]" globals/globals.h            'extern 
 gate "class sound tables initialized"      globals/globals.cpp          'int gaUnitSoundIds\w+\[11\] = \{' 7
 gate "pointer table targets Amazon table"  globals/D2Client.cpp         'gaUnitSoundIdsAmazon' 1
 # restored retail values (1.14d Game.exe .data): full-initializer tripwire per class
-gate "sound table Amazon restored (retail .data)"      globals/globals.cpp 'int gaUnitSoundIdsAmazon\[11\] = \{ 2878, 2883, 2953, 2957, 2955, 2934, 2936, 2959, 2937, 2961, 2768 \}' 1
-gate "sound table Barbarian restored (retail .data)"   globals/globals.cpp 'int gaUnitSoundIdsBarbarian\[11\] = \{ 2902, 2907, 3031, 3035, 3033, 3012, 3014, 3037, 3015, 3039, 2816 \}' 1
-gate "sound table Necromancer restored (retail .data)" globals/globals.cpp 'int gaUnitSoundIdsNecromancer\[11\] = \{ 2894, 2899, 3109, 3113, 3111, 3090, 3092, 3115, 3093, 3117, 2720 \}' 1
-gate "sound table Paladin restored (retail .data)"     globals/globals.cpp 'int gaUnitSoundIdsPaladin\[11\] = \{ 2886, 2891, 3187, 3191, 3189, 3168, 3170, 3193, 3171, 3195, 2768 \}' 1
-gate "sound table Sorceress restored (retail .data)"   globals/globals.cpp 'int gaUnitSoundIdsSorceress\[11\] = \{ 2910, 2915, 3265, 3269, 3267, 3246, 3248, 3271, 3249, 3273, 2720 \}' 1
-gate "sound table Assassin restored (retail .data)"    globals/globals.cpp 'int gaUnitSoundIdsAssassin\[11\] = \{ 2918, 2923, 3343, 3347, 3345, 3324, 3326, 3349, 3327, 3351, 2720 \}' 1
-gate "sound table Druid restored (retail .data)"       globals/globals.cpp 'int gaUnitSoundIdsDruid\[11\] = \{ 2926, 2931, 3421, 3425, 3423, 3402, 3404, 3427, 3405, 3429, 2720 \}' 1
+# [R99 re-pin] upstream 0fe2eda8 (ghidra 1870 sound names) recovered the retail tables
+# in multi-line hex form (values verified identical to the fork's decimal hand-build);
+# each class now pins the upstream spelling's opening line plus its unique first value.
+gate "sound table Amazon restored (retail .data)"      globals/globals.cpp 'int gaUnitSoundIdsAmazon\[11\] = \{' 1
+gate "sound table Amazon value [0] (retail .data)"     globals/globals.cpp '^\s+0xb3e,\s*$' 1
+gate "sound table Barbarian restored (retail .data)"   globals/globals.cpp 'int gaUnitSoundIdsBarbarian\[11\] = \{' 1
+gate "sound table Barbarian value [0] (retail .data)"  globals/globals.cpp '^\s+0xb56,\s*$' 1
+gate "sound table Necromancer restored (retail .data)" globals/globals.cpp 'int gaUnitSoundIdsNecromancer\[11\] = \{' 1
+gate "sound table Necromancer value [0] (retail .data)" globals/globals.cpp '^\s+0xb4e,\s*$' 1
+gate "sound table Paladin restored (retail .data)"     globals/globals.cpp 'int gaUnitSoundIdsPaladin\[11\] = \{' 1
+gate "sound table Paladin value [0] (retail .data)"    globals/globals.cpp '^\s+0xb46,\s*$' 1
+gate "sound table Sorceress restored (retail .data)"   globals/globals.cpp 'int gaUnitSoundIdsSorceress\[11\] = \{' 1
+gate "sound table Sorceress value [0] (retail .data)"  globals/globals.cpp '^\s+0xb5e,\s*$' 1
+gate "sound table Assassin restored (retail .data)"    globals/globals.cpp 'int gaUnitSoundIdsAssassin\[11\] = \{' 1
+gate "sound table Assassin value [0] (retail .data)"   globals/globals.cpp '^\s+0xb66,\s*$' 1
+gate "sound table Druid restored (retail .data)"       globals/globals.cpp 'int gaUnitSoundIdsDruid\[11\] = \{' 1
+gate "sound table Druid value [0] (retail .data)"      globals/globals.cpp '^\s+0xb6e,\s*$' 1
 # the decompile's phantom "init flag" (really Amazon[0]'s low byte) must stay gone
 gate "bUnitSoundTableInit phantom gone (cpp)" globals/globals.cpp 'uint8_t bUnitSoundTableInit' 0
 gate "bUnitSoundTableInit phantom gone (h)"   globals/globals.h   'uint8_t bUnitSoundTableInit' 0
