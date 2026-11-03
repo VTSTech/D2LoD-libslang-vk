@@ -229,7 +229,16 @@ static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
         ";       character. Stored in its own file (_d2vp_shared.sss) next to\r\n"
         ";       the saves - character .d2s files stay retail-compatible, with\r\n"
         ";       or without the key.\r\n"
-        "shared_stash=0\r\n";
+        "shared_stash=0\r\n"
+        "\r\n"
+        "; Static world with one panel open (wide layouts only):\r\n"
+        ";   0 = opening one panel slides the game world aside so the action\r\n"
+        ";       re-centers in the uncovered strip    (vanilla behavior)\r\n"
+        ";   1 = the world stays exactly where it is when the character\r\n"
+        ";       screen or the inventory is open; the panel just floats\r\n"
+        ";       over it. Applies at 1280x720 / 1344x700 only - at\r\n"
+        ";       640x480 / 800x600 the vanilla slide is kept.\r\n"
+        "no_panel_shift=0\r\n";
     HANDLE hFile = CreateFileA(pszPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW,
                                FILE_ATTRIBUTE_NORMAL, nullptr);
     if (hFile == INVALID_HANDLE_VALUE) {
@@ -535,6 +544,61 @@ void __stdcall ITEMILVL_AppendNameSuffix(D2UnitStrc * pItem, uint16_t * wszName)
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszName, wszSuffix);
 }
 
+// ===== [vanilla-plus no-panel-shift] ========================================
+// (issue #26 / R95) Retail slides the whole game world a quarter screen
+// sideways when exactly one panel is open (Path.cpp TypeOfUiOverlayOverWorld:
+// MouseYRelatedB = -/+ScreenSizeX/4) so the action re-centers in the strip
+// the panel leaves uncovered - exact only when that panel reaches the screen
+// edge (640x480/800x600). At the wide stops the 800-class UI floats 240 px
+// inboard, so the slide drags world out from under the visible outer margins
+// and the perspective projection (player-anchored, expanding from the screen
+// center) makes every panned channel a separate artifact source - the whole
+// R92-R94 tail of issue #26 lived on that panned path. While [features]
+// no_panel_shift=1, the world renders exactly like the both-panels-open case
+// (border 3: no slide, full unpanned view rect) on the wide stops and the
+// open panel overdraws its own rect. Implementation: Path.cpp keeps the
+// border-0 camera for border 1/2, and every world-draw call site reads its
+// border type through PANELSHIFT_BorderForWorld, so the renderers receive 0
+// and take their own field-proven full-screen no-pan path - zero renderer
+// edits, and the R92-R94 renderer guards stay live for the vanilla slide
+// (no_panel_shift=0). UI/interaction consumers (panel click rects, label
+// culls, selection guards, CUnit R92 click rejection) keep reading the real
+// border type. Retail 640x480/800x600: the gate is false, every call site
+// sees its retail value, byte-identical. Missing/garbage/0 ini = 0 = vanilla
+// slide (charter rule 1); 2 s hot-read like every gate.
+
+static int gbNoPanelShiftMode = 0;
+static DWORD dwNoPanelShiftLastCheck = 0;   // 2 s ini re-read gate (row-28 pattern)
+
+BOOL __stdcall PANELSHIFT_NoShiftWorld() {
+    DWORD dwNow = GetTickCount();
+    if (!dwNoPanelShiftLastCheck || dwNow - dwNoPanelShiftLastCheck >= 2000) {
+        char szIniPath[260];
+        dwNoPanelShiftLastCheck = dwNow;
+        if (ALTTOGGLE_BuildIniPath(szIniPath)) {
+            ALTTOGGLE_EnsureIni();
+            // Missing file/section/key or a non-numeric value = 0 = vanilla.
+            gbNoPanelShiftMode = GetPrivateProfileIntA("features", "no_panel_shift", 0, szIniPath) ? 1 : 0;
+        } else {
+            gbNoPanelShiftMode = 0;
+        }
+    }
+    // Wide stops only - the retail slide is exact because the open panel
+    // reaches the screen edge there. Same backbuffer-dims test as the
+    // R92-R94 renderer guards (no D2Client imports across that boundary;
+    // here the globals are direct).
+    return gbNoPanelShiftMode
+        && ((ScreenSizeX == 1280 && ScreenSizeY == 720)
+            || (ScreenSizeX == 1344 && ScreenSizeY == 700));
+}
+
+uint32_t __stdcall PANELSHIFT_BorderForWorld(uint32_t eBorderType) {
+    if ((eBorderType == 1 || eBorderType == 2) && PANELSHIFT_NoShiftWorld()) {
+        return 0;
+    }
+    return eBorderType;
+}
+
 // ===== [vanilla-plus options page] d2vp.ini feature toggle bridge ==========
 // The "Vanilla+ Options" page (D2Client/UI/VanillaPlusOptions.cpp) reads and
 // flips the same [features] keys the gates consume. Reads go through the
@@ -578,6 +642,7 @@ void __stdcall D2VP_ConfigReloaded() {
     dwAutoGoldLastCheck = 0;      // next AUTO_GOLD_Active() re-reads auto_gold
     dwGlobeTextPersistentLastCheck = 0; // next VANILLAPLUS_GlobeTextPersistent() re-reads globe_persistent
     dwItemIlvlLastCheck = 0;      // next ITEMILVL_Active() re-reads item_ilvl
+    dwNoPanelShiftLastCheck = 0;  // next PANELSHIFT_NoShiftWorld() re-reads no_panel_shift
     VPSHAREDUI_FlushGateCache();  // next VPSHAREDUI_FeatureActive() re-reads shared_stash
     Fog::Source::SFile::PORTABLESAVE_FlushConfig(); // next save-path poll re-reads portable_save
 }

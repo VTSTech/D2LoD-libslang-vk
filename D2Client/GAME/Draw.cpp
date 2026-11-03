@@ -467,7 +467,11 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
     pDrawFloor->nRecordingRelated = 0;
     float fVar1 = D2Client::Draw::Weather::WEATHER_FloatPassthrough();
     pDrawFloor->uWeatherRelated = (int)(fVar1 * 1000.0);
-    bIsPerspective = UI::Path::DRAW_GetTypeOfBorder();
+    // VP: [issue #26 / R95] no-panel-shift - the ground/roof light grids and
+    // the ground nScreenPanels arg all ride nWindowBorderType; routing it
+    // through the neutralizer makes a single open panel draw floors and
+    // roofs exactly like border 0 (no half-screen pan) on the wide stops.
+    bIsPerspective = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder());
     pDrawFloor->nWindowBorderType = bIsPerspective;
     pDrawFloor->pGameView = pGameView;
     D2RoomStrc* pRoom = UNIT::CUnit::GetCurrentRoom();
@@ -629,7 +633,9 @@ void __fastcall dRoofDraw(D2GameViewStrc * pGameView) {
     int nGridTotal = pGameView->sWall2.nWall2GridDim;
     nGridTotal *= nGridTotal;
     nPassCount = nGridTotal;
-    nBorderType = UI::Path::DRAW_GetTypeOfBorder();
+    // VP: [issue #26 / R95] no-panel-shift - roof light grids + ground-tile
+    // nScreenPanels (see the nWindowBorderType note in DrawFloorByViewAndFloor).
+    nBorderType = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder());
     nRenderLayer = 1;
     nCellsLeft = nGridTotal;
     do {
@@ -792,7 +798,8 @@ static void __stdcall WALL2_DrawUnderFloorTiles(D2GameViewStrc * pViewData, D2Wa
       return;
     }
 
-    uint32_t nBorderType = UI::Path::DRAW_GetTypeOfBorder();
+    // VP: [issue #26 / R95] no-panel-shift (see DrawFloorByViewAndFloor).
+    uint32_t nBorderType = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder());
     uint32_t bIsPerspective = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
     uint32_t dwTickCount = GetTickCount();
     for (pWallTileNode = pWall2Cell->pUnderFloorList; pWallTileNode; pWallTileNode = pWallTileNode->pNext) {
@@ -866,7 +873,8 @@ void __stdcall WALL2_DrawWallTilesWithAlpha(D2Wall2CellStrc * pWall2Cell, uint32
     uint8_t byBlue;
     D2DrlgTileDataStrc* pTileEntry;
     int32_t nErrLineOrAddr;
-    uint32_t nBorderType = UI::Path::DRAW_GetTypeOfBorder();
+    // VP: [issue #26 / R95] no-panel-shift (see DrawFloorByViewAndFloor).
+    uint32_t nBorderType = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder());
     uint32_t bIsPerspective = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
     int nFadeCalc = Rendering::GetCurrentEngine();
     uint32_t dwTickCount = GetTickCount();
@@ -1004,7 +1012,7 @@ void __fastcall dWallPass(D2GameViewStrc * pGameView) {
       nSavedCellIdx = nFadeCalc;
       pSavedCellEntry = pCellEntry;
       if (*pCellEntry) {
-        nBorderType = UI::Path::DRAW_GetTypeOfBorder();
+        nBorderType = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder()); // VP: [issue #26 / R95] no-panel-shift
         isPerspective = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
         nEngine = Rendering::GetCurrentEngine();
         timer = GetTickCount();
@@ -1128,7 +1136,8 @@ void __fastcall dShadowPass(D2GameViewStrc * pGameView) {
     int nGridCount = pGameView->sWall2.nWall2GridDim;
     nGridCount *= nGridCount;
     pWall2Entry = pGameView->sWall2.pWall2;
-    nScreenPanels = UI::Path::DRAW_GetTypeOfBorder();
+    // VP: [issue #26 / R95] no-panel-shift (see DrawFloorByViewAndFloor).
+    nScreenPanels = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder());
     while (nGridCount) {
       nGridCount--;
       for (pShadowNode = pWall2Entry->pShadowPassList; pShadowNode; pShadowNode = pShadowNode->pNext) {

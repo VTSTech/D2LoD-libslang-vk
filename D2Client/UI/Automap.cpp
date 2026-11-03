@@ -17,6 +17,7 @@
 #include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/Hireables.h"
 #include "D2Client/UI/Path.h"
+#include "D2Client/UI/VanillaPlusCore.h" // VP: [issue #26 / R95] no-panel-shift automap pan
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT.h"
@@ -1647,7 +1648,10 @@ void __fastcall AUTOMAP_DrawCellTree(D2AutomapCellStrc * pCell, D2AutomapDrawCtx
       }
 
       nBorderOffsetX = 0;
-      eBorderType = Path::DRAW_GetTypeOfBorder();
+      // VP: [issue #26 / R95] no-panel-shift - the automap overlay rides the
+      // same quarter-slide the world does; with the world static on the wide
+      // stops the automap keeps the border-0 offset too.
+      eBorderType = PANELSHIFT_BorderForWorld(Path::DRAW_GetTypeOfBorder());
       switch (eBorderType) {
         case 1:
           {

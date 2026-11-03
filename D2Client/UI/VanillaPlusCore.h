@@ -70,6 +70,35 @@ int __stdcall VPRES_GetWideUiOffsetX();
 // or change gnPanelOffsetY (-60) - double-shifting is the failure mode.
 int __stdcall VPRES_GetWideUiOffsetY();
 
+// [vanilla-plus no-panel-shift] (issue #26 / R95) d2vp.ini next to d2.exe,
+// [features] no_panel_shift=0|1 - retail slides the whole game world a
+// quarter screen sideways when exactly one panel (character screen /
+// inventory) is open, so the action re-centers in the uncovered strip
+// (both panels open = no slide). That retail assumption is exact only when
+// the open panel reaches the screen edge (640x480/800x600); at the wide
+// stops (1280x720 / 1344x700) the 800-class UI floats 240 px inboard, the
+// slide drags world out from under the visible outer margins, and every
+// margin artifact of issue #26 lives on that panned path (the perspective
+// projection anchors on the player and expands from the screen center, so
+// the pan rides half a dozen independent channels: MouseYRelatedB, the
+// pView walk rect, the four roof/floor light-grid half-screen adjusts, the
+// weather clip switches, the automap border offset and the renderer
+// quarter offsets). no_panel_shift=1 renders the world exactly like the
+// field-proven both-panels-open case (no slide, full unpanned view rect)
+// on the wide stops and lets the panel float over it; retail 640x480 /
+// 800x600 always keeps the vanilla slide. Default/missing/garbage = 0 =
+// vanilla slide (charter rule 1). Hot-reads at most every 2 s like every
+// gate.
+BOOL __stdcall PANELSHIFT_NoShiftWorld();
+// Split-side neutralizer for the world-draw call sites: returns 0 (= border
+// none: full-width walk rect, zero world pan, zero renderer offset - the
+// renderers receive 0 and take their own border-0 full-screen path) for
+// border 1/2 while PANELSHIFT_NoShiftWorld() is active, else eBorderType
+// unchanged. Border 3 passes through - it already renders unpanned. World
+// culling and clipping only: UI/interaction consumers (panel click rects,
+// label culls, selection guards) keep reading the real border type.
+uint32_t __stdcall PANELSHIFT_BorderForWorld(uint32_t eBorderType);
+
 // [vanilla-plus alt-toggle] Config-gated Alt-key ground-item-label toggle
 // (D2R "Show Items: Toggle" parity). d2vp.ini next to d2.exe:
 //   [features]

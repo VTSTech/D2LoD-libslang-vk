@@ -54,10 +54,13 @@ void __fastcall TypeOfUiOverlayOverWorld(uint32_t eBorderType) {
           MouseYRelatedB = 0;
         break;
         case 1:
-          MouseYRelatedB = -(ScreenSizeX / 4);
+          // VP: [issue #26 / R95] no-panel-shift - the world keeps the
+          // border-0 camera (no quarter slide) on the wide stops while
+          // d2vp.ini no_panel_shift=1; retail slide otherwise.
+          MouseYRelatedB = PANELSHIFT_NoShiftWorld() ? 0 : -(ScreenSizeX / 4);
         break;
         case 2:
-          MouseYRelatedB = ScreenSizeX / 4;
+          MouseYRelatedB = PANELSHIFT_NoShiftWorld() ? 0 : ScreenSizeX / 4;
       }
     }
 
@@ -69,6 +72,18 @@ void __fastcall TypeOfUiOverlayOverWorld(uint32_t eBorderType) {
         GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
       break;
       case 1:
+        // VP-BEGIN [issue #26 / R95]: no-panel-shift - a single open panel
+        // takes the border-0 view rect verbatim (full unpanned window, no
+        // rcExtendedView widening): the world renders exactly like the
+        // field-proven both-panels-open case and the panel overdraws its own
+        // rect. No GAMEDATA_ClearQueuedClicks - world clicking stays active
+        // (retail single-panel semantics, and with the world unpanned the
+        // margins are clickable world again). The R92 wide guard below stays
+        // for the vanilla slide (no_panel_shift=0).
+        if (PANELSHIFT_NoShiftWorld()) {
+          GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
+          return;
+        }
         // VP-BEGIN [issue #26 / R92]: wide-UI layouts (1280x720) keep the tile
         // walk at the full panned span. Retail narrows the walk to the free
         // half (right cut -quarter) because the open panel reaches the screen
@@ -85,6 +100,14 @@ void __fastcall TypeOfUiOverlayOverWorld(uint32_t eBorderType) {
         GAME::View::SetViewRectangleSize(D2GameView, -nViewOffsetX, 0, WindowSizeX - nViewOffsetX, WindowSizeY);
       return;
       case 2:
+        // VP-BEGIN [issue #26 / R95]: no-panel-shift - mirror of the case-1
+        // guard above: border-0 view rect verbatim, no rcExtendedView
+        // widening, world clicking stays active. The R92+R93 wide guard
+        // below stays for the vanilla slide (no_panel_shift=0).
+        if (PANELSHIFT_NoShiftWorld()) {
+          GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
+          return;
+        }
         // VP-BEGIN [issue #26 / R92+R93]: wide-UI layouts (1280x720) keep the
         // tile walk at the full panned span. R92 widened the walk by flipping
         // the LEFT edge to -quarter; R93 corrects that: pView.left doubles as

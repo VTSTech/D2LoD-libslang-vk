@@ -117,6 +117,20 @@ New command-line switch: `d2vp.exe -nointro`. The two Blizzard / Blizzard North 
 - [ ] **39. Boot with the switch:** `d2vp.exe -nointro` (alone, and once combined e.g. `-w`): no Blizzard/Blizzard North logo videos, no auto `d2intro` — straight to the title screen, click lands on the main menu with no video. `d2boot.log` line 1 = `Vanilla+0.0.7-R86` and carries the `[vp] cmdline -nointro` mark.
 - [ ] **40. Regression (no switch):** one boot WITHOUT `-nointro` — the two logo videos still play with sound (§A item 1 unchanged) and the `[vp] cmdline -nointro` mark is absent.
 
+## L. `no_panel_shift` — static world with one panel open (R95, [issue #26](https://github.com/VTSTech/D2LoD-libslang-vk/issues/26))
+
+New d2vp.ini option: `[features] no_panel_shift=1`. Retail slides the whole game world a quarter screen sideways when exactly one panel (character screen / inventory) is open so the action re-centers in the uncovered strip — exact only when the open panel reaches the screen edge (640x480/800x600). At 1280x720 the 800-class UI floats 240 px inboard, so the slide drags world out from under the visible outer margins, and the perspective projection (player-anchored, expanding from the screen center) makes every panned channel a separate artifact source — the entire issue-#26 black-triangles family lived on that panned path. While the option is on (wide layouts only), a single open panel renders the world exactly like the both-panels-open case (no slide, full unpanned view rect) and the panel floats over it. The ini hot-reloads every ~2 s, so the behavior can be toggled live mid-game. Missing key / garbage value / 640x480 / 800x600 = the vanilla slide, byte-identical.
+
+- [ ] **41. Static world (the R95 field ask):** set `no_panel_shift=1` in d2vp.ini (add the line under `[features]`; wait 2 s or restart), at 1280x720 with perspective mode ON: open the character screen — the world, your player and all NPCs stay **exactly where they were**; close it — nothing moves; same with the inventory (the panel just floats over the world). The automap, rain and click-to-move must all line up with the static world (click a unit standing in an outer margin).
+- [ ] **42. The last #26 blackness:** with `no_panel_shift=1` and perspective mode ON, open the inventory: **no black strip beyond the panel's right edge** (the R94 leftover; the world renders to both screen edges).
+- [ ] **43. Perspective off:** same single-panel checks with perspective mode OFF — world static, both panels clean, no bottom strip.
+- [ ] **44. Regression (vanilla slide):** set `no_panel_shift=0` (or delete the key) — the retail quarter-screen slide returns with a single panel (world moves left/right, both panels = no slide), and everything renders as in R94 (both-panels margins green).
+- [ ] **45. Both panels:** with the option on, both panels open — unchanged from R94: world visible and correct in both outer margins.
+
+### Registry watch (owner environment, 2026-11-03 — not a build bug)
+
+One D3D session "didn't go in game" across many builds **including R83** (owner smoke-tested) until the registry was restored to fresh 1.14d install values — a corrupted D2 video-options registry value (owner suspicion: one of the slider values). Vanilla+ itself writes no registry values (d2vp.ini lives next to the exe; `portable_save=1` explicitly avoids the registry). If D3D ever again boots to a black screen / fails to enter game across builds that previously worked: restore the fresh-install video-settings registry values before suspecting the build, and note which value was corrupt.
+
 ---
 
 ## Evidence to keep if anything breaks

@@ -839,7 +839,9 @@ void __stdcall WEATHER_DrawParticles() {
     }
 
     int nClipLeft = 0;
-    uint32_t eBorderType = UI::Path::DRAW_GetTypeOfBorder();
+    // VP: [issue #26 / R95] no-panel-shift - rain clip matches the unpanned
+    // world on the wide stops (border-0 clip) instead of the retail slide.
+    uint32_t eBorderType = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder());
     switch (eBorderType) {
       case 1:
         {
@@ -1041,7 +1043,8 @@ void __stdcall DRAW_Overlay_Weather() {
       if (fps >= 10) {
         nXStart = 0;
         nYEnd = ScreenSizeY - 0x2f;
-        eBorderType = UI::Path::DRAW_GetTypeOfBorder();
+        // VP: [issue #26 / R95] no-panel-shift (see the clip note above).
+        eBorderType = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder());
         switch (eBorderType) {
           case 1:
             {
@@ -1084,7 +1087,8 @@ void __fastcall WEATHER_DrawBubbles(D2DataArrayStrc * pBubbleArray, DC6 * * pDC6
     int nXOffset = 0;
     int nMinX = 0;
     int nMaxX = ScreenSizeX;
-    uint32_t eBorderType = UI::Path::DRAW_GetTypeOfBorder();
+    // VP: [issue #26 / R95] no-panel-shift (see the clip note above).
+    uint32_t eBorderType = PANELSHIFT_BorderForWorld(UI::Path::DRAW_GetTypeOfBorder());
     switch (eBorderType) {
       case 1:
         {

@@ -16,6 +16,89 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
 
 - Nothing yet — the next round's entry goes here.
 
+## [R95] — 2026-11-03 (issue #26 round 4: the no-panel-shift feature; self-ID `Vanilla+0.0.7-R95`)
+
+Track S follow-up and a new Vanilla+ option. The R94 field pass closed the
+both-panels case — owner: "both panels open, no more blackness. however right
+panel still has some, left has none" — and surfaced the retail behavior behind
+the whole bug family: "when i open the left (character) panel the game screen
+moves everything, the world, my player, npc's. to the right, and when i open
+the right (inventory) panel, everything moves to the left. not sure if this is
+how it is supposed to be. **Can we open the panel without moving anything?**
+Both panels open it matches the game world before i opened a panel. that seems
+good." A D3D cross-check confirmed the leftover right-margin blackness is
+renderer-independent ("right side blackness occurs in D3D as well, otherwise,
+both panels open is fixed in D3D as well") — it lives in the shared panned
+perspective path, not in any one renderer.
+
+### Answer to the field question: yes, the slide is vanilla — and it is why #26 exists
+
+Retail slides the whole world a quarter screen sideways when exactly one
+panel is open (`TypeOfUiOverlayOverWorld`: `MouseYRelatedB = ∓ScreenSizeX/4`)
+so the action re-centers in the strip the panel leaves uncovered; both panels
+open = no slide — exactly what the owner observed. The assumption underneath
+is that the open panel **reaches the screen edge** (true at 640x480/800x600,
+where the slide is free). At 1280x720 the 800-class UI floats 240 px inboard,
+so the slide drags world out from under the visible outer margins — and the
+perspective projection anchors on the player and expands from the screen
+center, so the pan rides **half a dozen independent channels** (MouseYRelatedB,
+the pView walk rect + nCenterX width derivation, the four roof/floor
+light-grid half-screen adjusts, the weather clip switches, the automap border
+offset, the renderer quarter offsets). Every R92–R94 artifact lived on that
+panned path; the both-panels case renders clean precisely because border 3
+never pans.
+
+### Fixed / added (wide layouts 1280x720/1344x700 only — retail byte-identical)
+
+- **New opt-in feature `no_panel_shift`** (d2vp.ini `[features]`, default 0 =
+  vanilla slide, 2 s hot-read, template entry, options-cache bust): while 1,
+  a single open panel takes the **border-0 world pipeline verbatim** — the
+  world renders exactly like the field-proven both-panels-open case and the
+  panel floats over it. The world does not move. This is the fix for the
+  remaining perspective right-margin blackness by bypass: the panned
+  perspective path is no longer reachable with a single panel on the wide
+  stops.
+- Implementation keeps the renderers untouched: `Path.cpp` keeps the border-0
+  camera (MouseYRelatedB = 0, full unpanned view rect, no rcExtendedView
+  widening, world clicking stays active) and every world-draw call site reads
+  its border type through the new `PANELSHIFT_BorderForWorld` neutralizer —
+  `Path.cpp` (pan), `Game/Draw.cpp` ×6 (the floor nWindowBorderType + the
+  roof/underfloor/alpha/dWallPass/dShadowPass origins), `Draw/Weather.cpp` ×3
+  (rain clip switches), `UI/Automap.cpp` ×1 (automap pan) — so the renderers
+  receive 0 and take their own border-0 full-screen path. The R92–R94
+  renderer guards stay live for the vanilla slide (`no_panel_shift=0`).
+  UI/interaction consumers (panel click rects, label culls, selection
+  guards, the R92 CUnit click rejection) keep reading the real border type.
+- Retail 640x480/800x600: the wide-dims gate is false, every call site sees
+  its retail value — byte-identical.
+
+### Also noted this round (owner environment, not a build bug)
+
+- **D3D "didn't go in game" episode**: builds as old as R83 (owner
+  smoke-tested) also failed until the registry was restored to fresh 1.14d
+  install values — a corrupted D2 video-options registry value (owner
+  suspicion: one of the slider values), not a code regression. Recovery +
+  watch item recorded in SMOKE-CHECKLIST §L. Vanilla+ itself writes no
+  registry values (d2vp.ini lives next to the exe; portable_save explicitly
+  avoids the registry).
+
+Verification: all 6 changed TUs compile clean under llvm-mingw i686 with the
+CMake forced-include set (`d2_platform.h` + `support/d2_hand.h`; clang link
+stops at the known GCC-only `__gcclibcxx_demangle_callback` — unchanged since
+R90b; the owner's MSYS2 build links it); gates **351/351** (10 new R95 pins:
+the ini key/reader/template, the dims gate, the camera pan gate, the border-0
+view rects, the 6 world-draw origins, the weather clips, the automap pan,
+the cache bust); self-ID → `Vanilla+0.0.7-R95`. Field ask (at 1280x720, with
+`no_panel_shift=1` in d2vp.ini — the ini hot-reloads every 2 s, so it can be
+toggled live): (a) single panels — the world, player and NPCs stay **exactly
+where they were** when the character screen or the inventory opens/closes, in
+perspective mode on AND off; (b) the right-panel perspective margin — no black
+strip beyond the panel (this was the last #26 blackness); (c) both panels —
+unchanged (already green in R94); (d) `no_panel_shift=0` — the vanilla slide
+returns (regression guard); (e) retail 640x480/800x600 sanity pass if
+convenient. The automap, rain and click-to-move must all line up with the
+static world.
+
 ## [R94] — 2026-11-03 (issue #26 fix round 3; self-ID `Vanilla+0.0.7-R94`)
 
 Track S follow-up. The R93 field pass came back **partially fixed** — owner:
@@ -88,6 +171,18 @@ the margins clickable; (b) the screen bottom (no panels, one panel, both): no
 black strip at the bottom edge with perspective off, and the bottom corners
 render world with perspective on; (c) single panels in perspective mode: both
 margins clean. Retail 640x480/800x600 byte-identical.
+
+Field result: **MOSTLY GREEN, one case left + a feature ask** — owner build +
+720p: "both panels open, no more blackness. however right panel still has
+some, left has none ... with perspective off, there is almost no blackness
+with either panel ... the world/player/npc's still move thou ... when i open
+the left (character) panel the game screen moves everything ... Can we open
+the panel without moving anything?" and, on D3D: "right side blackness occurs
+in D3D as well, otherwise, both panels open is fixed in D3D as well." So: the
+border-3 world pass and the bottom-band fixes landed (both-panels green in
+both perspective modes, both renderers); the perspective-ON right-margin
+blackness survives in the shared panned perspective path — and the field ask
+that closes it is the no-panel-shift feature, fixed in [R95].
 
 ## [R93] — 2026-11-03 (issue #26 fix round 2; self-ID `Vanilla+0.0.7-R93`)
 

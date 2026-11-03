@@ -690,7 +690,7 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # R94: string bumped R93 -> R94 (issue #26 round 3: the R93 field pass fixed
 # both single panels with perspective OFF; round 3 covers the border-3 world
 # draw skip (ViewDraw2) and the bottom-band vertical cuts)
-gate "res: self-id 0.0.7-R94"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R94' 1
+gate "res: self-id 0.0.7-R95"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R95' 1
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the
@@ -857,6 +857,32 @@ gate "nointro: header entry point (R86)"   D2Client/UI/VanillaPlusCore.h   'VPNO
 gate "nointro: MainMenus include (R86)"    D2Launch/MainMenus.cpp          'include "D2Client/UI/VanillaPlusCore\.h"' 1
 gate "nointro: cutscene gates (R86)"       D2Launch/MainMenus.cpp          'VPNOINTRO_IsRequested\(\) \? 0 : D2Win::D2GFX::BeginCutSceneAtResolutionMode0' 2
 gate "nointro: host decl (R86)"            d2_platform.h                   'LPSTR GetCommandLineA\(\);' 1
+
+# ---- [vanilla-plus no-panel-shift] R95: static world with one panel open ---
+# Retail slides the world a quarter screen when exactly one panel is open so
+# the action re-centers in the uncovered strip - exact only when the panel
+# reaches the screen edge (640x480/800x600). At the wide stops the 800-class
+# UI floats 240 px inboard, the slide drags world out from under the visible
+# outer margins, and the perspective projection (player-anchored, expanding
+# from the screen center) makes every panned channel a separate artifact
+# source - the whole R92-R94 tail of issue #26 lived on that panned path.
+# no_panel_shift=1 renders the world exactly like the both-panels-open case
+# (border 3: no slide, full unpanned view rect) and lets the panel float over
+# it. The renderers receive 0 through PANELSHIFT_BorderForWorld and take
+# their own border-0 full-screen path - zero renderer edits; the R92-R94
+# renderer guards stay live for the vanilla slide. UI/interaction consumers
+# keep reading the real border type. Retail dims: gate false, byte-identical.
+gate "noshift: ini key + reader (R95)"     D2Client/UI/VanillaPlusCore.cpp 'GetPrivateProfileIntA\("features", "no_panel_shift", 0, szIniPath\)' 1
+gate "noshift: ini template entry (R95)"   D2Client/UI/VanillaPlusCore.cpp 'no_panel_shift=0' 2
+gate "noshift: wide dims gate (R95)"       D2Client/UI/VanillaPlusCore.cpp 'PANELSHIFT_NoShiftWorld' 3
+gate "noshift: header decls (R95)"         D2Client/UI/VanillaPlusCore.h   'PANELSHIFT_BorderForWorld' 1
+gate "noshift: camera pan gate (R95)"      D2Client/UI/Path.cpp            'MouseYRelatedB = PANELSHIFT_NoShiftWorld\(\) \? 0' 2
+gate "noshift: border-0 view rects (R95)"  D2Client/UI/Path.cpp            'if \(PANELSHIFT_NoShiftWorld\(\)\) \{' 2
+gate "noshift: world-draw origins (R95)"   D2Client/GAME/Draw.cpp          'PANELSHIFT_BorderForWorld\(UI::Path::DRAW_GetTypeOfBorder\(\)\)' 6
+gate "noshift: weather clips (R95)"        D2Client/Draw/Weather.cpp       'PANELSHIFT_BorderForWorld\(UI::Path::DRAW_GetTypeOfBorder\(\)\)' 3
+gate "noshift: automap pan (R95)"          D2Client/UI/Automap.cpp         'PANELSHIFT_BorderForWorld\(Path::DRAW_GetTypeOfBorder\(\)\)' 1
+gate "noshift: config cache bust (R95)"    D2Client/UI/VanillaPlusCore.cpp 'dwNoPanelShiftLastCheck = 0' 2
+
 
 echo
 if [ "$FAIL" -eq 0 ]; then
