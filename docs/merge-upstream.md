@@ -280,3 +280,41 @@ PR) so acceptance is frictionless.
   — never the reverse. Also the lightest round yet: 8 unmerged paths of 46
   two-sided files, and QuestLog.cpp's site-5 hunk was a zero-edit replant — the
   fork line was already spelled in upstream's new variable shape.
+
+- **The 1839/1851 supersession syncs (`b2937091`, `1d401785`):** upstream
+  recovered the retail forms of two fixes the fork had hand-built — the quest
+  gossip tables (R54/R85, issues #13/#22; upstream's `bc47c6bc` restored every
+  table verbatim, sizes AND the flavor string ids the fork had left empty rather
+  than invent) and the SFX float model (vanilla-plus fix 16, Defect 13; upstream's
+  `D2FloatIntUnion` is the same root cause in the retail-faithful shape). Both
+  were taken whole: the hand-builds are gone, each old fix site keeps a dated
+  supersession note, the `VP-BEGIN [gossip-table-fix history]` markers keep the
+  root-cause lineage, and the gate rows were re-pinned to the NEW state (never
+  deleted — the gates now assert the superseding form). Checked at the same merge
+  and NOT superseded: issue #11's `[glide fix 11]` hook (still fork-side; the
+  glide3x.dll wrapper ships from the `Glide3xVK` branch, which upstream does not
+  carry — "superseded" requires upstream to actually carry the surface). Rules:
+  when upstream ships the retail-exact form of a fork fix, take it whole and
+  record the supersession in the old site's comment (two spellings of one
+  behavior is exactly the 1794 convergence-conflict class); re-pin, never delete,
+  the affected gate rows; and before accepting "upstream superseded X", verify
+  upstream actually touched X's file.
+- **The 1851/1855 ground-tile supersession (`77e87e02`, fresh-clone round):** the
+  repo was re-cloned from origin at the owner's R89 tip (the local-only R88 docs
+  commit rode in a bundle and was re-applied from a backup patch), then upstream
+  `bc47c6bc..57380e21` merged. Upstream's regen rebuilt the D3D ground-tile index
+  buffers in retail form (stack `aStripIndices` prefill into a properly-extent
+  `gpD3DGroundTileVertexBuffer`; low-quality fan `gdwRendererMode = {0,5,0x23,0x1e}`
+  — note the retail fan's 4th vertex is 30, not the fork's hand-derived 28),
+  superseding vanilla-plus fixes 24/25. Two instruments mattered: the auto-merge
+  had silently spliced the fork's fix-25 loop into `InitGroundTileCache` BESIDE
+  upstream's (both paths in one function, one referencing a static the resolution
+  had already retired) — a dangling-reference class the conflict markers never
+  showed; the per-function diff against upstream's file caught it, and the whole
+  function was realigned to upstream's byte-verified body. And the R51 gate fired
+  raw=2 — not a regression but the owner's own R89 skeleton-class palshift site;
+  the expectation was re-pinned with the reason, not relaxed blindly. Rules: after
+  resolving supersession hunks, DIFF EVERY touched function against the winning
+  side whole (the splice class hides between hunks); grep the retired symbols'
+  names file-wide before staging; and when a gate count changes, diff the new site
+  against the owner's own recent commits before treating it as merge damage.

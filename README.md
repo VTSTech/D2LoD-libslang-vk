@@ -60,13 +60,27 @@ The short form — per-area records: [`handoff.md`](handoff.md) §2 (field-statu
 per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
 [`handoff.md`](handoff.md) (live) and [`HISTORY.md`](HISTORY.md) (verbatim archive).
 
-- **Shipped: [`R85`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R85)
-  ("Vanilla+ 0.0.7-R85")** — the A1Q2 Bloodraven turn-in fix
+- **Shipped: [`R88`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R88)
+  ("Vanilla+ 0.0.7-R88")** — the second upstream sync (Ghidra DB 1839 → 1851; gossip
+  tables and the SFX float model supersessions);
+  [`R87`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R87)
+  ("Vanilla+ 0.0.7-R87") — the first upstream sync of the 0.0.7 line (Ghidra DB
+  1806 → 1839, byte match 6,232/14,642 fns), field-run green;
+  [`R86`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R86)
+  ("Vanilla+ 0.0.7-R86"), the `-nointro` boot switch, field-verified 2026-11-02
+  ("R86 verified, -nointro works"); [`R85`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R85),
+  the A1Q2 Bloodraven turn-in fix
   ([#22](https://github.com/VTSTech/D2LoD-libslang-vk/issues/22)), field-proven — the
   owner closed the issue 2026-11-02; [`R84`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R84)
   ("Vanilla+ 0.0.7-R84"), the item-tooltip zero fix
   ([#16](https://github.com/VTSTech/D2LoD-libslang-vk/issues/16)), field-verified and
   tagged earlier the same day.
+- **In the tree (R90, tag pending field verify)**: the third upstream sync — Ghidra
+  DB 1851 → 1855, byte match 6,273/14,642 fns (19.51% of bytes); upstream's rebuilt
+  D3D ground-tile index buffers supersede the fork's fixes 24/25 (root-cause notes
+  kept in code); [`R89`](https://github.com/VTSTech/D2LoD-libslang-vk/commit/4014ef65)
+  (owner-applied, tag pending) fixed the monster-components data model. Paste-ready
+  notes for R84–R88: [`docs/release-notes-R84-R88.md`](docs/release-notes-R84-R88.md).
 - **Field-verified**: boot → intro → title → character select → in game; Direct3D and
   Glide (`-3dfx`) rendering, incl. the native 1280x720 widescreen mode; sound end to
   end; the full SMOKE belt passed on the R83 build

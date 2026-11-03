@@ -4,7 +4,7 @@ All notable changes to the Vanilla+ client and the Glide3xVK wrapper, per shippe
 release. Working rounds between releases carry build self-IDs `Vanilla+0.0.x-Ryy` — the
 first `d2boot.log` line pins any shipped exe to its source round. The engineering-level
 round journal lives in [`handoff.md`](handoff.md) (current) and
-[`HISTORY.md`](HISTORY.md) (verbatim archive, H1–H38); per-round summaries for the
+[`HISTORY.md`](HISTORY.md) (verbatim archive, H1–H39); per-round summaries for the
 0.0.6-era releases are also on the
 [GitHub releases page](https://github.com/VTSTech/D2LoD-libslang-vk/releases).
 
@@ -14,6 +14,141 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
 
 ## [Unreleased]
 
+- Nothing yet — the next round's entry goes here.
+
+## [R90] — 2026-11-03 (merge `77e87e02`, self-ID `Vanilla+0.0.7-R90`; tag pending the owner's field verify)
+
+The third upstream sync of the 0.0.7 line: upstream `bc47c6bc..57380e21` (2 commits,
+Ghidra DB 1851 → 1855) merged with the Vanilla+ surface intact. Byte match 6,242 →
+6,273 of 14,642 functions (42.84% of fns), 19.51% of bytes. Conflict surface: 166
+upstream-changed files, 3 conflicts (9 hunks). The supersession ledger grows by one
+entry: upstream rebuilt the D3D ground-tile index buffers in retail form, superseding
+the fork's fixes 24 and 25.
+
+### Synced
+
+- Upstream `03877005` — tables, float vertices, remainders, loops (160 files, the
+  broad regen sweep to 6,273 matching fns); `57380e21` — monster palette path and
+  neighbour-anchored stack addresses.
+- `D2Game/D2UnitFindDataStrc.h` deleted upstream (structs relocated to
+  `D2Common/Unit.h` + `D2Common/Units/UnitFinds.h`); the fork's delta was EOL-only,
+  so the deletion was accepted wholesale.
+- README keeps the fork's two-gate description and takes upstream's Ghidra DB 1855.
+- `SkillNec.cpp` carries both sides: upstream's regen changes plus the R89 component
+  model — verified zero `szCharName` component writes remain.
+
+### Superseded (upstream wins; fork notes kept in code)
+
+- **vanilla-plus fix 24 (D3D fullscreen black ground) + fix 25 (perspective floor
+  diagonal bars)** — upstream `03877005`/`57380e21` rebuilt `DrawGroundTile` and
+  `InitGroundTileCache` with the retail index-buffer model: the stack
+  `aStripIndices[60]` prefill copied into a properly-extent
+  `gpD3DGroundTileVertexBuffer`, and the low-quality fan as the static
+  `gdwRendererMode[4] = {0,5,0x23,0x1e}` (byte-match verified — the retail fan's
+  4th vertex is 0x1e=30, not the fork's hand-derived 28). The fork statics are
+  retired; a dated supersession note sits at the old site. Fixes 18/22/27 in the
+  same file were checked and are NOT superseded.
+- Gate re-pins (R90-merge notes): R51 spawn palshift polarity raw=1 → raw=2 (R89's
+  skeleton-class site is a second good site, not a regression); the self-id row
+  re-pinned to the current string.
+
+## [R89] — 2026-11-02 (owner-applied @ `4014ef65`; tag pending)
+
+The monster-components data-model fix, owner-applied on the fork:
+
+- Raised-skeleton/monster component bytes now write to the monster unit-data union
+  (`pUnitDataMonster->Components[0x10]`, `->pAiGeneral`) instead of overlaying
+  `pUnitDataPlayer->szCharName[4..]`; null guards added
+  (`SKILLNEC_SetSkeletonComponentsByMasteryLvl`, `D2Game/UNIT/Monster.cpp`).
+- Skeleton classes `0x16b`/`0x16c` get their palshift.dat ownership polarity forced
+  from the live hostility check regardless of `byUtrans`
+  (`D2Client/UNIT/CUnit.cpp`) — issue #8 hardening on top of the R51 fix.
+
+## [R88] — 2026-11-02 (merge `1d401785`, self-ID `Vanilla+0.0.7-R88`; tag pending the owner's field verify)
+
+The second upstream sync of the 0.0.7 line: upstream `c8445e73..bc47c6bc` (9 commits,
+Ghidra DB 1839 → 1851) merged with the Vanilla+ surface intact. Byte match 6,232 →
+6,242 of 14,642 functions, 19.50% → 19.54% of bytes. Conflict surface: 462
+upstream-changed files, 55 two-sided, 22 conflicts (27 hunks). This release OPENS THE
+SUPERSESSION LEDGER — upstream recovered the retail forms of two fork fixes, and the
+fork takes them ("upstream wins"), keeping the root-cause notes in code. Field verify
+(owner build + SMOKE) pending; per-release notes for R84–R88 live in
+[`docs/release-notes-R84-R88.md`](docs/release-notes-R84-R88.md).
+
+### Synced
+
+- Types and prototypes from Commit-Will's, Niehztog's and Nugwa628's proposals; the
+  third naming round with Mac cross-check types (`CLIENTMODE_WaitForQServerConnection`,
+  `CLIENTMODE_WaitForServerShutdown`, `MAINMENU_OnPressSkipEmailAddress`,
+  `Objects_InitFnNN_<role>`, `StaticInit_gpsz*`; 6,237 fns / 19.53% at that round);
+  `QUESTLOG_HitTestCloseButton` returns bool; affix rollers take `bSpawnableOnly`,
+  not `bIsSuffix`; `fnGetDatabaseFileTime` is `__fastcall(FILETIME *)`;
+  `D2Sha1ContextStrc` is 0x60 bytes; quest-gossip, sound and missiles value fixes.
+
+### Superseded (upstream wins; fork notes kept in code)
+
+- **vanilla-plus fix 16** (Defect 13: SFX silent, music OK) — upstream's
+  `D2FloatIntUnion` (store `.fValue`, read back `.nValue`) is the same root cause in
+  the retail-faithful form; the fix-16 comment in `D2Client/GAME/Sound.cpp` now
+  carries the supersession note.
+- **The R54/R85 gossip hand-tables** ([#13](https://github.com/VTSTech/D2LoD-libslang-vk/issues/13)
+  / [#22](https://github.com/VTSTech/D2LoD-libslang-vk/issues/22)): upstream
+  recovered the retail tables verbatim — A1Q1 5→8, A1Q2 5→6, A2Q1 5→9 slots — plus
+  the flavor string ids the fork had left empty rather than invent. All 39
+  `aNpcGossipData` externs are now sized retail-exact (28 were unsized pre-merge),
+  which RESOLVES the track-J watch (the ~17 singular-table quests). The
+  `VP-BEGIN [gossip-table-fix history]` notes keep the lineage; the R53/R54/R85
+  quest marks stay as field diagnostics.
+- **Sound constants**: upstream's exact decoded decimals
+  (`9.999999747378752e-05` = the float32 `0.0001` promotion) replace the fork's
+  spellings; the `-2000.0` centibel diagnosis comment is preserved (upstream ships
+  the same scale — fix 10 co-adopted, not superseded).
+- Checked at this merge and NOT superseded: the issue #11 `[glide fix 11]` hook
+  (still fork-side, re-planted at the R87 merge; the glide3x.dll wrapper ships from
+  the `Glide3xVK` branch, which upstream does not carry).
+
+### Changed
+
+- Gates: 10 stale expectations updated to the superseding state with R87-merge notes
+  (the epsilon quartet, the `-2000.0` `(long double)` cast, gossip sizes ×6,
+  Bloodraven turn-in `0x5c` now expected ×2 — retail carries bMenu 0 and bMenu 2
+  variants); the self-ID row repinned R87 → R88. Suite **326/326**.
+- `D2GFX.cpp`: upstream's `uVar1` signed/unsigned model taken in
+  `D2GFX_InitializeLineBuffer` (the fork-side comparison rewrite would have read an
+  uninitialized variable).
+
+## [R87] — 2026-11-02 ([`R87`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R87) @ `486b936c`, self-ID `Vanilla+0.0.7-R87`)
+
+The first upstream sync of the 0.0.7 line: merge `b2937091` (upstream
+`55016505..c8445e73`, 18 commits, Ghidra DB 1806 → 1839). Byte match 6,029 → 6,232 of
+14,642 functions, 18.40% → 19.50% of bytes. **Field-run green** — the owner: "Finally,
+builds, runs, no regressions." — and shipped as tag `R87` the same day.
+
+### Synced
+
+- Ghidra 1807–1809 packet/roster/monster/subtile parameter regen and byte-writer
+  void returns; generator rounds (loop gate + signed division, folded-store arm
+  order, range tests as `lo <= x && x <= hi`); Ghidra 1810 SkillDesc/OOG types;
+  Ghidra 1811–1813 zero-init and signed compares; the VC8 harness (vtable
+  `__thiscall` casts, per-unit include manifests, response-file path) + CI deps
+  (upstream PR #32); dtchitt issue #37–#76 names; roster party ids `uint16_t`
+  throughout (joining a game no longer hangs in the party-grouping loop); names for
+  3,500 variables/fields + Storm PowerPC names + the D2Hell file; three value-bug
+  fixes (wide char literal, byte-mask select, Win32 calls shadowed by thunks) with
+  VC8 near-miss type fixes.
+- Merge-side latent fix: `DRAW_ShouldDrawEdges` had returned 0 unconditionally since
+  the 0.0.6 merge port — wide modes never drew level edges; caught and restored
+  during resolution.
+- Conflict surface: 1,113 upstream-changed files, 136 two-sided, 86 unmerged paths;
+  the D2Hell rename cluster resolved onto upstream's layout with the `[d2boot]`
+  CreateProcess marks re-planted; every other fork surface (wide-Y offsets, `VPRES`
+  classifiers, D3D fix-22/24/25/27, the sound decoded doubles) re-planted. Gates: 2
+  rows updated (the R84 tooltip varargs pin for upstream's typed renames; the
+  fork-api include pin replaced by a `D2Hell.cpp` CreateProcess tripwire). Suite
+  **326/326**.
+
+## [R86] — 2026-11-02 ([`R86`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R86) @ `3ca2da40`, self-ID `Vanilla+0.0.7-R86`)
+
 ### Added
 
 - `-nointro` command-line switch: skips the boot intro videos — the Blizzard and
@@ -22,9 +157,11 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
   entries take the retail begin-failed path straight to the next screen). The
   parse writes a `[vp] cmdline -nointro` mark to `d2boot.log`; in-game quest
   cutscenes are unaffected and boot without the switch is unchanged. Gates
-  320 → 326; self-ID `Vanilla+0.0.7-R86`. **Field-verified — the owner tested
-  in-game 2026-11-02** ("R86 verified, -nointro works"; SMOKE §K items 39–40
-  proven) and shipped it as commit `3ca2da40` the same day.
+  320 → 326. **Field-verified — the owner tested in-game 2026-11-02** ("R86
+  verified, -nointro works"; SMOKE §K items 39–40 proven); shipped as tag `R86`
+  the same day.
+
+## [R85] — 2026-11-02 ([`R85`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R85) @ `71f4772f`, self-ID `Vanilla+0.0.7-R85`)
 
 ### Fixed
 
@@ -37,9 +174,10 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
   slot 3 whenever RewardAwaits is set, so the turn-in line never existed and
   the reward gate was never asked. Table widened to 5 slots (slot 3 = turn-in
   line 0x5c, pinned by the quest's own gate; flavor slots left empty rather
-  than invented), Kashya chain marks added. Gates 311 → 320; self-ID
-  `Vanilla+0.0.7-R85`; **field-proven — the owner closed the issue 2026-11-02**
-  (state completed, same day). Track record: HISTORY.md H35–H36.
+  than invented), Kashya chain marks added. Gates 311 → 320;
+  **field-proven — the owner closed the issue 2026-11-02** (state completed,
+  same day). Track record: HISTORY.md H35–H36. (The hand-built table was
+  superseded at R88 by upstream's retail-exact table — see [R88].)
 
 ## [R84] — 2026-11-02 ([`R84`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R84) @ `63e020a3`, self-ID `Vanilla+0.0.7-R84`)
 
@@ -62,9 +200,10 @@ at tag.
 The first 0.0.7 build is the R66 content state (tag `R67`, self-ID `Vanilla+0.0.7-R66`,
 release notes covering R59→R66); the R67→R77 block shipped as tag
 [`R77`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R77)
-("Vanilla+ 0.0.7 (R77)", 2026-11-01); further 0.0.7-line tags `R78`–`R84` mark the
-upstream-sync and fix rounds. Gate suite 204 (0.0.6) → 283 (first 0.0.7 build) →
-311 (R84) → 326 (R86).
+("Vanilla+ 0.0.7 (R77)", 2026-11-01); further 0.0.7-line tags `R78`–`R86` mark the
+fix rounds and `R87`/`R88` the upstream-sync rounds (the R88 tag follows the field
+verify). Gate suite 204 (0.0.6) → 283 (first 0.0.7 build) →
+311 (R84) → 326 (R86; unchanged through R88).
 
 ### Added
 

@@ -684,8 +684,8 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-# R90-merge: re-pinned R87 -> R88 (user R89 bumped code but not the string; string was still R88)
-gate "res: self-id 0.0.7-R88"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R88' 1
+# R90: string bumped R88 -> R90 for the third upstream sync (R89 was code-only, string skipped it)
+gate "res: self-id 0.0.7-R90"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R90' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared
