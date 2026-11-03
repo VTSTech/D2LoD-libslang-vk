@@ -1,6 +1,7 @@
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/dedbe5a2-7079-40d4-af2d-4eb948e975b2" />
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/73c54d57-8baf-44ae-a1ed-c73711978db3" />
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/be9cfe56-0532-4176-a7db-c719364be89d" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/815fae59-2e1a-4b76-a834-8ba2ea1893ba" />
+
 
 # D2LoD Vanilla+
 
@@ -9,8 +10,8 @@
        width="88" height="31" alt="Made Openly: Mostly AI">
 </a>
 
-[![Release](https://img.shields.io/badge/release-0.0.7--R98-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
-[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-326%2F326-2ea043)](tools/check-vanilla-plus.sh)
+[![Release](https://img.shields.io/badge/release-0.0.7--R101-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
+[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-380%2F380-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 
 Diablo II: Lord of Destruction 1.14d, reverse-engineered into C++ that builds and runs —
@@ -49,6 +50,7 @@ Options"**.
 | Persistent Globe Text | `[features] globe_persistent` | Retail's above-orb Life/Mana readout stays visible without hovering. Pure display; retail's own HP/MP-text options keep working. |
 | Item Level Tooltips | `[features] item_ilvl` | Appends ` (N)` to the item name on every item tooltip — e.g. `Long Sword (12)` — so an item's level reads at a glance. |
 | Shared Stash | `[features] shared_stash` | An **outlined "Shared" tab** on the stash panel over **ten** retail-shaped pages that every character on the PC shares: items and gold deposited there survive the character. `‹` / `›` arrows beside the label step one page at a time (Shared 1 … Shared 10); clicking the word returns to the personal page; one gold pool across all ten. Stored in its own `_d2vp_shared.sss` beside the saves; older shared-stash files load with the missing pages empty — character `.d2s` files stay retail-compatible, with or without the key. |
+| No Panel World Shift | `[features] no_panel_shift` | With one panel open at the wide layouts (1280x720 / 1344x700) the world — terrain, units, effects — stays exactly where it was: the panel floats over an unmoved camera instead of the vanilla quarter-screen slide. The vanilla slide is kept at 640x480 / 800x600, where it still re-centers the action. |
 
 No balance changes, no save-format changes: `.d2s`/`.d2x` layouts stay untouched, and
 every feature ships OFF. The wider candidate slate (D2R backports and owner suggestions)
@@ -60,39 +62,48 @@ The short form — per-area records: [`handoff.md`](handoff.md) §2 (field-statu
 per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
 [`handoff.md`](handoff.md) (live) and [`HISTORY.md`](HISTORY.md) (verbatim archive).
 
-- **Shipped: [`R88`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R88)
-  ("Vanilla+ 0.0.7-R88")** — the second upstream sync (Ghidra DB 1839 → 1851; gossip
-  tables and the SFX float model supersessions);
-  [`R87`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R87)
-  ("Vanilla+ 0.0.7-R87") — the first upstream sync of the 0.0.7 line (Ghidra DB
-  1806 → 1839, byte match 6,232/14,642 fns), field-run green;
-  [`R86`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R86)
-  ("Vanilla+ 0.0.7-R86"), the `-nointro` boot switch, field-verified 2026-11-02
-  ("R86 verified, -nointro works"); [`R85`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R85),
-  the A1Q2 Bloodraven turn-in fix
-  ([#22](https://github.com/VTSTech/D2LoD-libslang-vk/issues/22)), field-proven — the
-  owner closed the issue 2026-11-02; [`R84`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R84)
-  ("Vanilla+ 0.0.7-R84"), the item-tooltip zero fix
-  ([#16](https://github.com/VTSTech/D2LoD-libslang-vk/issues/16)), field-verified and
-  tagged earlier the same day.
-- **In the tree (R90, tag pending field verify)**: the third upstream sync — Ghidra
-  DB 1851 → 1855, byte match 6,273/14,642 fns (19.51% of bytes); upstream's rebuilt
-  D3D ground-tile index buffers supersede the fork's fixes 24/25 (root-cause notes
-  kept in code); [`R89`](https://github.com/VTSTech/D2LoD-libslang-vk/commit/4014ef65)
-  (owner-applied, tag pending) fixed the monster-components data model. Paste-ready
-  notes for R84–R88: [`docs/release-notes-R84-R88.md`](docs/release-notes-R84-R88.md).
+- **Shipped: [`R98`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R98)
+  ("Vanilla+ 0.0.7-R98")** — issue #26 round 7: the D3D perspective-toggle crash
+  rooted to the flat-wall builder's `uint8_t` subtile iterator (wraps after 12 subtiles
+  and reads +4-shifted pseudo-records — latent since the original decompilation),
+  iterator widened to `int`. Earlier 0.0.7-line tags:
+  [`R91`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R91) — docs +
+  field-verify round: the third upstream sync field-run green and the necro-minion
+  skeleton fix confirmed in the field ("Skeletons are finally white again");
+  [`R88`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R88) — the second
+  upstream sync (Ghidra DB 1839 → 1851; gossip-table and SFX float supersessions);
+  [`R87`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R87) — the first
+  upstream sync of the line (1806 → 1839, field-run green);
+  [`R86`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R86) — the
+  `-nointro` boot switch ("R86 verified, -nointro works");
+  [`R85`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R85) — the A1Q2
+  Bloodraven turn-in fix ([#22](https://github.com/VTSTech/D2LoD-libslang-vk/issues/22),
+  closed by the owner 2026-11-02).
+- **In the tree (R99–R101, tags pending the next field pass)**: the fourth upstream
+  sync (R99 — the Ghidra 1864–1877 library rounds, 209 files; the byte-match table
+  below is current at 6,478/14,642 fns) and the two rounds that closed the loop it
+  opened — R100 fixed the unit-sprite pan the new retail bodies re-armed under
+  `no_panel_shift=1` (14 call sites routed through the border neutralizer; owner:
+  "no_panel_shift is working as intended now"), R101 added the **No Panel World Shift**
+  row to the Vanilla+ Options panel (the toggle is no longer ini-only). Paste-ready
+  release notes: R84–R88 ([`docs/release-notes-R84-R88.md`](docs/release-notes-R84-R88.md))
+  and R98–R101 ([`docs/release-notes-R98-R101.md`](docs/release-notes-R98-R101.md)).
 - **Field-verified**: boot → intro → title → character select → in game; Direct3D and
   Glide (`-3dfx`) rendering, incl. the native 1280x720 widescreen mode; sound end to
   end; the full SMOKE belt passed on the R83 build
   ([#24](https://github.com/VTSTech/D2LoD-libslang-vk/issues/24)); the `-nointro`
-  boot switch (R86) verified in-game 2026-11-02 — "R86 verified, -nointro works".
+  boot switch (R86) verified in-game 2026-11-02 — "R86 verified, -nointro works"; the
+  `no_panel_shift` feature (R95 Glide pass: "All blackness appears fixed in Glide as
+  well"; R100 unit lock: "working as intended now").
 - **Open issues (4)**, triaged in [handoff.md](handoff.md) §9: Necro minion skeleton
-  colors ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)) — fix in code
-  (R51), field verify pending; intermittent
+  colors ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)) — fixed (R51),
+  field-verified R91, owner close pending; intermittent
   attribute-point crash ([#18](https://github.com/VTSTech/D2LoD-libslang-vk/issues/18));
   Refilling Shrine XP buff ([#25](https://github.com/VTSTech/D2LoD-libslang-vk/issues/25));
-  720p single-panel black triangles ([#26](https://github.com/VTSTech/D2LoD-libslang-vk/issues/26)).
-  A1Q2 Bloodraven turn-in ([#22](https://github.com/VTSTech/D2LoD-libslang-vk/issues/22))
+  720p panel margins ([#26](https://github.com/VTSTech/D2LoD-libslang-vk/issues/26)) —
+  the render fixes and `no_panel_shift` are field-proven (R92–R101); still owed: the
+  D3D perspective-toggle re-check on R98+ (SMOKE §L item 48) and the explicit
+  both-panels pass. A1Q2 Bloodraven turn-in ([#22](https://github.com/VTSTech/D2LoD-libslang-vk/issues/22))
   CLOSED 2026-11-02 — the R85 fix field-proven.
 - A crash writes a symbolised report (`d2crash-<date>-<time>.txt`) next to the
   executable; a 12 s hangwatch dumps one if the main loop ever stops beating. See
@@ -155,7 +166,7 @@ Two checks stand behind every release:
 
 - **The Vanilla+ gate suite** — [`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh)
   pins the whole Vanilla+ surface (feature gates, 720p anchors, sound constants, boot
-  telemetry) with **326 checks**, green at the current tip.
+  telemetry) with **380 checks**, green at the current tip.
 - **[`asm_matching/`](asm_matching/README.md)** (upstream) compiles the tree with Visual
   C++ 2005 SP1 and byte-compares each function against the 1.14d binary — a check on the
   decompilation itself: where the code comes out identical, the decompiled function was
