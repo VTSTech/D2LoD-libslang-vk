@@ -86,9 +86,9 @@ per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
   opened — R100 fixed the unit-sprite pan the new retail bodies re-armed under
   `no_panel_shift=1` (14 call sites routed through the border neutralizer; owner:
   "no_panel_shift is working as intended now"), R101 added the **No Panel World Shift**
-  row to the Vanilla+ Options panel (the toggle is no longer ini-only). Paste-ready
-  release notes: R84–R88 ([`docs/release-notes-R84-R88.md`](docs/release-notes-R84-R88.md))
-  and R98–R101 ([`docs/release-notes-R98-R101.md`](docs/release-notes-R98-R101.md)).
+  row to the Vanilla+ Options panel (the toggle is no longer ini-only). Release
+  notes live under the tagged
+  [GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases).
 - **Field-verified**: boot → intro → title → character select → in game; Direct3D and
   Glide (`-3dfx`) rendering, incl. the native 1280x720 widescreen mode; sound end to
   end; the full SMOKE belt passed on the R83 build

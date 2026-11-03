@@ -8,7 +8,6 @@
 #include "D2CMP/SRC/SubTile.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GameViewStrc.h"
-#include "D2Client/Draw/LightDiag.h"
 #include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/Draw/Weather.h"
 #include "D2Client/Engine/Gfx.h"
@@ -617,7 +616,6 @@ void __thiscall DrawFloorTile(D2DrawFloorStrc * pFloor, D2DrlgTileDataStrc * pTi
       pLightEx = aFloorLightGrid8x8;
       if (!(pTileOther->nFlags & 0x100U)) {
         GetIntensityFlagsForTile(nWorldX, nWorldY, 0, pLightEx);
-        D2Client::Draw::LightDiag::NoteGroundGrid(nWorldX, nWorldY, pLightEx); // [glide fix 8]
       } else {
         nRowY = 8;
         do {
@@ -1355,10 +1353,7 @@ void __fastcall dWallPass(D2GameViewStrc * pGameView) {
 
       for (sLightEntry = pCellEntry[1]; sLightEntry; sLightEntry = sLightEntry->pNext) {
         View::DRAW_CoordIsInCoord(sLightEntry->nX, sLightEntry->nY, &byIntensity, &byRed, &byGreen, &byBlue);
-        // [glide fix 8] capture the packed unit light for the d2light-diag.txt dump
-        uint32_t nUnitLightColor = (uint32_t)((uint32_t)((uint32_t)((uint32_t)(uint16_t)((uint16_t)(uint8_t)byBlue << 8 | (uint16_t)(uint8_t)byGreen) << 8 | (uint32_t)(uint8_t)byRed) & 0xffffffu) << 8 | (uint32_t)(uint8_t)byIntensity);
-        D2Client::Draw::LightDiag::NoteUnitSample(sLightEntry->nX, sLightEntry->nY, nUnitLightColor);
-        Wall2::DRAW_WORLD_Unit((D2UnitStrc*)sLightEntry->pData, nUnitLightColor, 0);
+        Wall2::DRAW_WORLD_Unit((D2UnitStrc*)sLightEntry->pData, (uint32_t)((uint32_t)((uint32_t)((uint32_t)(uint16_t)((uint16_t)(uint8_t)byBlue << 8 | (uint16_t)(uint8_t)byGreen) << 8 | (uint32_t)(uint8_t)byRed) & 0xffffffu) << 8 | (uint32_t)(uint8_t)byIntensity), 0);
       }
 
       pCellEntry += 9;

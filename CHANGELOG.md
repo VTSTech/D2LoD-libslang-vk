@@ -16,6 +16,23 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
 
 - Nothing yet — the next round's entry goes here.
 
+## [R103] — 2026-11-04 (diag retirement round — self-ID `Vanilla+0.0.7-R103`)
+
+`d2light-diag` and `d2drop-diag` are retired — the lights and drops defects
+they were built to pin have been field-stable for many releases (fix-8/13-era
+tools; the gold-drop blue-channel question closed in 0.0.2). Removed:
+`D2Client/Draw/LightDiag.{h,cpp}`, `D2Common/DATATBLS/DropDiag.{h,cpp}` and
+the surviving hooks — the OBJECT_SetLightRGB probe block + include in
+`D2Client.cpp` and the ground-grid / unit-sample probes + include in
+`Draw.cpp` — both upstream TUs return to upstream-verbatim at those sites.
+This round also unblocks the first post-R102 owner build: LightDiag.cpp was
+the TU that failed it (it named `gnLightmapWorldMaxX/Y`, which upstream's
+`962f88d5` per-TU restructure had made `static` inside LightMap.cpp).
+`ShadowDiag` stays in-tree. Also removed the paste-ready
+`docs/release-notes-R84-R88.md` (release notes live under the tagged GitHub
+releases; README links dropped accordingly). No behavior change: the probes
+were one-shot dumps, idle after their caps.
+
 ## [R102] — 2026-11-04 (the fifth upstream sync — upstream `94ec239d..cc23648d`; self-ID `Vanilla+0.0.7-R102`)
 
 Merge round, no owner-visible behavior change intended: four upstream
@@ -793,8 +810,8 @@ Ghidra DB 1839 → 1851) merged with the Vanilla+ surface intact. Byte match 6,2
 upstream-changed files, 55 two-sided, 22 conflicts (27 hunks). This release OPENS THE
 SUPERSESSION LEDGER — upstream recovered the retail forms of two fork fixes, and the
 fork takes them ("upstream wins"), keeping the root-cause notes in code. Field verify
-(owner build + SMOKE) pending; per-release notes for R84–R88 live in
-[`docs/release-notes-R84-R88.md`](docs/release-notes-R84-R88.md).
+(owner build + SMOKE) pending; per-release notes for R84–R88 live under the tagged
+[GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases).
 
 ### Synced
 

@@ -1,8 +1,8 @@
 // [glide fix 11] D2Glide shadow-draw field diagnostic — see ShadowDiag.cpp.
 //
 // One-shot capture of the first in-world shadow-quad draws into
-// d2shadow-diag.txt (game directory), fix-8 (d2light-diag.txt) playbook:
-// evidence-first, zero behavior change once the budget is exhausted.
+// d2shadow-diag.txt (game directory), the fix-8 diag playbook
+// (evidence-first, zero behavior change once the budget is exhausted).
 //
 // Why (field state at fix-10):
 //   - Character/unit shadows are DrawShadow -> RENDERER_GLIDE_DrawShadowQuad

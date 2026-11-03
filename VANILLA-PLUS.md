@@ -62,8 +62,11 @@ each can be fixed, replaced and released independently.
   `d2boot.log` grow during play), so `d2boot.log` only gains boot marks and
   failure records, never gameplay output. Boot banner self-identifies
   `vanilla-plus 0.0.3` in the log header.
-- Diagnostics (`ShadowDiag`, `LightDiag v2`, `DropDiag v2.1`, `[d2boot]` boot marks, D3D
-  upload-halt dumps) stay in-tree, zero cost when idle, armed for the next regression.
+- Diagnostics (`ShadowDiag`, `[d2boot]` boot marks, D3D upload-halt dumps) stay
+  in-tree, zero cost when idle, armed for the next regression. `LightDiag v2`
+  and `DropDiag v2.1` are retired (R103): lights and drops have been
+  field-stable for many releases, so their dump modules and remaining hooks
+  are removed and `d2light-diag.txt` / `d2drop-diag.txt` are no longer produced.
   **`d2boot.log` contract (since `f10b5ff`)**: boot milestones + `D2BOOT_Fail` /
   upload-halt crash triage + fix22 warn-once guards only — zero writes during
   normal play; the file appends across sessions so the pre-crash trail survives.

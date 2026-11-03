@@ -93,7 +93,7 @@ Retail volume-curve reference (user-supplied FUN_005165f0), now reproduced exact
 | `resolve_map*.py` | linker-map symbolization (crash address → symbol; the fat-exe DWARF map survives strip) |
 | `make_overlay_zip.sh`, `verify_copyrows_fix.sh`, `resolve_merge.py`, `make_r10_retirement_zip.py` | merge-era + r10 delivery helpers (rev-4/6 worklog) |
 
-The dump formats survive in H4 and in the in-tree modules `ShadowDiag.{h,cpp}` / `LightDiag.{h,cpp}`. Likewise `work/` (fix11regress, fix12, fix11diag, shadow-verif, light-verif, logdiff*, wrapper/…) and `upload/` start empty in a fresh sandbox; re-create extraction areas as needed.
+The dump formats survive in H4 and in the in-tree module `ShadowDiag.{h,cpp}` (the `LightDiag`/`DropDiag` modules were retired R103 — owner-ask, lights/drops long field-fixed; CHANGELOG [R103]). Likewise `work/` (fix11regress, fix12, fix11diag, shadow-verif, light-verif, logdiff*, wrapper/…) and `upload/` start empty in a fresh sandbox; re-create extraction areas as needed.
 
 ## H8. Delivery conventions — full historical text (current condensed rules live in handoff §6)
 
