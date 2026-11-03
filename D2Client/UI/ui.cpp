@@ -4905,7 +4905,7 @@ static int32_t UI_GetConfigControlTextColor(int32_t nColumn, int32_t nRow) {
     return bIsBound != 0 ? 0x4U : 0x5U;
 }
 
-void UIAction_ResetKeyBindingsToDefaults() {
+void __fastcall UIAction_ResetKeyBindingsToDefaults() {
     CmdTbl::CMD_ResetKeyBindingsToDefaults(0);
 }
 

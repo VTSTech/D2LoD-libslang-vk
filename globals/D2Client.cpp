@@ -42495,7 +42495,7 @@ D2UIConfigTabEntryStrc g_UIConfigTabTable[3] = {
     },
     {
         /* .nLabelStringId = */ 0xf84,
-        /* .pfnAction = */ &D2Client::UI::ui::UIAction_ResetKeyBindingsToDefaults,
+        /* .pfnAction = */ (pfnUIConfigTabAction)&D2Client::UI::ui::UIAction_ResetKeyBindingsToDefaults,
         /* .nTabId = */ 0x3,
         /* .aBounds = */ {
             '\x00',
@@ -44252,7 +44252,7 @@ int32_t aIntensityTable_Mode1[120] = {
     -0x5
 }; D2_GLOBAL_GUARD(aIntensityTable_Mode1, "aIntensityTable_Mode1");
 
-D2SkillChargeDescStrc gnUIFlagSkillDescHeight[6] = {
+D2SkillChargeDescStrc gaSkillChargeDescTable[6] = {
     {
         /* .nFileIndex = */ 0x0,
         /* .nDescFunc = */ 0x1,
@@ -44295,7 +44295,7 @@ D2SkillChargeDescStrc gnUIFlagSkillDescHeight[6] = {
         /* .wDescStrNeg = */ 0xdaf,
         /* .nDescVal = */ 0x2
     }
-}; D2_GLOBAL_GUARD(gnUIFlagSkillDescHeight, "gnUIFlagSkillDescHeight");
+}; D2_GLOBAL_GUARD(gaSkillChargeDescTable, "gaSkillChargeDescTable");
 
 D2SkillDescDamageFunc gapSkillDamageDescFuncTable[36] = {
     nullptr,

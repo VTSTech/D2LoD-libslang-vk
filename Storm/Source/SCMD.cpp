@@ -927,11 +927,11 @@ uint32_t __stdcall SCmdGetString(int dwCmdId, char * szText, int dwBufferSize) {
     if (szText) {
       *szText = '\0';
     }
-    if (!szText || !dwBufferSize) {
-      SErr::SErrSetLastError(0x57);
-      return 0;
-    }
 
+    D2_CHECKS_BEGIN;
+    D2_CHECK(szText);
+    D2_CHECK(dwBufferSize);
+    D2_CHECKS_END(SErr::SErrSetLastError(0x57), 0);
     int nListIndex = 0;
     do {
       D2StormListHead* pListHead;
@@ -963,11 +963,9 @@ uint32_t __stdcall SCmdGetString(int dwCmdId, char * szText, int dwBufferSize) {
 // @former-name FOG_AppendToBuffer (invented, and in the wrong module - it is not Fog and it appends to nothing)
 // @namespace-fix moved Global -> Storm::Source::SCMD
 BOOL __stdcall SCmdRegisterArgList(ARGLIST * pArgList, uint32_t nCount) {
-    if (!pArgList) {
-      SErr::SErrSetLastError(0x57);
-      return 0;
-    }
-
+    D2_CHECKS_BEGIN;
+    D2_CHECK(pArgList);
+    D2_CHECKS_END(SErr::SErrSetLastError(0x57), 0);
     uint32_t nIndex = 0;
     if (nCount <= 0) {
       return 1;
@@ -1018,9 +1016,9 @@ BOOL __fastcall SCMD_ProcessString(uint32_t * ppszCursor, int * pCmdCtx, uint32_
 // @oracle-source Storm export vector SCmdGetBool @100cbc84 -> code 10008b10 in Mac PPC 1.10b Storm
 // @rename-basis Cross-architecture body match, with the field offsets carrying the argument. PPC 10008b10 reads r3 only - one argument - then walks the two command-list heads at +8, compares node +0xc against the id and returns node +0x3c (10008b60: lwz r0,0xc(r3); cmplw r0,r25; 10008b6c: lwz r3,0x3c(r3)). This function does precisely that through the shared helper 006c4d70 and, unlike SCMD_GetUserData 006c4ca0 which returns the unrelated +0x38 field raw, normalises to a strict BOOL - which is what GetBool means. MWCC inlined the lookup; MSVC factored it out.
 // @former-name SCMD_ValidateCommand
-bool __stdcall SCmdGetBool(int nCmdId) {
+BOOL __stdcall SCmdGetBool(int nCmdId) {
     int nCmdValue = SCmdGetNum(nCmdId);
-    return nCmdValue != 0;
+    return (uint32_t)(nCmdValue != 0);
 }
 
 // Tokenises a command string and dispatches each token against the registered command list, optionally skipping the first token. Reports 0x8510006d through the error callback when a required argument was not supplied.
@@ -1036,46 +1034,45 @@ int __stdcall SCmdProcess(char * szCommandLine, int bSkipFirstToken, pfnSCmdUnkn
     uint32_t nCmdNode;
     char* pszCursor;
     pszCursor = szCommandLine;
-    if (!szCommandLine) {
-      SErr::SErrSetLastError(0x57);
-    } else {
-      if (bSkipFirstToken) {
-        SSTR::SStrTokenize(&pszCursor, nullptr, 0, " ,;\"\t\n\r\x1a", nullptr);
-      }
+    D2_CHECKS_BEGIN;
+    D2_CHECK(szCommandLine);
+    D2_CHECKS_END(SErr::SErrSetLastError(0x57), 0);
+    if (bSkipFirstToken) {
+      SSTR::SStrTokenize(&pszCursor, nullptr, 0, " ,;\"\t\n\r\x1a", nullptr);
+    }
 
-      SMem::SMemZero(cmdCtx, 0x18);
-      pCmdList = gStormCmdListHeadBackslash.pNext <= 0 ? 0 : gStormCmdListHeadBackslash.pNext;
-      BVar1 = SCMD_ProcessString((uint32_t*)&pszCursor, cmdCtx, &pCmdList, pfnUnknownCallback, pfnErrorCallback);
-      if (BVar1) {
-        bSuccess = 1;
-        nCmdNode = pCmdList;
+    SMem::SMemZero(cmdCtx, 0x18);
+    pCmdList = gStormCmdListHeadBackslash.pNext <= 0 ? 0 : gStormCmdListHeadBackslash.pNext;
+    BVar1 = SCMD_ProcessString((uint32_t*)&pszCursor, cmdCtx, &pCmdList, pfnUnknownCallback, pfnErrorCallback);
+    if (BVar1) {
+      bSuccess = 1;
+      nCmdNode = pCmdList;
+      while (true) {
         while (true) {
-          while (true) {
-            if (!nCmdNode || !bSuccess) {
-              goto report_missing_required_arg;
-            }
-            if ((*(uint32_t*)(nCmdNode + 8) & 0x3000000) != 0x2000000) {
-              break;
-            }
-
-            bSuccess = 0;
+          if (!nCmdNode || !bSuccess) {
+            goto report_missing_required_arg;
           }
-
-          if (*(int*)(nCmdNode + 4) <= 0) {
+          if ((*(uint32_t*)(nCmdNode + 8) & 0x3000000) != 0x2000000) {
             break;
           }
 
-          nCmdNode = *(uint32_t*)(nCmdNode + 4);
-          pCmdList = nCmdNode;
+          bSuccess = 0;
         }
 
-        pCmdList = 0;
-        report_missing_required_arg:
-        if (pfnErrorCallback && !bSuccess) {
-          SCMD_GenerateError(0x8510006d, pfnErrorCallback, "");
+        if (*(int*)(nCmdNode + 4) <= 0) {
+          break;
         }
-        return bSuccess;
+
+        nCmdNode = *(uint32_t*)(nCmdNode + 4);
+        pCmdList = nCmdNode;
       }
+
+      pCmdList = 0;
+      report_missing_required_arg:
+      if (pfnErrorCallback && !bSuccess) {
+        SCMD_GenerateError(0x8510006d, pfnErrorCallback, "");
+      }
+      return bSuccess;
     }
 
     return 0;

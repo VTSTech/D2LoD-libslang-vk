@@ -59,7 +59,7 @@ namespace D2Glide::Renderer::Glide {
 
 static uint8_t gnFontKerningTracking = 0x0; D2_STATIC_GUARD(gnFontKerningTracking, "D2Glide::Renderer::Glide::gnFontKerningTracking");
 
-void ClearCaches() {
+void __fastcall ClearCaches() {
     glFloorCache::GLFLOOR_Destroy(&gGlideFloorTextureCache.dwEntrySize, nullptr);
     glSubtileCache::GLSUBTILE_Destroy(&gGlideSubtileTextureCache.dwEntrySize, nullptr);
     glTextureCache::GLTEXCACHE_Destroy(gGlideVertex0.aTextureCache, nullptr);
@@ -149,11 +149,11 @@ BOOL __fastcall SetGamma(int32_t nGamma) {
     return FVar1;
 }
 
-int32_t CheckGamma() {
+int32_t __fastcall CheckGamma() {
     return 1;
 }
 
-BOOL EndScene1() {
+BOOL __fastcall EndScene1() {
     if (!RENDERER_SelectedRendererCore) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x47a);
       exit(-1);
@@ -164,7 +164,7 @@ BOOL EndScene1() {
     return 1;
 }
 
-BOOL EndScene2() {
+BOOL __fastcall EndScene2() {
     if (pD2GFXRenderedDataStrc->bVSync) {
       (*GLIDEDLL_grBufferSwap_4)(1);
       return 1;
@@ -263,7 +263,7 @@ void __fastcall SetPaletteTable(BYTE * * ppPaletteTable) {
     gpPaletteTable = gaGlidePaletteTableData;
 }
 
-BOOL ActivateWindow() {
+BOOL __fastcall ActivateWindow() {
     return 0;
 }
 
@@ -381,7 +381,7 @@ void __fastcall RENDERER_GLIDE_SetTextureFiltering(int32_t nFilteringMode) {
     gnGlideTextureFilteringMode = nFilterMode;
 }
 
-int * GetRenderStatistics() {
+int * __fastcall GetRenderStatistics() {
     return &gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes;
 }
 
@@ -866,8 +866,8 @@ static void RENDERER_GLIDE_CalculateTextureSize(GlideTexInfoStrc * pTexInfo) {
     static int gnGlideCacheSizeB[4] = { 0x0, -0x1, -0x2, -0x3 }; D2_STATIC_GUARD(gnGlideCacheSizeB, "D2Glide::Renderer::Glide::RENDERER_GLIDE_CalculateTextureSize::gnGlideCacheSizeB");
     static int gnGlideCacheSizeA[4] = { 0x0, 0x1, 0x2, 0x3 }; D2_STATIC_GUARD(gnGlideCacheSizeA, "D2Glide::Renderer::Glide::RENDERER_GLIDE_CalculateTextureSize::gnGlideCacheSizeA");
 
-    uint32_t nTexHeightPow2;
-    uint32_t nTexWidthPow2;
+    int nTexHeightPow2;
+    int nTexWidthPow2;
     int nLodLevel = pTexInfo->nWidth;
     if (nLodLevel > 0x80) {
       nTexWidthPow2 = 0x100;
@@ -909,7 +909,7 @@ static void RENDERER_GLIDE_CalculateTextureSize(GlideTexInfoStrc * pTexInfo) {
 
     pTexInfo->nTexHeight = nTexHeightPow2;
     uint32_t nMaxDimPow2 = nTexWidthPow2;
-    if (nTexWidthPow2 <= nTexHeightPow2) {
+    if ((uint32_t)nTexWidthPow2 <= (uint32_t)nTexHeightPow2) {
       nMaxDimPow2 = nTexHeightPow2;
     }
     if (nMaxDimPow2 == 0x100) {
@@ -941,31 +941,31 @@ static void RENDERER_GLIDE_CalculateTextureSize(GlideTexInfoStrc * pTexInfo) {
     pTexInfo->nLodLevel = nLodLevel;
     if (nTexWidthPow2 == nTexHeightPow2) {
       pTexInfo->nAspect = 0;
-    } else if (nTexWidthPow2 < nTexHeightPow2) {
+    } else if ((uint32_t)nTexWidthPow2 < (uint32_t)nTexHeightPow2) {
       nLodLevel = 0;
       do {
         nTexWidthPow2 *= 2;
-        if ((int)nTexWidthPow2 > (int)nTexHeightPow2) {
+        if (nTexWidthPow2 > nTexHeightPow2) {
           break;
         }
 
         nLodLevel++;
       } while (nLodLevel < 3);
 
-      pTexInfo->nTexWidth = (int)nTexHeightPow2 >> (uint8_t)nLodLevel;
+      pTexInfo->nTexWidth = nTexHeightPow2 >> (uint8_t)nLodLevel;
       pTexInfo->nAspect = gnGlideCacheSizeB[nLodLevel];
     } else {
       nLodLevel = 0;
       do {
         nTexHeightPow2 *= 2;
-        if ((int)nTexHeightPow2 > (int)nTexWidthPow2) {
+        if (nTexHeightPow2 > nTexWidthPow2) {
           break;
         }
 
         nLodLevel++;
       } while (nLodLevel < 3);
 
-      pTexInfo->nTexHeight = (int)nTexWidthPow2 >> (uint8_t)nLodLevel;
+      pTexInfo->nTexHeight = nTexWidthPow2 >> (uint8_t)nLodLevel;
       pTexInfo->nAspect = gnGlideCacheSizeA[nLodLevel];
     }
 
@@ -3244,7 +3244,7 @@ void __fastcall PerspectiveScalePosition(int32_t nPosX, int32_t nPosY, int32_t n
     gnGlidePerspectiveScale = nPerspScale * 0x466 >> 10;
 }
 
-void SetDefaultPerspectiveFactor() {
+void __fastcall SetDefaultPerspectiveFactor() {
     gnGlidePerspectiveScale = 0x100;
 }
 
