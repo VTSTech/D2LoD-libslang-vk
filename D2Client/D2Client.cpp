@@ -1725,17 +1725,23 @@ void __stdcall dSceneTransitionDraw() {
     int nTimeRemaining = gdwWarpFadeExpireTime - dwTickCount;
     int nYEnd = ScreenSizeY - 0x2f;
     uint32_t nBorderType = UI::Path::DRAW_GetTypeOfBorder();
-    switch (nBorderType) {
-      case 1:
-        {
-          nXEnd -= ScreenSizeX / 2;
-          break;
-        }
-      case 2:
-        {
-          nXStart = ScreenSizeX / 2;
-          break;
-        }
+    // VP-BEGIN [issue #26 / R92]: wide-UI layouts (1280x720) fade the full
+    // width - the retail half-screen fade assumed the open panel covers a
+    // full half; at 720p the visible outer margins would stay unfaded. The
+    // panels draw after the world fade, so covering their rect is harmless.
+    if (!VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+      switch (nBorderType) {
+        case 1:
+          {
+            nXEnd -= ScreenSizeX / 2;
+            break;
+          }
+        case 2:
+          {
+            nXStart = ScreenSizeX / 2;
+            break;
+          }
+      }
     }
 
     D2gfx::D2GFX::D2GFX_DrawSolidRectAlpha(nXStart, 0, nXEnd, nYEnd, 0, nTimeRemaining * 0xff / 500);

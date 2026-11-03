@@ -2353,10 +2353,23 @@ uint32_t __fastcall HitTestScreen(D2UnitStrc * pUnit, int32_t nClickX, int32_t n
     uResult = UI::Path::DRAW_GetTypeOfBorder();
     D2UnitStrc* pPlayerUnitLocal;
     pPlayerUnitLocal = pPlayerUnit;
+    // VP-BEGIN [issue #26 / R92]: wide-UI layouts (1280x720) reject clicks
+    // only on the actual 400-px panel rectangle (800-space [0..400] /
+    // [400..800] shifted by VPRES_GetWideUiOffsetX()), not on the whole
+    // covered half - the retail half-screen test also swallowed the visible
+    // outer margins, so units standing there were unclickable with a panel
+    // open. The world rendering pans by the same quarter-screen offset the
+    // panels float by, so raw mouse X vs panned unit positions stays
+    // consistent.
+    int bWideUiLayout = VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode());
     switch (uResult) {
       case 1:
         {
-          if (nResult >= ScreenSizeX / 2) {
+          if (bWideUiLayout) {
+            if (nResult >= VPRES_GetWideUiOffsetX() + 400 && nResult < VPRES_GetWideUiOffsetX() + 800) {
+              return 0;
+            }
+          } else if (nResult >= ScreenSizeX / 2) {
             return 0;
           }
 
@@ -2364,7 +2377,11 @@ uint32_t __fastcall HitTestScreen(D2UnitStrc * pUnit, int32_t nClickX, int32_t n
         }
       case 2:
         {
-          if (nResult < ScreenSizeX / 2) {
+          if (bWideUiLayout) {
+            if (nResult >= VPRES_GetWideUiOffsetX() && nResult < VPRES_GetWideUiOffsetX() + 400) {
+              return 0;
+            }
+          } else if (nResult < ScreenSizeX / 2) {
             return 0;
           }
 
@@ -2372,7 +2389,15 @@ uint32_t __fastcall HitTestScreen(D2UnitStrc * pUnit, int32_t nClickX, int32_t n
         }
       case 3:
         {
-          return 0;
+          if (bWideUiLayout) {
+            if (nResult >= VPRES_GetWideUiOffsetX() && nResult < VPRES_GetWideUiOffsetX() + 800) {
+              return 0;
+            }
+          } else {
+            return 0;
+          }
+
+          break;
         }
     }
 

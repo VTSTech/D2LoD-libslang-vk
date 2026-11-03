@@ -16,6 +16,56 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
 
 - Nothing yet — the next round's entry goes here.
 
+## [R92] — 2026-11-03 (issue #26 fix round; self-ID `Vanilla+0.0.7-R92`)
+
+Track S — "[720p] With only Left or Right UI Panel open, Black triangles on that
+side of screen. Both panels. all black outside of panel" — root-caught and fixed.
+
+### Root cause
+
+Every panel-open adjustment in the world pipeline is a fraction of the **window
+width**: the tile walk narrows to the free half (`Path.cpp` view rect), the
+perspective renderer culls a centered half and re-pans the world by a quarter
+window (`RENDERER_D3D_CalculateViewportRect` / `RENDERER_GLIDE_CalculateScreenBounds`
++ the `±ScreenSizeX/4` light-grid/sprite pans), the unit-click reject halves the
+screen (`CUnit.cpp`), and the warp fade / weather clamps follow. That math is
+tuned for 640x480/800x600, where the open 800-class panel reaches the screen
+edge. The Vanilla Plus wide modes reuse the 800-class UI as one rigid 800 px
+unit **centered** on the playfield (240 px margins at 1280x720), so the panel
+edges move inboard (screen x 640/1040) while every cull still assumes the
+edge-hugging retail geometry — the 240 px strip beyond the open panel is culled
+to the black backbuffer ("all black outside of panel"), and the tile/wall cut
+lines leave jagged unrendered edges ("black triangles"). Longstanding 720p
+behavior, not a regression: the R87→R89 syncs touched none of these files.
+
+### Fixed (wide layouts 1280x720/1344x700 only — retail modes byte-identical)
+
+- `D2Client/UI/Path.cpp` — the tile walk keeps the full panned span
+  (`[-q, w+q]`) and `rcExtendedView` extends to match, so the walk reaches the
+  outer-margin tiles; the world pan (`MouseYRelatedB`) is untouched — the
+  mouse→world mapping rides the same offset.
+- `D2Direct3D/Renderer/Direct3D.cpp` + `D2Glide/Renderer/Glide.cpp` — the
+  perspective cull rect keeps the inner-side quarter cut (lands exactly on the
+  screen edge after the pan) and opens the margin side (`[q, w+q]` / `[-q, w-q]`).
+  The renderers test their own backbuffer dims (no cross-DLL imports).
+- `D2Client/UNIT/CUnit.cpp` — unit clicks are rejected only on the actual
+  400 px panel rectangle, not the whole covered half; units in the margins are
+  clickable again (with one or both panels open).
+- `D2Client/D2Client.cpp` — the town-portal fade spans the full width.
+- `D2Client/Draw/Weather.cpp` — rain/particle clamps and the dark rain sheet
+  drop the half-screen clip (the bubble pan stays, consistent with the world).
+
+Known follow-ups (cosmetic, deferred to the next round): overhead party icons /
+unit-name labels use the same half-screen rejects in a few UI paths
+(`ui.cpp`, `Draw.cpp` alt-items under border 3), so labels in the margins may
+lag one round behind the fixed geometry.
+
+Verification: all 7 changed TUs compile under llvm-mingw; gates re-run
+**332/332** (6 new issue-#26 pins + the site-5 client classifier count 1 → 2);
+self-ID → `Vanilla+0.0.7-R92`. Field ask: at 1280x720 open each panel alone and
+both — the outer margins must render the world (no black strip, no triangles),
+units there clickable, rain reaching the margins.
+
 ## [R91] — 2026-11-03 (docs + field-verify round; self-ID `Vanilla+0.0.7-R91`)
 
 The field-verify round for the R90/R90b line — the owner's MSYS2 MINGW32 build of

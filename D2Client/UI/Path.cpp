@@ -34,6 +34,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Panel.h"
+#include "D2Client/UI/VanillaPlusCore.h" // VP: [issue #26 / R92] wide-layout guards
 #include "D2Common/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
 
@@ -68,9 +69,29 @@ void __fastcall TypeOfUiOverlayOverWorld(uint32_t eBorderType) {
         GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
       break;
       case 1:
+        // VP-BEGIN [issue #26 / R92]: wide-UI layouts (1280x720) keep the tile
+        // walk at the full panned span. Retail narrows the walk to the free
+        // half (right cut -quarter) because the open panel reaches the screen
+        // edge at 640x480/800x600; the 800-class panel floats 240 px inboard
+        // at 720p, so the retail cut left the outer margin strip unrendered
+        // ("black triangles ... all black outside of panel" - issue #26).
+        // The pan itself (-quarter via MouseYRelatedB) is untouched: the
+        // mouse->world mapping rides the same offset.
+        if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+          GAME::View::SetViewRectangleSize(D2GameView, -nViewOffsetX, 0, WindowSizeX + nViewOffsetX, WindowSizeY);
+          D2GameView->rcExtendedView.right += nViewOffsetX; // DrawFloorTile rejects outside this rect
+          return;
+        }
         GAME::View::SetViewRectangleSize(D2GameView, -nViewOffsetX, 0, WindowSizeX - nViewOffsetX, WindowSizeY);
       return;
       case 2:
+        // VP-BEGIN [issue #26 / R92]: mirror of case 1 - the retail left cut
+        // (+quarter) blacks out the outer left margin at 720p.
+        if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+          GAME::View::SetViewRectangleSize(D2GameView, -nViewOffsetX, 0, WindowSizeX + nViewOffsetX, WindowSizeY);
+          D2GameView->rcExtendedView.left -= nViewOffsetX;
+          return;
+        }
         GAME::View::SetViewRectangleSize(D2GameView, nViewOffsetX, 0, WindowSizeX + nViewOffsetX, WindowSizeY);
       return;
       case 3:

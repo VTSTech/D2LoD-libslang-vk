@@ -329,7 +329,8 @@ gate "site-5: spell swap-grid icons ride panel (R45)" D2Client/UI/SpellSel.cpp '
 gate "site-5: spell icons not vanilla-anchored (R45)" D2Client/UI/SpellSel.cpp 'DrawSkillGrid\(UNIT::Player::GetPlayerUnit_UI\(\), 0x50,' 0
 gate "site-5: summit clouds gate"          D2Client/GAME/View.cpp          'VPRES_IsWideLayoutMode' 1
 gate "site-5: level edges gate (GAME)"     D2Client/GAME/Draw.cpp          'VPRES_IsWideLayoutMode' 1
-gate "site-5: level edges gate (client)"   D2Client/D2Client.cpp           'VPRES_IsWideLayoutMode' 1
+# R92: 1 -> 2 (the issue #26 warp-fade wide guard adds a second classifier call)
+gate "site-5: level edges gate (client)"   D2Client/D2Client.cpp           'VPRES_IsWideLayoutMode' 2
 gate "site-5: listbox metrics gate"        D2Client/UI/ListBox/ListBoxImplementation.cpp 'VPRES_IsWideLayoutMode' 1
 gate "site-5: fork-api include in ui.cpp"  D2Client/UI/ui.cpp              'include "D2Client/UI/VanillaPlusCore\.h"' 1
 gate "site-5: fork-api include in Help.cpp" D2Client/UI/Help.cpp           'include "D2Client/UI/VanillaPlusCore\.h"' 1
@@ -684,8 +685,24 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-# R91: string bumped R90b -> R91 (field-verify round: R90/R90b field-run green, issue #8 resolved)
-gate "res: self-id 0.0.7-R91"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R91' 1
+# R92: string bumped R91 -> R92 (issue #26 fix round: wide-layout panel-open world cull)
+gate "res: self-id 0.0.7-R92"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R92' 1
+
+# ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
+# triangles. Root cause: every panel-open world cull/pan is a fraction of the
+# WINDOW width (half/quarter), tuned for 640x480/800x600 where the open panel
+# reaches the screen edge; the 800-class panel floats 240 px inboard at
+# 1280x720, so the margin-side cut left the outer strip unrendered (black).
+# R92 keeps the pan (the mouse mapping rides it) and opens the margin side of
+# every cull in wide layouts only: the tile walk (Path.cpp), the renderer
+# perspective rect (D3D + Glide), the unit-click reject (CUnit.cpp), the warp
+# fade (D2Client.cpp) and the weather clamps (Weather.cpp).
+gate "issue26: wide walk span (R92)"          D2Client/UI/Path.cpp              'issue #26 / R92' 3
+gate "issue26: wide d3d vp rect (R92)"        D2Direct3D/Renderer/Direct3D.cpp  'issue #26 / R92' 1
+gate "issue26: wide glide bounds (R92)"       D2Glide/Renderer/Glide.cpp        'issue #26 / R92' 1
+gate "issue26: wide click reject (R92)"       D2Client/UNIT/CUnit.cpp           'issue #26 / R92' 1
+gate "issue26: wide warp fade (R92)"          D2Client/D2Client.cpp             'issue #26 / R92' 1
+gate "issue26: wide weather clamps (R92)"     D2Client/Draw/Weather.cpp         'issue #26 / R92' 4
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared

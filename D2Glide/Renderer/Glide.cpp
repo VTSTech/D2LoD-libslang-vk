@@ -2407,16 +2407,33 @@ static void __stdcall RENDERER_GLIDE_CalculateScreenBounds(int32_t nViewportMode
       }
 
       nHalfWidthDiv2 = (int)(RENDERER_nWindowWidth + (RENDERER_nWindowWidth >> 0x1f & 3U)) >> 2;
+      // VP-BEGIN [issue #26 / R92]: wide-UI layouts (Vanilla Plus 1280x720 /
+      // dormant 1344x700) keep the margin side of the perspective cull open -
+      // mirror of the Direct3D RENDERER_D3D_CalculateViewportRect guard. The
+      // 800-class panel floats 240 px inboard at 1280x720, so the retail
+      // margin-side quarter cut blacked out the visible strip beyond the open
+      // panel (issue #26). Backbuffer-dims test: no D2Client imports across
+      // the module boundary.
+      BOOL bWideUiLayout = (RENDERER_nWindowWidth == 1280 && RENDERER_nWindowHeight == 720)
+                        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700);
       if (nScreenPanels == 1) {
         *pnXOffset = -nHalfWidthDiv2;
-        pnBounds->right -= nHalfWidthDiv2;
         pnBounds->left += nHalfWidthDiv2;
+        if (bWideUiLayout) {
+          pnBounds->right += nHalfWidthDiv2;
+        } else {
+          pnBounds->right -= nHalfWidthDiv2;
+        }
         return;
       }
       if (nScreenPanels == 2) {
         *pnXOffset = nHalfWidthDiv2;
         pnBounds->right -= nHalfWidthDiv2;
-        pnBounds->left += nHalfWidthDiv2;
+        if (bWideUiLayout) {
+          pnBounds->left -= nHalfWidthDiv2;
+        } else {
+          pnBounds->left += nHalfWidthDiv2;
+        }
       }
     }
 }

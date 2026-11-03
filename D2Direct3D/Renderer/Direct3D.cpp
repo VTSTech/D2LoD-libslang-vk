@@ -4259,14 +4259,33 @@ static void __thiscall RENDERER_D3D_CalculateViewportRect(RECT * pRect, int nScr
       }
 
       nQuarterWidth = (int)(RENDERER_nWindowWidth + (RENDERER_nWindowWidth >> 0x1f & 3U)) >> 2;
+      // VP-BEGIN [issue #26 / R92]: wide-UI layouts (Vanilla Plus 1280x720 /
+      // dormant 1344x700) keep the margin side of the perspective cull open.
+      // Retail cuts both sides by a quarter window because the open panel
+      // reaches the screen edge at 640x480/800x600; the 800-class panel
+      // floats 240 px inboard at 1280x720, so the margin-side cut blacked out
+      // the visible strip beyond the open panel (issue #26). The inner-side
+      // cut stays: after the -/+quarter pan it lands exactly on the screen
+      // edge. The renderer only knows its own backbuffer dims, hence the
+      // explicit size test (no D2Client imports across the module boundary).
+      BOOL bWideUiLayout = (RENDERER_nWindowWidth == 1280 && RENDERER_nWindowHeight == 720)
+                        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700);
       if (nScreenPanels == 1) {
         *pOffset = -nQuarterWidth;
-        pRect->right -= nQuarterWidth;
         pRect->left += nQuarterWidth;
+        if (bWideUiLayout) {
+          pRect->right += nQuarterWidth;
+        } else {
+          pRect->right -= nQuarterWidth;
+        }
       } else if (nScreenPanels == 2) {
         *pOffset = nQuarterWidth;
         pRect->right -= nQuarterWidth;
-        pRect->left += nQuarterWidth;
+        if (bWideUiLayout) {
+          pRect->left -= nQuarterWidth;
+        } else {
+          pRect->left += nQuarterWidth;
+        }
         return;
       }
     }

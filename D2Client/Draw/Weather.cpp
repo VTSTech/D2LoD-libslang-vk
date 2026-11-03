@@ -9,6 +9,7 @@
 #include "D2Client/Seed.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/Path.h"
+#include "D2Client/UI/VanillaPlusCore.h" // VP: [issue #26 / R92] wide-layout guards
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -851,6 +852,13 @@ void __stdcall WEATHER_DrawParticles() {
           break;
         }
     }
+    if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+      // VP: [issue #26 / R92] wide-UI layouts keep weather unclipped - the
+      // visible outer margins render world, so the half-screen rain clamp
+      // would leave them dry.
+      nClipRight = ScreenSizeX;
+      nClipLeft = 0;
+    }
 
     D2WeatherParticleStrc* pParticleData = (D2WeatherParticleStrc*)pEnvironmentParticles->pData;
     int nIndex = 0;
@@ -1046,6 +1054,12 @@ void __stdcall DRAW_Overlay_Weather() {
               break;
             }
         }
+        if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+          // VP: [issue #26 / R92] the dark rain sheet spans the full width on
+          // wide-UI layouts (the outer margins are visible world).
+          nClipLeft = ScreenSizeX;
+          nXStart = 0;
+        }
 
         D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nXStart, 0, nClipLeft, nYEnd, 0xff, DRAW_SOLID);
         return;
@@ -1085,6 +1099,12 @@ void __fastcall WEATHER_DrawBubbles(D2DataArrayStrc * pBubbleArray, DC6 * * pDC6
           nMinX = nXOffset * 2;
           break;
         }
+    }
+    if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+      // VP: [issue #26 / R92] keep the bubble pan (nXOffset), drop the
+      // half-screen clamp - the outer margins render world on wide layouts.
+      nMinX = 0;
+      nMaxX = ScreenSizeX;
     }
 
     memset(&sGfxData, 0, 0x48);
