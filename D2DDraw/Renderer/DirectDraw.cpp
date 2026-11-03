@@ -1502,15 +1502,11 @@ static LPINT __stdcall RENDERER_DDRAW_DrawDebugFontChar(int32_t nX, char cCharac
 }
 
 void __fastcall DrawString(int32_t nPosX, int32_t nPosY, char * szFormat, va_list va) {
+    int nCharIdx;
     char szBuf[512];
     int nCharCount = wvsprintfA(szBuf, szFormat, va);
-    int nCharIdx = 0;
     int nCurX = nPosX;
-    if (nCharCount <= 0) {
-      return;
-    }
-
-    do {
+    for (nCharIdx = 0; nCharIdx < nCharCount; nCharIdx++) {
       LPINT nCharWidth;
       nCharWidth = RENDERER_DDRAW_DrawDebugFontChar(nCurX, szBuf[nCharIdx], nPosY);
       nCurX += (int)nCharWidth;
@@ -1518,9 +1514,7 @@ void __fastcall DrawString(int32_t nPosX, int32_t nPosY, char * szFormat, va_lis
         nPosY += 0xc;
         nCurX = nPosX;
       }
-
-      nCharIdx++;
-    } while (nCharIdx < nCharCount);
+    }
 }
 
 void __fastcall DrawLight(DWORD * pLight, DWORD * pPlayerLight, int32_t nPosX, int32_t nPosY) {

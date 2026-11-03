@@ -594,12 +594,13 @@ static int32_t __stdcall SPELLSEL_RegisterSkillSlot(int32_t nGridX, int32_t nSlo
 int __fastcall SPELLSEL_FindChargedSkill1(D2UnitStrc * pUnit, int32_t nTargetSkillId) {
     D2SkillsTxt* pSkillsTxt;
     int32_t nQuantity;
-    if (pUnit) {
-      D2SkillStrc* pSkill;
-      pSkill = D2Common::Units::GetFirstSkill(pUnit);
-      while (pSkill && ((pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill) , !pSkillsTxt || (nQuantity = D2Common::Skills::SKILL_GetQuantity(pSkill) , nQuantity <= 0)) || pSkillsTxt->skill != nTargetSkillId)) {
-        pSkill = D2Common::Skills::GetNext(pSkill);
-      }
+    if (!pUnit) {
+      return 0;
+    }
+
+    D2SkillStrc* pSkill = D2Common::Units::GetFirstSkill(pUnit);
+    while (pSkill && ((pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill) , !pSkillsTxt || (nQuantity = D2Common::Skills::SKILL_GetQuantity(pSkill) , nQuantity <= 0)) || pSkillsTxt->skill != nTargetSkillId)) {
+      pSkill = D2Common::Skills::GetNext(pSkill);
     }
 
     return 0;
@@ -608,12 +609,13 @@ int __fastcall SPELLSEL_FindChargedSkill1(D2UnitStrc * pUnit, int32_t nTargetSki
 int __fastcall SPELLSEL_FindChargedSkill2(D2UnitStrc * pUnit, int32_t nTargetSkillId) {
     D2SkillsTxt* pSkillsTxt;
     int32_t nQuantity;
-    if (pUnit) {
-      D2SkillStrc* pSkill;
-      pSkill = D2Common::Units::GetFirstSkill(pUnit);
-      while (pSkill && ((pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill) , !pSkillsTxt || (nQuantity = D2Common::Skills::SKILL_GetQuantity(pSkill) , nQuantity <= 0)) || pSkillsTxt->skill != nTargetSkillId)) {
-        pSkill = D2Common::Skills::GetNext(pSkill);
-      }
+    if (!pUnit) {
+      return 0;
+    }
+
+    D2SkillStrc* pSkill = D2Common::Units::GetFirstSkill(pUnit);
+    while (pSkill && ((pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill) , !pSkillsTxt || (nQuantity = D2Common::Skills::SKILL_GetQuantity(pSkill) , nQuantity <= 0)) || pSkillsTxt->skill != nTargetSkillId)) {
+      pSkill = D2Common::Skills::GetNext(pSkill);
     }
 
     return 0;
@@ -622,12 +624,13 @@ int __fastcall SPELLSEL_FindChargedSkill2(D2UnitStrc * pUnit, int32_t nTargetSki
 int __fastcall SPELLSEL_FindChargedSkill3(D2UnitStrc * pUnit, int32_t nTargetSkillId) {
     D2SkillsTxt* pSkillsTxt;
     int32_t nQuantity;
-    if (pUnit) {
-      D2SkillStrc* pSkill;
-      pSkill = D2Common::Units::GetFirstSkill(pUnit);
-      while (pSkill && ((pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill) , !pSkillsTxt || (nQuantity = D2Common::Skills::SKILL_GetQuantity(pSkill) , nQuantity <= 0)) || pSkillsTxt->skill != nTargetSkillId)) {
-        pSkill = D2Common::Skills::GetNext(pSkill);
-      }
+    if (!pUnit) {
+      return 0;
+    }
+
+    D2SkillStrc* pSkill = D2Common::Units::GetFirstSkill(pUnit);
+    while (pSkill && ((pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill) , !pSkillsTxt || (nQuantity = D2Common::Skills::SKILL_GetQuantity(pSkill) , nQuantity <= 0)) || pSkillsTxt->skill != nTargetSkillId)) {
+      pSkill = D2Common::Skills::GetNext(pSkill);
     }
 
     return 0;
@@ -636,12 +639,13 @@ int __fastcall SPELLSEL_FindChargedSkill3(D2UnitStrc * pUnit, int32_t nTargetSki
 int __fastcall SPELLSEL_FindChargedSkill4(D2UnitStrc * pUnit, int32_t nTargetSkillId) {
     D2SkillsTxt* pSkillsTxt;
     int32_t nQuantity;
-    if (pUnit) {
-      D2SkillStrc* pSkill;
-      pSkill = D2Common::Units::GetFirstSkill(pUnit);
-      while (pSkill && ((pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill) , !pSkillsTxt || (nQuantity = D2Common::Skills::SKILL_GetQuantity(pSkill) , nQuantity <= 0)) || pSkillsTxt->skill != nTargetSkillId)) {
-        pSkill = D2Common::Skills::GetNext(pSkill);
-      }
+    if (!pUnit) {
+      return 0;
+    }
+
+    D2SkillStrc* pSkill = D2Common::Units::GetFirstSkill(pUnit);
+    while (pSkill && ((pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill) , !pSkillsTxt || (nQuantity = D2Common::Skills::SKILL_GetQuantity(pSkill) , nQuantity <= 0)) || pSkillsTxt->skill != nTargetSkillId)) {
+      pSkill = D2Common::Skills::GetNext(pSkill);
     }
 
     return 0;

@@ -1371,12 +1371,7 @@ void __stdcall DRAW_EscMenu() {
         return;
       }
 
-      DRAW_RotatingStarPosition = DRAW_RotatingStarPosition + 1 & 0x80000007;
-      if ((int)DRAW_RotatingStarPosition >= 0) {
-        return;
-      }
-
-      DRAW_RotatingStarPosition = (DRAW_RotatingStarPosition - 1 | -8) + 1;
+      DRAW_RotatingStarPosition = (int)(DRAW_RotatingStarPosition + 1) % 8;
       return;
     }
 }

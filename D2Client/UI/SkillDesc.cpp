@@ -60,7 +60,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
-#include "D2Common/D2UnitDataItemStrc.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/Items.h"
 #include "D2Game/SKILLS/SkillAss.h"
@@ -2739,16 +2738,13 @@ static int __stdcall SKILLDESC_FormatDecimalValue(uint16_t * wszText, int32_t bP
 }
 
 static void __stdcall SKILLDESC_FormatDamageRange(int32_t bPrefixSign, uint16_t * wszText, int32_t bUseFormat, int32_t nMinDamage, int32_t nMaxDamage) {
-    // Static local variables (originally global data)
-    static uint8_t gaSkillDescDamageRangeData = 0x2b; D2_STATIC_GUARD(gaSkillDescDamageRangeData, "D2Client::UI::SkillDesc::SKILLDESC_FormatDamageRange::gaSkillDescDamageRangeData");
-
+    char* pszPrefix;
     char szBuf[32];
     if (bUseFormat) {
-      uint8_t* pszPrefix;
       if (nMinDamage >= 10000) {
-        pszPrefix = &gaSkillDescDamageRangeData;
+        pszPrefix = "+";
         if (!bPrefixSign) {
-          pszPrefix = (uint8_t*)"";
+          pszPrefix = "";
         }
 
         /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szBuf, "%s%dK-%dK", pszPrefix, (nMinDamage + 500) / 1000, (nMaxDamage + 500) / 1000);
@@ -2756,9 +2752,9 @@ static void __stdcall SKILLDESC_FormatDamageRange(int32_t bPrefixSign, uint16_t 
         return;
       }
       if (nMaxDamage >= 10000) {
-        pszPrefix = &gaSkillDescDamageRangeData;
+        pszPrefix = "+";
         if (!bPrefixSign) {
-          pszPrefix = (uint8_t*)"";
+          pszPrefix = "";
         }
 
         /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szBuf, "%s%d-%dK", pszPrefix, nMinDamage, (nMaxDamage + 500) / 1000);
@@ -2767,9 +2763,11 @@ static void __stdcall SKILLDESC_FormatDamageRange(int32_t bPrefixSign, uint16_t 
       }
     }
     if (bPrefixSign) {
+      pszPrefix = "+%d-%d";
       wsprintfA(szBuf, "+%d-%d", nMinDamage, nMaxDamage);
     } else {
-      /* LPCSTR param_2 for wsprintfA */ wsprintfA(szBuf, "%d-%d", nMinDamage, nMaxDamage);
+      /* LPCSTR param_2 for wsprintfA */ pszPrefix = "%d-%d";
+      wsprintfA(szBuf, "%d-%d", nMinDamage, nMaxDamage);
     }
 
     D2Lang::UTF8_ConvertToWideChar(wszText, szBuf, 0x20);
@@ -3943,7 +3941,7 @@ static D2UnitStrc * SKILLDESC_GetPrimaryWeapon(D2UnitStrc * pUnit) {
       return nullptr;
     }
 
-    eD2BodyLoc eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pEquippedWeapon);
+    int32_t eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pEquippedWeapon);
     D2UnitStrc* pOffhandWeapon = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, eBodyLoc == BODYLOC_R_ARM ? 5 : 4);
     if (!(pOffhandWeapon && pOffhandWeapon != pEquippedWeapon)) {
       return nullptr;
@@ -3994,7 +3992,7 @@ static D2UnitStrc * SKILLDESC_GetSecondaryWeapon(D2UnitStrc * pUnit) {
       return nullptr;
     }
 
-    eD2BodyLoc eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pEquippedWeapon);
+    int32_t eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pEquippedWeapon);
     D2UnitStrc* pOffhandWeapon = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, eBodyLoc == BODYLOC_R_ARM ? 5 : 4);
     if (pOffhandWeapon && pOffhandWeapon != pEquippedWeapon) {
       uint32_t bIsWeaponType;
@@ -5373,7 +5371,7 @@ void __fastcall SKILLDESC_DrawSkillDmgSummon(D2UnitStrc * pUnit, D2SkillStrc * p
     nMinDamage = nMinDmgBonusSaved + nMinDmgShifted;
     D2InventoryStrc* pInvSaved = pUnit->pInventory;
     if (pInvSaved) {
-      eD2BodyLoc eBodyLoc;
+      int32_t eBodyLoc;
       pPrimaryWeapon = D2Common::INVENTORY::Inventory::GetEquipedWeapon(pInvSaved);
       pUnit2 = 0;
       if (pPrimaryWeapon) {

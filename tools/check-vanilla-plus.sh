@@ -531,17 +531,20 @@ fi
 # (R50) only run from roster-update packets, so in SP the wrong spawn tint
 # stuck for the unit's whole life. Regression signature: any `!uMercType`
 # feeding nPalShiftIdx in CUnit.cpp.
+# R89: a second good site was added on purpose — skeleton classes 0x16b/0x16c
+# get ownership polarity forced regardless of byUtrans (UNIT_CreateMonster).
+# R90-merge: expectation re-pinned raw=1 -> raw=2 (both sites good polarity).
 if command -v awk >/dev/null 2>&1; then
   eval "$(awk '
     /nPalShiftIdx = \(uint32_t\)!uMercType;/ { sp_bad++ }
     /nPalShiftIdx = \(uint32_t\)uMercType;/ { sp_good++ }
     END { printf "vp_sp_bad=%d vp_sp_good=%d", sp_bad+0, sp_good+0 }
   ' D2Client/UNIT/CUnit.cpp)"
-  if [ "${vp_sp_bad:-0}" -eq 0 ] && [ "${vp_sp_good:-0}" -eq 1 ]; then
+  if [ "${vp_sp_bad:-0}" -eq 0 ] && [ "${vp_sp_good:-0}" -eq 2 ]; then
     printf 'ok   %-46s %s inverted=%s raw=%s\n' "spawn: ownership palshift polarity (R51)" "D2Client/UNIT/CUnit.cpp" "${vp_sp_bad:-0}" "${vp_sp_good:-0}"
     PASS=$((PASS + 1))
   else
-    printf 'FAIL %-46s inverted=%s raw=%s (want inverted=0 raw=1) - !uMercType spawns own skeletons into the yellow hostile sub-table (issue #8)\n' "spawn: ownership palshift polarity (R51)" "${vp_sp_bad:-0}" "${vp_sp_good:-0}"
+    printf 'FAIL %-46s inverted=%s raw=%s (want inverted=0 raw=2) - !uMercType spawns own skeletons into the yellow hostile sub-table (issue #8)\n' "spawn: ownership palshift polarity (R51)" "${vp_sp_bad:-0}" "${vp_sp_good:-0}"
     FAIL=$((FAIL + 1))
   fi
 fi
@@ -681,7 +684,8 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id 0.0.7-R87"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R87' 1
+# R90-merge: re-pinned R87 -> R88 (user R89 bumped code but not the string; string was still R88)
+gate "res: self-id 0.0.7-R88"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R88' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared
