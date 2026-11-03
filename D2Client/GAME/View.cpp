@@ -49,6 +49,7 @@
 #include "globals/globals.h"
 #include "D2Common/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
+#include "support/d2_boot.h" // [d2boot] issue #26 D3D perspective-toggle triage marks [R96]
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -921,6 +922,18 @@ D2GameViewStrc * __stdcall AllocGameView() {
 void __fastcall ViewDraw2(D2GameViewStrc * pGameView) {
     // Static local variables (originally global data)
     static uint32_t gnFrameDrawCounter; D2_STATIC_GUARD_BSS(gnFrameDrawCounter, "D2Client::GAME::View::ViewDraw2::gnFrameDrawCounter");
+    // [d2boot] issue #26 D3D perspective-toggle death triage: 0 = no
+    // perspective frame seen yet, 1 = enter mark written, 2 = drawn mark
+    // written. A death with "enter" but no "drawn" pins the fault inside the
+    // world pass (floor/shadow/wall/roof/weather) on the first perspective
+    // frame after a runtime toggle; neither mark means the death happens
+    // before the world draw (menu/UI side). [R96]
+    static int gnVP96PerspectiveFrameProbe; D2_STATIC_GUARD_BSS(gnVP96PerspectiveFrameProbe, "D2Client::GAME::View::ViewDraw2::gnVP96PerspectiveFrameProbe");
+    // [d2boot] R97: transition tracker, re-armed on every flip (the R96
+    // first-frame probe is one-shot and was already spent when the owner's
+    // 1 -> 0 toggle died). One line per flip brackets the frame in the
+    // bootlog next to the R97 floor-pass and promote-guard marks. [R97]
+    static int gnVP97ViewLastPerspective; D2_STATIC_GUARD_BSS(gnVP97ViewLastPerspective, "D2Client::GAME::View::ViewDraw2::gnVP97ViewLastPerspective");
 
     uint32_t _bPerspective;
     bool bPerspective;
@@ -935,7 +948,16 @@ void __fastcall ViewDraw2(D2GameViewStrc * pGameView) {
     D2gfx::D2GFX::D2GFX_UpdateScaleFactor();
     nScaleFactor = D2gfx::D2GFX::D2GFX_GetScaleFactor();
     _bPerspective = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
+    if ((int)_bPerspective != gnVP97ViewLastPerspective) {
+      gnVP97ViewLastPerspective = (int)_bPerspective;
+      D2BOOT_MarkFmt("world: perspective now %d, view frame [R97]", (int)_bPerspective); // [d2boot]
+    }
     if (_bPerspective) {
+      if (!gnVP96PerspectiveFrameProbe) {
+        gnVP96PerspectiveFrameProbe = 1;
+        D2BOOT_MarkFmt("world: first perspective frame enter (renderer=%d) [R96]", (int)D2gfx::D2GFX::D2GFX_GetRendererMode()); // [d2boot]
+      }
+
       int32_t nXScale;
       pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
       nXScale = D2Common::Units::GetPrecisionX(pPlayerUnit_lcl);
@@ -1001,6 +1023,10 @@ void __fastcall ViewDraw2(D2GameViewStrc * pGameView) {
     D2gfx::D2GFX::D2GFX_SetDefaultScaleFactor();
     D2Client::Draw::Weather::DRAW_Overlay_Weather();
     dSceneTransitionDraw();
+    if (gnVP96PerspectiveFrameProbe == 1) {
+      gnVP96PerspectiveFrameProbe = 2;
+      D2BOOT_Mark("world: first perspective frame drawn [R96]"); // [d2boot]
+    }
 }
 
 // Applies screen-shake offset to the camera center point. Computes shake magnitude from elapsed ticks using a three-phase envelope (fade-in over Arg3, sustain over Arg1, fade-out over Arg2). Rolls random X/Y offsets from the player unit seed and adds them to *pCenterX/*pCenterY. Updates the global shake-sound volume proportionally; zeros shake state when the envelope expires.

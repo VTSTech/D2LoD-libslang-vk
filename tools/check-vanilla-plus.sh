@@ -687,10 +687,14 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-# R94: string bumped R93 -> R94 (issue #26 round 3: the R93 field pass fixed
-# both single panels with perspective OFF; round 3 covers the border-3 world
-# draw skip (ViewDraw2) and the bottom-band vertical cuts)
-gate "res: self-id 0.0.7-R95"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R95' 1
+# R95: string bumped R94 -> R95 (issue #26 round 4: the no-panel-shift feature)
+# R96: string bumped R95 -> R96 (issue #26 D3D perspective-toggle triage probes;
+# zero behavior change, see the videoopt/world/d3d probe rows below)
+# R97: string bumped R96 -> R97 (issue #26: the R96 field log pinned the death
+# to halt line=200 - the D3D floor/subtile texture-cache promote range checks -
+# on the first frame after a runtime 1 -> 0 flip; R97 guards both promote
+# callers and re-arms the probes, see the R97 rows below)
+gate "res: self-id 0.0.7-R98"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R98' 1
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the
@@ -882,6 +886,56 @@ gate "noshift: world-draw origins (R95)"   D2Client/GAME/Draw.cpp          'PANE
 gate "noshift: weather clips (R95)"        D2Client/Draw/Weather.cpp       'PANELSHIFT_BorderForWorld\(UI::Path::DRAW_GetTypeOfBorder\(\)\)' 3
 gate "noshift: automap pan (R95)"          D2Client/UI/Automap.cpp         'PANELSHIFT_BorderForWorld\(Path::DRAW_GetTypeOfBorder\(\)\)' 1
 gate "noshift: config cache bust (R95)"    D2Client/UI/VanillaPlusCore.cpp 'dwNoPanelShiftLastCheck = 0' 2
+
+# ---- [issue #26 / R96] D3D perspective-toggle death triage probes -------------
+# Owner field report (R95): toggling perspective in D3D kills the process;
+# Glide toggles fine; with no_panel_shift=0 the R95 code is inert at the
+# toggle moment (options menu = border 0/3 unchanged, every gate call site
+# returns its retail value), so the R95 feature itself is not the trigger.
+# R96 ships five one-shot d2boot.log probes that bracket the toggle (slider
+# load + apply), the first perspective world frame (enter/drawn) and the D3D
+# perspective floor path, plus the two-artifact ask (d2crash-*.txt per
+# VANILLA-PLUS.md). Read-out matrix is documented in SMOKE-CHECKLIST §L.
+gate "probe: perspective load mark (R96)"   D2Client/UI/EscMenu.cpp            'videoopt: perspective load reg=%d capable=%d \[R96\]' 1
+gate "probe: perspective apply mark (R96)"  D2Client/UI/EscMenu.cpp            'videoopt: perspective apply renderer=%d active=%d -> %d \[R96\]' 1
+gate "probe: world frame enter (R96)"       D2Client/GAME/View.cpp             'world: first perspective frame enter \(renderer=%d\) \[R96\]' 1
+gate "probe: world frame drawn (R96)"       D2Client/GAME/View.cpp             'world: first perspective frame drawn \[R96\]' 1
+gate "probe: d3d floor path mark (R96)"     D2Direct3D/Renderer/Direct3D.cpp   'd3d: first perspective DrawGroundTile \(panels=%d w=%d h=%d\) \[R96\]' 1
+
+# ---- [issue #26 / R97] D3D texture-cache promote guards + re-armed probes -----
+# The R96 field log names the death: halt line=200 = D3DFLOOR_PromoteNodeToMRU
+# / D3DSUBTILE_PromoteNodeToMRU range check (nIndex > nMaxNodes), same 15 ms
+# tick as the slider apply (1 -> 0), D3D 800x600. Every static link audits
+# retail-clean (cache init once per device init; Free(1) invalidates all tile
+# indices; SetViewRectangleSize is rects only; alias offsets verified), so the
+# out-of-range word is runtime state. R97: both promote callers validate before
+# promoting - dead cache skips the draw, out-of-range index is logged and
+# healed to uncached (fresh alloc + re-upload) - and the one-shot R96 probes
+# are complemented by transition marks that re-arm on every flip.
+gate "guard: floor promote heal (R97)"      D2Direct3D/d3dFloorCache.cpp       'floor promote out-of-range idx=%d max=%d used=%d bufNull=%d tile=%p - healed to uncached \[R97\]' 1
+gate "guard: floor dead-cache skip (R97)"   D2Direct3D/d3dFloorCache.cpp       'floor texture cache dead \(max=%d used=%d bufNull=%d tile=%p\) - tile skipped \[R97\]' 1
+gate "guard: subtile promote heal (R97)"    D2Direct3D/d3dFloorCache.cpp       'subtile promote out-of-range idx=%d max=%d used=%d bufNull=%d subtile=%p - healed to uncached \[R97\]' 1
+gate "guard: subtile dead-cache skip (R97)" D2Direct3D/d3dFloorCache.cpp       'subtile texture cache dead \(max=%d used=%d bufNull=%d subtile=%p\) - subtile skipped \[R97\]' 1
+gate "probe: d3d floor transition (R97)"    D2Direct3D/Renderer/Direct3D.cpp   'd3d: perspective now %d, floor tile pass \(panels=%d w=%d h=%d\) \[R97\]' 1
+gate "probe: world transition (R97)"        D2Client/GAME/View.cpp             'world: perspective now %d, view frame \[R97\]' 1
+
+# ---- [issue #26 / R98] flat wall byte-offset iterator widened -----------------
+# The R97 field pass returned outcome (b): death WITH the guard mark. The mark
+# plus the AV decode to one defect: BuildWallTileVerticesNoPerspective walked
+# pSubTiles by BYTE OFFSET with a uint8_t iterator (+0x14 per 0x14-byte record,
+# wraps at 256 after 12 records - a decompiler artifact merging the dead
+# nParam4 arg slot; every sibling iterator is full-width int). From the 13th
+# subtile the loop read +4-shifted pseudo-records: nTextureCacheIndex = the
+# real record's DT1 wFormat word (idx=4097 = 0x1001, the word that halted
+# line=200 in R96) and pPixelData = the next record's {nOffsetY<<16|nOffsetX}
+# packed (AV READ at FF600060 = -160/+96 wall offsets), which the R97 heal
+# dereferenced in the alloc path. Perspective-ON walls and both shadow builders
+# index the array properly - only the flat builder walked raw bytes, so the
+# death fires on the first post-flip frame and Glide toggles clean. R98 widens
+# the iterator to int and adds a bounded wide-tile probe; the R97 guards stay
+# as defense in depth.
+gate "fix: flat wall int iterator (R98)"     D2Direct3D/Renderer/Direct3D.cpp   'int nSubtileByteOffset;' 1
+gate "probe: flat wall wide-tile (R98)"      D2Direct3D/Renderer/Direct3D.cpp   'd3d: flat wall subtiles=%d tile=%p \[R98\]' 1
 
 
 echo

@@ -16,6 +16,255 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
 
 - Nothing yet — the next round's entry goes here.
 
+## [R98] — 2026-11-03 (issue #26 round 7: the D3D flat wall iterator wrap — ROOT CAUSE FIXED; self-ID `Vanilla+0.0.7-R98`)
+
+The R97 guard fired on the first field pass — outcome (b), the mark IS the
+root-cause data — and it came with one more artifact:
+
+```
+[334112828 ms] videoopt: perspective apply renderer=6 active=1 -> 0 [R96]
+[334112828 ms] world: perspective now 0, view frame [R97]
+[334112828 ms] d3d: perspective now 0, floor tile pass (panels=0 w=800 h=600) [R97]
+[334112828 ms] d3d: subtile promote out-of-range idx=4097 max=1536 used=138 bufNull=0 subtile=1457C004 - healed to uncached [R97]
+[334112828 ms] VEH: fatal exception 0xC0000005 at addr 00AEB792
+[334112828 ms] VEH: AV READ at FF600060 (target of the faulting access)
+```
+
+### The decode — both numbers are structure-layout arithmetic
+
+`idx=4097` and `FF600060` are exactly what a **+4-byte-shifted subtile
+record** produces:
+
+- `RENDERER_D3D_BuildWallTileVerticesNoPerspective` (the D3D flat wall
+  builder) walks the tile's `pSubTiles` array by BYTE OFFSET: `_nParam4 += 0x14`
+  for the 0x14-byte records. The decompiler typed that iterator `uint8_t` — it
+  merged it with the dead `nParam4` argument slot; every sibling byte-offset
+  iterator in the tree (glFloorCache/glSubtileCache node tables, Tilecmp, the
+  SubTile loader, D2GfxHelper) is full-width `int`.
+- A `uint8_t` accumulating 0x14 per iteration wraps at 256: after 12 subtiles
+  (offset 0xF0) the 13th iteration reads at **+4**, and from there on every
+  "record" is the real array shifted 4 bytes.
+- The shifted record's `nTextureCacheIndex` (+4) lands on the real record's
+  **DT1 `wFormat` word** (+8) → `idx=4097 = 0x1001` is a format word, not a
+  cache slot. That is the word that halted line=200 in R96 (`nIndex >
+  nMaxNodes`) and that the R97 guard then healed.
+- The shifted record's `pPixelData` (+0x10) lands on the **next real record's
+  `nOffsetX`/`nOffsetY` shorts** — a screen-offset pair, not a pointer. The
+  heal fell into the alloc path (`D3D_DecompressRLESubtileToBuffer(buffer,
+  pSubTile->pPixelData)`) and read through it: **AV READ at `0xFF600060` =
+  `{nOffsetY=0xFF60 (-160), nOffsetX=0x0060 (+96)}` packed** — a textbook wall
+  subtile offset pair. Lesson recorded: an out-of-range index word is proof
+  the struct is not a valid subtile, so the R97 heal-then-reupload was itself
+  unsafe for this class of poison (correct for a real subtile with a corrupted
+  word, fatal for a fake record).
+
+Why the toggle correlation is exact: perspective-ON walls
+(`RenderWallTileWithPerspective`) and both shadow builders index
+`pSubTiles[i]` properly — only the flat wall builder walks the raw byte
+offset, and with the owner's registry defaulting perspective ON
+(`videoopt: perspective load reg=1`) the flat wall pass runs for the first
+time in the session on the first frame after a 1 → 0 flip. Tiles with ≤ 12
+subtile records never wrapped; wider tiles did only when a shifted
+pseudo-record's garbage coordinates passed the on-screen clip — which is why
+this stayed latent since the original decompilation (`4b0154cd`) and why
+earlier D3D perspective-OFF sessions lived.
+
+### Fixed
+
+- `RENDERER_D3D_BuildWallTileVerticesNoPerspective` (`Direct3D.cpp`): the
+  byte-offset iterator is now `int nSubtileByteOffset` — the loop reads real
+  records at any subtile count. Side effect: the silent wrong-record class the
+  wrap could also produce (wrong-node MRU promotes, wrong-textured quads on
+  tiles whose shifted format words happened to stay in range) is gone too.
+- The R97 promote guards stay verbatim as defense in depth (dead-cache skip +
+  out-of-range heal + the retail halts inside the promotes for unseen paths).
+- Confirmation probe: tiles with **more than 12** subtile records — exactly
+  the wrap population — log `d3d: flat wall subtiles=<n> tile=<p> [R98]`
+  (first 8 per session).
+
+### Field ask (SMOKE §L item 48)
+
+On R98 in D3D: toggle Perspective both directions. Expected: **no death and no
+`healed to uncached` marks**; a handful of `flat wall subtiles=` marks (n > 12)
+is the confirmation data — send the bootlog tail either way. Any surviving
+guard mark on R98 would be a second, independent corruption. With the toggle
+surviving, finish the #26 D3D matrix (items 41–45): both directions, single
+panels static, right margin clean, no bottom strip, both panels.
+
+Verification: changed TUs compile clean under llvm-mingw i686 with the CMake
+forced-include set (`scripts/compile_check_r98.sh`, 7-TU suite); gates
+**364/364** (2 new rows: the widened iterator + the wide-tile probe; the
+self-ID row re-pinned R97 → R98).
+
+## [R97] — 2026-11-03 (issue #26 round 6: the D3D texture-cache promote guards; self-ID `Vanilla+0.0.7-R97`)
+
+The R96 probes did their job on the first field pass. The owner reproduced the
+D3D perspective-toggle death at **800x600** and sent the full bootlog tail plus
+the Redivivus report:
+
+```
+[328963515 ms] world: first perspective frame enter (renderer=6) [R96]
+[328963515 ms] d3d: first perspective DrawGroundTile (panels=0 w=800 h=600) [R96]
+[328963750 ms] world: first perspective frame drawn [R96]
+[328970062 ms] videoopt: perspective apply renderer=6 active=1 -> 0 [R96]
+[328970062 ms] halt report: line=200 addr=00F0C70C
+```
+
+HALT line=200 at d2vp.exe+0x21C70C — "Fog's unrecoverable-error halt", stack
+frames clustered in the D3D renderer region, no access violation, and every
+R96 one-shot probe already spent (the death is a *second* perspective event of
+the session, in exactly the blind spot the one-shot design left open).
+
+### What line=200 names
+
+Exactly two sites in the tree halt with the literal 200, both in D2Direct3D:
+`D3DFLOOR_PromoteNodeToMRU` (`d3dFloorCache.cpp:221`) and
+`D3DSUBTILE_PromoteNodeToMRU` (`d3dSubtileCache.cpp:216`) — the retail range
+check `nIndex > nMaxNodes` on the 1-based texture-cache slot a floor tile or
+wall subtile claims. The crash fired within the same 15 ms tick as the slider
+apply, i.e. on the first world frame drawn with perspective OFF after ~6.5 s
+of play with perspective ON — and the perspective-OFF wall/shadow builders
+(`BuildWallTileVerticesNoPerspective` / `BuildShadowTileVertices`) are precisely
+the promote callers that had not run all session. The frame-index arithmetic
+that makes the flip the trigger is unchanged: with perspective ON the
+perspective builders promoted the same cache slots all session without a
+halt, so the out-of-range word is runtime state, not the visible code path.
+
+### The audit (every link retail-clean)
+
+- **Toggle path is client-side only**: `UI_SLIDER_ApplyPerspective` = registry
+  save + `D2GFX_SetPerspective` (flag flip) + `SetViewRectangleSize` (rects +
+  flags); no renderer callback, no cache invalidation, no device re-init.
+- **Cache lifecycle is single-generation at 800x600**: the floor/subtile
+  texture caches exist only on the 800-class device path
+  (`RENDERER_D3D_AllocateTextureCaches` with `g_bPerspectiveMode`), are freed
+  only via `RENDERER_D3D_FreeTextureCaches` (branch always paired with
+  `Free(1)`, which invalidates every tile/subtile index), and
+  `AllocateTextureCaches`' only call site is inside `RENDERER_D3D_InitializeDevice`,
+  which halts (0x50f) if the device is still initialized. `ClearCaches()`
+  (`Free(0)`, the non-invalidating free) runs only on the exit-game path.
+- **List machinery is correct**: the D3D unlink operates through
+  `D2InventoryGridStrc`/`D2UnitStrc` field aliases over the 0x18-byte node;
+  the alias offsets were verified against the node layout (`pRightArmItem`/
+  `eAnimMode` → +0x10 = `pNext`, `pLeftArmItem`/`pUnitData` → +0x14 = `pPrev`),
+  and the tail-branch `eAnimMode.ePlayerMode = Death` store resolves to 0
+  (`Death == 0`) — identical in effect to the clean Glide twin
+  (`GLFLOOR_PromoteNodeToMRU` et al., which the owner toggles without incident).
+- **Allocation is in-range by construction**: indices come from
+  `EnsureAvailableNode` = `pNode->nIndex + 1` over a buffer of exactly
+  `nMaxNodes` nodes; `nMaxNodes` changes only in `Initialize` (once) and
+  `Free` (→0), both audited; upstream's last ground-tile rounds (77e87e02)
+  never touched the cache files.
+- R92–R96 D3D diffs are clipping-rect logic that compiles to the retail
+  branches at 800x600 (`RENDERER_D3D_IsWideUiLayout()` false); the R95
+  neutralizer passes border 0 through untouched (options menu = border 0).
+
+Conclusion: the promote range halt is real, reachable, and its precondition
+(a slot word beyond `nMaxNodes` while ≥2 nodes are live) cannot be produced by
+any static path in the tree — it is runtime state the source cannot name from
+here (sandbox has no Windows D3D). So R97 changes the failure mode from
+process death to a logged, self-healing degradation, and re-arms the probes so
+a repeat still tells us everything.
+
+### Changed: both promote callers validate before promoting (`d3dFloorCache.cpp`)
+
+- **Dead-cache guard**: if the floor/subtile cache struct is dead
+  (`pNodeBuffer` null or `nMaxNodes <= 0`) the draw is skipped
+  (`d3d: floor texture cache dead ... tile skipped [R97]` /
+  `d3d: subtile texture cache dead ... subtile skipped [R97]`, first 8 hits
+  logged) instead of walking a null buffer or spinning the eviction loop.
+- **Range heal**: an out-of-range slot word is logged with full cache state
+  (`d3d: floor promote out-of-range idx=<i> max=<m> used=<u> bufNull=<b>
+  tile=<p> - healed to uncached [R97]`, subtile twin likewise), the tile's
+  index word is reset to 0, and the ordinary alloc path runs — fresh node,
+  texture re-upload, frame continues. Worst case is one tile/subtile
+  re-uploading its texture; the retail halts inside the two
+  `PromoteNodeToMRU` functions remain for any path the guards do not see.
+- The guards are the *only* callers of both promotes (grep-verified), so the
+  line=200 halt is unreachable through the guarded entry points.
+
+### Added: re-armed transition probes (the R96 blind spot)
+
+- `world: perspective now <0|1>, view frame [R97]` — ViewDraw2, once per
+  perspective state change.
+- `d3d: perspective now <0|1>, floor tile pass (panels=<p> w=<w> h=<h>) [R97]`
+  — D3D `DrawGroundTile`, once per perspective state change.
+- Together with the R96 one-shots every flip now gets a fresh bootlog bracket:
+  a future death reports apply → transition → (guard mark or halt) with no
+  spent-probe ambiguity, and the guard marks name `idx/max/used/bufNull/tile`
+  — the exact numbers the root cause needs.
+
+### Field ask (unchanged shape, one new cell)
+
+Reproduce the D3D toggle death on R97 and send the bootlog tail. Outcomes:
+(a) **no death** — the heal absorbed it; the `healed to uncached` marks (if
+any) are the root-cause data, send them; (b) **death persists with a guard
+mark** — the mark's numbers are the root-cause data; (c) **death persists with
+no guard mark** — the death moved off the promote path; the transition marks
+say where. Either way D3D perspective toggling should now survive long enough
+to finish the #26 D3D verification matrix (blackness + no-shift, both
+directions).
+
+Verification: 7 changed/new TUs compile clean under llvm-mingw i686 with the
+CMake forced-include set (`scripts/compile_check_r97.sh`); gates **362/362**
+(6 new rows: 4 guard rows + 2 transition-probe rows; the self-ID row re-pinned
+R96 → R97).
+
+## [R96] — 2026-11-03 (issue #26 round 5: the D3D perspective-toggle triage probes; self-ID `Vanilla+0.0.7-R96`)
+
+**Zero behavior change — a diagnostics-only round.** The R95 field pass came
+back green in Glide ("I didn't realize you added a gate to the fix. In Glide
+the fix appears to work. no shifting is observed when opening a panel ...
+All blackness appears fixed in Glide as well" — `no_panel_shift=1` closes the
+single-panel slide AND the last #26 blackness case in the field, i.e. issue
+#26 is field-green in Glide) but carried one new report: "toggling perspective
+mode in D3D crashes the game ... Glide can toggle."
+
+### Why this round ships probes instead of a fix
+
+The report's own data argues the crash is not the R95 feature: the owner's
+first message predates their ini edit (`Everything still moves when a panel is
+open` — with `no_panel_shift=1` the world cannot slide, and in Glide it does
+not), so that D3D toggle death happened with **the R95 code inert** — options
+menu open means border 0/3 exactly as retail, every `PANELSHIFT_*` call site
+returns its retail value, and the same added functions demonstrably run in
+Glide without incident. Static review agrees: the toggle flips
+`bPerspectiveEnabled` (`UI_SLIDER_ApplyPerspective`) and the next frame re-enters
+the ordinary D3D perspective paths; nothing in R92–R95 touches a
+toggle-transition-specific site, and the D3D halt guards (`exit(-1)` on
+inverted rects / halted dispatchers) are retail. The two candidate surfaces —
+a latent first-perspective-frame fault in the D3D renderer, or the owner's
+emulated-DDraw environment (their registry-corruption episode is SMOKE §L) —
+cannot be separated from here: the sandbox has no Windows D3D.
+
+### Added: five one-shot d2boot.log probes (the R60-probe pattern)
+
+- `videoopt: perspective load reg=<v> capable=<c>` — every video-options
+  open; a garbage registry value names the §L corruption class instantly.
+- `videoopt: perspective apply renderer=<r> active=<a> -> <v>` — the slider
+  release itself.
+- `world: first perspective frame enter (renderer=<r>)` / `world: first
+  perspective frame drawn` — the ViewDraw2 bracket around the first
+  perspective world frame in the process.
+- `d3d: first perspective DrawGroundTile (panels=<p> w=<w> h=<h>)` — first
+  D3D floor tile drawn with perspective active; the `panels` value also
+  confirms what the R95 neutralizer delivers to the renderer.
+
+Read-out matrix in `SMOKE-CHECKLIST.md` §L: death with no apply mark = menu
+plumbing; apply without the world enter mark = UI draw with perspective;
+enter without drawn = inside the world pass; both marks = steady state. A
+`d2crash-*.txt` next to the exe (or its documented absence —
+VANILLA-PLUS.md two-artifact rule) remains the primary artifact.
+
+Verification: 4 changed TUs + the 2 R95 feature TUs compile clean under
+llvm-mingw i686 with the CMake forced-include set
+(`scripts/compile_check_r96.sh`); gates **356/356** (5 new probe rows; the
+self-ID row re-pinned R95 → R96). Field ask (§L): reproduce the D3D toggle
+death once on this build and send (a) the newest `d2crash-*.txt` or the
+statement that none was written, (b) the tail of `d2boot.log` with the probe
+lines, (c) whether the death happens at the slider release or after closing
+the menu, and (d) whether both toggle directions die.
+
 ## [R95] — 2026-11-03 (issue #26 round 4: the no-panel-shift feature; self-ID `Vanilla+0.0.7-R95`)
 
 Track S follow-up and a new Vanilla+ option. The R94 field pass closed the

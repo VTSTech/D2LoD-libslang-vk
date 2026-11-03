@@ -24,6 +24,7 @@
 #include "Bnclient/BNGatewayAccess.h"
 #include "D2Client/UI/Automap.h"
 #include "D2DDraw/Renderer/DirectDraw.h"
+#include "support/d2_boot.h" // [d2boot] issue #26 D3D perspective-toggle promote guards [R97]
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -616,6 +617,46 @@ BOOL __fastcall D3D_RenderFloorTileToTexture(D2TileLibraryEntryStrc * pTileLibra
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x191);
         exit(-1);
       }
+      // [d2boot] issue #26 D3D perspective-toggle death, R97: the promote's own
+      // range check (halt line 200, nIndex > nMaxNodes) fired on the first frame
+      // after a runtime perspective flip (owner field log 2026-11-03, D3D
+      // 800x600: "videoopt: perspective apply ... active=1 -> 0" then "halt
+      // report: line=200" in the same tick). Every static link in the chain
+      // audits retail-clean (single cache per device init, Free(1) invalidates
+      // all tile indices, the D2UnitStrc/D2InventoryGridStrc alias offsets were
+      // verified against the node layout, Death == 0), so the out-of-range word
+      // is runtime state that cannot be derived from source. Degrade instead of
+      // halting: name the values in the bootlog, reset the tile's index and
+      // fall into the alloc path (fresh node + re-upload). Worst case one tile
+      // re-uploads its texture; the retail halts inside PromoteNodeToMRU stay
+      // for any path this guard does not see. [R97]
+      if (sCacheSlotIndex && (!gD3DFloorTextureCache.pNodeBuffer || gD3DFloorTextureCache.nMaxNodes <= 0)) {
+        // Dead cache (never initialized or freed): drawing would walk a null
+        // node buffer, and the alloc path would spin (EnsureAvailableNode's
+        // eviction loop never terminates at nMaxNodes == 0). Skip the tile -
+        // DrawGroundTile early-returns on a 0 result, one floor quad missing
+        // instead of a halt. [R97]
+        static int gnVP97FloorDeadCacheSkips; D2_STATIC_GUARD_BSS(gnVP97FloorDeadCacheSkips, "D2Direct3D::d3dFloorCache::D3D_RenderFloorTileToTexture::gnVP97FloorDeadCacheSkips");
+        if (gnVP97FloorDeadCacheSkips < 8) {
+          D2BOOT_MarkFmt("d3d: floor texture cache dead (max=%d used=%d bufNull=%d tile=%p) - tile skipped [R97]",
+              (int)gD3DFloorTextureCache.nMaxNodes, (int)gD3DFloorTextureCache.nUsedCount,
+              (int)(gD3DFloorTextureCache.pNodeBuffer == 0), (void*)pTileLibraryEntry); // [d2boot]
+        }
+        gnVP97FloorDeadCacheSkips++;
+        pTileLibraryEntry->nTextureCacheIndex = 0;
+        return 0;
+      }
+      if (sCacheSlotIndex && sCacheSlotIndex > gD3DFloorTextureCache.nMaxNodes) {
+        static int gnVP97FloorPromoteRangeHeals; D2_STATIC_GUARD_BSS(gnVP97FloorPromoteRangeHeals, "D2Direct3D::d3dFloorCache::D3D_RenderFloorTileToTexture::gnVP97FloorPromoteRangeHeals");
+        if (gnVP97FloorPromoteRangeHeals < 8) {
+          D2BOOT_MarkFmt("d3d: floor promote out-of-range idx=%d max=%d used=%d bufNull=%d tile=%p - healed to uncached [R97]",
+              (int)sCacheSlotIndex, (int)gD3DFloorTextureCache.nMaxNodes, (int)gD3DFloorTextureCache.nUsedCount,
+              (int)(gD3DFloorTextureCache.pNodeBuffer == 0), (void*)pTileLibraryEntry); // [d2boot]
+        }
+        gnVP97FloorPromoteRangeHeals++;
+        pTileLibraryEntry->nTextureCacheIndex = 0;
+        sCacheSlotIndex = 0;
+      }
       if (!sCacheSlotIndex) {
         nAllocatedNode = D3DFLOOR_EnsureAvailableNode(&gD3DFloorTextureCache);
         pTileLibraryEntry->nTextureCacheIndex = (short int)nAllocatedNode;
@@ -680,6 +721,35 @@ void __fastcall D3D_RenderSubtileToTexture(D2GroundSubTileStrc * pSubTile) {
       exit(-1);
     } else {
       int32_t nAllocatedNode;
+      // [d2boot] R97 twin of the floor promote guard above for the subtile
+      // cache (halt line 200 inside D3DSUBTILE_PromoteNodeToMRU): log the
+      // cache state, then either skip (dead cache) or heal to the alloc path
+      // (out-of-range index) instead of halting. The perspective-OFF wall
+      // builder (BuildWallTileVerticesNoPerspective) is the first post-toggle
+      // caller of this path, which is why the flip is what exposes the state.
+      // [R97]
+      if (wSubtileCacheIndex && (!gD3DSubtileTextureCache.pNodeBuffer || gD3DSubtileTextureCache.nMaxNodes <= 0)) {
+        static int gnVP97SubtileDeadCacheSkips; D2_STATIC_GUARD_BSS(gnVP97SubtileDeadCacheSkips, "D2Direct3D::d3dFloorCache::D3D_RenderSubtileToTexture::gnVP97SubtileDeadCacheSkips");
+        if (gnVP97SubtileDeadCacheSkips < 8) {
+          D2BOOT_MarkFmt("d3d: subtile texture cache dead (max=%d used=%d bufNull=%d subtile=%p) - subtile skipped [R97]",
+              (int)gD3DSubtileTextureCache.nMaxNodes, (int)gD3DSubtileTextureCache.nUsedCount,
+              (int)(gD3DSubtileTextureCache.pNodeBuffer == 0), (void*)pSubTile); // [d2boot]
+        }
+        gnVP97SubtileDeadCacheSkips++;
+        pSubTile->nTextureCacheIndex = 0;
+        return;
+      }
+      if (wSubtileCacheIndex && wSubtileCacheIndex > gD3DSubtileTextureCache.nMaxNodes) {
+        static int gnVP97SubtilePromoteRangeHeals; D2_STATIC_GUARD_BSS(gnVP97SubtilePromoteRangeHeals, "D2Direct3D::d3dFloorCache::D3D_RenderSubtileToTexture::gnVP97SubtilePromoteRangeHeals");
+        if (gnVP97SubtilePromoteRangeHeals < 8) {
+          D2BOOT_MarkFmt("d3d: subtile promote out-of-range idx=%d max=%d used=%d bufNull=%d subtile=%p - healed to uncached [R97]",
+              (int)wSubtileCacheIndex, (int)gD3DSubtileTextureCache.nMaxNodes, (int)gD3DSubtileTextureCache.nUsedCount,
+              (int)(gD3DSubtileTextureCache.pNodeBuffer == 0), (void*)pSubTile); // [d2boot]
+        }
+        gnVP97SubtilePromoteRangeHeals++;
+        pSubTile->nTextureCacheIndex = 0;
+        wSubtileCacheIndex = 0;
+      }
       if (!wSubtileCacheIndex) {
         D3D_DecompressRLESubtileToBuffer(gfD3DSmackerVertex1RhwOrZ, pSubTile->pPixelData);
         nAllocatedNode = d3dSubtileCache::D3DSUBTILE_EnsureAvailableNode(&gD3DSubtileTextureCache);

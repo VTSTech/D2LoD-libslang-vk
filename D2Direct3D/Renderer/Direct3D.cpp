@@ -4558,7 +4558,26 @@ BOOL __fastcall DrawShadowTile(D2TileLibraryEntryStrc * pTile, int nPosX, int nP
 }
 
 BOOL __thiscall RENDERER_D3D_BuildWallTileVerticesNoPerspective(void * pThis, D2TileLibraryEntryStrc * pTile, int nPosX, int nPosY, int pTexColorTable, uint8_t nParam4) {
-    uint8_t _nParam4;
+    // VP: [issue #26 / R98] the byte-offset iterator into pSubTiles was typed
+    // uint8_t - the decompiler merged it with the dead nParam4 argument slot;
+    // every sibling byte-offset iterator in the tree (glFloorCache/glSubtileCache
+    // node tables, Tilecmp, the SubTile loader, D2GfxHelper) is full-width int.
+    // With the 0x14-byte record stride a uint8_t wraps at 256 = after 12
+    // records, so from the 13th subtile on this loop read +4-shifted
+    // pseudo-records: the fake record's nTextureCacheIndex (+4) is the real
+    // record's DT1 wFormat word (+8) - the owner's R97 field log:
+    // "subtile promote out-of-range idx=4097" = 0x1001, a format word, and the
+    // same word that halted line=200 in R96 - and the fake record's pPixelData
+    // (+0x10) is the next real record's {nOffsetY<<16|nOffsetX} packed dword:
+    // "AV READ at FF600060" = nOffsetY=0xFF60 (-160) / nOffsetX=0x0060 (+96),
+    // which the R97 heal dereferenced via D3D_DecompressRLESubtileToBuffer.
+    // Perspective-ON walls (RenderWallTileWithPerspective) and both shadow
+    // builders index pSubTiles[i] properly - only this flat builder walked raw
+    // bytes, which is why the death fires on the first post-flip frame and why
+    // Glide toggles clean. Widened to int; also kills the silent wrong-record
+    // class (wrong-node MRU promotes / wrong-textured quads) the wrap produced
+    // whenever a shifted format word happened to stay in range. [R98]
+    int nSubtileByteOffset;
     short int* psSubtileCoords;
     int nSubtileScreenX;
     int nSubtileX;
@@ -4600,9 +4619,19 @@ BOOL __thiscall RENDERER_D3D_BuildWallTileVerticesNoPerspective(void * pThis, D2
     int nSubtileCount = 0;
     if (pTile->nSubTiles > 0) {
       int nViewportBottom;
-      _nParam4 = 0;
+      // VP: [issue #26 / R98] confirmation probe - tiles with more than 12
+      // subtile records are exactly the population the old byte-width iterator
+      // wrapped on. Bounded to the first 8 marks per session. [R98]
+      if (pTile->nSubTiles > 12) {
+        static int gnVP98FlatWallWideTileMarks; D2_STATIC_GUARD_BSS(gnVP98FlatWallWideTileMarks, "D2Direct3D::Renderer::Direct3D::RENDERER_D3D_BuildWallTileVerticesNoPerspective::gnVP98FlatWallWideTileMarks");
+        if (gnVP98FlatWallWideTileMarks < 8) {
+          D2BOOT_MarkFmt("d3d: flat wall subtiles=%d tile=%p [R98]", (int)pTile->nSubTiles, (void*)pTile); // [d2boot]
+        }
+        gnVP98FlatWallWideTileMarks++;
+      }
+      nSubtileByteOffset = 0;
       do {
-        psSubtileCoords = (short int*)((uintptr_t)&pTile->pSubTiles->nOffsetX + _nParam4);
+        psSubtileCoords = (short int*)((uintptr_t)&pTile->pSubTiles->nOffsetX + nSubtileByteOffset);
         nViewportBottom = (int)*psSubtileCoords;
         nSubtileScreenX = (int)psSubtileCoords[1] + nPosY + 0x20;
         nSubtileX = nPosX + nViewportBottom;
@@ -4611,7 +4640,7 @@ BOOL __thiscall RENDERER_D3D_BuildWallTileVerticesNoPerspective(void * pThis, D2
           nTexColor0 = *(uint32_t*)(pTexColorTable + nViewportBottom * 4);
           nTexColor1 = *(uint32_t*)(pTexColorTable + 4 + nViewportBottom * 4);
           bRendered = 1;
-          d3dFloorCache::D3D_RenderSubtileToTexture((D2GroundSubTileStrc*)((uintptr_t)&pTile->pSubTiles->nOffsetX + _nParam4));
+          d3dFloorCache::D3D_RenderSubtileToTexture((D2GroundSubTileStrc*)((uintptr_t)&pTile->pSubTiles->nOffsetX + nSubtileByteOffset));
           gaD3DPerspectiveVertices[0].fX = (float)nSubtileX;
           gaD3DPerspectiveVertices[0].fY = (float)(nSubtileScreenX - 0x20);
           gaD3DPerspectiveVertices[1].fY = (float)nSubtileScreenX;
@@ -4627,7 +4656,7 @@ BOOL __thiscall RENDERER_D3D_BuildWallTileVerticesNoPerspective(void * pThis, D2
           g_pD3DDevice->lpVtbl->DrawPrimitive(g_pD3DDevice, 6, 0x1c4, gaD3DPerspectiveVertices, 4, 0x1c);
         }
 
-        _nParam4 += 0x14;
+        nSubtileByteOffset += 0x14;
         nSubtileCount++;
       } while (nSubtileCount < pTile->nSubTiles);
     }
@@ -4932,6 +4961,30 @@ void __stdcall RENDERER_D3D_ReleaseGroundTileCache() {
 void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc * pLight, int nPosX, int nPosY, int nWorldXpos, int nWorldYpos, uint32_t nAlpha, int nScreenPanels, void * pTileData) {
     // Static local variables (originally global data)
     static uint16_t gdwRendererMode[4] = { 0x0, 0x5, 0x23, 0x1e }; D2_STATIC_GUARD(gdwRendererMode, "D2Direct3D::Renderer::DrawGroundTile::gdwRendererMode");
+    // [d2boot] issue #26 D3D perspective-toggle death triage: one-shot mark on
+    // the first floor tile drawn with perspective active (the ViewDraw2 world
+    // bracket alone cannot separate the D3D floor path from the passes around
+    // it). The panels arg value also confirms what the R95 no_panel_shift
+    // neutralizer actually delivers to the renderer. [R96]
+    static int gnVP96GroundTilePerspectiveProbe; D2_STATIC_GUARD_BSS(gnVP96GroundTilePerspectiveProbe, "D2Direct3D::Renderer::DrawGroundTile::gnVP96GroundTilePerspectiveProbe");
+    if (!gnVP96GroundTilePerspectiveProbe && RENDERER_D3D_IsPerspectiveEnabled()) {
+      gnVP96GroundTilePerspectiveProbe = 1;
+      D2BOOT_MarkFmt("d3d: first perspective DrawGroundTile (panels=%d w=%d h=%d) [R96]", (int)nScreenPanels, (int)RENDERER_nWindowWidth, (int)RENDERER_nWindowHeight); // [d2boot]
+    }
+    // [d2boot] R97: the R96 probes are one-shot, so a SECOND perspective flip
+    // later in the session drew no bracket (the owner's 1 -> 0 toggle death
+    // reproduced exactly in that blind spot: apply mark, then halt line=200,
+    // with every one-shot probe already spent). Re-armed: mark the floor pass
+    // once per perspective state change, so every flip gets a fresh bracket
+    // in the bootlog around whichever promote guard fires. [R97]
+    static int gnVP97GroundTileLastPerspective; D2_STATIC_GUARD_BSS(gnVP97GroundTileLastPerspective, "D2Direct3D::Renderer::DrawGroundTile::gnVP97GroundTileLastPerspective");
+    {
+      int nVP97PerspectiveNow = RENDERER_D3D_IsPerspectiveEnabled();
+      if (nVP97PerspectiveNow != gnVP97GroundTileLastPerspective) {
+        gnVP97GroundTileLastPerspective = nVP97PerspectiveNow;
+        D2BOOT_MarkFmt("d3d: perspective now %d, floor tile pass (panels=%d w=%d h=%d) [R97]", nVP97PerspectiveNow, (int)nScreenPanels, (int)RENDERER_nWindowWidth, (int)RENDERER_nWindowHeight); // [d2boot]
+      }
+    }
 
     DWORD DVar2;
     uint32_t* lpwIndices;

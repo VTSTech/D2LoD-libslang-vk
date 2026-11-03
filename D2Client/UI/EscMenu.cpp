@@ -380,6 +380,15 @@ void __fastcall UI_SLIDER_LoadAndApplyResolution(D2EscMenuItemStrc * pItem, D2UI
 }
 
 void __fastcall UI_SLIDER_ApplyPerspective(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
+    // [d2boot] issue #26 D3D perspective-toggle death triage: mark the slider
+    // apply itself (renderer, currently-effective state, new value) so a death
+    // between this mark and the first-perspective-frame world marks localizes
+    // to the render side; a death with NO apply mark never reached the slider
+    // handler. [R96]
+    D2BOOT_MarkFmt("videoopt: perspective apply renderer=%d active=%d -> %d [R96]",
+        (int)D2gfx::D2GFX::D2GFX_GetRendererMode(),
+        (int)D2gfx::D2GFX::D2GFX_IsPerspectiveActive(),
+        (int)pItem->nImageIndex);
     Storm::Source::SReg::SRegSaveValue("Diablo II", "Perspective", 0, pItem->nImageIndex);
     D2gfx::D2GFX::D2GFX_SetPerspective(pItem->nImageIndex);
     GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
@@ -390,6 +399,11 @@ void __fastcall UI_SLIDER_LoadAndApplyPerspective(D2EscMenuItemStrc * pItem, D2U
     int* pnOut = &pItem->nImageIndex;
     Storm::Source::SReg::SRegLoadValue("Diablo II", "Perspective", 0, pnOut);
     BOOL BVar1 = D2gfx::D2GFX::D2GFX_GetPerspectiveCapable();
+    // [d2boot] triage companion to the apply mark: logs the raw registry value
+    // and the capability flag at every video-options open. A garbage/non-0-1
+    // value here names the owner-side registry corruption class (SMOKE §L)
+    // instead of a build bug. [R96]
+    D2BOOT_MarkFmt("videoopt: perspective load reg=%d capable=%d [R96]", *pnOut, (int)BVar1);
     if (BVar1) {
       Storm::Source::SReg::SRegSaveValue("Diablo II", "Perspective", 0, *pnOut);
       D2gfx::D2GFX::D2GFX_SetPerspective(*pnOut);
