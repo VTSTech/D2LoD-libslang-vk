@@ -16,6 +16,39 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
 
 - Nothing yet — the next round's entry goes here.
 
+## [R101] — 2026-11-04 (issue #26 round 9: the Options-page row — `no_panel_shift` is no longer ini-only; self-ID `Vanilla+0.0.7-R101`)
+
+Field ask against the R100 build (owner): "Great job, no_panel_shift is
+working as intended now. Let's add the toggle to the Vanilla+ Options panel."
+
+### The row
+
+`Esc → Options → Vanilla+ Options` grows a seventh row, **No Panel World
+Shift**, wired exactly like the R67 Shared Stash row: one `gaVanillaPlusRows`
+entry riding the existing `D2VP_GetFeatureToggle` / `D2VP_SetFeatureToggle`
+bridge. Nothing else in the toggle chain needed touching — the ini template
+block shipped with the feature itself (round 6), and `D2VP_ConfigReloaded`
+already busts `dwNoPanelShiftLastCheck`, so a flip in the panel re-reads the
+key on the very next `PANELSHIFT_NoShiftWorld` poll: the world stays put the
+same frame you flip On, and slides again the frame you flip Off. No ini edit
+needed, ever.
+
+### The layout
+
+Seven feature rows overflow the page box at the R67 geometry: row 7 spans
+boxTop+0x110..0x12a while the Previous Menu row sat at boxTop+0x124 — a 6 px
+overlap. `VPPAGE_BACK_ROW_Y` moves 0x124 → 0x144, keeping the same one-row
+0x1a gap above the back row; its bottom edge (0x15e) stays inside the
+0x171-high box (0x13 margin). Hit-test, hover highlight and draw all share
+`VPPAGE_RowTopY`, so the one constant moves all three in step.
+
+The label documents the feature's own boundary by being inert where the
+feature is: at 640x480 / 800x600 the row flips the key but
+`PANELSHIFT_NoShiftWorld` stays false outside wide layouts (the vanilla slide
+is kept, exactly as the ini template's comment has said since round 6).
+`no_panel_shift=0` behavior unchanged everywhere. Gates 380/380 (377 + 3 new:
+row present, seven rows, back-row geometry).
+
 ## [R100] — 2026-11-04 (issue #26 round 8: the unit-sprite pan follow-up — `no_panel_shift` keeps units at the border-0 camera; self-ID `Vanilla+0.0.7-R100`)
 
 Field report against the R99 build (owner): "clean build successful.

@@ -135,29 +135,38 @@ static const int VPPAGE_BOX_HEIGHT = 0x171;
 static const int VPPAGE_ROW_PITCH = 0x20;
 static const int VPPAGE_ROW_HEIGHT = 0x1a;
 static const int VPPAGE_FIRST_ROW_Y = 0x50;        // from box top
-static const int VPPAGE_BACK_ROW_Y = 0x124;        // from box top
+static const int VPPAGE_BACK_ROW_Y = 0x144;        // from box top (R101: was 0x124 - moved below the seventh row, see the layout check)
 static const int VPPAGE_TEXT_BASELINE_INSET = 4;   // baseline above row bottom
 
 // [features] keys rendered by the page. Adding a slate feature = +1 entry
 // here and +1 template block in ALTTOGGLE_WriteIniTemplate - nothing else.
-// (shared_stash's template block shipped with the feature itself, R63/Rev 82.)
+// (shared_stash's and no_panel_shift's template blocks shipped with their
+// features themselves - R63/Rev 82 and the issue-#26 gate - so for the R101
+// row the +1 entry really was all it took beyond the back-row move below.)
 struct VPPFeatureRow {
     const char* szKey;        // d2vp.ini [features] key
     const wchar_t* wszLabel;  // row label
 };
-static const VPPFeatureRow gaVanillaPlusRows[6] = {
+static const VPPFeatureRow gaVanillaPlusRows[7] = {
     { "alt_toggle", L"Show Items Toggle" },
     { "auto_gold", L"Auto Gold Pickup" },
     { "portable_save", L"Portable Saves" },
     { "globe_persistent", L"Persistent Globe Text" },
     { "item_ilvl", L"Item Level Tooltips" },
     { "shared_stash", L"Shared Stash" },  // VP: [shared-stash] track N round 1 (R67: in-game Options row - the tab is no longer ini-only)
+    // VP: [issue #26 / R101] no-panel-shift - the toggle is no longer ini-only.
+    // The row rides the same D2VP_* bridge as the other six; the write bridge
+    // already busts dwNoPanelShiftLastCheck (D2VP_ConfigReloaded), so flipping
+    // it here re-reads the key on the very next PANELSHIFT_NoShiftWorld poll.
+    { "no_panel_shift", L"No Panel World Shift" },
 };
-static const int VPP_ROW_COUNT = 6;
-static const int VPP_ROW_BACK = 6; // hit-test index of the Previous Menu row
-// Layout check (R67): row 5 spans boxTop+0x0f0..0x10a, the Previous Menu row
-// sits at boxTop+0x124 - no overlap inside the 0x171-high box, so the page
-// geometry constants stay untouched.
+static const int VPP_ROW_COUNT = 7;
+static const int VPP_ROW_BACK = 7; // hit-test index of the Previous Menu row
+// Layout check (R101): the seventh feature row spans boxTop+0x110..0x12a, so
+// the Previous Menu row moves down from boxTop+0x124 (which would overlap it
+// by 6 px) to boxTop+0x144 - the same one-row 0x1a gap the R67 layout kept
+// above it (row 6 ends 0x12a, back row starts 0x12a+0x1a). Back row bottom
+// 0x15e stays inside the 0x171-high box (0x13 bottom margin).
 
 // Input handlers (definitions below; the batch array references them).
 // Deliberately NO WM_MOUSEMOVE (0x200) entry - see the header comment block:

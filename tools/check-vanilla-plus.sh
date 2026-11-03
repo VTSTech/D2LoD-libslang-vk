@@ -707,7 +707,7 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # to halt line=200 - the D3D floor/subtile texture-cache promote range checks -
 # on the first frame after a runtime 1 -> 0 flip; R97 guards both promote
 # callers and re-arms the probes, see the R97 rows below)
-gate "res: self-id 0.0.7-R100"                D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R100' 1
+gate "res: self-id 0.0.7-R101"                D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R101' 1
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the
@@ -908,6 +908,18 @@ gate "noshift: unit cof direction (R100)"   D2Client/Engine/GfxUtil.cpp     'PAN
 gate "noshift: unit hover text (R100)"      D2Client/UI/Text.cpp            'PANELSHIFT_BorderForWorld\(Path::DRAW_GetTypeOfBorder\(\)\)' 2
 gate "noshift: item label anchor (R100)"    D2Client/UI/ShowItems.cpp       'PANELSHIFT_BorderForWorld\(Path::DRAW_GetTypeOfBorder\(\)\)' 1
 gate "noshift: unit overlays (R100)"        D2Client/UI/ui.cpp              'PANELSHIFT_BorderForWorld\(Path::DRAW_GetTypeOfBorder\(\)\)' 3
+
+# ---- [issue #26 / R101] the options-page row (toggle no longer ini-only) -----
+# Field-proven R100 -> owner: "no_panel_shift is working as intended now. Let's
+# add the toggle to the Vanilla+ Options panel". The row is the R67 stash-row
+# shape: one gaVanillaPlusRows entry riding the existing D2VP_* bridge (the
+# write bridge already busts dwNoPanelShiftLastCheck in D2VP_ConfigReloaded,
+# so the very next PANELSHIFT_NoShiftWorld poll re-reads the key). Seventh row
+# forces the Previous Menu row down one pitch (0x124 -> 0x144); the layout
+# check comment in VanillaPlusOptions.cpp carries the arithmetic.
+gate "options page: noshift row present (R101)"  D2Client/UI/VanillaPlusOptions.cpp '"no_panel_shift"' 1
+gate "options page: seven rows (R101)"           D2Client/UI/VanillaPlusOptions.cpp 'VPP_ROW_COUNT = 7' 1
+gate "options page: back row below 7th (R101)"   D2Client/UI/VanillaPlusOptions.cpp 'VPPAGE_BACK_ROW_Y = 0x144' 1
 
 # ---- [issue #26 / R96] D3D perspective-toggle death triage probes -------------
 # Owner field report (R95): toggling perspective in D3D kills the process;
