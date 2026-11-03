@@ -173,12 +173,14 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
       Storm::Source::SReg::SRegSaveValue("Diablo II", "Resolution", 0, 0);
     }
     if (!pD2IniData->bNOSOUND && geD2ApplicationMode != APPMODE_server) {
-      // [sound fix] bSOUNDBKG is a bool (ini struct offset 0x224), not a window handle —
-      // passing it made SOUND_Initialize see hwnd=0/1 and the DDA music stream bind to a
-      // dead window (the round-3 directx log's hwnd=00000000). The game window exists by
-      // now (CreateWindowWithChecks above), so hand over the real one.
-      D2BOOT_MarkFmt("SOUND_Initialize enter (hwnd=%08lx)", (unsigned long)D2gfx::D2GFX::GetHwnd()); // [d2boot] pins a pre-sound freeze (enter written, done never) and reports the init verdict
-      D2Sound::Sound::SOUND_Initialize(*(uint32_t*)pD2IniData->bD2ExpMpqExistsOrLanugageCode, D2gfx::D2GFX::GetHwnd());
+      // [sound fix superseded R99] upstream 0fe2eda8 (ghidra 1870 sound names) recovered
+      // the second SOUND_Initialize parameter as BOOL bSoundInBackground (stored to
+      // gbSoundInBackground; g_hwndSoundWindow is gone from the recovery) - the fork's
+      // hwnd-interpretation fix (pass GetHwnd() so the DDA music stream binds a live
+      // window) has no site left. The retail call shape passes the ini BOOL again; the
+      // d2boot enter/done marks stay (freeze triage is fork-side).
+      D2BOOT_MarkFmt("SOUND_Initialize enter (bkg=%d)", (int)pD2IniData->bSOUNDBKG); // [d2boot] pins a pre-sound freeze (enter written, done never) and reports the init verdict
+      D2Sound::Sound::SOUND_Initialize(*(uint32_t*)pD2IniData->bD2ExpMpqExistsOrLanugageCode, (uint32_t)pD2IniData->bSOUNDBKG);
       D2BOOT_MarkFmt("SOUND_Initialize done (dsoundInit=%d eax=%d)", (int)D2Sound::SOUND_GetDirectSoundInitializedFlag(), (int)D2Sound::SOUND_GetEAXEnabledFlag()); // [d2boot] dsoundInit=0 means the whole engine failed to start: no menu music, no effects
       __frame0.bSoundInit = 1;
     }
