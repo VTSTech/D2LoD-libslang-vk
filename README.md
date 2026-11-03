@@ -3,7 +3,7 @@
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/815fae59-2e1a-4b76-a834-8ba2ea1893ba" />
 
 
-# D2LoD Vanilla+
+# D2VP Vanilla+QoL
 
 <a href="https://madeopenly.com/?t=325ab9ffa5494159843c9f9999b41dc3" title="Made Openly: Mostly AI">
   <img src="https://madeopenly.com/b/325ab9ffa5494159843c9f9999b41dc3.svg?l=mostly-ai&s=dark&z=small&v=robot&m=robot"
