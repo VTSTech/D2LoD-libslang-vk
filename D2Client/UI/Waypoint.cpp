@@ -3,6 +3,7 @@
 #include "support/d2_trace.h"
 #include "D2Client/UI/Waypoint.h"
 #include "D2Client/Core/Archive.h"
+#include "D2Client/Cursor.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/GAME/Game/Game.h"
@@ -45,6 +46,64 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
+
+static int gaWaypointRowLayout[55] = {
+    0x5,
+    0x11,
+    0x59,
+    0x50,
+    0x54,
+    0x11,
+    0x3c,
+    0x11,
+    0x7d,
+    0x50,
+    0x77,
+    0x11,
+    0x60,
+    0x11,
+    0xa1,
+    0x50,
+    0x9a,
+    0x11,
+    0x84,
+    0x11,
+    0xc5,
+    0x50,
+    0xbd,
+    0x11,
+    0xa8,
+    0x11,
+    0xea,
+    0x50,
+    0xe0,
+    0x11,
+    0xcd,
+    0x11,
+    0x10e,
+    0x50,
+    0x103,
+    0x11,
+    0xf1,
+    0x11,
+    0x132,
+    0x50,
+    0x126,
+    0x11,
+    0x115,
+    0x11,
+    0x156,
+    0x50,
+    0x149,
+    0x11,
+    0x139,
+    0x11,
+    0x17a,
+    0x50,
+    0x16c,
+    0x11,
+    0x15d
+}; D2_STATIC_GUARD(gaWaypointRowLayout, "gaWaypointRowLayout");
 
 namespace D2Client::UI::Waypoint {
 
@@ -446,9 +505,9 @@ void __stdcall DRAW_UI_Waypoint() {
     sDrawImageArgs.nFrameNumber = 3;
     D2gfx::D2GFX::D2GFX_DrawImage(&sDrawImageArgs, gnPanelOffsetX + 0x100, gnPanelOffsetY - 0x30 + ScreenSizeY, -1, DRAW_SOLID, nullptr);
     int nMouseX;
-    nMouseX = ui::GetMouseX();
+    nMouseX = Cursor::GetMouseX();
     int nMouseY;
-    nMouseY = ui::GetMouseY();
+    nMouseY = Cursor::GetMouseY();
     nMouseX -= gnPanelOffsetX;
     nMouseY += gnPanelOffsetY;
     sDrawImageArgs.pDC6 = WaypointWayGateTabs;

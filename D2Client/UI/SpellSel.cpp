@@ -2,6 +2,7 @@
 
 #include "D2Client/UI/SpellSel.h"
 #include "D2Client/Core/Archive.h"
+#include "D2Client/Cursor.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/DataTbls.h"
 #include "D2Client/Engine/Gfx.h"
@@ -60,23 +61,99 @@
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
-namespace D2Client::UI::SpellSel {
+static D2ClassIconWithNameStrc pSpellsClassSkillicon[7] = {
+    {
+        /* .pD2Archive = */ nullptr,
+        /* .szSpelliconPath = */ "Spells\\AmSkillicon"
+    },
+    {
+        /* .pD2Archive = */ nullptr,
+        /* .szSpelliconPath = */ "Spells\\SoSkillicon"
+    },
+    {
+        /* .pD2Archive = */ nullptr,
+        /* .szSpelliconPath = */ "Spells\\NeSkillicon"
+    },
+    {
+        /* .pD2Archive = */ nullptr,
+        /* .szSpelliconPath = */ "Spells\\PaSkillicon"
+    },
+    {
+        /* .pD2Archive = */ nullptr,
+        /* .szSpelliconPath = */ "Spells\\BaSkillicon"
+    },
+    {
+        /* .pD2Archive = */ nullptr,
+        /* .szSpelliconPath = */ "Spells\\DrSkillicon"
+    },
+    {
+        /* .pD2Archive = */ nullptr,
+        /* .szSpelliconPath = */ "Spells\\AsSkillicon"
+    }
+}; D2_STATIC_GUARD(pSpellsClassSkillicon, "pSpellsClassSkillicon");
+static int nSkillTreeActiveTab = 0x1; D2_STATIC_GUARD(nSkillTreeActiveTab, "nSkillTreeActiveTab");
+static D2ClassIconWithNameStrc pSpellsClassSkilltree[7] = {
+    {
+        /* .pD2Archive = */ nullptr,
+        /* .szSpelliconPath = */ "Spells\\skltree_a_back"
+    },
+    {
+        /* .pD2Archive = */ nullptr,
+        /* .szSpelliconPath = */ "Spells\\skltree_s_back"
+    },
+    {
+        /* .pD2Archive = */ nullptr,
+        /* .szSpelliconPath = */ "Spells\\skltree_n_back"
+    },
+    {
+        /* .pD2Archive = */ nullptr,
+        /* .szSpelliconPath = */ "Spells\\skltree_p_back"
+    },
+    {
+        /* .pD2Archive = */ nullptr,
+        /* .szSpelliconPath = */ "Spells\\skltree_b_back"
+    },
+    {
+        /* .pD2Archive = */ nullptr,
+        /* .szSpelliconPath = */ "Spells\\skltree_d_back"
+    },
+    {
+        /* .pD2Archive = */ nullptr,
+        /* .szSpelliconPath = */ "Spells\\skltree_i_back"
+    }
+}; D2_STATIC_GUARD(pSpellsClassSkilltree, "pSpellsClassSkilltree");
+static int gnSkillTreeHighlightIndex = 0x1; D2_STATIC_GUARD(gnSkillTreeHighlightIndex, "gnSkillTreeHighlightIndex");
+static D2SpellSelGridRegionStrc gSpellSelGridRegion = {}; D2_STATIC_GUARD(gSpellSelGridRegion, "gSpellSelGridRegion");
+static int gSpellSelectionSkillIDs[16] = {}; D2_STATIC_GUARD(gSpellSelectionSkillIDs, "gSpellSelectionSkillIDs");
+static int gbSpellSelActiveRightSkillSlot = 0; D2_STATIC_GUARD(gbSpellSelActiveRightSkillSlot, "gbSpellSelActiveRightSkillSlot");
+static int32_t gSpellSelLeftSkillBindings[16] = {}; D2_STATIC_GUARD(gSpellSelLeftSkillBindings, "gSpellSelLeftSkillBindings");
+static int32_t gSpellSelLeftSkillSlot1[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot1, "gSpellSelLeftSkillSlot1");
+static int32_t gSpellSelLeftSkillSlot2[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot2, "gSpellSelLeftSkillSlot2");
+static int32_t gSpellSelLeftSkillSlot3[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot3, "gSpellSelLeftSkillSlot3");
+static int32_t gSpellSelLeftSkillSlot4[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot4, "gSpellSelLeftSkillSlot4");
+static int32_t gSpellSelLeftSkillSlot5[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot5, "gSpellSelLeftSkillSlot5");
+static int32_t gSpellSelLeftSkillSlot6[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot6, "gSpellSelLeftSkillSlot6");
+static int32_t gSpellSelLeftSkillSlot7[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot7, "gSpellSelLeftSkillSlot7");
+static int32_t gSpellSelLeftSkillSlot8[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot8, "gSpellSelLeftSkillSlot8");
+static int32_t gSpellSelLeftSkillSlot9[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot9, "gSpellSelLeftSkillSlot9");
+static int32_t gSpellSelLeftSkillSlot10[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot10, "gSpellSelLeftSkillSlot10");
+static int32_t gSpellSelLeftSkillSlot11[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot11, "gSpellSelLeftSkillSlot11");
+static int32_t gSpellSelLeftSkillSlot12[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot12, "gSpellSelLeftSkillSlot12");
+static int32_t gSpellSelLeftSkillSlot13[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot13, "gSpellSelLeftSkillSlot13");
+static int32_t gSpellSelLeftSkillSlot14[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot14, "gSpellSelLeftSkillSlot14");
+static int32_t gSpellSelLeftSkillSlot15[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot15, "gSpellSelLeftSkillSlot15");
+static int gSpellSelRightSkillBindings[16] = {}; D2_STATIC_GUARD(gSpellSelRightSkillBindings, "gSpellSelRightSkillBindings");
+static DC6 * gpSpellSelSkillIconDC6 = 0; D2_STATIC_GUARD(gpSpellSelSkillIconDC6, "gpSpellSelSkillIconDC6");
+static unsigned int gbSpellSelMouseHandFlag = {}; D2_STATIC_GUARD(gbSpellSelMouseHandFlag, "gbSpellSelMouseHandFlag");
+static int gbSpellSelSkillTreeNodeHovered[128] = {}; D2_STATIC_GUARD(gbSpellSelSkillTreeNodeHovered, "gbSpellSelSkillTreeNodeHovered");
+static int gaSpellSelSkillTreeState[128] = {}; D2_STATIC_GUARD(gaSpellSelSkillTreeState, "gaSpellSelSkillTreeState");
+static BOOL gbSpellSelSkillTreeBackground = 0; D2_STATIC_GUARD(gbSpellSelSkillTreeBackground, "gbSpellSelSkillTreeBackground");
+static uint32_t BooleanWaitingForSkillingMaybe = 0; D2_STATIC_GUARD(BooleanWaitingForSkillingMaybe, "BooleanWaitingForSkillingMaybe");
+static uint32_t gnSpellSelSkillTreeOffsetY = 0; D2_STATIC_GUARD(gnSpellSelSkillTreeOffsetY, "gnSpellSelSkillTreeOffsetY");
+static uint32_t gnSpellSelSkillTreeClickY = 0; D2_STATIC_GUARD(gnSpellSelSkillTreeClickY, "gnSpellSelSkillTreeClickY");
+static uint8_t gnSpellSelTabHighlightColor = 0; D2_STATIC_GUARD(gnSpellSelTabHighlightColor, "gnSpellSelTabHighlightColor");
 
-static int32_t gSpellSelLeftSkillSlot1[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot1, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot1");
-static int32_t gSpellSelLeftSkillSlot2[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot2, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot2");
-static int32_t gSpellSelLeftSkillSlot3[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot3, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot3");
-static int32_t gSpellSelLeftSkillSlot4[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot4, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot4");
-static int32_t gSpellSelLeftSkillSlot5[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot5, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot5");
-static int32_t gSpellSelLeftSkillSlot6[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot6, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot6");
-static int32_t gSpellSelLeftSkillSlot7[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot7, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot7");
-static int32_t gSpellSelLeftSkillSlot8[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot8, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot8");
-static int32_t gSpellSelLeftSkillSlot9[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot9, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot9");
-static int32_t gSpellSelLeftSkillSlot10[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot10, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot10");
-static int32_t gSpellSelLeftSkillSlot11[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot11, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot11");
-static int32_t gSpellSelLeftSkillSlot12[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot12, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot12");
-static int32_t gSpellSelLeftSkillSlot13[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot13, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot13");
-static int32_t gSpellSelLeftSkillSlot14[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot14, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot14");
-static int32_t gSpellSelLeftSkillSlot15[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot15, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot15");
+namespace D2Client::UI::SpellSel {
 
 void __stdcall SPELLSEL_Initialize() {
     // Static local variables (originally global data)
@@ -227,8 +304,8 @@ void __fastcall SPELLSEL_SetMouseHandFlag(uint32_t bLeftHand) {
 }
 
 uint32_t __stdcall SPELLSEL_IsMouseInRect(int32_t nWidth, int32_t nHeight, int32_t nRectX, int32_t nRectY) {
-    int nMouseX = ui::GetMouseX();
-    int nMouseY = ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     if (nMouseX >= nRectX && nMouseX <= nRectX + nWidth && nMouseY >= nRectY - nHeight && nMouseY <= nRectY) {
       return 1;
     }
@@ -247,16 +324,16 @@ int32_t __fastcall SPELLSEL_GetSkillPalette(D2UnitStrc * pUnit, D2SkillStrc * pS
 
 void __fastcall SPELLSEL_DrawSkillTooltip(short * pSkillId, int32_t bShowExpanded, int32_t nSkillDescId, int32_t nStatId, int32_t nIconX, int32_t nIconY) {
     uint32_t nDrawMode;
-    int nMouseX = ui::GetMouseX();
-    int nMouseY = ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     if (nMouseX < nIconX || nMouseX > nIconX + 0x30 || nMouseY < nIconY - 0x30 || nMouseY > nIconY) {
       nDrawMode = 1;
     } else {
       nDrawMode = (uint32_t)(bShowExpanded == 1);
     }
 
-    nMouseX = ui::GetMouseX();
-    nMouseY = ui::GetMouseY();
+    nMouseX = Cursor::GetMouseX();
+    nMouseY = Cursor::GetMouseY();
     if (!(nMouseX >= nIconX && nMouseX <= nIconX + 0x30 && nMouseY >= nIconY - 0x30 && nMouseY <= nIconY)) {
       return;
     }
@@ -454,8 +531,8 @@ void __fastcall SPELLSEL_DrawSkillIconWithQuantity(DC6 * pDC6, short * pSkillId,
     }
 
     uint8_t nIconCel = pSkillDescTxt->iconcel;
-    nMouseXCheck = ui::GetMouseX();
-    int nMouseX = ui::GetMouseY();
+    nMouseXCheck = Cursor::GetMouseX();
+    int nMouseX = Cursor::GetMouseY();
     if (nMouseXCheck >= nSkillIdSlot && nMouseXCheck <= nSkillIdSlot + 0x30 && nMouseX >= nIconX - 0x30 && nMouseX <= nIconX) {
       if (!nGlobalPaletteShift) {
         nGlobalPaletteShift = 0;
@@ -548,8 +625,8 @@ void __fastcall SPELLSEL_DrawSkillIcon(short * pSkillId, int32_t nSlotIndex, int
     }
 
     uint8_t byIconCel = pSkillDescTxt->iconcel;
-    nMouseX = ui::GetMouseX();
-    int nMouseY = ui::GetMouseY();
+    nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     if (nMouseX >= nIconX && nMouseX <= nIconX + 0x30 && nMouseY >= nIconY - 0x30 && nMouseY <= nIconY) {
       if (!nGlobalPaletteShift) {
         nGlobalPaletteShift = 0;
@@ -663,14 +740,14 @@ void __stdcall INPUT_SpellSelectClick(D2UIMouseMsgStrc * pMsg) {
       exit(-1);
     }
 
-    int nInitialMouseY = ui::GetMouseY();
+    int nInitialMouseY = Cursor::GetMouseY();
     int bHandled = 0;
     int* pSlotSkillIdPtr = gSpellSelGridRegion.aRightHandSlots;
     do {
       nSlotScreenY = pSlotSkillIdPtr[-0x78];
       nSlotScreenXPos = ((D2SpellSelGridRegionStrc*)(pSlotSkillIdPtr - 0xb4))->aSkillGrid[0];
-      nCurMouseX = ui::GetMouseX();
-      nCurMouseY = ui::GetMouseY();
+      nCurMouseX = Cursor::GetMouseX();
+      nCurMouseY = Cursor::GetMouseY();
       if (nCurMouseX >= nSlotScreenXPos && nCurMouseX <= nSlotScreenXPos + 0x30 && nCurMouseY >= nSlotScreenY - 0x30 && nCurMouseY <= nSlotScreenY) {
         nErrLine = *pSlotSkillIdPtr;
         pSkill = D2Common::Skills::GetSkillByIdAndOwner(UNIT::Player::GetPlayerUnit_UI(), pSlotSkillIdPtr[-0x3c], nErrLine);
@@ -772,8 +849,8 @@ void __fastcall SPELLSEL_HandleSkillSelection(int32_t nSlotIndex) {
       int nMouseX;
       nSlotScreenY = pSlotSkillXPtr->aSkillGridRow2[0];
       nSlotScreenX = pSlotSkillXPtr->aSkillGrid[0];
-      nMouseX = ui::GetMouseX();
-      nMouseY = ui::GetMouseY();
+      nMouseX = Cursor::GetMouseX();
+      nMouseY = Cursor::GetMouseY();
       if (nMouseX >= nSlotScreenX && nMouseX <= nSlotScreenX + 0x30 && nMouseY >= nSlotScreenY - 0x30 && nMouseY <= nSlotScreenY) {
         if (gSpellSelectionSkillIDs[nSlotIndex] != -1) {
           GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x51, nSlotIndex * 0x10000 + 0xffff, -1);
@@ -919,16 +996,16 @@ void __fastcall SPELLSEL_DrawSkillRequirementTooltip(short * pwSkillId, int32_t 
     uint16_t wszNumBuf[10];
     short int* pSkillId = pwSkillId;
     int bMouseOver = bMouseOverIn;
-    int nMouseX = ui::GetMouseX();
-    int nMouseY = ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     if (nMouseX < nScreenX || nMouseX > nScreenX + 0x30 || nMouseY < nBoxBottomY - 0x30 || nMouseY > nBoxBottomY) {
       bMouseOver = 1;
     } else if (bMouseOver != 1) {
       bMouseOver = 0;
     }
 
-    nMouseX = ui::GetMouseX();
-    nMouseY = ui::GetMouseY();
+    nMouseX = Cursor::GetMouseX();
+    nMouseY = Cursor::GetMouseY();
     if (!(nMouseX >= nScreenX && nMouseX <= nScreenX + 0x30 && nMouseY >= nBoxBottomY - 0x30 && nMouseY <= nBoxBottomY)) {
       return;
     }
@@ -1381,9 +1458,9 @@ void __stdcall thunk_D2GFX_GetColorFromPalette_C() {
 
 void __stdcall SPELLSEL_DrawTabHighlight(int32_t nCurrentTab) {
     int nCurMouseX;
-    nCurMouseX = ui::GetMouseX();
+    nCurMouseX = Cursor::GetMouseX();
     int nCurMouseY;
-    nCurMouseY = ui::GetMouseY();
+    nCurMouseY = Cursor::GetMouseY();
     int nHighlightY;
     nHighlightY = 0;
     bool bTopTabHovered;
@@ -1523,8 +1600,8 @@ void __stdcall SKILLTREE_DrawBackground() {
 }
 
 static BOOL __stdcall SKILLTREE_IsMouseOnSkillNode(int32_t nHitWidth, int32_t nHitHeight, int32_t nNodeScreenY, int32_t nNodeScreenX) {
-    int nMouseX = ui::GetMouseX();
-    int nMouseY = ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     if (nMouseX >= nNodeScreenX && nMouseX <= nNodeScreenX + nHitWidth && nMouseY >= nNodeScreenY - nHitHeight && nMouseY <= nNodeScreenY) {
       return 1;
     }
@@ -1542,8 +1619,8 @@ void __stdcall SKILLTREE_RenderSkillTree() {
     if (gnSkillTreeHighlightIndex == 1) {
       nScreenX = ScreenSizeX - gnPanelOffsetX;
       nTooltipY = gnPanelOffsetY - 0x3f + ScreenSizeY;
-      nMouseX = ui::GetMouseX();
-      nMouseY = ui::GetMouseY();
+      nMouseX = Cursor::GetMouseX();
+      nMouseY = Cursor::GetMouseY();
       if (nMouseX < nScreenX - 0x95) {
         return;
       }
@@ -1562,8 +1639,8 @@ void __stdcall SKILLTREE_RenderSkillTree() {
     } else if (gnSkillTreeHighlightIndex == 2) {
       nScreenX = ScreenSizeX - gnPanelOffsetX;
       nTooltipY = gnPanelOffsetY - 0x3f + ScreenSizeY;
-      nMouseX = ui::GetMouseX();
-      nMouseY = ui::GetMouseY();
+      nMouseX = Cursor::GetMouseX();
+      nMouseY = Cursor::GetMouseY();
       if (nMouseX < nScreenX - 0xdc) {
         return;
       }
@@ -1731,7 +1808,7 @@ void __stdcall INPUT_SkillTreeLeftClick(D2UIMouseMsgStrc * pMsg) {
                 if ((int)nClickX > nTmpResult && (int)nClickX < nTmpResult + 0x30 && !gaSpellSelSkillTreeState[nPrevActiveTab]) {
                   gaSpellSelSkillTreeState[nPrevActiveTab] = 1;
                   gbSpellSelSkillTreeNodeHovered[nPrevActiveTab] = 3;
-                  ui::UI_HandleCursorMouseMove(pMsg);
+                  Cursor::UI_HandleCursorMouseMove(pMsg);
                   pMsg->bHandled = 1;
                   pMsg->dwResult = 0;
                   Sound::SOUND_PlaySound(SOUND_CURSOR_POINT_DROP, nullptr, 0, 0, 0);
@@ -1784,7 +1861,7 @@ void __stdcall ClickOnScreenSkillWindow(D2UIMouseMsgStrc * pMsg) {
 
     uint32_t classId;
     classId = pUnit->nClassId;
-    ui::UI_HandleCursorMouseUp(pMsg);
+    Cursor::UI_HandleCursorMouseUp(pMsg);
     BOOL nSkillIdx;
     nSkillIdx = Panel::PANEL_CalculateBeltSlotIndex(pMsg);
     if (nSkillIdx) {
@@ -1968,8 +2045,8 @@ void __stdcall SKILLTREE_DrawSkillNode(eD2Skills eSkill, D2SkillsTxt * pSkillTxt
         }
     }
 
-    int nMouseX = ui::GetMouseX();
-    int nMouseY = ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     DC6* pArchive = ARCHIVE_LoadSpellsClassSkillicon(nullptr);
     uint32_t nFrameNum = (uint32_t)pSkillDesc->iconcel;
     if (nSkillIconState == 1) {

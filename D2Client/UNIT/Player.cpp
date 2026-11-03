@@ -2,6 +2,7 @@
 
 #include "support/d2_trace.h"
 #include "D2Client/UNIT/Player.h"
+#include "D2Client/Cursor.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2LightMapStrc.h"
 #include "D2Client/D2UnderMouseStrc.h"
@@ -95,6 +96,9 @@ typedef void (__fastcall *fpStatListExChangeCb)(::SGAMEDATA * pGame, D2UnitStrc 
 #define RECON_FPTD_fnUnitIterCallback
 typedef void (__fastcall *fnUnitIterCallback)(void * pUnit);
 #endif
+
+static BOOL BOOL_007a5260 = 0; D2_STATIC_GUARD(BOOL_007a5260, "BOOL_007a5260");
+static BOOL bRecursionClick = 0; D2_STATIC_GUARD(bRecursionClick, "bRecursionClick");
 
 namespace D2Client::UNIT::Player {
 
@@ -896,7 +900,7 @@ static void __stdcall PLAYER_ExecuteModeBasedAction(int32_t nActionContext, D2Un
     uint32_t dwFlags;
     int32_t nX;
     D2UnitStrc* pUnit;
-    int nMouseY = UI::ui::GetMouseY();
+    int nMouseY = Cursor::GetMouseY();
     int32_t nSkillId = UI::ui::DRAW_GetBottomPanelY();
     if (nMouseY > nSkillId) {
       return;
@@ -1506,13 +1510,13 @@ static uint32_t INPUT_ValidateSkillAction(D2UnderMouseStrc * pUnderMouse) {
 
     pPlayerUnit_lcl = GAME::Select::SKILL_ValidateTarget(pUnderMouse->pSkill, pUnderMouse->pTarget, (int32_t*)&pUnderMouse->nX, (int32_t*)&pUnderMouse->nY, (uint8_t)dwMouseFlags, _bNeedsTarget);
     pUnderMouse->pTarget = pPlayerUnit_lcl;
-    nQueuedSkill = UI::ui::GetItemType();
+    nQueuedSkill = Cursor::GetItemType();
     if (nQueuedSkill == 6) {
       UI::ui::UI_DropCursorItemOnGround();
       return 1;
     }
 
-    nQueuedSkill = UI::ui::GetItemType();
+    nQueuedSkill = Cursor::GetItemType();
     if (nQueuedSkill == 8) {
       GAME::Msg::NET_D2GS_CLIENT_Send_INT(0x4c, -1);
     }
@@ -1880,11 +1884,11 @@ static BOOL INPUT_HandleLeftClickRepeat(D2UnderMouseStrc * pUnderMouse) {
       INPUT_ExecuteSkillCommand(pUnderMouse);
     } else {
       int nCursorItemType;
-      nCursorItemType = UI::ui::GetItemType();
+      nCursorItemType = Cursor::GetItemType();
       if (nCursorItemType == 6) {
         UI::ui::UI_DropCursorItemOnGround();
       } else {
-        nCursorItemType = UI::ui::GetItemType();
+        nCursorItemType = Cursor::GetItemType();
         if (nCursorItemType == 8) {
           /* Transform item (organs) */ GAME::Msg::NET_D2GS_CLIENT_Send_INT(0x4c, -1);
         }
