@@ -95,7 +95,6 @@
 #include "Storm/Source/SCMD.h"
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SSTR.h"
-#include "Storm/Source/SSystem.h"
 #include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/Engine.h"
@@ -1758,7 +1757,7 @@ void GAMEDATA_CheckColorTxtOverride() {
       return;
     }
 
-    BOOL bFileExists = D2Common::DATATBLS::DataTbls::CheckIfFileExists(nullptr, "Data\\Local\\Color.txt", &pFileHandle, 1);
+    BOOL bFileExists = D2Hell::CheckIfFileExists(nullptr, "Data\\Local\\Color.txt", &pFileHandle, 1);
     if (!bFileExists) {
       return;
     }

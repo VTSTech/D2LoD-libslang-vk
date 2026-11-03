@@ -151,6 +151,7 @@ downloads: the
 
 ## Verification
 
+<<<<<<< HEAD
 Two checks stand behind every release:
 
 - **The Vanilla+ gate suite** — [`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh)
@@ -162,18 +163,24 @@ Two checks stand behind every release:
   read correctly. Current counts live in its README and below.
 
 At this commit, generated from version 1870 of the Ghidra database:
+=======
+[`asm_matching/`](asm_matching/README.md) compiles the tree with Visual C++ 2005 SP1 and
+compares the machine code of each function with 1.14d. It is a check on the decompilation:
+where the code comes out identical, the decompiled function was read correctly.
+At this commit, generated from version 1882 of the Ghidra database:
+>>>>>>> 3ef28c3b
 
 |Measure|Identical machine code|
 |-|-|
-|Functions|6,454 of 14,642 (44.1%)|
-|Code|530,004 of 2,602,915 bytes (20.36%)|
-|Instructions|1,777,077 of 2,602,915 bytes (68.3%), counting identical instructions in functions that still differ|
+|Functions|6,459 of 14,642 (44.1%)|
+|Code|530,330 of 2,602,915 bytes (20.37%)|
+|Instructions|1,777,555 of 2,602,915 bytes (68.3%), counting identical instructions in functions that still differ|
 
 These leave out the C runtime that Visual C++ 2005 linked in statically (libcmt): the
 rebuild links a runtime instead of reconstructing it. Code the compiler generates for C++
 exceptions is left out as well. Over the whole binary, runtime
-included: 7,011 of 15,711 functions (44.6%), 628,709 of
-2,748,975 bytes (22.87%).
+included: 7,016 of 15,711 functions (44.7%), 629,035 of
+2,748,975 bytes (22.88%).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="asm_matching/msvc8/evidence/byte-match-dark.svg">
