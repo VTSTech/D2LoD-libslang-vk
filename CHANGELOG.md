@@ -16,7 +16,29 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
 
 - Nothing yet — the next round's entry goes here.
 
-## [R90] — 2026-11-03 (merge `77e87e02`, self-ID `Vanilla+0.0.7-R90`; tag pending the owner's field verify)
+## [R91] — 2026-11-03 (docs + field-verify round; self-ID `Vanilla+0.0.7-R91`)
+
+The field-verify round for the R90/R90b line — the owner's MSYS2 MINGW32 build of
+R90b went green and the game runs: **"Skeletons are finally white again."** One
+report, two closures:
+
+- **R90/R90b field verification** — both R90b build blockers (the stale
+  `D2UnitFindDataStrc.h` include and the `RENDERER_D3D_DrawGlyph` splice) confirmed
+  fixed on the owner's Windows build; the third upstream sync (Ghidra DB 1855) is
+  field-run green. Tags `R90` @ `fff470d7` and `R90b` @ `3726f3ce` cut.
+- **Track C / issue #8 RESOLVED in the field** — necro minion skeletons spawn and
+  stay white: the R50 roster-recolor polarity, the R51 spawn-polarity write, and the
+  R89 component-model hardening (plus the `0x16b`/`0x16c` palshift polarity force)
+  all confirmed together on one field build. GitHub close pending the owner; tag
+  `R89` @ `4014ef65` cut.
+
+Docs-only round otherwise: self-ID → `Vanilla+0.0.7-R91` (`Application.cpp:66`),
+gate self-id row re-pinned, gates **326/326**, SMOKE-CHECKLIST known-fail note
+retired to a standing regression check, handoff rev 121. Delivery note: regular
+rounds return to the overlay-zip workflow (owner applies as own commits) — git
+bundles are reserved for upstream-merge rounds.
+
+## [R90] — 2026-11-03 (merge `77e87e02`, self-ID `Vanilla+0.0.7-R90`; FIELD-RUN GREEN 2026-11-03 — tags `R90` @ `fff470d7` + `R90b` @ `3726f3ce`)
 
 The third upstream sync of the 0.0.7 line: upstream `bc47c6bc..57380e21` (2 commits,
 Ghidra DB 1851 → 1855) merged with the Vanilla+ surface intact. Byte match 6,242 →
@@ -76,8 +98,11 @@ blocker their `-j8` build had not reached yet:
   fastcall-init diagnostics are a clang canonicalization quirk that reproduces
   identically on the fork-R89 parent — GCC-real: none.
 - Self-ID → `Vanilla+0.0.7-R90b`; gates re-run **326/326** (self-id row re-pinned).
+- **Field-verified 2026-11-03** — see [R91]: the owner's MSYS2 build of R90b went
+  green and the game runs ("Skeletons are finally white again"; issue #8 resolved
+  in the field).
 
-## [R89] — 2026-11-02 (owner-applied @ `4014ef65`; tag pending)
+## [R89] — 2026-11-02 (owner-applied @ `4014ef65` = tag `R89`; FIELD-VERIFIED 2026-11-03 riding the R90b field run)
 
 The monster-components data-model fix, owner-applied on the fork:
 
