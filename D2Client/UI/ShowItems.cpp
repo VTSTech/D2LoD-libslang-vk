@@ -2,6 +2,7 @@
 
 #include "D2Client/UI/VanillaPlusCore.h" // VP: vanilla-plus ALTTOGGLE_LabelClickThrough
 #include "D2Client/UI/ShowItems.h"
+#include "D2Client/Cursor.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Select.h"
 #include "D2Client/UI/Path.h"
@@ -34,6 +35,9 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
+
+static int gItemDrawFlags = 0; D2_STATIC_GUARD(gItemDrawFlags, "gItemDrawFlags");
+static D2GroundItemLabelStrc gaGroundItemLabels[32] = {}; D2_STATIC_GUARD(gaGroundItemLabels, "gaGroundItemLabels");
 
 namespace D2Client::UI::ShowItems {
 
@@ -163,9 +167,9 @@ void __stdcall DRAW_AltItems() {
 
     pPlayerUnit_lcl = GAME::Select::GetSelectedUnit();
     int nMouseX;
-    nMouseX = ui::GetMouseX();
+    nMouseX = Cursor::GetMouseX();
     int nMouseY;
-    nMouseY = ui::GetMouseY();
+    nMouseY = Cursor::GetMouseY();
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pPlayerRoom, &pRoomList, (int*)&nRoomCount);
     uint8_t bColorKey;
     bColorKey = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0x40, 0x80);
@@ -404,7 +408,7 @@ void __stdcall DRAW_AltItems() {
     if (ALTTOGGLE_LabelClickThrough()) {
       D2UnitStrc* pSelectedStale = GAME::Select::GetSelectedUnit();
       if (pSelectedStale && pSelectedStale->eUnitType == UNIT_ITEM &&
-          !UNIT::CUnit::HitTestScreen(pSelectedStale, ui::GetMouseX(), ui::GetMouseY(), (D2ObjectsTxt*)0x1)) {
+          !UNIT::CUnit::HitTestScreen(pSelectedStale, Cursor::GetMouseX(), Cursor::GetMouseY(), (D2ObjectsTxt*)0x1)) {
         GAME::Select::ClearSelectedUnit();
         D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(nullptr, 0, 0, 0, 0);
       }

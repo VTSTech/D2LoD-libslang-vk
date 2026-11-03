@@ -4,6 +4,7 @@
 #include "D2Client/UI/VanillaPlusCore.h"
 // VP-END [resolution site-5]
 #include "D2Client/UI/ListBox/ListBoxImplementation.h"
+#include "D2Client/Cursor.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/Button/ButtonImplementation.h"
@@ -627,8 +628,8 @@ void __thiscall Draw(::ListBoxImplementation * pThis) {
     pThis->pVtable->DrawScrollbar(pThis);
     pThis->nDrawCount++;
     uint32_t uMouseY;
-    uMouseY = ui::GetMouseY();
-    nFontId = ui::GetMouseX();
+    uMouseY = Cursor::GetMouseY();
+    nFontId = Cursor::GetMouseX();
     nScrollOffset = pThis->nScrollBarX;
     nFontId &= 0xffff;
     aMouseMsgBuf.uLParam.nLParam = nFontId | uMouseY << 0x10;

@@ -44,6 +44,8 @@
 
 #include "D2Client/UI/VanillaPlusOptions.h"
 
+#include "D2Client/Cursor.h" // VP: upstream moved GetMouseX/GetMouseY from ui:: to Cursor::
+
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/UI/VanillaPlusCore.h"
@@ -579,8 +581,8 @@ void __stdcall DRAW_VanillaPlusOptions() {
     // Feature rows: label left, value right, hover highlight. Hover is
     // derived live from the shared mouse position (kept fresh by the
     // always-on gUIFlagGeneralInit 0x200 handler - this page registers none).
-    int nMouseX = ui::GetMouseX();
-    int nMouseY = ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     int nHover = VPPAGE_HitTest(nMouseX, nMouseY);
     for (int i = 0; i < VPP_ROW_COUNT; i++) {
         int nRowY = VPPAGE_RowTopY(i);

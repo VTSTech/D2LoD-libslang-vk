@@ -4,6 +4,7 @@
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Core/Archive.h"
+#include "D2Client/Cursor.h"
 #include "D2Client/D2GameViewStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Engine/Gfx.h"
@@ -44,6 +45,16 @@ typedef BOOL (__stdcall *pfnEscMenuItemVisible)();
 #define RECON_FPTD_pfnEscMenuItemAction
 typedef void (__fastcall *pfnEscMenuItemAction)(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg);
 #endif
+
+static int gnEscMenuSelectedIndex = 0; D2_STATIC_GUARD(gnEscMenuSelectedIndex, "gnEscMenuSelectedIndex");
+static D2EscMenuHeaderStrc * gpEscMenuItemCount = 0; D2_STATIC_GUARD(gpEscMenuItemCount, "gpEscMenuItemCount");
+static D2EscMenuItemStrc * gpEscMenuCurrentTable = 0; D2_STATIC_GUARD(gpEscMenuCurrentTable, "gpEscMenuCurrentTable");
+static uint32_t gbEscMenuSliderDragging = 0; D2_STATIC_GUARD(gbEscMenuSliderDragging, "gbEscMenuSliderDragging");
+static uint32_t gnEscMenuSliderValue = 0; D2_STATIC_GUARD(gnEscMenuSliderValue, "gnEscMenuSliderValue");
+static DC6 * gpEscMenuOptBarDC6 = 0; D2_STATIC_GUARD(gpEscMenuOptBarDC6, "gpEscMenuOptBarDC6");
+static DC6 * gpEscMenuOptBarCDC6 = 0; D2_STATIC_GUARD(gpEscMenuOptBarCDC6, "gpEscMenuOptBarCDC6");
+static DC6 * gpEscMenuOptSkullDC6 = 0; D2_STATIC_GUARD(gpEscMenuOptSkullDC6, "gpEscMenuOptSkullDC6");
+static int SizeCurrentSelectedEscMenuItem = 0; D2_STATIC_GUARD(SizeCurrentSelectedEscMenuItem, "SizeCurrentSelectedEscMenuItem");
 
 namespace D2Client::UI::EscMenu {
 
@@ -1286,8 +1297,8 @@ void __stdcall DRAW_EscMenu() {
         exit(-1);
       }
 
-      nMouseX = ui::GetMouseX();
-      nMouseY = ui::GetMouseY();
+      nMouseX = Cursor::GetMouseX();
+      nMouseY = Cursor::GetMouseY();
       nVerticalSpacing = gpEscMenuItemCount->nVerticalSpacing;
       nTotalItemCount = gpEscMenuItemCount->nItemCount;
       nMenuCenterY = ScreenSizeY - 0x50;

@@ -9,6 +9,7 @@
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Core/Archive.h"
 #include "D2Client/UI/VanillaPlusCore.h" // VP: vanilla-plus ALTTOGGLE_Active/Latched call sites
+#include "D2Client/Cursor.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GameViewStrc.h"
@@ -240,7 +241,7 @@ void __stdcall ProcessQueuedPrimaryClick() {
       return;
     }
 
-    UNIT::Player::ClickMap(1, UI::ui::GetMouseX(), UI::ui::GetMouseY(), mouseEventFlags);
+    UNIT::Player::ClickMap(1, Cursor::GetMouseX(), Cursor::GetMouseY(), mouseEventFlags);
 }
 
 // Immediate primary click handling: reset click state and call ClickMap(2,...).
@@ -270,7 +271,7 @@ void __stdcall ProcessPrimaryClickImmediate() {
       mouseEventFlags |= 4;
     }
 
-    UNIT::Player::ClickMap(2, UI::ui::GetMouseX(), UI::ui::GetMouseY(), mouseEventFlags);
+    UNIT::Player::ClickMap(2, Cursor::GetMouseX(), Cursor::GetMouseY(), mouseEventFlags);
 }
 
 // WM_LBUTTONUP handler: forwards to ProcessPrimaryClickImmediate.
@@ -348,7 +349,7 @@ void __stdcall ProcessQueuedSecondaryClick() {
       return;
     }
 
-    UNIT::Player::ClickMap(4, UI::ui::GetMouseX(), UI::ui::GetMouseY(), mouseEventFlags);
+    UNIT::Player::ClickMap(4, Cursor::GetMouseX(), Cursor::GetMouseY(), mouseEventFlags);
 }
 
 void __stdcall INPUT_HandleSecondaryClick(D2UIMouseMsgStrc * pMsg) {
@@ -761,7 +762,7 @@ void __fastcall InGameDraw(int32_t bSkipCursor) {
     D2Win::Src::D2WinMain::RENDERER_DrawOutOfGameScene();
     UI::ui::nullSub_CharonGameDraw();
     if (!bSkipCursor) {
-      UI::ui::DrawCursor();
+      Cursor::DrawCursor();
     }
 
     Rendering::DRAW_UI_FPSStats();
@@ -1164,8 +1165,8 @@ uint32_t __stdcall DrawBetaScreen(uint32_t dwUnused) {
 }
 
 BOOL __stdcall GAMEDATA_IsMouseInRect(int32_t width, int32_t height, int32_t bottomY, int32_t leftX) {
-    int nMouseX = UI::ui::GetMouseX();
-    int nMouseY = UI::ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     if (nMouseX >= leftX && nMouseX <= leftX + width && nMouseY >= bottomY - height && nMouseY <= bottomY) {
       return 1;
     }
@@ -1256,7 +1257,7 @@ D2BNetClientCallbacksStrc * __stdcall GetGameVersionInfo() {
 // pfModes_ExitGame: cleanup view/UI/record/rosters, then return APPMODE_CONTINUE.
 eD2ClientAppMode __stdcall pfModes_ExitGame() {
     View::VIEW_FreeLookupTables();
-    UI::ui::UI_FreeCursor();
+    Cursor::UI_FreeCursor();
     Record::FreeGameRecord();
     Roster::ClearBothRosterLists();
     RosterPets::FreeRosterPet();
@@ -2016,8 +2017,8 @@ void __stdcall INPUT_HandleMinimapClick(D2UIMouseMsgStrc * pMsg) {
     int dwScreenY = ScreenSizeY;
     int nCenterX = ScreenSizeX / 2;
     int nBottomY = ScreenSizeY - 0x50;
-    int nMouseX = UI::ui::GetMouseX();
-    int nMouseY = UI::ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     if (nMouseX < nCenterX - 0x30 || nMouseX > nCenterX + 0x30 || nMouseY < dwScreenY - 0x70 || nMouseY > nBottomY) {
       pMsg->bHandled = 1;
     } else {
@@ -2039,8 +2040,8 @@ void __stdcall Congratz_HandleOkButton(D2UIMouseMsgStrc * pMsg) {
     int nCenterX = ScreenSizeX / 2;
     gbMinimapClickValid = 0;
     int nBottomY = ScreenSizeY - 0x50;
-    int nMouseX = UI::ui::GetMouseX();
-    int nMouseY = UI::ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     if (nMouseX >= nCenterX - 0x30 && nMouseX <= nCenterX + 0x30 && nMouseY >= dwScreenY - 0x70 && nMouseY <= nBottomY) {
       gEndGameUiState.congratzOkClicked = 1;
       pMsg->bHandled = 1;
@@ -2258,7 +2259,7 @@ uint32_t __stdcall DRAW_Congratz(uint32_t dwUnused) {
       bDrawFlag = 0;
       nY = ScreenSizeY - 0x58 + nFrameOffset;
       D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(0x13ee), nQueryResult - nFrameOffset, nY, 0, bDrawFlag);
-      UI::ui::DrawCursor();
+      Cursor::DrawCursor();
       D2gfx::D2GFX::D2GFX_EndScene();
     }
     if (!gEndGameUiState.congratzOkClicked) {
@@ -2701,7 +2702,7 @@ static uint32_t gdwHostGameThreadId; D2_STATIC_GUARD_BSS(gdwHostGameThreadId, "D
     View::VIEW_InitLookupTables();
     INV_ResetItemDescFlags();
     _Message::MESSAGE_SnapshotEventHandlers();
-    UI::ui::UI_InitializeCursor(0);
+    Cursor::UI_InitializeCursor(0);
     _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsGameDataFlagInit, 10);
     _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), &g_UIFlagInitGameDataPanel1, 1);
     _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), g_UIFlagInitGameDataPanel2, 2);
@@ -2818,7 +2819,7 @@ static uint32_t gdwHostGameThreadId; D2_STATIC_GUARD_BSS(gdwHostGameThreadId, "D
     GAME_FreeClientSideStructures();
     D2Client::Sound::SoundHdr::SOUNDHDR_ShutdownCleanup();
     View::VIEW_FreeLookupTables();
-    UI::ui::UI_FreeCursor();
+    Cursor::UI_FreeCursor();
     D2Win::D2GFX::thunk_D2GFX_ClearCaches();
     ClientModeInGame::ClientAppModeQueue(APPMODE_EXITGAME);
     if (gEndGameUiState.showCongrats) {

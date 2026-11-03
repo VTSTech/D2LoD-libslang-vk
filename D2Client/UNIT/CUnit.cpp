@@ -5,6 +5,7 @@
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2Client/UI/VanillaPlusCore.h" // VP: vanilla-plus ALTTOGGLE_LabelClickThrough call site
+#include "D2Client/Cursor.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
@@ -117,16 +118,6 @@ typedef void (__fastcall *fnUnitIterCallback)(void * pUnit);
 #endif
 
 namespace D2Client::UNIT::CUnit {
-
-static D2UnitStrc * ClientSideUnitHashTables_1__0_[6][128] = { 0 }; D2_STATIC_GUARD(ClientSideUnitHashTables_1__0_, "D2Client::UNIT::CUnit::ClientSideUnitHashTables_1__0_");
-static D2UnitStrc * ClientSideUnitHashTables_1__1_[6][128] = { 0 }; D2_STATIC_GUARD(ClientSideUnitHashTables_1__1_, "D2Client::UNIT::CUnit::ClientSideUnitHashTables_1__1_");
-static D2UnitStrc * ClientSideUnitHashTables_2__0_[6][128] = { 0 }; D2_STATIC_GUARD(ClientSideUnitHashTables_2__0_, "D2Client::UNIT::CUnit::ClientSideUnitHashTables_2__0_");
-static D2UnitStrc * ServerSideUnitHashTables_0__1_[6][128] = { 0 }; D2_STATIC_GUARD(ServerSideUnitHashTables_0__1_, "D2Client::UNIT::CUnit::ServerSideUnitHashTables_0__1_");
-static D2UnitStrc * ServerSideUnitHashTables_1__0_[6][128] = { 0 }; D2_STATIC_GUARD(ServerSideUnitHashTables_1__0_, "D2Client::UNIT::CUnit::ServerSideUnitHashTables_1__0_");
-static D2UnitStrc * ServerSideUnitHashTables_1__1_[6][128] = { 0 }; D2_STATIC_GUARD(ServerSideUnitHashTables_1__1_, "D2Client::UNIT::CUnit::ServerSideUnitHashTables_1__1_");
-static D2UnitStrc * ServerSideUnitHashTables_2__0_[6][128] = { 0 }; D2_STATIC_GUARD(ServerSideUnitHashTables_2__0_, "D2Client::UNIT::CUnit::ServerSideUnitHashTables_2__0_");
-static D2UnitStrc * ServerSideUnitHashTables_3__0_[6][128] = { 0 }; D2_STATIC_GUARD(ServerSideUnitHashTables_3__0_, "D2Client::UNIT::CUnit::ServerSideUnitHashTables_3__0_");
-static D2UnitStrc * ServerSideUnitHashTables_4__0_[6][128] = { 0 }; D2_STATIC_GUARD(ServerSideUnitHashTables_4__0_, "D2Client::UNIT::CUnit::ServerSideUnitHashTables_4__0_");
 
 // Thunk callback for CUNIT_IterateHashTableWithCallback. Receives unit pointer in ECX and forwards to STATLIST_ClearChangedStatFlags. Called at end of CLIENT_UpdateUnitGfxState to clear changed-stat dirty flags on all client-side units (players, missiles, server units).
 void __fastcall CLIENT_ClearChangedStatFlags_Thunk(D2UnitStrc * pUnit) {
@@ -2290,6 +2281,9 @@ D2UnitStrc * __fastcall UNIT_CreateMonster(D2CreateMonsterUnitStrc * pCreateData
 }
 
 D2UnitStrc * __fastcall CreateMissileOrMonster(int32_t nMonstatId, int32_t nX, int32_t nY, eD2UnitType eUnitType, int32_t nItemAnimMode) {
+    // Static local variables (originally global data)
+    static uint32_t nNextGUID = 0x1; D2_STATIC_GUARD(nNextGUID, "D2Client::UNIT::CUnit::CreateMissileOrMonster::nNextGUID");
+
     D2UnitStrc* pCreatedUnit;
     nNextGUID++;
     if (nNextGUID == -1) {
@@ -2351,7 +2345,7 @@ uint32_t __fastcall HitTestScreen(D2UnitStrc * pUnit, int32_t nClickX, int32_t n
     int32_t nClickXSaved;
     nClickXSaved = nClickX;
     int nResult;
-    nResult = UI::ui::GetMouseX();
+    nResult = Cursor::GetMouseX();
     uint32_t uResult;
     uResult = UI::Path::DRAW_GetTypeOfBorder();
     D2UnitStrc* pPlayerUnitLocal;

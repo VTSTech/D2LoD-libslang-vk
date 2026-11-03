@@ -60,7 +60,10 @@ gate "d2boot: server frame marks"         D2Game/GAME/Server.cpp          'serve
 gate "d2boot: SP create-game marks"       D2Game/GAME/Server.cpp          'SP create-game'             2
 gate "d2boot: state-cmd choke mark"       D2Game/GAME/SCmd.cpp            'srv state-cmd 0x'           1
 gate "d2boot: state transition mark"      D2Game/GAME/Clients.cpp         'client state %d -> %d'      1
-gate "d2boot: join stage marks (Clients)" D2Game/GAME/Clients.cpp         'join: (PlacePlayerInRoom|LoadCharacter|TellClientToLoadAct)' 3
+gate "d2boot: join stage marks (Clients)" D2Game/GAME/Clients.cpp         'join: (PlacePlayerInRoom|LoadCharacter)' 2
+# upstream 088c4ee3..94ec239d moved TellClientToLoadAct (and its join mark) from
+# Clients.cpp into Level.cpp; the mark itself is re-applied there (R99+ merge)
+gate "d2boot: join stage mark (Level)"      D2Game/GAME/Level.cpp           'join: TellClientToLoadAct' 1
 gate "d2boot: DRLG worldgen marks"        D2Game/GAME/Level.cpp           'DRLG: '                     2
 # ---- [d2boot-fix] rev 34: SP packet-queue race fix + dispatcher spin guards --
 gate "d2boot-fix: enqueue lock (queue race)" D2Net/SRC/Client.cpp          'Serialize with the pop path' 1

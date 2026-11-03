@@ -3,6 +3,7 @@
 #include "D2Client/UI/MiniPanel.h"
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Core/Archive.h"
+#include "D2Client/Cursor.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/Sound/Sound.h"
@@ -39,6 +40,19 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
+
+static int gnMiniPanelButtonX[8] = {}; D2_STATIC_GUARD(gnMiniPanelButtonX, "gnMiniPanelButtonX");
+static uint32_t gnMiniPanelButtonY[8] = {}; D2_STATIC_GUARD(gnMiniPanelButtonY, "gnMiniPanelButtonY");
+static uint32_t gnMiniPanelButtonFrame[8] = {}; D2_STATIC_GUARD(gnMiniPanelButtonFrame, "gnMiniPanelButtonFrame");
+static uint32_t gnMiniPanelButtonState[8] = {}; D2_STATIC_GUARD(gnMiniPanelButtonState, "gnMiniPanelButtonState");
+static uint32_t gnMiniPanelButtonState6[8] = {}; D2_STATIC_GUARD(gnMiniPanelButtonState6, "gnMiniPanelButtonState6");
+static DC6 * gpMiniPanelBackgroundDC6 = 0; D2_STATIC_GUARD(gpMiniPanelBackgroundDC6, "gpMiniPanelBackgroundDC6");
+static DC6 * gpMiniPanelButtonsDC6 = 0; D2_STATIC_GUARD(gpMiniPanelButtonsDC6, "gpMiniPanelButtonsDC6");
+static uint32_t gnMiniPanelRightScreen = 0; D2_STATIC_GUARD(gnMiniPanelRightScreen, "gnMiniPanelRightScreen");
+static uint32_t gnMiniPanelLeftScreen = 0; D2_STATIC_GUARD(gnMiniPanelLeftScreen, "gnMiniPanelLeftScreen");
+static uint32_t gnMiniPanelMouseOverButton = 0; D2_STATIC_GUARD(gnMiniPanelMouseOverButton, "gnMiniPanelMouseOverButton");
+static uint32_t gbMiniPanelSinglePlayer = 0; D2_STATIC_GUARD(gbMiniPanelSinglePlayer, "gbMiniPanelSinglePlayer");
+static uint32_t gnMiniPanelHoverState = 0; D2_STATIC_GUARD(gnMiniPanelHoverState, "gnMiniPanelHoverState");
 
 namespace D2Client::UI::MiniPanel {
 
@@ -431,9 +445,9 @@ void __stdcall INPUT_MiniPanelMouseUp(D2UIMouseMsgStrc * pMsg) {
       return;
     }
 
-    int nCenterX = ui::GetItemType();
+    int nCenterX = Cursor::GetItemType();
     if (nCenterX != 7) {
-      ui::ITEM_SetItemOnHand(nullptr);
+      Cursor::ITEM_SetItemOnHand(nullptr);
     }
 
     int nButtonCount = 8;
@@ -678,8 +692,8 @@ void __stdcall SetupMiniPanel() {
 
 BOOL __stdcall WAYPOINT_IsMouseInMiniPanel() {
     int nButtonCount;
-    int nMouseX = ui::GetMouseX();
-    int nMouseY = ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     BOOL bFlagSet = ui::GetUIFlag(UI_WAYPOINT);
     if (bFlagSet) {
       int nPanelX;
@@ -783,8 +797,8 @@ static void __stdcall MINIPANEL_ShowTooltip(int32_t nX, int32_t nY, int32_t nBut
 }
 
 static void MINIPANEL_HandleMouseHover(int32_t nLayout) {
-    int nMouseX = ui::GetMouseX();
-    int nMouseY = ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     int nButtonIndex = 0;
     int nButtonCount = 8;
     if (gbMiniPanelSinglePlayer) {
@@ -842,8 +856,8 @@ void __stdcall DRAW_UI_MiniPanel() {
         return;
       }
 
-      ui::GetMouseX();
-      ui::GetMouseY();
+      Cursor::GetMouseX();
+      Cursor::GetMouseY();
       gnMiniPanelMouseOverButton = 1;
       return;
     }

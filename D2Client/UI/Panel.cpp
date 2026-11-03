@@ -2,6 +2,7 @@
 
 #include "D2Client/UI/Panel.h"
 #include "D2Client/Core/Archive.h"
+#include "D2Client/Cursor.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Engine/Gfx.h"
@@ -74,9 +75,14 @@
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
-namespace D2Client::UI::Panel {
+static int gnBeltPanelState = 0x2; D2_STATIC_GUARD(gnBeltPanelState, "gnBeltPanelState");
+static BOOL gbPanelClickProcessed = 0x1; D2_STATIC_GUARD(gbPanelClickProcessed, "gbPanelClickProcessed");
+static int32_t gnBeltSlotUnderCursor = -0x1; D2_STATIC_GUARD(gnBeltSlotUnderCursor, "gnBeltSlotUnderCursor");
+static int gnBeltTooltipX = -0x1; D2_STATIC_GUARD(gnBeltTooltipX, "gnBeltTooltipX");
+static int gnBeltTooltipY = -0x1; D2_STATIC_GUARD(gnBeltTooltipY, "gnBeltTooltipY");
+static uint32_t gaaBeltSlotHotkeyCommands[4] = { 0x17, 0x18, 0x19, 0x1a }; D2_STATIC_GUARD(gaaBeltSlotHotkeyCommands, "gaaBeltSlotHotkeyCommands");
 
-static uint32_t gaaBeltSlotHotkeyCommands[4] = { 0x17, 0x18, 0x19, 0x1a }; D2_STATIC_GUARD(gaaBeltSlotHotkeyCommands, "D2Client::UI::Panel::gaaBeltSlotHotkeyCommands");
+namespace D2Client::UI::Panel {
 
 // JMP thunk
 void __stdcall thunk_CMD_UseBeltSlot1() {
@@ -615,8 +621,8 @@ static BOOL PANEL_IsMouseInRunButton(int32_t nMouseX, int32_t nMouseY) {
 
 void __stdcall PANEL_DrawRunButton() {
     D2GfxDataStrc sGfxData;
-    int nMouseX = ui::GetMouseX();
-    int nMouseY = ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     memset(&sGfxData, 0, 0x48);
     sGfxData.pDC6 = runbutton;
     sGfxData.nDirection = 0;
@@ -676,9 +682,9 @@ void __stdcall PANEL_DrawStaminaBar() {
 
     Engine::Gfx::D2GFX_DrawSolidRectExBySize(ScreenSizeX / 2 - 0x7f, ScreenSizeY - 0x1b, nMaxStamina, 0x12, (uint32_t)byBarColor, DRAW_LESSTRANSPARENT);
     int nMouseX;
-    nMouseX = ui::GetMouseX();
+    nMouseX = Cursor::GetMouseX();
     int nMouseY;
-    nMouseY = ui::GetMouseY();
+    nMouseY = Cursor::GetMouseY();
     nMaxStamina = PANEL_GetSmoothedStatValue(UNITSTAT_stamina);
     int32_t nCurStaminaUnits;
     nCurStaminaUnits = nMaxStamina / 256;
@@ -731,8 +737,8 @@ void __stdcall PANEL_DrawMenuButton() {
     bMiniPanel = ui::GetUIFlag(UI_MINIPANEL);
     if (bMiniPanel) {
       if (gpPanelMenuButton) {
-        nMouseY = ui::GetMouseY();
-        nMouseX = ui::GetMouseX();
+        nMouseY = Cursor::GetMouseY();
+        nMouseX = Cursor::GetMouseX();
         if (nMouseX >= ScreenSizeX / 2 - 8 && nMouseX <= ScreenSizeX / 2 + 5 && nMouseY >= ScreenSizeY - 0x27 && nMouseY <= ScreenSizeY - 0xd) {
           sGfxData.nFrameNumber = 3;
           goto draw_menu_button;
@@ -742,8 +748,8 @@ void __stdcall PANEL_DrawMenuButton() {
       sGfxData.nFrameNumber = 2;
     } else {
       if (gpPanelMenuButton) {
-        nMouseY = ui::GetMouseY();
-        nMouseX = ui::GetMouseX();
+        nMouseY = Cursor::GetMouseY();
+        nMouseX = Cursor::GetMouseX();
         if (nMouseX >= ScreenSizeX / 2 - 8 && nMouseX <= ScreenSizeX / 2 + 5 && nMouseY >= ScreenSizeY - 0x27 && nMouseY <= ScreenSizeY - 0xd) {
           sGfxData.nFrameNumber = 1;
           goto draw_menu_button;
@@ -1217,9 +1223,9 @@ void __stdcall PANEL_DrawPanelLayout() {
     uint16_t wszMpText[100];
     uint16_t wszHpText[100];
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
-    int nMouseX = ui::GetMouseX();
+    int nMouseX = Cursor::GetMouseX();
     int nMouseXSaved = nMouseX;
-    int nMouseY = ui::GetMouseY();
+    int nMouseY = Cursor::GetMouseY();
     for (nClearCount = 0; nClearCount < 0x64; nClearCount++) {
       wszHpText[nClearCount] = L'\0';
     }
@@ -1274,8 +1280,8 @@ void __stdcall PANEL_DrawPanelLayout() {
 
 void __stdcall PANEL_DrawLife() {
     uint16_t nStringId;
-    int nMouseX = ui::GetMouseX();
-    int nMouseY = ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     if (!(nMouseX >= ScreenSizeX / 2 - 8 && nMouseX <= ScreenSizeX / 2 + 5 && nMouseY >= ScreenSizeY - 0x27 && nMouseY <= ScreenSizeY - 0xd)) {
       return;
     }
@@ -1478,7 +1484,7 @@ void __stdcall ClickBelt(D2InventoryStrc * pInventory, int32_t nMouseY, int32_t 
     D2UnitStrc* pBeltItem;
     pBeltItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemInBeltSlot(pInventory, nBeltSlot);
     int nItemType;
-    nItemType = ui::GetItemType();
+    nItemType = Cursor::GetItemType();
     if (nItemType == 6) {
       return;
     }
@@ -1532,12 +1538,12 @@ static void CLIENT_HandleBeltMouseDown(D2InventoryStrc * pInventory, int32_t nMo
     }
 
     D2UnitStrc* pItem = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pInventory);
-    int nItemType = ui::GetItemType();
+    int nItemType = Cursor::GetItemType();
     if (nItemType == 6) {
       return;
     }
 
-    nItemType = ui::GetItemType();
+    nItemType = Cursor::GetItemType();
     if (nItemType == 8) {
       return;
     }
@@ -1832,8 +1838,8 @@ void __stdcall PANEL_DrawGoldAmount() {
       nExpIntoLevel = 0;
     }
 
-    int nMouseX = ui::GetMouseX();
-    int nMouseY = ui::GetMouseY();
+    int nMouseX = Cursor::GetMouseX();
+    int nMouseY = Cursor::GetMouseY();
     for (nClassOrX = 0; nClassOrX < 0x64; nClassOrX++) {
       awsTooltip[nClassOrX] = L'\0';
     }
@@ -2181,11 +2187,11 @@ void __stdcall INPUT_PanelLeftClickUp(D2UIMouseMsgStrc * pMsg) {
       if (gnPanelBeltRowsExpanded) {
         bFlag = PANEL_CalculateBeltSlotIndex(pMsg);
         if (bFlag) {
-          iVar1 = ui::GetItemType();
+          iVar1 = Cursor::GetItemType();
           if (iVar1 == 6) {
             ui::UI_DropCursorItemOnGround();
           } else {
-            iVar1 = ui::GetItemType();
+            iVar1 = Cursor::GetItemType();
             if (iVar1 == 8) {
               GAME::Msg::NET_D2GS_CLIENT_Send_INT(0x4c, -1);
             }
@@ -2250,11 +2256,11 @@ void __stdcall INPUT_PanelLeftClickUp(D2UIMouseMsgStrc * pMsg) {
         iVar1 = ScreenSizeX / 2;
         if (nMouseX < iVar1 + 0x17 || nMouseX > iVar1 + 0x91 || nMouseY < ScreenSizeY - 0x27 || nMouseY > ScreenSizeY - 10) {
           if (nMouseX - VPRES_GetWideUiOffsetX() - 0x75U <= 0x30 && nMouseY <= ScreenSizeY) { // VP: [resolution site-5] bar-anchored
-            iVar1 = ui::GetItemType();
+            iVar1 = Cursor::GetItemType();
             if (iVar1 == 6) {
               ui::UI_DropCursorItemOnGround();
             } else {
-              iVar1 = ui::GetItemType();
+              iVar1 = Cursor::GetItemType();
               if (iVar1 == 8) {
                 GAME::Msg::NET_D2GS_CLIENT_Send_INT(0x4c, -1);
               }
@@ -2287,11 +2293,11 @@ void __stdcall INPUT_PanelLeftClickUp(D2UIMouseMsgStrc * pMsg) {
               GAME::Game::SetGlobalAlwaysRun((uint32_t)!bFlag);
             }
           } else {
-            iVar1 = ui::GetItemType();
+            iVar1 = Cursor::GetItemType();
             if (iVar1 == 6) {
               ui::UI_DropCursorItemOnGround();
             } else {
-              iVar1 = ui::GetItemType();
+              iVar1 = Cursor::GetItemType();
               if (iVar1 == 8) {
                 GAME::Msg::NET_D2GS_CLIENT_Send_INT(0x4c, -1);
               }
@@ -2307,12 +2313,12 @@ void __stdcall INPUT_PanelLeftClickUp(D2UIMouseMsgStrc * pMsg) {
             }
           }
         } else {
-          iVar1 = ui::GetItemType();
+          iVar1 = Cursor::GetItemType();
           if (iVar1 == 6) {
             ui::UI_DropCursorItemOnGround();
             ClickBelt(pPlayer->pInventory, nMouseX, nMouseY);
           } else {
-            iVar1 = ui::GetItemType();
+            iVar1 = Cursor::GetItemType();
             if (iVar1 == 8) {
               GAME::Msg::NET_D2GS_CLIENT_Send_INT(0x4c, -1);
             }
@@ -2434,11 +2440,11 @@ void __stdcall INPUT_PanelRightClick(D2UIMouseMsgStrc * pMsg) {
         if (bExitFlag) {
           pMsg->bHandled = 1;
           pMsg->dwResult = 0;
-          nCursorItemType = ui::GetItemType();
+          nCursorItemType = Cursor::GetItemType();
           if (nCursorItemType == 6) {
             ui::UI_DropCursorItemOnGround();
           } else {
-            nCursorItemType = ui::GetItemType();
+            nCursorItemType = Cursor::GetItemType();
             if (nCursorItemType == 8) {
               GAME::Msg::NET_D2GS_CLIENT_Send_INT(0x4c, -1);
             }

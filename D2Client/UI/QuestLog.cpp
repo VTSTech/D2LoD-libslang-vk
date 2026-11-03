@@ -6,6 +6,7 @@
 #include "D2Client/UI/QuestLog.h"
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2Client/Core/Archive.h"
+#include "D2Client/Cursor.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
@@ -941,8 +942,8 @@ void __stdcall QUESTLOG_DrawQuestLogButton() {
     sGfxData.pDC6 = gpUIStatLevelUpPanelImages;
     if (gQuestLog.bQuestLogWindowOpen != '\0') {
       int bInQuestLog;
-      bInQuestLog = ui::GetMouseY();
-      bInQuestLog = QUESTLOG_IsPointInQuestLog(ui::GetMouseX(), bInQuestLog);
+      bInQuestLog = Cursor::GetMouseY();
+      bInQuestLog = QUESTLOG_IsPointInQuestLog(Cursor::GetMouseX(), bInQuestLog);
       sGfxData.nFrameNumber = 1;
       if ((char)bInQuestLog != '\0') {
         goto draw_button_frame;
@@ -1745,8 +1746,8 @@ void __stdcall DRAW_UI_Quest() {
     sGfxData.pDC6 = ui::GetBuySellBtnDC6();
     sGfxData.nFrameNumber = gQuestLog.bQuestLogOpenBtnPressed != '\0' ? 11 : 10;
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x116, gnPanelOffsetY - 0x3a + ScreenSizeY, -1, DRAW_SOLID, nullptr);
-    nActIndex = ui::GetMouseX();
-    nQuestSlot = ui::GetMouseY();
+    nActIndex = Cursor::GetMouseX();
+    nQuestSlot = Cursor::GetMouseY();
     nActIndex -= gnPanelOffsetX;
     nQuestSlot += gnPanelOffsetY - VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     if (nActIndex >= 0x116 && nActIndex <= 0x139 && nQuestSlot >= 0x188 && nQuestSlot <= 0x1a9) {

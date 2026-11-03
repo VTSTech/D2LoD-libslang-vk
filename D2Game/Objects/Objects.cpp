@@ -45,7 +45,7 @@
 #include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
-#include "D2Game/Quests/QUESTS/A2Q7.h"
+#include "D2Game/Quests/QUESTS/A2Q6.h"
 #include "D2Game/UNIT/PlayerList.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
@@ -295,7 +295,7 @@ D2UnitStrc * __fastcall MakeRandomSparklyChest(::SGAMEDATA * pGame, D2RoomStrc *
 }
 
 D2UnitStrc * __fastcall OBJECT_CreateTombPortal(::SGAMEDATA * pGame, D2RoomStrc * pRoom, int32_t nMonStatsId, int32_t nPosX, int32_t nPosY, BOOL bUseMonStats) {
-    uint32_t nArkaneTombId = Quests::QUESTS::A2Q7::A2Q6_GetNextFalseTombPortalClassIdForGame(pGame);
+    uint32_t nArkaneTombId = Quests::QUESTS::A2Q6::A2Q6_GetNextFalseTombPortalClassIdForGame(pGame);
     if (!pRoom) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x187);
       exit(-1);
@@ -390,7 +390,7 @@ void __fastcall OBJECT_InitializeObject(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     &D2Game::Quests::QUESTS::Objects_InitFn18_JerhynPosition,
     &D2Game::Quests::QUESTS::Objects_InitFn19_JerhynPosition,
     &D2Game::Quests::QUESTS::Objects_InitFn20_TaintedSunAltar,
-    &D2Game::Quests::QUESTS::A2Q7::Objects_InitFn21_HoradricOrifice,
+    &D2Game::Quests::QUESTS::A2Q6::Objects_InitFn21_HoradricOrifice,
     &D2Game::Objects::Objects_InitFn22_Fire,
     &D2Game::Quests::QUESTS::Objects_InitFn23_LamEsenTome,
     &D2Game::Objects::Objects_InitFn24_FloorTrap,
@@ -406,8 +406,8 @@ void __fastcall OBJECT_InitializeObject(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     &D2Game::Objects::Objects_InitFn34_HellBrazier,
     nullptr,
     nullptr,
-    &D2Game::Quests::QUESTS::A2Q7::Objects_InitFn37,
-    &D2Game::Quests::QUESTS::A2Q7::Objects_InitFn38_TyraelsDoor,
+    &D2Game::Quests::QUESTS::A2Q6::Objects_InitFn37,
+    &D2Game::Quests::QUESTS::A2Q6::Objects_InitFn38_TyraelsDoor,
     &D2Game::Quests::QUESTS::A3Q3::Objects_InitFn39_GidbinnAltar,
     nullptr,
     &D2Game::Quests::QUESTS::A3Q2::Objects_InitFn41_SewerStairs,
