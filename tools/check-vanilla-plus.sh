@@ -715,7 +715,7 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # to halt line=200 - the D3D floor/subtile texture-cache promote range checks -
 # on the first frame after a runtime 1 -> 0 flip; R97 guards both promote
 # callers and re-arms the probes, see the R97 rows below)
-gate "res: self-id 0.0.7-R101"                D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R101' 1
+gate "res: self-id 0.0.7-R102"                D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R102' 1
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the

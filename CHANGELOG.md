@@ -4,7 +4,7 @@ All notable changes to the Vanilla+ client and the Glide3xVK wrapper, per shippe
 release. Working rounds between releases carry build self-IDs `Vanilla+0.0.x-Ryy` — the
 first `d2boot.log` line pins any shipped exe to its source round. The engineering-level
 round journal lives in [`handoff.md`](handoff.md) (current) and
-[`HISTORY.md`](HISTORY.md) (verbatim archive, H1–H39); per-round summaries for the
+[`HISTORY.md`](HISTORY.md) (verbatim archive, H1–H40); per-round summaries for the
 0.0.6-era releases are also on the
 [GitHub releases page](https://github.com/VTSTech/D2LoD-libslang-vk/releases).
 
@@ -15,6 +15,53 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
 ## [Unreleased]
 
 - Nothing yet — the next round's entry goes here.
+
+## [R102] — 2026-11-04 (the fifth upstream sync — upstream `94ec239d..cc23648d`; self-ID `Vanilla+0.0.7-R102`)
+
+Merge round, no owner-visible behavior change intended: four upstream
+commits (`b2886796` 36 more functions filed to their source files,
+`0bcf07cc`/`cc23648d` msvc8 evidence bumps, `962f88d5` the structural one),
+459 files, +93,760/−97,027, Ghidra DB → **1892**, byte-match now 6,493 of
+14,642 functions (44.3%) / 20.54% of bytes.
+
+### The restructure and what it moved
+
+`962f88d5` ("define shared globals in their TU, declare them per TU") emptied
+the aggregate `globals/*.cpp` definition dumps: `globals.h` shed ~2,231 lines
+of externs, each definition moved to its owning TU, and per-TU `*.data.h`
+headers now declare what other TUs name. That re-homed three Vanilla+ anchors,
+all re-applied at the new sites and re-pinned by the gate suite:
+
+- **The row-10 esc-menu table** — `gaEscMenuOptionsTable` is now a `static
+  [6]` in `D2Client/UI/EscMenu.cpp` (was a `[6]` edit inside the old
+  `globals/D2Client.cpp` dump): the Vanilla+ Options entry, the `0x6` header
+  count, the `VanillaPlusOptions.h` include and the resolution-slider
+  `UI_SLIDER_DrawResolutionValue` draw callback all moved with it.
+- **The dismiss table + flag count** — `gUIFlagDismissModeTable[39]` (with the
+  UI_CONFIG alias row) and `gnUIFlagCount = 0x27` now live in
+  `D2Client/UI/ui.cpp`, declared in `ui.data.h` (grown to `[39]` to match);
+  the struct grow (`anDismissMode[39]` + `BOOL VanillaPlus` @0x98) stayed in
+  `globals.h` untouched.
+- **The six class sound tables** — upstream itself moved Barbarian, Necromancer,
+  Paladin, Sorceress, Assassin and Druid into `D2Client/UNIT/UnitSnd.cpp`
+  (Amazon stays at its retail site in `globals.cpp`); all seven first values
+  verified byte-identical to the R99-recovered forms, and the per-class value
+  gates re-pointed accordingly.
+
+Also absorbed: 14 fork-touched files whose only delta was line-ending churn
+took upstream's side wholesale; the eight real consumer conflicts were the
+include blocks (our `d2_boot.h` / `VanillaPlusOptions.h` includes kept beside
+upstream's new `.data.h` includes); the palette counter's explicit 39-byte
+zero-init re-applied in `D2WinPalette.cpp`; the stale fix-17
+`IID_IDirectDrawGammaControl` orphan was correctly dropped — the QI riid is the
+in-place blob bytes (`69C11C3E-B46B-11D1-AD7A-00C04FC29B4E`), byte-identical
+fork and upstream, so the typed orphan (unreferenced, and carrying stale bytes)
+is superseded, not lost.
+
+Gates stayed at **380/380** — no checks added or removed, but a dozen gate
+file-pointers re-pinned to the post-restructure homes (each annotated
+`[R102 merge]` in the script). R98's flat-wall probe, the R100 unit-pan
+consumers and the R101 Options row all still pinned green.
 
 ## [R101] — 2026-11-04 (issue #26 round 9: the Options-page row — `no_panel_shift` is no longer ini-only; self-ID `Vanilla+0.0.7-R101`)
 
