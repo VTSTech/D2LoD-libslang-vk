@@ -686,16 +686,11 @@ BOOL __stdcall ITEM_RollUniqueItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2It
               pDataTable = sgptDataTable;
             }
             if (pItemsTxt->bQuest != '\0' || !pGame || nChosenUniqueIdx <= 0x1000 && !(pGame->fUniqueSpawn[(int)nChosenUniqueIdx >> 5] & gadwBitMasks[nChosenUniqueIdx & 0x1f])) {
-              if ((int)nChosenUniqueIdx < 0) {
+              D2UniqueItemsTxt* pUniqueItemsTxt2 = (int)nChosenUniqueIdx >= 0 && (int)nChosenUniqueIdx < pDataTable->nTxtUniqueItemsSize ? pDataTable->pTxtUniqueItems + nChosenUniqueIdx : nullptr;
+              if (!pUniqueItemsTxt2) {
                 return 0;
               }
-              if ((int)nChosenUniqueIdx >= pDataTable->nTxtUniqueItemsSize) {
-                return 0;
-              }
-              if (!(pDataTable->pTxtUniqueItems + nChosenUniqueIdx)) {
-                return 0;
-              }
-              if (pItemsTxt->dwCode != pDataTable->pTxtUniqueItems[nChosenUniqueIdx].dwItemCode) {
+              if (pItemsTxt->dwCode != pUniqueItemsTxt2->dwItemCode) {
                 return 0;
               }
 
@@ -2192,7 +2187,7 @@ void __fastcall RefreshDurability(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       return;
     }
 
-    GAME::Event::SetEvent(pGame, pUnit, 3, (int)(0x9c4 / (int64_t)nReplenishDurability) + 1 + pGame->dwGameFrame, 0, 0);
+    GAME::Event::SetEvent(pGame, pUnit, 3, (int)(0x9c4 / nReplenishDurability) + 1 + pGame->dwGameFrame, 0, 0);
 }
 
 void __fastcall RefreshQuantity(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
@@ -2206,7 +2201,7 @@ void __fastcall RefreshQuantity(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       return;
     }
 
-    GAME::Event::SetEvent(pGame, pUnit, 3, (int)(0x9c4 / (int64_t)nReplenishQuantity) + 1 + pGame->dwGameFrame, 0, 0);
+    GAME::Event::SetEvent(pGame, pUnit, 3, (int)(0x9c4 / nReplenishQuantity) + 1 + pGame->dwGameFrame, 0, 0);
 }
 
 static int32_t ITEM_GetTotalMagicFind(D2UnitStrc * pUnit) {
@@ -2725,7 +2720,11 @@ D2UnitStrc * __fastcall ITEM_CreateItemInstance(::SGAMEDATA * pGame, D2ItemGenCo
 
     eItemType = D2Common::ITEMS::Items::ITEM_GetItemData_wType(pItem);
     if (eItemType == ITEMTYPE_PlayerBodyPart) {
-      if (!pItemGenCtx->bFromCustomData) {
+      if (pItemGenCtx->bFromCustomData) {
+        D2Common::ITEMS::Items::ITEM_GetPlayerNameAkaNamedString(pItem, pItemGenCtx->szCustomName);
+        D2Common::ITEMS::Items::ITEM_SetItemData_nEarLevel(pItem, pItemGenCtx->bGrade);
+        bHasFlag = D2Common::ITEMS::Items::ITEMFLAG_CheckFlag(pItemGenCtx->neD2ItemFlag, ITEMFLAG_HARDCORE);
+      } else {
         pUnit = pItemGenCtx->pUnit;
         if (!pUnit || pUnit->eUnitType != UNIT_PLAYER || (pPlayerData = D2Common::Units::GetPlayerData(pUnit) , !pPlayerData)) {
           UNIT::SUnit::FreeServerUnit(pGame, pItem);
@@ -2741,10 +2740,6 @@ D2UnitStrc * __fastcall ITEM_CreateItemInstance(::SGAMEDATA * pGame, D2ItemGenCo
         }
 
         bHasFlag = GAME::Clients::CLIENT_TestFileFlags(pClient, 4);
-      } else {
-        D2Common::ITEMS::Items::ITEM_GetPlayerNameAkaNamedString(pItem, pItemGenCtx->szCustomName);
-        D2Common::ITEMS::Items::ITEM_SetItemData_nEarLevel(pItem, pItemGenCtx->bGrade);
-        bHasFlag = D2Common::ITEMS::Items::ITEMFLAG_CheckFlag(pItemGenCtx->neD2ItemFlag, ITEMFLAG_HARDCORE);
       }
 
       D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pItem, ITEMFLAG_HARDCORE, bHasFlag);
@@ -3547,7 +3542,7 @@ D2UnitStrc * __fastcall ITEM_CloneFromSerializedData(::SGAMEDATA * pGame, D2Unit
       if (nReplenishRate) {
         _bPutItemSuccess = GAME::Event::EVENT_TimerTypeExistsOnUnit(pGame, pClonedItem, UNITEVENTCALLBACK_STATREGEN);
         if (!_bPutItemSuccess) {
-          GAME::Event::SetEvent(pGame, pClonedItem, 3, (int)(0x9c4 / (int64_t)nReplenishRate) + 1 + pGame->dwGameFrame, 0, 0);
+          GAME::Event::SetEvent(pGame, pClonedItem, 3, (int)(0x9c4 / nReplenishRate) + 1 + pGame->dwGameFrame, 0, 0);
         }
       }
 
@@ -3555,7 +3550,7 @@ D2UnitStrc * __fastcall ITEM_CloneFromSerializedData(::SGAMEDATA * pGame, D2Unit
       if (nReplenishRate) {
         _bPutItemSuccess = GAME::Event::EVENT_TimerTypeExistsOnUnit(pGame, pClonedItem, UNITEVENTCALLBACK_STATREGEN);
         if (!_bPutItemSuccess) {
-          GAME::Event::SetEvent(pGame, pClonedItem, 3, (int)(0x9c4 / (int64_t)nReplenishRate) + 1 + pGame->dwGameFrame, 0, 0);
+          GAME::Event::SetEvent(pGame, pClonedItem, 3, (int)(0x9c4 / nReplenishRate) + 1 + pGame->dwGameFrame, 0, 0);
         }
       }
 

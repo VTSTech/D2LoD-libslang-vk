@@ -941,16 +941,7 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
             }
 
             pSoundsTxt = SoundHdr::TXT_sounds_GetLineBySoundId(pChanEntry->nSoundId);
-            if (!pSoundsTxt) {
-              occlusion_by_collision:
-              pUnit = UNIT::Player::GetPlayerUnit_UI();
-              bUiFlag = D2Common::Units::TestCollisionWithUnit(pUnit, pUnit_00, 2);
-              if (!bUiFlag) {
-                __frame0.fUnitDistSmooth = 0.0;
-              } else {
-                __frame0.fUnitDistSmooth = 0.5;
-              }
-            } else {
+            if (pSoundsTxt) {
               if (pSoundsTxt->Falloff == 4) {
                 __frame0.fUnitDistSmooth = 0.0;
               } else {
@@ -965,6 +956,15 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
                 } else {
                   __frame0.fUnitDistSmooth = 0.5;
                 }
+              }
+            } else {
+              occlusion_by_collision:
+              pUnit = UNIT::Player::GetPlayerUnit_UI();
+              bUiFlag = D2Common::Units::TestCollisionWithUnit(pUnit, pUnit_00, 2);
+              if (!bUiFlag) {
+                __frame0.fUnitDistSmooth = 0.0;
+              } else {
+                __frame0.fUnitDistSmooth = 0.5;
               }
             }
 

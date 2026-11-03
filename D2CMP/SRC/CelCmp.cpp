@@ -1281,7 +1281,7 @@ void __stdcall CELCMP_FixupOffsetsAndSerialize(int * pOldFile, uint32_t * ppSeri
       nTotalFrames = pOldFile[4] * pOldFile[5];
       pFrameOffsets = (int*)(nTotalFrames * 4 + 0x18);
       pSerializedEnd = pFrameOffsets;
-      if (nTotalFrames) {
+      if ((uint32_t)nTotalFrames > 0) {
         pFrameSlot = pOldFile + 0xd;
         pFrameEntry = nTotalFrames;
         pOldFile = pFrameOffsets;
@@ -1876,7 +1876,6 @@ void __stdcall CELCMP_AddCelFrameToCache(uint32_t nCelListKey, uint32_t * pSrcPi
     int* pBackLink;
     uint32_t uRowPitch;
     int bCriticalLocked;
-    uint32_t uLinkOffset;
     TSLink<::TCELENTRY>* uPrevHeadNode;
     ::TCELENTRY* pCacheEntry = 0;
     if (!nHeight || !dwPixelWidth) {
@@ -1908,13 +1907,7 @@ void __stdcall CELCMP_AddCelFrameToCache(uint32_t nCelListKey, uint32_t * pSrcPi
 
       uPrevHeadNode = pNewFrame->m_link.m_prevlink;
       if (uPrevHeadNode) {
-        uLinkOffset = pNewFrame->m_link.m_next;
-        if ((int)uLinkOffset < 0) {
-          pBackLink = (int*)~uLinkOffset;
-        } else {
-          pBackLink = (int*)((int)pNewFrame + (uLinkOffset - uPrevHeadNode->m_next));
-        }
-
+        pBackLink = (int*)D2_StormNextLink(pNewFrame, -1);
         *pBackLink = (int)uPrevHeadNode;
         pNewFrame->m_link.m_prevlink->m_next = pNewFrame->m_link.m_next;
         pNewFrame->m_link.m_prevlink = 0;

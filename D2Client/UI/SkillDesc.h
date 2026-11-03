@@ -38,8 +38,6 @@ struct D2SetItemsTxt;
 
 // Data types
 struct D2AllStatesDataTbl {
-    D2AllStatesDataTbl() = default;
-    D2AllStatesDataTbl(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ short nStateId;
@@ -60,8 +58,7 @@ struct D2BodyLocsTxt {
     /* 0x00 */ char code[4];
 };
 
-#pragma pack(push, 1)
-struct D2CharStatsTxt {
+struct __attribute__((packed)) D2CharStatsTxt {
     /* 0x00 */ uint16_t wszClass[16];
     /* 0x20 */ char szClass[16];
     /* 0x30 */ uint8_t str;
@@ -101,7 +98,6 @@ struct D2CharStatsTxt {
     /* 0xAE */ short Skill[10];
     /* 0xC2 */ uint16_t pad0xC2; // trailing record padding to 0xC4 stride (no column binds); merges 0xC2-0xC3
 };
-#pragma pack(pop)
 
 struct D2ColorsTxt {
     /* 0x00 */ char code[4];
@@ -122,8 +118,6 @@ struct D2ElemTypesTxt {
 };
 
 struct D2EventsTxt {
-    D2EventsTxt() = default;
-    D2EventsTxt(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ uint16_t event;
@@ -245,10 +239,7 @@ struct __attribute__((packed)) D2ItemTypesTxt {
 };
 
 struct D2LevelDefsColor {
-    D2LevelDefsColor() = default;
-    D2LevelDefsColor(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
     operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
-    D2LevelDefsColor(char a0, char a1, char a2, char a3) : Intensity(a0), Red(a1), Green(a2), Blue(a3) {}
 
     /* 0x00 */ char Intensity;
     /* 0x01 */ char Red;
@@ -311,8 +302,6 @@ struct D2MissCalcTxt {
 };
 
 struct D2MonAiTxt {
-    D2MonAiTxt() = default;
-    D2MonAiTxt(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ uint16_t AI;
@@ -350,18 +339,13 @@ struct D2MonModeTxtSmall {
 };
 
 struct D2MonPlaceTxt {
-    D2MonPlaceTxt() = default;
-    D2MonPlaceTxt(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ uint16_t code;
 };
 
 struct D2MonPresetTxt {
-    D2MonPresetTxt() = default;
-    D2MonPresetTxt(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
     operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
-    D2MonPresetTxt(uint8_t a0, uint8_t a1, uint16_t a2) : nAct(a0), nType(a1), wPlace(a2) {}
 
     /* 0x00 */ uint8_t nAct;
     /* 0x01 */ uint8_t nType;
@@ -536,8 +520,6 @@ struct D2ParsedChestTreasureClassStrc {
 };
 
 struct D2PassiveSkillsPerClassStrc {
-    D2PassiveSkillsPerClassStrc() = default;
-    D2PassiveSkillsPerClassStrc(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ short nSkillId;
@@ -617,6 +599,14 @@ struct D2SkillCalcTxt {
     /* 0x00 */ char code[4];
 };
 
+struct D2SkillChargeDescStrc {
+    /* 0x00 */ int32_t nFileIndex; // matched against the item file index and tested as a stat id (6..11 are >>8 shifted)
+    /* 0x04 */ int32_t nDescFunc; // must be 1, else halt line 0x141
+    /* 0x08 */ uint16_t wDescStrPos; // string id when the value is positive
+    /* 0x0A */ uint16_t wDescStrNeg; // string id when the value is negative
+    /* 0x0C */ int32_t nDescVal; // must be 2, else halt line 0x13d; read via the table base + 0xc
+};
+
 struct D2SkillDescTxt {
     /* 0x000 */ short skilldesc;
     /* 0x002 */ int8_t skillpage;
@@ -660,8 +650,6 @@ struct D2SkillDescTxt {
 };
 
 struct D2SkillsHeaderTxt {
-    D2SkillsHeaderTxt() = default;
-    D2SkillsHeaderTxt(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ uint16_t skill;
@@ -678,8 +666,6 @@ struct D2SkillsPerClassCounter {
 };
 
 struct D2SoundsTxtSmall {
-    D2SoundsTxtSmall() = default;
-    D2SoundsTxtSmall(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ short Sound;
@@ -862,8 +848,7 @@ struct __attribute__((packed)) D2ItemStatCostTxt {
     /* 0x140 */ int nChargedSkillLevelBits;
 };
 
-#pragma pack(push, 1)
-struct D2LevelDefsTxt {
+struct __attribute__((packed)) D2LevelDefsTxt {
     /* 0x00 */ int QuestFlag;
     /* 0x04 */ int QuestFlagEx;
     /* 0x08 */ int Layer;
@@ -886,7 +871,6 @@ struct D2LevelDefsTxt {
     /* 0x94 */ int SaveMonsters;
     /* 0x98 */ int LOSDraw;
 };
-#pragma pack(pop)
 
 struct __attribute__((packed)) D2MonPropTxt {
     /* 0x000 */ int Id;
@@ -1039,11 +1023,11 @@ struct __attribute__((packed)) D2DataTableTxtStrc {
     /* 0x170 */ int nAllStatesDataTblFlag0x04Size;
     /* 0x174 */ struct D2AllStatesDataTbl * pAllStatesDataTblFlag0x0B;
     /* 0x178 */ int nAllStatesDataTblFlag0x0BSize;
-    /* 0x17C */ struct D2AllStatesDataTbl * pAllStatesDataTblFlag0x10;
+    /* 0x17C */ uint16_t * pAllStatesDataTblFlag0x10;
     /* 0x180 */ int nAllStatesDataTblFlag0x10Size;
-    /* 0x184 */ struct D2AllStatesDataTbl * pAllStatesDataTblFlag0x05;
+    /* 0x184 */ uint16_t * pAllStatesDataTblFlag0x05;
     /* 0x188 */ int nAllStatesDataTblFlag0x05Size;
-    /* 0x18C */ struct D2AllStatesDataTbl * pStatesItemTypesDataTbl;
+    /* 0x18C */ uint16_t * pStatesItemTypesDataTbl;
     /* 0x190 */ int nStatesItemTypesDataTblSize;
     /* 0x194 */ struct D2SoundsTxtSmall * pTxtSounds;
     /* 0x198 */ struct D2TxtLinkStrc * pTxtSoundsLink;

@@ -161,19 +161,19 @@ Two checks stand behind every release:
   decompilation itself: where the code comes out identical, the decompiled function was
   read correctly. Current counts live in its README and below.
 
-At this commit, generated from version 1855 of the Ghidra database:
+At this commit, generated from version 1861 of the Ghidra database:
 
 |Measure|Identical machine code|
 |-|-|
-|Functions|6,273 of 14,642 (42.8%)|
-|Code|507,762 of 2,602,915 bytes (19.51%)|
-|Instructions|1,759,357 of 2,602,915 bytes (67.6%), counting identical instructions in functions that still differ|
+|Functions|6,411 of 14,642 (43.8%)|
+|Code|530,680 of 2,602,915 bytes (20.39%)|
+|Instructions|1,774,347 of 2,602,915 bytes (68.2%), counting identical instructions in functions that still differ|
 
 These leave out the C runtime that Visual C++ 2005 linked in statically (libcmt): the
 rebuild links a runtime instead of reconstructing it. Code the compiler generates for C++
 exceptions is left out as well. Over the whole binary, runtime
-included: 6,830 of 15,711 functions (43.5%), 606,467 of
-2,748,975 bytes (22.06%).
+included: 6,968 of 15,711 functions (44.4%), 629,385 of
+2,748,975 bytes (22.90%).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="asm_matching/msvc8/evidence/byte-match-dark.svg">

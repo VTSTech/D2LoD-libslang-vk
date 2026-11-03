@@ -118,7 +118,7 @@ BOOL __fastcall SetGamma(int32_t nGamma) {
         FVar1 = 0;
         if (nGrGetResult) {
           pGammaTable = (FxU32*)Storm::Source::SMem::SMemAlloc(nTableSize * 4, ".\\Src\\glCore.cpp", 0x42f, 0);
-          Fog::Src::DataArrays::FOG_FillArrayWithRandomInts(nGamma, pGammaTable, (double)nContrastWeight, (uint32_t*)0x4, nTableSize, (1 << ((uint8_t)fGammaVal.nValue & 0x1f)) - 1);
+          Fog::Src::DataArrays::FOG_FillArrayWithRandomInts(nGamma, pGammaTable, (double)nContrastWeight, (uint32_t*)0x4, nTableSize, (1 << (fGammaVal.nValue & 0x1f)) - 1); // VP: clamped contrast weight (upstream regen passes gbWINDOWED; fork feature keeps the clamped local)
           (*GLIDEDLL_grLoadGammaTable_16)(nTableSize, pGammaTable, pGammaTable, pGammaTable);
           nFreeResult = Storm::Source::SMem::SMemFree(pGammaTable, ".\\Src\\glCore.cpp", 0x43a, 0);
           return nFreeResult;
@@ -3139,7 +3139,7 @@ void __stdcall RENDERER_GLIDE_BuildLightingTable() {
       nColorIdx = 0;
       nAccum = 0;
       do {
-        gpGlideLightingTable[nColorIdx + nIntensity * 0x100] = (char)(nAccum / 0xff) + (char)(nAccum >> 0x1f) - (char)((int64_t)nAccum * 0x80808081 >> 0x3f);
+        gpGlideLightingTable[nColorIdx + nIntensity * 0x100] = (char)(nAccum / 0xff);
         nColorIdx++;
         nAccum += nIntensity;
       } while (nColorIdx < 0x100);
@@ -3195,7 +3195,7 @@ void __stdcall RENDERER_GLIDE_BuildPerspectiveLUT() {
 
       nZ++;
       nCount--;
-      *pLutEntry = (int)(0x2ee000 / (int64_t)(nClampedZ - 3000));
+      *pLutEntry = (int)(0x2ee000 / (nClampedZ - 3000));
       pLutEntry++;
     } while (nCount);
 

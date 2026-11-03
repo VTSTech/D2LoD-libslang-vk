@@ -1723,46 +1723,47 @@ void __stdcall INPUT_SkillTreeLeftClick(D2UIMouseMsgStrc * pMsg) {
     }
     nPrevActiveTab = 0;
     nTmpResult = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_newskills, 0);
-    if (nTmpResult <= 0) {
+    if (nTmpResult > 0) {
+      nTmpResult = D2Common::Skills::AmountOfSkillsByClassId(nClassId);
+      if (nTmpResult > 0) {
+        do {
+          eSkill = D2Common::Skills::SKILLS_GetClassSkillByIndex(nClassId, nPrevActiveTab);
+          pSkillTxt = GAME::SCmd::TXT_Skills_GetLine(eSkill);
+          if (pSkillTxt) {
+            pSkillDesc = DataTbls::GetSkillDescription(eSkill);
+            if (pSkillDesc && nSkillTreeActiveTab == pSkillDesc->skillpage) {
+              nTmpResult = SPELLSEL_GetSkillTreeRowOffset(pSkillDesc->skillrow);
+              if ((int)nClickY > nTmpResult - 0x30 && (int)nClickY < nTmpResult) {
+                nTmpResult = SPELLSEL_GetSkillTreeColumnOffset(pSkillDesc->skillcolumn);
+                if ((int)nClickX > nTmpResult && (int)nClickX < nTmpResult + 0x30 && !gaSpellSelSkillTreeState[nPrevActiveTab]) {
+                  gaSpellSelSkillTreeState[nPrevActiveTab] = 1;
+                  gbSpellSelSkillTreeNodeHovered[nPrevActiveTab] = 3;
+                  ui::UI_HandleCursorMouseMove(pMsg);
+                  pMsg->bHandled = 1;
+                  pMsg->dwResult = 0;
+                  Sound::SOUND_PlaySound(SOUND_CURSOR_POINT_DROP, nullptr, 0, 0, 0);
+                  Storm::SMsgBreakHandlerChain(pMsg);
+                  return;
+                }
+              }
+            }
+          }
+
+          nPrevActiveTab++;
+          nTmpResult = D2Common::Skills::AmountOfSkillsByClassId(nClassId);
+        } while (nPrevActiveTab < nTmpResult);
+      }
+
       pMsg->bHandled = 1;
       pMsg->dwResult = 0;
       Storm::SMsgBreakHandlerChain(pMsg);
       return;
     }
 
-    nTmpResult = D2Common::Skills::AmountOfSkillsByClassId(nClassId);
-    if (nTmpResult > 0) {
-      do {
-        eSkill = D2Common::Skills::SKILLS_GetClassSkillByIndex(nClassId, nPrevActiveTab);
-        pSkillTxt = GAME::SCmd::TXT_Skills_GetLine(eSkill);
-        if (pSkillTxt) {
-          pSkillDesc = DataTbls::GetSkillDescription(eSkill);
-          if (pSkillDesc && nSkillTreeActiveTab == pSkillDesc->skillpage) {
-            nTmpResult = SPELLSEL_GetSkillTreeRowOffset(pSkillDesc->skillrow);
-            if ((int)nClickY > nTmpResult - 0x30 && (int)nClickY < nTmpResult) {
-              nTmpResult = SPELLSEL_GetSkillTreeColumnOffset(pSkillDesc->skillcolumn);
-              if ((int)nClickX > nTmpResult && (int)nClickX < nTmpResult + 0x30 && !gaSpellSelSkillTreeState[nPrevActiveTab]) {
-                gaSpellSelSkillTreeState[nPrevActiveTab] = 1;
-                gbSpellSelSkillTreeNodeHovered[nPrevActiveTab] = 3;
-                ui::UI_HandleCursorMouseMove(pMsg);
-                pMsg->bHandled = 1;
-                pMsg->dwResult = 0;
-                Sound::SOUND_PlaySound(SOUND_CURSOR_POINT_DROP, nullptr, 0, 0, 0);
-                Storm::SMsgBreakHandlerChain(pMsg);
-                return;
-              }
-            }
-          }
-        }
-
-        nPrevActiveTab++;
-        nTmpResult = D2Common::Skills::AmountOfSkillsByClassId(nClassId);
-      } while (nPrevActiveTab < nTmpResult);
-    }
-
     pMsg->bHandled = 1;
     pMsg->dwResult = 0;
     Storm::SMsgBreakHandlerChain(pMsg);
+    return;
 }
 
 void __stdcall ClickOnScreenSkillWindow(D2UIMouseMsgStrc * pMsg) {
@@ -1939,11 +1940,12 @@ void __stdcall SKILLTREE_DrawSkillNode(eD2Skills eSkill, D2SkillsTxt * pSkillTxt
     D2GfxDataStrc sGfxData;
     uint16_t wszLevelBuf[10];
     char szLevelBuf[12];
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return;
     }
 
-    int nColumnX = (int)sgptDataTable->pTxtSkills[eSkill].skilldesc;
+    int nColumnX = (int)pSkillsTxt->skilldesc;
     D2SkillDescTxt* pSkillDesc = nColumnX >= 0 && nColumnX < sgptDataTable->nTxtSkillDescSize ? sgptDataTable->pTxtSkillDesc + nColumnX : nullptr;
     if (!pSkillDesc) {
       return;
@@ -2090,7 +2092,8 @@ void __stdcall DRAW_UI_SkillSkillsWithAvailableSkills() {
       pSkillTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
       if (pSkillTxt) {
         nSkillDescIdx = (int)pSkillTxt->skilldesc;
-        if (nSkillDescIdx >= 0 && nSkillDescIdx < sgptDataTable->nTxtSkillDescSize && sgptDataTable->pTxtSkillDesc + nSkillDescIdx && nSkillTreeActiveTab == sgptDataTable->pTxtSkillDesc[nSkillDescIdx].skillpage) {
+        D2SkillDescTxt* pSkillDescTxt;
+        if ((pSkillDescTxt = nSkillDescIdx >= 0 && nSkillDescIdx < sgptDataTable->nTxtSkillDescSize ? sgptDataTable->pTxtSkillDesc + nSkillDescIdx : nullptr) && nSkillTreeActiveTab == pSkillDescTxt->skillpage) {
           BVar1 = D2Common::Skills::SkillCalculateIfWeCanSkillThisSkill(pUnit, eSkill);
           if (BVar1) {
             bCanSkill = 1;
@@ -2188,7 +2191,8 @@ void __stdcall SKILLTREE_DrawAllSkillNodes() {
       pSkillTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
       if (pSkillTxt) {
         nSkillDescIdx = (int)pSkillTxt->skilldesc;
-        if (nSkillDescIdx >= 0 && nSkillDescIdx < sgptDataTable->nTxtSkillDescSize && sgptDataTable->pTxtSkillDesc + nSkillDescIdx && nSkillTreeActiveTab == sgptDataTable->pTxtSkillDesc[nSkillDescIdx].skillpage) {
+        D2SkillDescTxt* pSkillDescTxt;
+        if ((pSkillDescTxt = nSkillDescIdx >= 0 && nSkillDescIdx < sgptDataTable->nTxtSkillDescSize ? sgptDataTable->pTxtSkillDesc + nSkillDescIdx : nullptr) && nSkillTreeActiveTab == pSkillDescTxt->skillpage) {
           gaSpellSelSkillTreeState[nSkillIdx] = -1;
           gbSpellSelSkillTreeNodeHovered[nSkillIdx] = 5;
           pSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnitCopy, eSkill, -1);

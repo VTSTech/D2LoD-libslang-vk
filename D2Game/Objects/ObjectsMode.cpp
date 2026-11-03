@@ -164,31 +164,33 @@ void __fastcall OBJMODE_UpdateDayNightState(::SGAMEDATA * pGame, D2UnitStrc * pU
     }
 
     int32_t nPeriod = D2Common::Environment::DRLGENV_GetPeriodOfDayFromAct(pGame->pAct[0], nullptr);
-    if (!nPeriod) {
-      if (eCollFlags == COLLIDE_BLOCK_MISSILE || eCollFlags == COLLIDE_BLOCK_PLAYER) {
-        D2Common::Units::SetupUpdateFlag(pUnit, 0);
+    if (nPeriod) {
+      if (nPeriod >= 0x1 && nPeriod <= 0x3) {
+        if (eCollFlags == COLLIDE_NONE) {
+          D2Common::Units::SetupUpdateFlag(pUnit, 1);
+          if (!pUnit) {
+            nPeriod = -1;
+          } else {
+            nPeriod = pUnit->nClassId;
+          }
+
+          pObjTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nPeriod);
+          GAME::Event::SetEvent(pGame, pUnit, 1, (pObjTxt->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
+        }
+
+        GAME::Event::SetEvent(pGame, pUnit, 8, pGame->dwGameFrame + 1000, 0, 0);
+        return;
       }
 
-      GAME::Event::SetEvent(pGame, pUnit, 8, pGame->dwGameFrame + 1000, 0, 0);
-      return;
-    }
-    if (nPeriod - 1U > 2) {
       GAME::Event::SetEvent(pGame, pUnit, 8, pGame->dwGameFrame + 600, 0, 0);
       return;
     }
-    if (eCollFlags == COLLIDE_NONE) {
-      D2Common::Units::SetupUpdateFlag(pUnit, 1);
-      if (!pUnit) {
-        nPeriod = -1;
-      } else {
-        nPeriod = pUnit->nClassId;
-      }
-
-      pObjTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nPeriod);
-      GAME::Event::SetEvent(pGame, pUnit, 1, (pObjTxt->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
+    if (eCollFlags == COLLIDE_BLOCK_MISSILE || eCollFlags == COLLIDE_BLOCK_PLAYER) {
+      D2Common::Units::SetupUpdateFlag(pUnit, 0);
     }
 
     GAME::Event::SetEvent(pGame, pUnit, 8, pGame->dwGameFrame + 1000, 0, 0);
+    return;
 }
 
 void __fastcall OBJMODE_CreateRedPortal(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
@@ -259,7 +261,13 @@ void __fastcall OBJMODE_UpdateFillProgress(::SGAMEDATA * pGame, D2UnitStrc * pUn
     D2ObjectsTxt* pObjectTxt = D2Common::Units::GetObjectTxtRecordFromObject(pUnit);
     uint32_t uFillLevel = (uint32_t)byComponent;
     uint8_t bVar1 = OBJECT_GetDefaultSize();
-    if ((int)uFillLevel / pObjectTxt->Parm[2] < (int)(uint32_t)bVar1) {
+    if (!((int)uFillLevel / pObjectTxt->Parm[2] < (int)(uint32_t)bVar1)) {
+      byComponent = OBJECT_GetDefaultSize();
+      if ((int)uFillLevel / pObjectTxt->Parm[2] >= (int)(uint32_t)byComponent) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdc);
+        exit(-1);
+      }
+    } else {
       uint32_t nDoubledTxtSize;
       byComponent++;
       pUnit->pUnitData.pUnitDataMonster->Components[0] = byComponent;
@@ -276,20 +284,14 @@ void __fastcall OBJMODE_UpdateFillProgress(::SGAMEDATA * pGame, D2UnitStrc * pUn
         nErrorLine = OBJECT_GetDoubledTxtSize(pObjectTxt);
         if (byComponent <= (uint8_t)nErrorLine) {
           bVar1 = OBJECT_GetDefaultSize();
-          if (!(int)((uint64_t)(uint32_t)byComponent % (uint64_t)(int64_t)(int)((uint64_t)(uint8_t)nErrorLine / (uint64_t)(int64_t)(int)(uint32_t)bVar1))) {
+          if (!(int)((int)(uint32_t)byComponent % (int)((uint8_t)nErrorLine / (int)(uint32_t)bVar1))) {
             bVar1 = OBJECT_GetDefaultSize();
-            D2Common::Units::SetupUpdateFlag(pUnit, (uint32_t)bVar1 - (int)((int64_t)(uint64_t)(uint32_t)byComponent / (int64_t)pObjectTxt->Parm[2]));
+            D2Common::Units::SetupUpdateFlag(pUnit, (uint32_t)bVar1 - (int)((int)(uint32_t)byComponent / pObjectTxt->Parm[2]));
           }
         }
 
         D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
         pUnit->eUnitFlags |= UNITFLAG_DOUPDATE;
-      }
-    } else {
-      byComponent = OBJECT_GetDefaultSize();
-      if ((int)uFillLevel / pObjectTxt->Parm[2] >= (int)(uint32_t)byComponent) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdc);
-        exit(-1);
       }
     }
 }
@@ -1472,8 +1474,7 @@ void __fastcall Shrines_StormShrineFunction(D2ObjectOperateFnArg * pArguments, D
         bIsDead = UNIT::SUnit::CheckForModeZeroDeath(pTargetUnit);
         if (!bIsDead) {
           nHpReduction = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pTargetUnit, UNITSTAT_hitpoints, 0);
-          nHpReduction = (int)((uint64_t)((int64_t)(int)(pTxtShrinesLocal->dwArg0 * (nHpReduction >> 8)) * -0x51eb851f) >> 0x20);
-          D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pTargetUnit, UNITSTAT_hitpoints, ((nHpReduction >> 5) - (nHpReduction >> 0x1f)) * 0x100, 0);
+          D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pTargetUnit, UNITSTAT_hitpoints, (int)(pTxtShrinesLocal->dwArg0 * (nHpReduction >> 8)) / -100 * 0x100, 0);
         }
       }
     }
@@ -2858,32 +2859,32 @@ BOOL __fastcall OBJOP_ActivatePortalObject(D2ObjectOperateFnArg * pOperation) {
       nSpawnX = 0;
       nSpawnY = 0;
       eDestAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
-      if (eDestAct < (ACT_V | ACT_II)) {
-        nUnitSizeX = D2Common::Units::GetUnitSizeX(pOperation->pAttacker);
-        pRoom = D2Common::DUNGEON::Dungeon::SpawnUnit(pOperation->sArg.pGame->pAct[eDestAct], eLevel, 0, (int*)&nSpawnX, (int*)&nSpawnY, nUnitSizeX);
-        if (!pRoom) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfcd);
-          exit(-1);
-        }
-
-        bAllowNeighboorRooms = 0;
-        eCollisionFlag_00 = 0x1c09;
-        ptDest.x = nSpawnX;
-        ptDest.y = nSpawnY;
-        pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &ptDest, D2Common::Units::GetUnitSizeX(pOperation->pAttacker), eCollisionFlag_00, bAllowNeighboorRooms);
-        if (pRoom) {
-          bAllowNeighboorRooms = UNIT::SUnit::SUNIT_RelocateUnit(pOperation->sArg.pGame, pOperation->pAttacker, pRoom, ptDest.x, ptDest.y, 0, 0);
-          if (!bAllowNeighboorRooms) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfd9);
-            exit(-1);
-          }
-        }
-
-        return 0;
-      } else {
+      if (!(eDestAct < (ACT_V | ACT_II))) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfcb);
         exit(-1);
       }
+
+      nUnitSizeX = D2Common::Units::GetUnitSizeX(pOperation->pAttacker);
+      pRoom = D2Common::DUNGEON::Dungeon::SpawnUnit(pOperation->sArg.pGame->pAct[eDestAct], eLevel, 0, (int*)&nSpawnX, (int*)&nSpawnY, nUnitSizeX);
+      if (!pRoom) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfcd);
+        exit(-1);
+      }
+
+      bAllowNeighboorRooms = 0;
+      eCollisionFlag_00 = 0x1c09;
+      ptDest.x = nSpawnX;
+      ptDest.y = nSpawnY;
+      pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &ptDest, D2Common::Units::GetUnitSizeX(pOperation->pAttacker), eCollisionFlag_00, bAllowNeighboorRooms);
+      if (pRoom) {
+        bAllowNeighboorRooms = UNIT::SUnit::SUNIT_RelocateUnit(pOperation->sArg.pGame, pOperation->pAttacker, pRoom, ptDest.x, ptDest.y, 0, 0);
+        if (!bAllowNeighboorRooms) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfd9);
+          exit(-1);
+        }
+      }
+
+      return 0;
     }
 }
 
@@ -3178,7 +3179,7 @@ static uint32_t __stdcall OBJMODE_DispatchOperateFunction(::SGAMEDATA * pGame, u
 
     uint64_t ullSeedRoll = (uint64_t)*(uint32_t*)(pUnit + 0x20) * 0x6ac690c5 + (uint64_t)*(uint32_t*)(pUnit + 0x24);
     *(uint64_t*)(pUnit + 0x20) = ullSeedRoll;
-    if ((uint32_t)((int)ullSeedRoll + (int)((ullSeedRoll & 0xffffffff) / 100) * -100) < gaObjectsModeFuncTable[nModeIdx].nSpriteThreshold) {
+    if ((uint32_t)(int)((uint32_t)ullSeedRoll % 100) < gaObjectsModeFuncTable[nModeIdx].nSpriteThreshold) {
       BOOL bBadCode;
       /* FARPROC lpfn for IsBadCodePtr */ bBadCode = IsBadCodePtr((FARPROC)gaObjectsModeFuncTable[nModeIdx].pfnHandler);
       if (bBadCode) {
@@ -3477,9 +3478,9 @@ BOOL __fastcall OBJOP_ActivateHealingWell(D2ObjectOperateFnArg * pOperation) {
         nDoubledSize = OBJECT_GetDoubledTxtSize(pTxtObjects);
         if (byChargesLeft <= (uint8_t)nDoubledSize) {
           bVar1 = OBJECT_GetDefaultSize();
-          if (!(int)((uint64_t)byChargesLeft % (uint64_t)(int64_t)(int)((uint64_t)(uint8_t)nDoubledSize / (uint64_t)(int64_t)(int)(uint32_t)bVar1))) {
+          if (!(int)(byChargesLeft % (int)((uint8_t)nDoubledSize / (int)(uint32_t)bVar1))) {
             bVar1 = OBJECT_GetDefaultSize();
-            D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, (uint32_t)bVar1 - (int)((int64_t)(uint64_t)byChargesLeft / (int64_t)pTxtObjects->Parm[2]));
+            D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, (uint32_t)bVar1 - (int)(byChargesLeft / pTxtObjects->Parm[2]));
           }
         }
 

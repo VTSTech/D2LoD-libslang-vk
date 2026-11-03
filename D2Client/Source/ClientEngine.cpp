@@ -518,7 +518,7 @@ void __fastcall HandleIncoming0x89(int32_t nEventId) {
       exit(-1);
     }
 
-    gdwDenOfEvilEventFlags |= 1 << ((uint8_t)nEventId & 0x1f);
+    gdwDenOfEvilEventFlags |= 1 << (nEventId & 0x1f);
     if (!CLIENT_QuestEventHandlers[nEventId]) {
       return;
     }
@@ -1074,7 +1074,7 @@ static void __stdcall ROOM_FindSpawnPositionForMonster(D2RoomStrc * pRoom, int32
       } else if (nXRange & nXRange - 1) {
         nSeedModBranch = (uint64_t)*pSeed * 0x6ac690c5 + (uint64_t)pSeed[1];
         *(uint64_t*)pSeed = nSeedModBranch;
-        nRandOffset = (uint32_t)((nSeedModBranch & 0xffffffff) % (uint64_t)nXRange);
+        nRandOffset = (uint32_t)((uint32_t)nSeedModBranch % nXRange);
       } else {
         nSeedPow2Branch = (uint64_t)*pSeed * 0x6ac690c5 + (uint64_t)pSeed[1];
         *(int64_t*)pSeed = nSeedPow2Branch;
@@ -1087,7 +1087,7 @@ static void __stdcall ROOM_FindSpawnPositionForMonster(D2RoomStrc * pRoom, int32
       } else if (nYRange & nYRange - 1) {
         nSeedModBranch = (uint64_t)*pSeed * 0x6ac690c5 + (uint64_t)pSeed[1];
         *(uint64_t*)pSeed = nSeedModBranch;
-        nRandOffset = (uint32_t)((nSeedModBranch & 0xffffffff) % (uint64_t)nYRange);
+        nRandOffset = (uint32_t)((uint32_t)nSeedModBranch % nYRange);
       } else {
         nSeedPow2Branch = (uint64_t)*pSeed * 0x6ac690c5 + (uint64_t)pSeed[1];
         *(int64_t*)pSeed = nSeedPow2Branch;
@@ -1135,7 +1135,7 @@ void __fastcall CLIENT_SpawnMonstersAroundUnit(D2UnitStrc * pUnit, int32_t nMons
     do {
       D2SeedStrc DVar1;
       nRngProduct = (uint64_t)pUnit->sSeed.nSeedLow * 0x6ac690c5 + (uint64_t)pUnit->sSeed.nSeedHigh;
-      nSpawnX = (int)nRngProduct + (int)((nRngProduct & 0xffffffff) / 5) * -5 - 2 + ptCenter.x;
+      nSpawnX = (int)((uint32_t)nRngProduct % 5) - 2 + ptCenter.x;
       DVar1 = D2_SEED_NEXT_VAL(nRngProduct);
       pUnit->sSeed = DVar1;
       nY = DVar1.nSeedLow % 5 - 2 + ptCenter.y;
@@ -1838,34 +1838,7 @@ static void __stdcall CLIENT_MonsterAi_CorpseSeekerBehavior(uint32_t nTargetDist
     }
 
     int* pnAiData = UNIT::Monster::MONSTER_GetAiDataPtr(pUnit);
-    if (pnAiData) {
-      if (!__frame0.pCorpsePoint || nTargetDistance <= 7) {
-        if (!*pnAiData) {
-          nResult = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
-          if ((int)nResult < 0x4b) {
-            pnAiDelay = UNIT::Monster::GetMonsterAi(pUnit);
-            if (pnAiDelay) {
-              *pnAiDelay = 0x1e;
-            }
-
-            CLIENT_SendMonsterWanderMessage(pUnit);
-            return;
-          }
-
-          CLIENT_SendMonsterMoveToRandomNearbyPosMessage(5, 1, 0, pUnit);
-          return;
-        }
-      } else if (!*pnAiData) {
-        CLIENT_SendMonsterMoveToUnitMessage(0, 6, pUnit, __frame0.pCorpsePoint);
-        *pnAiData = 1;
-        return;
-      }
-
-      nResult = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
-      if ((int)nResult < 0x14) {
-        *pnAiData = 0;
-      }
-
+    if (!pnAiData) {
       pnAiDelay = UNIT::Monster::GetMonsterAi(pUnit);
       if (pnAiDelay) {
         *pnAiDelay = 0x20;
@@ -1874,6 +1847,32 @@ static void __stdcall CLIENT_MonsterAi_CorpseSeekerBehavior(uint32_t nTargetDist
       CLIENT_SendMonsterWanderMessage(pUnit);
       return;
     }
+    if (!__frame0.pCorpsePoint || nTargetDistance <= 7) {
+      if (!*pnAiData) {
+        nResult = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
+        if ((int)nResult < 0x4b) {
+          pnAiDelay = UNIT::Monster::GetMonsterAi(pUnit);
+          if (pnAiDelay) {
+            *pnAiDelay = 0x1e;
+          }
+
+          CLIENT_SendMonsterWanderMessage(pUnit);
+          return;
+        }
+
+        CLIENT_SendMonsterMoveToRandomNearbyPosMessage(5, 1, 0, pUnit);
+        return;
+      }
+    } else if (!*pnAiData) {
+      CLIENT_SendMonsterMoveToUnitMessage(0, 6, pUnit, __frame0.pCorpsePoint);
+      *pnAiData = 1;
+      return;
+    }
+
+    nResult = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
+    if ((int)nResult < 0x14) {
+      *pnAiData = 0;
+    }
 
     pnAiDelay = UNIT::Monster::GetMonsterAi(pUnit);
     if (pnAiDelay) {
@@ -1881,6 +1880,7 @@ static void __stdcall CLIENT_MonsterAi_CorpseSeekerBehavior(uint32_t nTargetDist
     }
 
     CLIENT_SendMonsterWanderMessage(pUnit);
+    return;
 }
 
 static void __stdcall CLIENT_MonsterAi_BasicChaseBehavior(uint32_t nTargetDistance, D2UnitStrc * pTarget, D2UnitStrc * pUnit) {

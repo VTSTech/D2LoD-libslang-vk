@@ -873,83 +873,84 @@ void __fastcall ESCMENU_LoadLocalizedImages(int * pMenuHeader, D2EscMenuItemStrc
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4e8);
       exit(-1);
     }
-    if (pMenuTable) {
-      szImagePath[0] = '\0';
-      memset(szImagePath + 1, 0, 0x103);
-      memset(szLangAbbrev, 0, 4 * sizeof(szLangAbbrev[0]));
-      D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(szLangAbbrev, 0);
-      nItemIndex = 0;
-      if (*pMenuHeader <= 0) {
-        return;
-      }
-
-      nSubImageOffset = 0x150;
-      do {
-        if (!pMenuTable[nItemIndex].nExpansionOnly || (bIsExpansion = Fog::D2CheckExpansionGame() , bIsExpansion != 0)) {
-          if (pMenuTable[nItemIndex].szLocalizedImagePath[0] != '\0') {
-            sprintf(szImagePath, "%s\\UI\\%s\\%s", "DATA\\LOCAL", szLangAbbrev, pMenuTable[nItemIndex].szLocalizedImagePath);
-            pLoadedDC6 = Core::Archive::IMAGE_LoadDC6Ex(szImagePath, 0);
-            nSubImageCount = pMenuTable[nItemIndex].nMenuItemType;
-            pMenuTable[nItemIndex].pDC6Main = pLoadedDC6;
-            if (nSubImageCount == 1) {
-              nSubImageCount = pMenuTable[nItemIndex].nSubImageCount;
-              if (nSubImageCount <= 0 || nSubImageCount > 4) {
-                // [R61 issue #19] was: fatal HaltTail(0x4fe). Retail data can never
-                // land here (static tables parsed well-formed), but the Vanilla+
-                // Resolution row legitimately mutates nSubImageCount 2->3 at runtime
-                // (UI_SLIDER_LoadAndApplyResolution), so this field is now LIVE data
-                // and a scribbled/miswired value must not kill the process at game
-                // entry (issue #19: second game entry died in this loader). Clamp:
-                // the slot writes below stay in-bounds either way.
-                D2BOOT_MarkFmt("escmenu: %s item %d sub-image count %d out of range - clamped [R61]", ESCMENU_TableName(pMenuTable), nItemIndex, nSubImageCount);
-                nSubImageCount = nSubImageCount > 4 ? 4 : 0;
-              }
-
-              nSubImageIndex = 0;
-              if (nSubImageCount > 0) {
-                pSubImagePath = pMenuTable[nItemIndex].szSubImage1Path;
-                do {
-                  if (*pSubImagePath == '\0') {
-                    // [R61 issue #19] was: fatal HaltTail(0x501). ROOT CAUSE of
-                    // issue #19: the VP Resolution row attaches its runtime blank
-                    // DC6 into pDC6SubImages[2] and bumps nSubImageCount to 3, but
-                    // szSubImage3Path stays empty (no MPQ asset exists - the stop
-                    // is synthesized). Init #1 loads with count 2 (clean), the
-                    // callback then mutates the STATIC table, and init #2 (every
-                    // game entry re-runs ESCMENU_Initialize via 0x01 ->
-                    // InitializeUI) walks three sub-paths and died HERE. Degrade:
-                    // keep the previously loaded DC6 in the slot (the runtime
-                    // blank survives re-inits; first init just leaves the slot
-                    // NULL and the draw site skips NULLs) and go on.
-                    D2BOOT_MarkFmt("escmenu: %s item %d stop %u path empty - prior dc6 kept [R61]", ESCMENU_TableName(pMenuTable), nItemIndex, nSubImageIndex);
-                    pSubImagePath += 0x104;
-                    nSubImageIndex++;
-                    continue;
-                  }
-
-                  sprintf(szImagePath, "%s\\UI\\%s\\%s", "DATA\\LOCAL", szLangAbbrev, pSubImagePath);
-                  pLoadedDC6 = Core::Archive::IMAGE_LoadDC6Ex(szImagePath, 0);
-                  nTableOffset = nSubImageOffset + nSubImageIndex;
-                  nSubImageIndex++;
-                  *(DC6**)(pMenuTable->szLocalizedImagePath + nTableOffset * 4 - 0xc) = (DC6*)pLoadedDC6;
-                  pSubImagePath += 0x104;
-                } while (nSubImageIndex < nSubImageCount); // [R61] clamped local, not the raw table read
-              }
-            }
-          }
-          if (pMenuTable[nItemIndex].fpInitCallback) {
-            (*pMenuTable[nItemIndex].fpInitCallback)(&pMenuTable[nItemIndex], nullptr);
-          }
-        }
-
-        nSubImageOffset += 0x154;
-        nItemIndex++;
-      } while (nItemIndex < *pMenuHeader);
-
+    if (!pMenuTable) {
+      ESCMENU_LoadLocalizedImages_HaltTail(0x4e9);
       return;
     }
 
-    ESCMENU_LoadLocalizedImages_HaltTail(0x4e9);
+    szImagePath[0] = '\0';
+    memset(szImagePath + 1, 0, 0x103);
+    memset(szLangAbbrev, 0, 4 * sizeof(szLangAbbrev[0]));
+    D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(szLangAbbrev, 0);
+    nItemIndex = 0;
+    if (*pMenuHeader <= 0) {
+      return;
+    }
+
+    nSubImageOffset = 0x150;
+    do {
+      if (!pMenuTable[nItemIndex].nExpansionOnly || (bIsExpansion = Fog::D2CheckExpansionGame() , bIsExpansion != 0)) {
+        if (pMenuTable[nItemIndex].szLocalizedImagePath[0] != '\0') {
+          sprintf(szImagePath, "%s\\UI\\%s\\%s", "DATA\\LOCAL", szLangAbbrev, pMenuTable[nItemIndex].szLocalizedImagePath);
+          pLoadedDC6 = Core::Archive::IMAGE_LoadDC6Ex(szImagePath, 0);
+          nSubImageCount = pMenuTable[nItemIndex].nMenuItemType;
+          pMenuTable[nItemIndex].pDC6Main = pLoadedDC6;
+          if (nSubImageCount == 1) {
+            nSubImageCount = pMenuTable[nItemIndex].nSubImageCount;
+            if (nSubImageCount <= 0 || nSubImageCount > 4) {
+              // [R61 issue #19] was: fatal HaltTail(0x4fe). Retail data can never
+              // land here (static tables parsed well-formed), but the Vanilla+
+              // Resolution row legitimately mutates nSubImageCount 2->3 at runtime
+              // (UI_SLIDER_LoadAndApplyResolution), so this field is now LIVE data
+              // and a scribbled/miswired value must not kill the process at game
+              // entry (issue #19: second game entry died in this loader). Clamp:
+              // the slot writes below stay in-bounds either way.
+              D2BOOT_MarkFmt("escmenu: %s item %d sub-image count %d out of range - clamped [R61]", ESCMENU_TableName(pMenuTable), nItemIndex, nSubImageCount);
+              nSubImageCount = nSubImageCount > 4 ? 4 : 0;
+            }
+
+            nSubImageIndex = 0;
+            if (nSubImageCount > 0) {
+              pSubImagePath = pMenuTable[nItemIndex].szSubImage1Path;
+              do {
+                if (*pSubImagePath == '\0') {
+                  // [R61 issue #19] was: fatal HaltTail(0x501). ROOT CAUSE of
+                  // issue #19: the VP Resolution row attaches its runtime blank
+                  // DC6 into pDC6SubImages[2] and bumps nSubImageCount to 3, but
+                  // szSubImage3Path stays empty (no MPQ asset exists - the stop
+                  // is synthesized). Init #1 loads with count 2 (clean), the
+                  // callback then mutates the STATIC table, and init #2 (every
+                  // game entry re-runs ESCMENU_Initialize via 0x01 ->
+                  // InitializeUI) walks three sub-paths and died HERE. Degrade:
+                  // keep the previously loaded DC6 in the slot (the runtime
+                  // blank survives re-inits; first init just leaves the slot
+                  // NULL and the draw site skips NULLs) and go on.
+                  D2BOOT_MarkFmt("escmenu: %s item %d stop %u path empty - prior dc6 kept [R61]", ESCMENU_TableName(pMenuTable), nItemIndex, nSubImageIndex);
+                  pSubImagePath += 0x104;
+                  nSubImageIndex++;
+                  continue;
+                }
+
+                sprintf(szImagePath, "%s\\UI\\%s\\%s", "DATA\\LOCAL", szLangAbbrev, pSubImagePath);
+                pLoadedDC6 = Core::Archive::IMAGE_LoadDC6Ex(szImagePath, 0);
+                nTableOffset = nSubImageOffset + nSubImageIndex;
+                nSubImageIndex++;
+                *(DC6**)(pMenuTable->szLocalizedImagePath + nTableOffset * 4 - 0xc) = (DC6*)pLoadedDC6;
+                pSubImagePath += 0x104;
+              } while (nSubImageIndex < nSubImageCount); // [R61] clamped local, not the raw table read
+            }
+          }
+        }
+        if (pMenuTable[nItemIndex].fpInitCallback) {
+          (*pMenuTable[nItemIndex].fpInitCallback)(&pMenuTable[nItemIndex], nullptr);
+        }
+      }
+
+      nSubImageOffset += 0x154;
+      nItemIndex++;
+    } while (nItemIndex < *pMenuHeader);
+
+    return;
 }
 
 // Shared fatal tail of ESCMENU_LoadLocalizedImages: every failing check pushes its source line and enters here; reports ERROR_UnrecoverableInternalError_Halt("", ip, nLine) and exits.
@@ -1023,44 +1024,45 @@ void __fastcall ESCMENU_FreeLoadedImages(int * pnItemCount, D2EscMenuItemStrc * 
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x558);
       exit(-1);
     }
-    if (pMenuTable) {
-      nItemIndex = 0;
-      if (*pnItemCount <= 0) {
-        return;
-      }
-
-      do {
-        nSubImageIndex = 0;
-        if (pMenuTable[nItemIndex].pDC6Main) {
-          Core::Archive::DC6_FreeAndDelete(pMenuTable[nItemIndex].pDC6Main);
-          *(int*)&pMenuTable[nItemIndex].pDC6Main = 0;
-        }
-        if (pMenuTable[nItemIndex].nMenuItemType == 1) {
-          nSubImageCount = pMenuTable[nItemIndex].nSubImageCount;
-          if (!nSubImageCount || nSubImageCount > 4) {
-            ESCMENU_FreeLoadedImages_HaltTail(0x565);
-          }
-          if (nSubImageCount) {
-            ppSubImage = pMenuTable[nItemIndex].pDC6SubImages;
-            do {
-              if (*ppSubImage) {
-                Core::Archive::DC6_FreeAndDelete(*ppSubImage);
-                *ppSubImage = 0;
-              }
-
-              nSubImageIndex++;
-              ppSubImage++;
-            } while (nSubImageIndex < (uint32_t)pMenuTable[nItemIndex].nSubImageCount);
-          }
-        }
-
-        nItemIndex++;
-      } while (nItemIndex < *pnItemCount);
-
+    if (!pMenuTable) {
+      ESCMENU_FreeLoadedImages_HaltTail(0x559);
       return;
     }
 
-    ESCMENU_FreeLoadedImages_HaltTail(0x559);
+    nItemIndex = 0;
+    if (*pnItemCount <= 0) {
+      return;
+    }
+
+    do {
+      nSubImageIndex = 0;
+      if (pMenuTable[nItemIndex].pDC6Main) {
+        Core::Archive::DC6_FreeAndDelete(pMenuTable[nItemIndex].pDC6Main);
+        *(int*)&pMenuTable[nItemIndex].pDC6Main = 0;
+      }
+      if (pMenuTable[nItemIndex].nMenuItemType == 1) {
+        nSubImageCount = pMenuTable[nItemIndex].nSubImageCount;
+        if (nSubImageCount <= 0 || nSubImageCount > 4) {
+          ESCMENU_FreeLoadedImages_HaltTail(0x565);
+        }
+        if (nSubImageCount > 0) {
+          ppSubImage = pMenuTable[nItemIndex].pDC6SubImages;
+          do {
+            if (*ppSubImage) {
+              Core::Archive::DC6_FreeAndDelete(*ppSubImage);
+              *ppSubImage = 0;
+            }
+
+            nSubImageIndex++;
+            ppSubImage++;
+          } while (nSubImageIndex < (uint32_t)pMenuTable[nItemIndex].nSubImageCount);
+        }
+      }
+
+      nItemIndex++;
+    } while (nItemIndex < *pnItemCount);
+
+    return;
 }
 
 // Shared fatal tail of ESCMENU_FreeLoadedImages: every failing check pushes its source line and enters here; reports ERROR_UnrecoverableInternalError_Halt("", ip, nLine) and exits.

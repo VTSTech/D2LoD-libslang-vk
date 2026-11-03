@@ -422,12 +422,21 @@ BOOL __stdcall MONSTER_IsAndarielNormal(D2UnitStrc * pUnit, int32_t nParam) {
 }
 
 uint32_t __stdcall IsDemon(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_MONSTER) {
       return 0;
     }
 
     int pMonStatsTxt = pUnit->nClassId;
-    if (!(pMonStatsTxt >= 0 && pMonStatsTxt < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + pMonStatsTxt)) {
+    if (pMonStatsTxt < 0) {
+      return 0;
+    }
+    if (!(pMonStatsTxt < sgptDataTable->nTxtMonStatsSize)) {
+      return 0;
+    }
+    if (!(sgptDataTable->pTxtMonStats + pMonStatsTxt)) {
       return 0;
     }
 
@@ -655,12 +664,21 @@ int32_t __stdcall GetMonsterBaseId(D2RoomStrc * pRoom, int32_t nMonsterId) {
 }
 
 uint32_t __stdcall MONSTERS_CheckMonStatFlag0xc_Bit7(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_MONSTER) {
       return 0;
     }
 
     int pMonStatsTxt = pUnit->nClassId;
-    if (!(pMonStatsTxt >= 0 && pMonStatsTxt < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + pMonStatsTxt)) {
+    if (pMonStatsTxt < 0) {
+      return 0;
+    }
+    if (!(pMonStatsTxt < sgptDataTable->nTxtMonStatsSize)) {
+      return 0;
+    }
+    if (!(sgptDataTable->pTxtMonStats + pMonStatsTxt)) {
       return 0;
     }
 
@@ -671,22 +689,22 @@ uint32_t __stdcall MONSTERS_CheckMonStatFlag0xc_Bit7(D2UnitStrc * pUnit) {
 void __stdcall MONSTERS_GetUpgradeSkillsAndCount(D2UnitStrc * pUnit, uint32_t * pdwAnimFlags, uint32_t * pdwValidFlags) {
     // Static local variables (originally global data)
     static D2MonStatAnimEntryStrc gdwMonStatAnimFlagsTable[4] = {
-    D2MonStatAnimEntryStrc(
+    {
         /* .dwFlags = */ 0x0,
         /* .dwValidFlags = */ 0x1
-    ),
-    D2MonStatAnimEntryStrc(
+    },
+    {
         /* .dwFlags = */ 0x1,
         /* .dwValidFlags = */ 0x0
-    ),
-    D2MonStatAnimEntryStrc(
+    },
+    {
         /* .dwFlags = */ 0x1,
         /* .dwValidFlags = */ 0x0
-    ),
-    D2MonStatAnimEntryStrc(
+    },
+    {
         /* .dwFlags = */ 0xffffffff,
         /* .dwValidFlags = */ 0x0
-    )
+    }
 }; D2_STATIC_GUARD(gdwMonStatAnimFlagsTable, "D2Common::Monsters::MONSTERS::MONSTERS_GetUpgradeSkillsAndCount::gdwMonStatAnimFlagsTable");
 
     if (!pUnit || pUnit->eUnitType != UNIT_MONSTER) {
@@ -799,8 +817,9 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
       D2SeedStrc* pSeed;
       nMonStatsId = pUnit->nClassId;
       nBaseId = nMonStatsId;
-      if ((int)nMonStatsId >= 0 && (int)nMonStatsId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonStatsId) {
-        nBaseId = (int)sgptDataTable->pTxtMonStats[nMonStatsId].BaseId;
+      D2MonStatsTxt* pMonStatsTxt = (int)nMonStatsId >= 0 && (int)nMonStatsId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nMonStatsId : nullptr;
+      if (pMonStatsTxt) {
+        nBaseId = (int)pMonStatsTxt->BaseId;
       }
       if ((int)nBaseId < 0 || (nMonStatsTblSize = sgptDataTable->nTxtMonStatsSize , (int)nBaseId >= nMonStatsTblSize)) {
         nBaseId = ~MonsterUnitSkeleton1;

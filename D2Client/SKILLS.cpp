@@ -95,12 +95,18 @@ int32_t __fastcall GetSkilParam3(eD2Skills eSkill) {
 }
 
 int32_t __fastcall GetSkillParam4(int32_t nSkillId, int32_t nSkillLevel) {
-    if (!(nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount)) {
+    if (nSkillId < 0) {
+      return 0;
+    }
+    if (!(nSkillId < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
 
     D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills + nSkillId;
-    if (!(pSkillsTxt && nSkillLevel > 0)) {
+    if (!pSkillsTxt) {
+      return 0;
+    }
+    if (nSkillLevel <= 0) {
       return 0;
     }
 
@@ -1214,7 +1220,7 @@ static void __stdcall SKILLSCLT_CreateProjectileMissile(uint32_t dwUnused, uint3
     do {
       D2UnitStrc* pMissileUnit;
       ullRngProduct = (uint64_t)sSeed.nSeedLow * 0x6ac690c5 + ((uint64_t)d2_bits_of(sSeed) >> 0x20);
-      sSkillArg.nUnitX = (int)ullRngProduct + (int)((ullRngProduct & 0xffffffff) / 0x28) * -0x28 - 0x14;
+      sSkillArg.nUnitX = (int)((uint32_t)ullRngProduct % 0x28) - 0x14;
       sSeed = D2_SEED_NEXT_VAL(ullRngProduct);
       sSkillArg.nUnitY = sSeed.nSeedLow % 0x28 - 0x14;
       if (!sSkillArg.nUnitX && !sSkillArg.nUnitY) {
@@ -1305,7 +1311,10 @@ uint32_t __fastcall SKILLSCLT_CalcChargeSkillDuration(D2UnitStrc * pMonUnit, int
     }
 
     int nSkillSlot = pMonUnit->nClassId;
-    if (!(nSkillSlot >= 0 && nSkillSlot < sgptDataTable->nTxtMonStatsSize)) {
+    if (nSkillSlot < 0) {
+      return 0;
+    }
+    if (!(nSkillSlot < sgptDataTable->nTxtMonStatsSize)) {
       return 0;
     }
 

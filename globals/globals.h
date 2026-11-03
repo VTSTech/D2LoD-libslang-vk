@@ -222,10 +222,7 @@ struct D2GameRecordFileHeaderStrc;
 struct D2GameRecordStrc;
 struct D2GameViewStrc;
 struct D2Game_Line0x546 {
-    D2Game_Line0x546() = default;
-    D2Game_Line0x546(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2Game_Line0x546(int a0, int a1) : nInitSeed(a0), nAutomap(a1) {}
 
     /* 0x00 */ int nInitSeed;
     /* 0x04 */ int nAutomap;
@@ -392,6 +389,7 @@ struct D2SetsTxtFStrc;
 struct D2ShrinesTableEntryStrc;
 struct D2ShrinesTxt;
 struct D2SkillCalcTxt;
+struct D2SkillChargeDescStrc;
 struct D2SkillDescTxt;
 struct D2SkillStrc;
 struct D2SkillsHeaderTxt;
@@ -802,10 +800,7 @@ struct D2CmdBindingStrc {
 };
 
 struct D2CofPathOverrideStrc {
-    D2CofPathOverrideStrc() = default;
-    D2CofPathOverrideStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2CofPathOverrideStrc(uint32_t a0, uint32_t a1) : dwToken(a0), nMode(a1) {}
 
     /* 0x00 */ uint32_t dwToken; // COF token chars, matched first
     /* 0x04 */ uint32_t nMode; // mode the override applies to
@@ -846,10 +841,7 @@ struct D2EndGameUiState {
 };
 
 struct D2ExitCutsceneState {
-    D2ExitCutsceneState() = default;
-    D2ExitCutsceneState(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2ExitCutsceneState(int a0, BOOL a1) : pendingCutsceneId(a0), cutscenePlayed(a1) {}
 
     /* 0x00 */ int pendingCutsceneId; // Pending exit cutscene id
     /* 0x04 */ BOOL cutscenePlayed; // Exit cutscene played/active flag
@@ -871,10 +863,7 @@ struct D2GemsTableStrc {
 };
 
 struct D2HashSeedPairStrc {
-    D2HashSeedPairStrc() = default;
-    D2HashSeedPairStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2HashSeedPairStrc(uint32_t a0, int a1) : dwHashLow(a0), nHashHigh(a1) {}
 
     /* 0x00 */ uint32_t dwHashLow; // Low 32 bits of hash seed for nibble
     /* 0x04 */ int nHashHigh; // High 32 bits of hash seed for nibble
@@ -905,20 +894,14 @@ struct D2LeapArcSegmentStrc {
 };
 
 struct D2ManaAbsorbFieldStrc {
-    D2ManaAbsorbFieldStrc() = default;
-    D2ManaAbsorbFieldStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2ManaAbsorbFieldStrc(int a0, int a1) : nDamageFieldOffset(a0), bSecondary(a1) {}
 
     /* 0x00 */ int nDamageFieldOffset; // byte offset into the damage struct
     /* 0x04 */ int bSecondary;
 };
 
 struct D2MonStatAnimEntryStrc {
-    D2MonStatAnimEntryStrc() = default;
-    D2MonStatAnimEntryStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2MonStatAnimEntryStrc(uint32_t a0, uint32_t a1) : dwFlags(a0), dwValidFlags(a1) {}
 
     /* 0x00 */ uint32_t dwFlags;
     /* 0x04 */ uint32_t dwValidFlags;
@@ -930,10 +913,7 @@ struct D2NET_SERVER_D2GS_ClientToServer {
 };
 
 struct D2NpcControlInitStrc {
-    D2NpcControlInitStrc() = default;
-    D2NpcControlInitStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2NpcControlInitStrc(int a0, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4) : nMonStatsId(a0), nFlags(a1), nData(a2), nName(a3), nPad(a4) {}
 
     /* 0x00 */ int nMonStatsId; // monstats id this record configures
     /* 0x04 */ uint8_t nFlags; // gossip/trade/repair flags
@@ -1007,10 +987,7 @@ struct D2SmackerGlideBufferStrc {
 };
 
 struct D2SocketOffsetStrc {
-    D2SocketOffsetStrc() = default;
-    D2SocketOffsetStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2SocketOffsetStrc(int a0, int a1) : nX(a0), nY(a1) {}
 
     /* 0x00 */ int nX;
     /* 0x04 */ int nY;
@@ -1039,10 +1016,7 @@ struct __attribute__((packed)) D2StatScreenButtonStrc {
 };
 
 struct D2TileCmpSubTileOffset {
-    D2TileCmpSubTileOffset() = default;
-    D2TileCmpSubTileOffset(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2TileCmpSubTileOffset(int32_t a0, int32_t a1) : nPixelCol(a0), nPixelRow(a1) {}
 
     /* 0x00 */ int32_t nPixelCol; // column pixel offset into DT1 subtile source data
     /* 0x04 */ int32_t nPixelRow; // row multiplier (x0xa0) into DT1 subtile source data
@@ -1122,22 +1096,17 @@ struct D2UIFlagStrc {
 };
 
 struct D2UniqueCandidateStrc {
-    D2UniqueCandidateStrc() = default;
-    D2UniqueCandidateStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2UniqueCandidateStrc(int a0, int a1) : nUniqueIdx(a0), nCumulativeWeight(a1) {}
 
     /* 0x00 */ int nUniqueIdx; // uniqueitems.txt row index
     /* 0x04 */ int nCumulativeWeight; // running rarity total
 };
 
-#pragma pack(push, 1)
-struct D2UniqueCandidatePoolStrc {
+struct __attribute__((packed)) D2UniqueCandidatePoolStrc {
     /* 0x00 */ uint32_t nGoldCodeInitFlag; // gItemDropGoldCodeInitFlag; the pick loop folds its address as the table base minus one row
     /* 0x04 */ uint32_t _pad;
     /* 0x08 */ D2UniqueCandidateStrc aCandidates[4096];
 };
-#pragma pack(pop)
 
 struct D2WinWndHandlerStrc {
     /* 0x00 */ int32_t nType; // Handler kind, selecting the branch in D2WIN_RegisterWindowHandler @00506c40: 0 message, 1 command, 2 key down, 3 key up.
@@ -1185,22 +1154,17 @@ struct DSCAPS {
 };
 
 struct ZlibHuffCode {
-    ZlibHuffCode() = default;
-    ZlibHuffCode(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
     operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
-    ZlibHuffCode(uint8_t a0, uint8_t a1, short a2) : op(a0), bits(a1), val(a2) {}
 
     /* 0x00 */ uint8_t op; // operation, extra bits, table bits
     /* 0x01 */ uint8_t bits; // bits in this part of the code
     /* 0x02 */ short val; // offset in table or code value
 };
 
-#pragma pack(push, 1)
-struct D2ZlibStaticDTreeDistCodeStrc {
+struct __attribute__((packed)) D2ZlibStaticDTreeDistCodeStrc {
     /* 0x00 */ ct_data static_dtree[30]; // zlib trees.h static_dtree[D_CODES]
     /* 0x78 */ uint8_t _dist_code[512]; // zlib trees.h _dist_code[DIST_CODE_LEN]; _tr_tally/compress_block read it at base-1+dist folded
 };
-#pragma pack(pop)
 
 struct D2PickableStrc {
     /* 0x00 */ eD2Quests eQuestId; // Quest that must be completed for pickup restriction
@@ -2053,6 +2017,7 @@ extern D2MissileSrvDoFuncData MISSILECLTCOLLIDEFUNCS[9];
 extern int32_t aIntensityTable_Mode0[120];
 extern int32_t aIntensityTable_Mode1[120];
 extern uint32_t gnDialogDataInitialized;
+extern D2SkillChargeDescStrc gnUIFlagSkillDescHeight[6];
 extern D2SkillDescDamageFunc gapSkillDamageDescFuncTable[36];
 extern D2SkillDescAttackFunc gpSkillDescAttackFuncTable[18];
 extern int32_t gaSkillDescLayoutPositions[36];
@@ -2468,7 +2433,7 @@ extern D2SLogStrc * gaSLogHead[4];
 extern uint32_t gpActiveWindow;
 extern uint32_t gnSevtSnapshotActive;
 extern void * gpEventHashBuckets;
-extern void * gaEventRegistryHead;
+extern uint32_t gaEventRegistryHead;
 extern uint32_t gnSevtRegisteredEventCount;
 // lpCriticalSection parameter of LeaveCriticalSection
 // lpCriticalSection parameter of EnterCriticalSection
@@ -2940,7 +2905,9 @@ extern int gConnectShortTimeoutStartTick;
 extern uint32_t gbBloodFlag;
 // End-game UI state block (congrats/cutscene flags).
 extern D2EndGameUiState gEndGameUiState;
+// End-game cutscene/congrats flag set by quest log (advances difficulty).
 extern D2EndGameUiState gShowEndGameCutscene;
+// Congrats screen OK clicked; DRAW_Congratz exits when set.
 extern D2EndGameUiState gCongratzOkClicked;
 extern uint8_t CLIENT_nDifficulty;
 // Beta screen slideshow index (page).
@@ -2954,6 +2921,7 @@ extern BOOL D2CLIENT_ExitVar3;
 extern BOOL gLevelLoadInProgress;
 // Exit cutscene state: pending id + played flag.
 extern D2ExitCutsceneState gExitCutsceneState;
+// Exit cutscene played/active flag; suppresses connection-refused handling and drives end-game flow.
 extern D2ExitCutsceneState gExitCutscenePlayed;
 extern D2DrlgActStrc * sgpDrlgAct;
 extern D2Game_Line0x546 * D2GameGame0x546;

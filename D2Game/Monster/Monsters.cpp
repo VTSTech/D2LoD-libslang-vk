@@ -831,16 +831,11 @@ static void __stdcall MONSTER_SetElementalDamageFromLevel(D2UnitStrc * pUnit, eD
     uint32_t bIsMultiplayer;
     if (pUnit && pUnit->eUnitType == UNIT_MISSILE) {
       nLvlDamage = pUnit->nClassId;
-      if (nLvlDamage < 0) {
+      D2MissilesTxt* pMissilesTxt = nLvlDamage >= 0 && nLvlDamage < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nLvlDamage : nullptr;
+      if (!pMissilesTxt) {
         return;
       }
-      if (nLvlDamage >= sgptDataTable->nTxtMissilesSize) {
-        return;
-      }
-      if (!(sgptDataTable->pTxtMissiles + nLvlDamage)) {
-        return;
-      }
-      if (*((uint8_t*)&sgptDataTable->pTxtMissiles[nLvlDamage] + 0x5) & (uint8_t)gadwBitMasks[5]) {
+      if (*((uint8_t*)pMissilesTxt + 0x5) & (uint8_t)gadwBitMasks[5]) {
         return;
       }
     }
@@ -1067,8 +1062,7 @@ void __fastcall MONSTER_CorpseExplode(::SGAMEDATA * pGame, D2UnitStrc * pUnit, u
         }
       case DIFFICULTY_NIGHTMARE:
         {
-          nTmp = (int)((uint64_t)((int64_t)(int)nDamageAdjusted * 0x55555555) >> 0x20) - nDamageAdjusted;
-          nDamageAdjusted += (nTmp >> 1) - (nTmp >> 0x1f);
+          nDamageAdjusted += (int)nDamageAdjusted / -3;
           break;
         }
       case DIFFICULTY_HELL:
@@ -3150,7 +3144,7 @@ void __fastcall ApplyDamageCritical(D2UnitStrc * pAttacker, D2UnitStrc * pUnit, 
 
     uint64_t nRandState = (uint64_t)pAttacker->sSeed.nSeedLow * 0x6ac690c5 + (uint64_t)pAttacker->sSeed.nSeedHigh;
     pAttacker->sSeed = (D2SeedStrc)nRandState;
-    if ((uint8_t)((char)nRandState + (char)((nRandState & 0xffffffff) / 100) * -100) >= (uint8_t)pMonStats->Crit) {
+    if ((uint8_t)((char)nRandState + (char)((uint32_t)nRandState / 100) * -100) >= (uint8_t)pMonStats->Crit) {
       return;
     }
 

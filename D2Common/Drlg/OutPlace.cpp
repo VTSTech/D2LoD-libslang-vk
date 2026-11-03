@@ -520,7 +520,6 @@ static void __stdcall DRLGLEVEL_AllocDrlgLevelFromLevelIdToLevelId(D2DrlgStrc * 
     int* pWarpIds;
     D2DrlgLevelStrc* pLevel;
     eDrlgDirection eDirection;
-    int nWarpOffset;
     int nVisCount;
     D2DrlgLevelDataWildernessLevel* pLevelData;
     for (; (int)nLevelIdStart <= (int)eLevel; nLevelIdStart += LEVEL_RogueEncampment) {
@@ -529,19 +528,14 @@ static void __stdcall DRLGLEVEL_AllocDrlgLevelFromLevelIdToLevelId(D2DrlgStrc * 
       if (pCurLevel->eDrlgType == 3) {
         pVisArray = DrlgRoom::DRLGWARP_GetVisArrayFromLevelId(pDrlg, nLevelIdStart);
         pWarpIds = DrlgRoom::DRLGACTMISC_GetWarpsIdIfExists(pDrlg, nLevelIdStart);
-        nWarpOffset = (int)pWarpIds - (int)pVisArray;
-        nVisCount = 8;
-        do {
-          if (*pVisArray && *(int*)(nWarpOffset + (int)pVisArray) == -1) {
+        for (nVisCount = 0; nVisCount < 8; nVisCount++) {
+          if (pVisArray[nVisCount] && pWarpIds[nVisCount] == -1) {
             pLevelData = pCurLevel->pDrlgLevelData.pDrlgLevelOutdoorsData;
-            pLevel = GetLevelAndAlloc(pCurLevel->pDrlg, *pVisArray);
+            pLevel = GetLevelAndAlloc(pCurLevel->pDrlg, pVisArray[nVisCount]);
             eDirection = GetDirectionFromCoordinates(&pCurLevel->sCoordinatesAndSize, &pLevel->sCoordinatesAndSize);
             DrlgRoom::AllocDrlgOrth(&pLevelData->pOrthData, pLevel, eDirection, (uint32_t)(pLevel->eDrlgType == 2));
           }
-
-          pVisArray++;
-          nVisCount--;
-        } while (nVisCount);
+        }
       }
     }
 }
@@ -1243,32 +1237,34 @@ static D2DrlgLevelStrc * DRLGLEVEL_FixDrlgLevelForSpiderForest(D2DrlgLevelStrc *
                 do {
                   nConnFlags = *pRowPtr;
                   uVar4 = (int)nConnFlags % 16;
-                  if (!uVar4) {
+                  if (uVar4) {
+                    if ((int)nConnFlags >= 0x10) {
+                      if (nConnFlags & 0x10) {
+                        uVar4 = gaWildernessLevelSeedOffsets[uVar4 * 4 + 0x66];
+                      }
+                      if (nConnFlags & 0x20) {
+                        uVar4 = gaWildernessLevelSeedOffsets[uVar4 * 4 + 0x67];
+                      }
+                      if (nConnFlags & 0x40) {
+                        uVar4 = gaWildernessLevelSeedOffsets[uVar4 * 4 + 0x68];
+                      }
+                      if ((char)nConnFlags < '\0') {
+                        uVar4 = gaWildernessLevelSeedOffsets[uVar4 * 4 + 0x69];
+                      }
+                      if (!uVar4) {
+                        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x78c);
+                        exit(-1);
+                      }
+                    } else {
+                      uVar4 += 0x211;
+                    }
+                  } else {
                     if ((int)nConnFlags >= 0x10) {
                       uVar4 = gaWildernessLevelSeedOffsets[((int)nConnFlags >> 4) + 0x59];
                       if (!uVar4) {
                         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x799);
                         exit(-1);
                       }
-                    }
-                  } else if ((int)nConnFlags < 0x10) {
-                    uVar4 += 0x211;
-                  } else {
-                    if (nConnFlags & 0x10) {
-                      uVar4 = gaWildernessLevelSeedOffsets[uVar4 * 4 + 0x66];
-                    }
-                    if (nConnFlags & 0x20) {
-                      uVar4 = gaWildernessLevelSeedOffsets[uVar4 * 4 + 0x67];
-                    }
-                    if (nConnFlags & 0x40) {
-                      uVar4 = gaWildernessLevelSeedOffsets[uVar4 * 4 + 0x68];
-                    }
-                    if ((char)nConnFlags < '\0') {
-                      uVar4 = gaWildernessLevelSeedOffsets[uVar4 * 4 + 0x69];
-                    }
-                    if (!uVar4) {
-                      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x78c);
-                      exit(-1);
                     }
                   }
 

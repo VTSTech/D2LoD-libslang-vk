@@ -259,9 +259,10 @@ BOOL __fastcall SKILLSOR_SrvStFn12_TargetInAuraRange(::SGAMEDATA * pGame, D2Unit
     int32_t nCasterY;
     eD2UnitType eUnitType;
     D2UnitStrc* pTarget = UNIT::SUnit::GetTargetEx(pGame, pUnit);
-    if (pTarget && (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill) {
+    D2SkillsTxt* pSkillsTxt;
+    if (pTarget && (pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr)) {
       int32_t nAuraRange;
-      nAuraRange = D2Common::Skills::D2GetSkillCalc(pUnit, sgptDataTable->pTxtSkills[eSkill].aurarangecalc, eSkill, nSkillLvl);
+      nAuraRange = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->aurarangecalc, eSkill, nSkillLvl);
       eUnitType = pTarget->eUnitType;
       if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         eSkill = pTarget->pPath.pStaticPath->nPosY;
@@ -1149,10 +1150,7 @@ BOOL __fastcall Skills_SrvDoFunc_029_ThunderStorm(::SGAMEDATA * pGame, D2UnitStr
     }
 
     eMissilesId eMissileId = (eMissilesId)pDVar1->srvmissile[1];
-    if ((int)eMissileId < 0) {
-      return 0;
-    }
-    if ((int)eMissileId >= sgptDataTable->nTxtMissilesSize) {
+    if ((int)eMissileId < 0 || (int)eMissileId >= sgptDataTable->nTxtMissilesSize) {
       return 0;
     }
     if (pDVar1->aurastate < 0) {
@@ -1211,38 +1209,38 @@ BOOL __fastcall Skills_SrvDoFunc_029_ThunderStorm(::SGAMEDATA * pGame, D2UnitStr
 BOOL __fastcall ITEMEVENT_SorAuraManaAbsorb(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
     // Static local variables (originally global data)
     static D2ManaAbsorbFieldStrc gnAuraManaAbsorbIndex[8] = {
-    D2ManaAbsorbFieldStrc(
+    {
         /* .nDamageFieldOffset = */ 0x8,
         /* .bSecondary = */ 0x0
-    ),
-    D2ManaAbsorbFieldStrc(
+    },
+    {
         /* .nDamageFieldOffset = */ 0x10,
         /* .bSecondary = */ 0x0
-    ),
-    D2ManaAbsorbFieldStrc(
+    },
+    {
         /* .nDamageFieldOffset = */ 0x1c,
         /* .bSecondary = */ 0x0
-    ),
-    D2ManaAbsorbFieldStrc(
+    },
+    {
         /* .nDamageFieldOffset = */ 0x24,
         /* .bSecondary = */ 0x0
-    ),
-    D2ManaAbsorbFieldStrc(
+    },
+    {
         /* .nDamageFieldOffset = */ 0x20,
         /* .bSecondary = */ 0x0
-    ),
-    D2ManaAbsorbFieldStrc(
+    },
+    {
         /* .nDamageFieldOffset = */ 0x38,
         /* .bSecondary = */ 0x1
-    ),
-    D2ManaAbsorbFieldStrc(
+    },
+    {
         /* .nDamageFieldOffset = */ 0x3c,
         /* .bSecondary = */ 0x1
-    ),
-    D2ManaAbsorbFieldStrc(
+    },
+    {
         /* .nDamageFieldOffset = */ 0x40,
         /* .bSecondary = */ 0x1
-    )
+    }
 }; D2_STATIC_GUARD(gnAuraManaAbsorbIndex, "D2Game::SKILLS::SkillSor::ITEMEVENT_SorAuraManaAbsorb::gnAuraManaAbsorbIndex");
 
     D2StatListExStrc* pStatsEx;

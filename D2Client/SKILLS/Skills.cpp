@@ -341,7 +341,7 @@ void __stdcall MISSILE_SetSpeedByDistance(D2UnitStrc * pUnit, D2UnitStrc * pUnit
       nDistance = 1;
     }
 
-    D2Common::Units::SetAnimationSpeed(pUnit, (int32_t)(0xa00 / (int64_t)nDistance));
+    D2Common::Units::SetAnimationSpeed(pUnit, (int32_t)(0xa00 / nDistance));
     D2Common::Units::Missile::SetCurrentFrame(pUnit, nDistance + 2);
     pUnit->nGfxCurrentFrame = 0x200;
 }
@@ -930,7 +930,7 @@ BOOL __fastcall Skills_CltDoFunc_Bow_ThrowItem(D2UnitStrc * pUnit, eD2Skills eSk
 
 // Client-side skill cast initiator for a unit. Validates the skill row, performs the line-of-sight check (mapping SkillsTxt.lineofsight 1-5 to the appropriate collision mask), and SKILL_CanTargetDeadMonster gating. Ensures the skill object exists on the unit (allocates/adds it, clamping to max level and applying a skill-level bonus for overflow) and sets it as the unit's current skill. Cancels casting in town for non-town-allowed skills (HandleMessage 7 + plays the no-cast sound). Sets the unit's anim mode (or attack animation for melee Attack), runs the per-skill client-start function (cltstfunc), plays start/cast/class sounds, adds the cast overlay, and assigns missile light. Returns the skill result code (SKILL_Attack signals abort/no-op). __fastcall (EAX=eSkill, ECX=pUnit).
 // @sourcefile .\SKILLS\Skills.cpp
-int32_t __stdcall SKILLS_CastSkillClient(eD2Skills eSkill, D2UnitStrc * pUnit, int32_t nOwnerGUID, uint32_t nSkillLevel) {
+static int32_t __stdcall SKILLS_CastSkillClient(eD2Skills eSkill, D2UnitStrc * pUnit, int32_t nOwnerGUID, uint32_t nSkillLevel) {
     // Static local variables (originally global data)
     static int SKILLCLTSTFUNCS_SIZE = 0x46; D2_STATIC_GUARD(SKILLCLTSTFUNCS_SIZE, "D2Client::SKILLS::Skills::SKILLS_CastSkillClient::SKILLCLTSTFUNCS_SIZE");
     static D2SkillCltStFunc SKILLCLTSTFUNCS[70] = {
@@ -1235,6 +1235,11 @@ int32_t __stdcall SKILLS_CastSkillClient(eD2Skills eSkill, D2UnitStrc * pUnit, i
     return eSkillResult;
 }
 
+// Extern entry for hand-written callers: SKILLS_CastSkillClient itself keeps its unit's linkage.
+int32_t __stdcall SKILLS_CastSkillClient_Extern(eD2Skills eSkill, D2UnitStrc * pUnit, int32_t nOwnerGUID, uint32_t nSkillLevel) {
+    return ::D2Client::SKILLS::Skills::SKILLS_CastSkillClient(eSkill, pUnit, nOwnerGUID, nSkillLevel);
+}
+
 int32_t __fastcall SKILLS_CastSkillClientArgsReversed(D2UnitStrc * pUnit, eD2Skills eSkill, short * nSkillLevel, int32_t nOwnerGUID) {
     int32_t nResult = SKILLS_CastSkillClient(eSkill, pUnit, nOwnerGUID, (uint32_t)nSkillLevel);
     return nResult;
@@ -1374,15 +1379,16 @@ uint32_t __fastcall SKILL_ExecuteClientDoFunc(D2UnitStrc * pUnit, eD2Skills eSki
 }
 
 // @sourcefile .\SKILLS\Skills.cpp
-void __fastcall SKILLS_CltSetSkillFromCurrent(D2UnitStrc * pUnit) {
+uint32_t __fastcall SKILLS_CltSetSkillFromCurrent(D2UnitStrc * pUnit) {
     D2SkillStrc* pSkill = D2Common::Units::GetCurrentSkill(pUnit);
     if (!pSkill) {
-      return;
+      return 0;
     }
 
     eD2Skills eSkill = D2Common::Skills::GetSkillId(pSkill, ".\\SKILLS\\Skills.cpp", 0x697);
     int nSkillLevel = D2Common::Skills::GetSkillLevel(pUnit, pSkill, 1);
-    SKILL_ExecuteClientDoFunc(pUnit, eSkill, nSkillLevel, 0);
+    uint32_t uVar1 = SKILL_ExecuteClientDoFunc(pUnit, eSkill, nSkillLevel, 0);
+    return uVar1;
 }
 
 // Invokes a skill's client progress function (SkillsTxt.cltprgfunc[0]) for pUnit, temporarily redirecting the unit's target/SP1 to the supplied target unit (pUnit2) or target coords (nTargetX/nTargetY) and stashing bDirection in nInitSeed. Looks up the cltprgfunc in the SKILLCLTDOFUNCS dispatch table and calls it (pUnit,eSkill,nSkillLevel); on success plays the skill's dosound, the target's tgtsound, and adds the tgtoverlay to the confirmed target. Restores the unit's original target, SP1 coordinates and nInitSeed before returning. No-op if unit null or eSkill out of range.
@@ -1655,7 +1661,8 @@ int32_t __fastcall SKILL_ProcessCastFromPacket(D2UnitStrc * pUnit, int * pnCastA
     if (pUnit->eUnitType == UNIT_MONSTER) {
       uint8_t bNewDir;
       nMonClassId = pUnit->nClassId;
-      if (nMonClassId >= 0 && nMonClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonClassId && *(int*)sgptDataTable->pTxtMonStats[nMonClassId].Code == 0x20204250) {
+      D2MonStatsTxt* pMonStatsTxt;
+      if ((pMonStatsTxt = nMonClassId >= 0 && nMonClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nMonClassId : nullptr) && *(int*)pMonStatsTxt->Code == 0x20204250) {
         bNewDir = D2Common::PATH::DynamicPath::UpdateDirection(pUnit->pPath.pDynamicPath);
         bNewDir = bNewDir + 0x38 & 0x3f;
         D2Common::PATH::DynamicPath::PATH_SetNewDirection(pUnit->pPath.pDynamicPath, bNewDir);
@@ -1672,40 +1679,42 @@ void __stdcall SKILLS_CreateMissileRing(D2SkillArgStrc * pSkillArg1, D2SkillArgS
     D2UnitStrc* pMissileUnit;
     D2SeedStrc sRandSeed;
     int nTableOffset = 0;
-    if (!pSkillArg1) {
+    if (pSkillArg1) {
+      int nRingTableOffset = 0;
       do {
-        pSkillArg2->nUnitX = ganMissileRingCosOffsets[nTableOffset];
-        pSkillArg2->nUnitY = ganMissileRingSinOffsets[nTableOffset];
-        if (pSkillArg2->nMissileTxtNo == MISSILE_Diabfire) {
-          pSkillArg2->nFlags ^= 0x4000;
+        D2SkillArgStrc* pChosenArg;
+        pMissileUnit = pSkillArg2->pOwner;
+        sRandSeed = D2_SEED_NEXT(pMissileUnit->sSeed);
+        pMissileUnit->sSeed = sRandSeed;
+        if (sRandSeed.nSeedLow % 6 != 0) {
+          pSkillArg2->nUnitX = ganMissileRingCosOffsets[nRingTableOffset];
+          pSkillArg2->nUnitY = ganMissileRingSinOffsets[nRingTableOffset];
+          pChosenArg = pSkillArg2;
+        } else {
+          pSkillArg1->nUnitX = ganMissileRingCosOffsets[nRingTableOffset];
+          pSkillArg1->nUnitY = ganMissileRingSinOffsets[nRingTableOffset];
+          pChosenArg = pSkillArg1;
         }
 
-        UNIT::Missile::MakeMissile(pSkillArg2);
-        nTableOffset++;
-      } while (nTableOffset < 64);
+        UNIT::Missile::MakeMissile(pChosenArg);
+        nRingTableOffset++;
+      } while (nRingTableOffset < 64);
 
       return;
     }
 
-    int nRingTableOffset = 0;
     do {
-      D2SkillArgStrc* pChosenArg;
-      pMissileUnit = pSkillArg2->pOwner;
-      sRandSeed = D2_SEED_NEXT(pMissileUnit->sSeed);
-      pMissileUnit->sSeed = sRandSeed;
-      if (sRandSeed.nSeedLow % 6 != 0) {
-        pSkillArg2->nUnitX = ganMissileRingCosOffsets[nRingTableOffset];
-        pSkillArg2->nUnitY = ganMissileRingSinOffsets[nRingTableOffset];
-        pChosenArg = pSkillArg2;
-      } else {
-        pSkillArg1->nUnitX = ganMissileRingCosOffsets[nRingTableOffset];
-        pSkillArg1->nUnitY = ganMissileRingSinOffsets[nRingTableOffset];
-        pChosenArg = pSkillArg1;
+      pSkillArg2->nUnitX = ganMissileRingCosOffsets[nTableOffset];
+      pSkillArg2->nUnitY = ganMissileRingSinOffsets[nTableOffset];
+      if (pSkillArg2->nMissileTxtNo == MISSILE_Diabfire) {
+        pSkillArg2->nFlags ^= 0x4000;
       }
 
-      UNIT::Missile::MakeMissile(pChosenArg);
-      nRingTableOffset++;
-    } while (nRingTableOffset < 64);
+      UNIT::Missile::MakeMissile(pSkillArg2);
+      nTableOffset++;
+    } while (nTableOffset < 64);
+
+    return;
 }
 
 // Fires one or two missile types at a target unit's world position. Builds a D2SkillArgStrc from the target's path (static or dynamic), sets owner/skill/level. If eMissilesId2 is -2 (sentinel), fires a full 360° ring via ganMissileRingCosOffsets/SinOffsets (64 missiles). Otherwise copies the arg and fires a second missile ring via SKILLS_CreateMissileRing using eMissilesId2. Optional nParam overrides missile velocity.
@@ -1846,7 +1855,7 @@ void __fastcall SKILL_ProcessActiveStateEffects(D2UnitStrc * pUnit) {
 
     do {
       eD2States eUnitState;
-      eState = (eD2States)sgptDataTable->pAllStatesDataTblFlag0x05[nStateListIdx].nStateId;
+      eState = (eD2States)(short int)sgptDataTable->pAllStatesDataTblFlag0x05[nStateListIdx];
       eUnitState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, eState);
       pStatesTxt = eUnitState != STATE_none && (int)eState >= 0 && (int)eState < sgptDataTable->nTxtStatesSize ? sgptDataTable->pTxtStates + eState : nullptr;
       if (pStatesTxt) {

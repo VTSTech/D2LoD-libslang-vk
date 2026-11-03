@@ -95,7 +95,7 @@ eD2Skills __stdcall ITEMMOD_RollStaffModSkills(D2UnitStrc * pUnit, eD2Skills eSk
         anSkillIds[3] = 2;
       } else {
         if (nSeedMod100 <= 0x1e) {
-          return (eD2Skills)((uint64_t)sSeed.nSeedLow * 0x51eb851f);
+          return (eD2Skills)(sSeed.nSeedLow * 0x51eb851f);
         }
 
         anSkillIds[3] = 1;
@@ -1094,7 +1094,7 @@ static BOOL __stdcall RollPrefixes(D2ItemGenContextStrc * pItemGenContext, D2Uni
 
     int nAffixRollCount;
     nAffixRollCount = D2Client::Seed::RollBetweenMinAndMax(pSeed, nMin, nMax);
-    if (!nAffixRollCount) {
+    if ((uint32_t)nAffixRollCount <= 0) {
       return 0;
     }
 

@@ -181,8 +181,8 @@ void __stdcall VIEW_Init() {
     gnLightmapInterpolationState[1] = 0;
     uint32_t nLoopIdx = 1;
     do {
-      uint64_t nDivisor;
-      nDivisor = (uint64_t)nLoopIdx;
+      uint32_t nDivisor;
+      nDivisor = nLoopIdx;
       nLoopIdx++;
       gnLightmapInterpolationState[nLoopIdx] = (uint32_t)(0x10000 / nDivisor);
     } while ((int)nLoopIdx < 0x100);
@@ -445,22 +445,21 @@ void __fastcall GetCenterXY(D2GameViewStrc * pGameView, int * nCenterX, int * nC
 }
 
 void __fastcall VIEW_ConvertViewCoordsToIsometric(D2GameViewStrc * pGameView, int32_t nOffsetX, int32_t nOffsetY, int * pOutX, int * pOutY) {
-    if (pGameView) {
-      if (!pOutX) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ce);
-        exit(-1);
-      } else {
-        if (!pOutY) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1cf);
-          exit(-1);
-        }
-
-        D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv32(pGameView->nCenterX + nOffsetX, pGameView->nCenterY + nOffsetY, pOutX, pOutY);
-        return;
-      }
-    } else {
+    if (!pGameView) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1cd);
       exit(-1);
+    }
+    if (!pOutX) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ce);
+      exit(-1);
+    } else {
+      if (!pOutY) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1cf);
+        exit(-1);
+      }
+
+      D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv32(pGameView->nCenterX + nOffsetX, pGameView->nCenterY + nOffsetY, pOutX, pOutY);
+      return;
     }
 }
 
@@ -1058,7 +1057,7 @@ void __fastcall SHAKE_AdjustCenterByShake(uint32_t * pCenterX, uint32_t * pCente
           goto update_sound;
         }
 
-        nShakeMagnitude = (uint32_t)(((int64_t)(int)(SHAKE_Arg2 - nTicks + SHAKE_Arg1 + SHAKE_Arg3) * (int64_t)(int)SHAKE_Amplitude & 0xffffffffU) / (uint64_t)SHAKE_Arg2);
+        nShakeMagnitude = (uint32_t)((uint32_t)((uint32_t)(int)(SHAKE_Arg2 - nTicks + SHAKE_Arg1 + SHAKE_Arg3) * (int)SHAKE_Amplitude) / SHAKE_Arg2);
       }
     }
 

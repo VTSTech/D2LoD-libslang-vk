@@ -507,60 +507,61 @@ void __fastcall Q35_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
-    if (!bIsCompleted) {
-      uint32_t nGossipMsgIndex;
-      if ((int)nNpcId >= 0x219 && (int)nNpcId <= 0x21b && !pQuestSpecificData->bAncientsActive) {
-        AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNpcId, 4);
+    if (bIsCompleted) {
+      bIsCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_JustCompleted);
+      switch (nNpcId) {
+        case MonsterUnitLarzuk:
+          eQuestState = QUESTSTATE_Step0x05;
+        nQuestId = pQuestData->nQuestIdReal;
+        break;
+        case MonsterUnitDeckardCain6:
+          nQuestId = pQuestData->nQuestIdReal;
+        eQuestState = QUESTSTATE_Step0x06;
+        break;
+        case MonsterUnitDrehya1:
+          nQuestId = pQuestData->nQuestIdReal;
+        eQuestState = QUESTSTATE_Step0x07;
+        break;
+        case MonsterUnitMalah:
+          eQuestState = QUESTSTATE_Step0x08;
+        nQuestId = pQuestData->nQuestIdReal;
+        break;
+        default:
+          return;
+        case MonsterUnitQualkehk:
+          nQuestId = pQuestData->nQuestIdReal;
+        eQuestState = QUESTSTATE_Step0x09;
+        break;
       }
 
-      nGossipMsgIndex = gdwQuestCallbackAddressQ35[pQuestData->nStateFlag];
-      if (nGossipMsgIndex == -1) {
+      BOOL bNpcTalkFlagSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, nQuestId, eQuestState);
+      if (!bNpcTalkFlagSet) {
+        AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNpcId, 5);
         return;
       }
-      if (nGossipMsgIndex >= 9) {
+      if (!bIsCompleted) {
         return;
       }
 
-      AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNpcId, nGossipMsgIndex);
+      AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNpcId, 3);
       return;
     }
 
-    bIsCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_JustCompleted);
-    switch (nNpcId) {
-      case MonsterUnitLarzuk:
-        eQuestState = QUESTSTATE_Step0x05;
-      nQuestId = pQuestData->nQuestIdReal;
-      break;
-      case MonsterUnitDeckardCain6:
-        nQuestId = pQuestData->nQuestIdReal;
-      eQuestState = QUESTSTATE_Step0x06;
-      break;
-      case MonsterUnitDrehya1:
-        nQuestId = pQuestData->nQuestIdReal;
-      eQuestState = QUESTSTATE_Step0x07;
-      break;
-      case MonsterUnitMalah:
-        eQuestState = QUESTSTATE_Step0x08;
-      nQuestId = pQuestData->nQuestIdReal;
-      break;
-      default:
-        return;
-      case MonsterUnitQualkehk:
-        nQuestId = pQuestData->nQuestIdReal;
-      eQuestState = QUESTSTATE_Step0x09;
-      break;
+    uint32_t nGossipMsgIndex;
+    if ((int)nNpcId >= 0x219 && (int)nNpcId <= 0x21b && !pQuestSpecificData->bAncientsActive) {
+      AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNpcId, 4);
     }
 
-    BOOL bNpcTalkFlagSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, nQuestId, eQuestState);
-    if (!bNpcTalkFlagSet) {
-      AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNpcId, 5);
+    nGossipMsgIndex = gdwQuestCallbackAddressQ35[pQuestData->nStateFlag];
+    if (nGossipMsgIndex == -1) {
       return;
     }
-    if (!bIsCompleted) {
+    if (nGossipMsgIndex >= 9) {
       return;
     }
 
-    AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNpcId, 3);
+    AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNpcId, nGossipMsgIndex);
+    return;
 }
 
 // A5Q5 (Rite of Passage) XP reward function. Grants 1,400,000 / 20,000,000 / 40,000,000 XP for Normal/Nightmare/Hell respectively, capped to one level's worth of experience. Loops awarding XP until the cap is exhausted or the level table is exceeded. Caller is responsible for setting Completed/JustCompleted quest states.
@@ -1141,7 +1142,7 @@ BOOL __fastcall Q35_CheckQuestNotStarted(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 }
 
 // [A5Q5 = Rite of Passage] Q35_SetStatueAnimMode: sets one altar statue's display/anim mode from the saved per-statue mode. classId 0x1da->slot[0x34], 0x1db->slot[0x30], 0x1dc->slot[0x38]. No quest-state writes.
-static void Q35_SetStatueAnimMode(uint32_t dwParam, D2QuestDataA5Q5Strc * pQuestData, D2ObjectInitFnArg * pInitArg) {
+static void Q35_SetStatueAnimMode(D2QuestDataA5Q5Strc * pQuestData, D2ObjectInitFnArg * pInitArg) {
     int nClassId;
     D2UnitStrc* pUnit = pInitArg->pObject;
     if (!pUnit) {
@@ -1172,47 +1173,44 @@ static void Q35_SetStatueAnimMode(uint32_t dwParam, D2QuestDataA5Q5Strc * pQuest
 
 // [A5Q5 = Rite of Passage] Objects_InitFn65: object init for one Ancient altar statue — records its GUID (slot 5) and applies its anim mode. No quest-state writes.
 void __fastcall Objects_InitFn65_AncientStatue2(D2ObjectInitFnArg * pInitArg) {
-    uint32_t dwUnusedECX;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_RiteOfPassage);
     D2QuestDataA5Q5Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q5;
     if (!pInitArg->pObject) {
       pQuestSpecificData->anStatueObjectGUID[0] = -1;
-      Q35_SetStatueAnimMode(dwUnusedECX, pQuestSpecificData, pInitArg);
+      Q35_SetStatueAnimMode(pQuestSpecificData, pInitArg);
       return;
     }
 
     pQuestSpecificData->anStatueObjectGUID[0] = pInitArg->pObject->nUnitGUID;
-    Q35_SetStatueAnimMode(dwUnusedECX, pQuestSpecificData, pInitArg);
+    Q35_SetStatueAnimMode(pQuestSpecificData, pInitArg);
 }
 
 // [A5Q5 = Rite of Passage] Objects_InitFn63: object init for one Ancient altar statue — records its GUID (slot 6) and applies its anim mode. No quest-state writes.
 void __fastcall Objects_InitFn63_AncientStatue3(D2ObjectInitFnArg * pInitArg) {
-    uint32_t dwUnusedECX;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_RiteOfPassage);
     D2QuestDataA5Q5Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q5;
     if (!pInitArg->pObject) {
       pQuestSpecificData->anStatueObjectGUID[1] = -1;
-      Q35_SetStatueAnimMode(dwUnusedECX, pQuestSpecificData, pInitArg);
+      Q35_SetStatueAnimMode(pQuestSpecificData, pInitArg);
       return;
     }
 
     pQuestSpecificData->anStatueObjectGUID[1] = pInitArg->pObject->nUnitGUID;
-    Q35_SetStatueAnimMode(dwUnusedECX, pQuestSpecificData, pInitArg);
+    Q35_SetStatueAnimMode(pQuestSpecificData, pInitArg);
 }
 
 // [A5Q5 = Rite of Passage] Objects_InitFn64: object init for one Ancient altar statue — records its GUID (slot 7) and applies its anim mode. No quest-state writes.
 void __fastcall Objects_InitFn64_AncientStatue1(D2ObjectInitFnArg * pInitArg) {
-    uint32_t dwUnusedECX;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_RiteOfPassage);
     D2QuestDataA5Q5Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q5;
     if (!pInitArg->pObject) {
       pQuestSpecificData->anStatueObjectGUID[2] = -1;
-      Q35_SetStatueAnimMode(dwUnusedECX, pQuestSpecificData, pInitArg);
+      Q35_SetStatueAnimMode(pQuestSpecificData, pInitArg);
       return;
     }
 
     pQuestSpecificData->anStatueObjectGUID[2] = pInitArg->pObject->nUnitGUID;
-    Q35_SetStatueAnimMode(dwUnusedECX, pQuestSpecificData, pInitArg);
+    Q35_SetStatueAnimMode(pQuestSpecificData, pInitArg);
 }
 
 // [A5Q5 = Rite of Passage] OBJOP_A5Q5_AncientsTriggerSound1: object-operate stub that plays the "locked" sound (event 0x13) on the altar. No quest-state writes.

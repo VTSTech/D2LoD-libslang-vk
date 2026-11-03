@@ -614,7 +614,7 @@ int __fastcall SAVE_SerializeInventoryItems(::SGAMEDATA * pGame, D2UnitStrc * pU
             }
 
             pWriteCursor += nWritten;
-            if (!nWritten && nCarriedCount) {
+            if (!nWritten && nCarriedCount > 0) {
               nCarriedCount--;
             }
           }
@@ -632,7 +632,7 @@ int __fastcall SAVE_SerializeInventoryItems(::SGAMEDATA * pGame, D2UnitStrc * pU
 
           pWriteCursor += nWritten;
           pLeftArmItem = pRightArmItem;
-          if (!nWritten && nCarriedCount) {
+          if (!nWritten && nCarriedCount > 0) {
             nCarriedCount--;
           }
         } else {
@@ -643,7 +643,7 @@ int __fastcall SAVE_SerializeInventoryItems(::SGAMEDATA * pGame, D2UnitStrc * pU
           }
 
           pWriteCursor += nWritten;
-          if (!nWritten && nCarriedCount) {
+          if (!nWritten && nCarriedCount > 0) {
             nCarriedCount--;
           }
         }
@@ -654,7 +654,7 @@ int __fastcall SAVE_SerializeInventoryItems(::SGAMEDATA * pGame, D2UnitStrc * pU
           }
 
           pWriteCursor += nWritten;
-          if (!nWritten && nCarriedCount) {
+          if (!nWritten && nCarriedCount > 0) {
             nCarriedCount--;
           }
         }
@@ -665,7 +665,7 @@ int __fastcall SAVE_SerializeInventoryItems(::SGAMEDATA * pGame, D2UnitStrc * pU
           }
 
           pWriteCursor += nWritten;
-          if (!nWritten && nCarriedCount) {
+          if (!nWritten && nCarriedCount > 0) {
             nCarriedCount--;
           }
         }

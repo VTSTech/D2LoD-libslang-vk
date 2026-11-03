@@ -440,22 +440,24 @@ BYTE * __fastcall RENDERER_WINDOWED_GetPalettePointer(int nDrawMode, uint32_t * 
 // Windowed GDI renderer helper functions - DIB section allocation, palette conversion, line drawing (Bresenham), crop rect calculation, Smacker video blitting
 void __fastcall RENDERER_WINDOWED_UpdateScaleFactor(int nParam) {
     RENDERER_WINDOWED_nScaleOffsetY = 0;
-    if (!nParam) {
-      RENDERER_WINDOWED_nScaleWidth = 0x280;
-      return;
-    }
-    if (nParam == 4) {
-      // Vanilla Plus: render the full 1280-wide playfield.
-      RENDERER_WINDOWED_nScaleWidth = 1280;
+    if (nParam) {
+      if (nParam == 4) {
+        // Vanilla Plus: render the full 1280-wide playfield.
+        RENDERER_WINDOWED_nScaleWidth = 1280;
+        return;
+      }
+
+      if (nParam != 3) {
+        RENDERER_WINDOWED_nScaleWidth = 800;
+        return;
+      }
+
+      RENDERER_WINDOWED_nScaleWidth = 0x540;
       return;
     }
 
-    if (nParam != 3) {
-      RENDERER_WINDOWED_nScaleWidth = 800;
-      return;
-    }
-
-    RENDERER_WINDOWED_nScaleWidth = 0x540;
+    RENDERER_WINDOWED_nScaleWidth = 0x280;
+    return;
 }
 
 // Windowed GDI renderer helper functions - DIB section allocation, palette conversion, line drawing (Bresenham), crop rect calculation, Smacker video blitting
@@ -1114,43 +1116,43 @@ void __fastcall DrawSolidRect(tagRECT * pRect, uint8_t nPaletteIndex) {
 
     int nBottom = pRect->top;
     int nTop = pRect->bottom;
-    if (nBottom <= nTop) {
-      if (!(nRightEdge >= 0 && nRight < RENDERER_nWindowWidth && nTop >= 0 && nBottom < RENDERER_nWindowHeight)) {
-        return;
-      }
-      if (nRight < 0) {
-        pRect->left = 0;
-      }
-      if (nRightEdge >= RENDERER_nWindowWidth) {
-        pRect->right = RENDERER_nWindowWidth - 1;
-      }
-      if (nBottom < 0) {
-        pRect->top = 0;
-      }
-      if (nTop >= RENDERER_nWindowHeight) {
-        pRect->bottom = RENDERER_nWindowHeight - 1;
-      }
+    if (!(nBottom <= nTop)) {
+      DrawSolidRect_HaltTail(0x15f);
+      return;
+    }
+    if (!(nRightEdge >= 0 && nRight < RENDERER_nWindowWidth && nTop >= 0 && nBottom < RENDERER_nWindowHeight)) {
+      return;
+    }
+    if (nRight < 0) {
+      pRect->left = 0;
+    }
+    if (nRightEdge >= RENDERER_nWindowWidth) {
+      pRect->right = RENDERER_nWindowWidth - 1;
+    }
+    if (nBottom < 0) {
+      pRect->top = 0;
+    }
+    if (nTop >= RENDERER_nWindowHeight) {
+      pRect->bottom = RENDERER_nWindowHeight - 1;
+    }
 
-      _Size = pRect->right - pRect->left;
-      nRight = pRect->bottom - pRect->top;
-      if (!(_Size && nRight)) {
-        return;
-      }
-
-      _Dst = gpRenderBackBufferBits + pRect->top * RENDERER_nWindowWidth + pRect->left;
-      do {
-        nRight--;
-        if (_Size > 0) {
-          memset(_Dst, nPaletteIndex, _Size);
-        }
-
-        _Dst += RENDERER_nWindowWidth;
-      } while (nRight);
-
+    _Size = pRect->right - pRect->left;
+    nRight = pRect->bottom - pRect->top;
+    if (!(_Size && nRight)) {
       return;
     }
 
-    DrawSolidRect_HaltTail(0x15f);
+    _Dst = gpRenderBackBufferBits + pRect->top * RENDERER_nWindowWidth + pRect->left;
+    do {
+      nRight--;
+      if (_Size > 0) {
+        memset(_Dst, nPaletteIndex, _Size);
+      }
+
+      _Dst += RENDERER_nWindowWidth;
+    } while (nRight);
+
+    return;
 }
 
 void __stdcall DrawSolidRect_HaltTail(int nLine) {

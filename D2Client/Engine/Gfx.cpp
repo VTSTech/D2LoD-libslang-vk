@@ -922,22 +922,23 @@ static void GFX_LoadMonsterModeCof(D2UnitStrc * pUnit, uint32_t nComponent) {
     int32_t nAnimMode = D2Common::Units::GetAnimOrSeqMode(pUnit);
     D2Common::Skills::SKILLS_GetStateTransformGfx(pUnit, &eUnitType, &nClassId, &nAnimMode, ".\\ENGINE\\Gfx.cpp", 0x464);
     uint32_t bHasComponent = Source::ClientEngine::GetSomeMonsterStatFlag(nClassId, nComponent);
-    if (!bHasComponent) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x486);
-      exit(-1);
-    }
+    if (bHasComponent) {
+      uint8_t byComponent = GfxUtil::GFXUTIL_GetGfxInfoComponent(pUnit, nComponent);
+      if (byComponent) {
+        return;
+      }
 
-    uint8_t byComponent = GfxUtil::GFXUTIL_GetGfxInfoComponent(pUnit, nComponent);
-    if (byComponent) {
+      int bLoaded = GFX_LoadCompositCof(&nOutCofData, nComponent, pUnit);
+      if (!bLoaded) {
+        return;
+      }
+
+      GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nComponent, '\x01');
       return;
     }
 
-    int bLoaded = GFX_LoadCompositCof(&nOutCofData, nComponent, pUnit);
-    if (!bLoaded) {
-      return;
-    }
-
-    GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nComponent, '\x01');
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x486);
+    exit(-1);
 }
 
 // @sourcefile .\ENGINE\Gfx.cpp
@@ -1493,10 +1494,10 @@ int32_t GFX_FreeMonsterCofCache() {
 static void __stdcall GFX_BuildMonsterCofPath(uint32_t nModeId, LPSTR szOutputPath, int * pnComponentCode, int32_t nMonsterClassId) {
     // Static local variables (originally global data)
     static D2CofPathOverrideStrc gnMonsterCofPathBuildTotalItems[1] = {
-    D2CofPathOverrideStrc(
+    {
         /* .dwToken = */ 0x20206867,
         /* .nMode = */ 0xd
-    )
+    }
 }; D2_STATIC_GUARD(gnMonsterCofPathBuildTotalItems, "D2Client::Engine::Gfx::GFX_BuildMonsterCofPath::gnMonsterCofPathBuildTotalItems");
     static uint32_t gnMonsterCofPathCount = 0x1; D2_STATIC_GUARD(gnMonsterCofPathCount, "D2Client::Engine::Gfx::GFX_BuildMonsterCofPath::gnMonsterCofPathCount");
 
