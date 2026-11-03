@@ -162,7 +162,7 @@ Two checks stand behind every release:
   decompilation itself: where the code comes out identical, the decompiled function was
   read correctly. Current counts live in its README and below.
 
-At this commit, generated from version 1870 of the Ghidra database:
+At this commit, generated from version 1882 of the Ghidra database:
 =======
 [`asm_matching/`](asm_matching/README.md) compiles the tree with Visual C++ 2005 SP1 and
 compares the machine code of each function with 1.14d. It is a check on the decompilation:
