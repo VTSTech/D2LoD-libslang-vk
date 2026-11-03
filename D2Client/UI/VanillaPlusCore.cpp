@@ -83,7 +83,6 @@
 #include "D2Common/Units.h"
 #include "D2DDraw/Renderer/DirectDraw.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
-#include "D2Game/D2UnitFindDataStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/Objects/Objects.h"

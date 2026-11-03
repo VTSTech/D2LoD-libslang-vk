@@ -52,6 +52,31 @@ the fork's fixes 24 and 25.
   skeleton-class site is a second good site, not a regression); the self-id row
   re-pinned to the current string.
 
+### Build fixes (R90b — owner field-build report, 2026-11-03)
+
+The owner's first Windows build of R90 failed; the fix round also caught a second
+blocker their `-j8` build had not reached yet:
+
+- `D2Client/UI/VanillaPlusCore.cpp:86` still included the deleted
+  `D2Game/D2UnitFindDataStrc.h` — the R90 merge accepted the deletion wholesale but
+  missed the kitchen-sink include block. No VP code uses the struct; the relocated
+  definition ships via the already-present `D2Common/Unit.h` (line 82). Include
+  dropped.
+- `D2Direct3D/Renderer/Direct3D.cpp` `RENDERER_D3D_DrawGlyph`: the R90-merge
+  resolution had spliced the fork's out-of-range remainder block back in — it
+  references the float globals (`gfD3DFontVertex*`) that the upstream regen deleted
+  (GCC-real: undeclared identifiers, array-assign errors). Replaced with upstream's
+  clean `return (int)g_pFontTextureBuffer[0]` tail — semantics identical to the
+  fork's old `>= 0x60` early return; dated merge note in place.
+- Cross-verified in the sandbox with llvm-mingw: whole-tree include audit (1,100
+  files, 14,915 quoted includes → 0 unresolvable after the fix); all objects
+  compile; `d2.exe` links (pei-i386). The only sandbox-link delta vs GCC is
+  `__gcclibcxx_demangle_callback` (libstdc++-internal, GCC-only — expected under
+  clang, present in the owner's MSYS2 GCC); the `Fog/Engine/Application.cpp`
+  fastcall-init diagnostics are a clang canonicalization quirk that reproduces
+  identically on the fork-R89 parent — GCC-real: none.
+- Self-ID → `Vanilla+0.0.7-R90b`; gates re-run **326/326** (self-id row re-pinned).
+
 ## [R89] — 2026-11-02 (owner-applied @ `4014ef65`; tag pending)
 
 The monster-components data-model fix, owner-applied on the fork:

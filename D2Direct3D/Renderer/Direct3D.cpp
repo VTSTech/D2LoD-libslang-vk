@@ -3816,17 +3816,10 @@ static int __stdcall RENDERER_D3D_DrawGlyph(char cGlyph, int nPosX, int nPosY) {
       return (int)g_pFontTextureBuffer[(char)(cGlyph - 0x20)];
     }
 
-    gD3DFontVertex0 = (int)(float)nPosX;
-    gfD3DFontVertex0X = (float)nPosY;
-    gfD3DFontVertex0Y = (float)(nPosY + 0x10);
-    gfD3DFontVertex2Y = (float)(nPosX + 8);
-    gfD3DFontVertex0Z = (float)gD3DFontVertex0;
-    gfD3DFontVertex1Y = gfD3DFontVertex0Y;
-    gfD3DFontVertex2X = gfD3DFontVertex2Y;
-    gfD3DFontVertex3X = gfD3DFontVertex0X;
-    g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, g_pFontTextureHandle[(char)(cGlyph - 0x20)]);
-    g_pD3DDevice->lpVtbl->DrawPrimitive(g_pD3DDevice, 6, 0x1c4, &gD3DFontVertex0, 4, 0x1c);
-    return (int)g_pFontTextureBuffer[(char)(cGlyph - 0x20)];
+    // [R89->R90] out-of-range glyphs fall through to buffer[0] (upstream 03877005
+    // regen form; the fork's float-global remainder block referenced globals the
+    // regen deleted and did not compile).
+    return (int)g_pFontTextureBuffer[0];
 }
 
 void __fastcall DrawString(int nPosX, int nPosY, char * szFormat, va_list va) {
