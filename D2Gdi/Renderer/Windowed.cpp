@@ -1188,6 +1188,14 @@ void __thiscall RENDERER_WINDOWED_ClearScreen(int nParam, BYTE dwParam2, BYTE dw
     RENDERER_WINDOWED_ClearFramebuffer(nParam);
 }
 
+// VP: [issue #26 / R93] TRUE on the Vanilla Plus wide-UI backbuffer sizes
+// (1280x720 / dormant 1344x700). Same dims test as the R92 renderer guards -
+// the renderer only knows its own backbuffer dims, no D2Client imports.
+static BOOL RENDERER_GDI_IsWideUiLayout(void) {
+    return (RENDERER_nWindowWidth == 1280 && RENDERER_nWindowHeight == 720)
+        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700);
+}
+
 BOOL __fastcall DrawShadowTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, int32_t nDrawMode, int32_t nScreenPanels) {
     int nScreenY;
     BOOL nVisCount = 0;
@@ -1201,10 +1209,22 @@ BOOL __fastcall DrawShadowTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, in
     int nClipRight = RENDERER_nWindowWidth;
     if (nScreenPanels != 1) {
       if (nScreenPanels == 2) {
+        // VP: [issue #26 / R93] wide-UI layouts keep the outer strip: the
+        // 800-class panel floats 240 px inboard at 1280x720, so the retail
+        // half cut (edge-hugging panels at 640x480/800x600) blacked out the
+        // visible margin beyond the open panel. The panel art overdraws its
+        // own rect afterwards, so the full-width clip is safe.
         nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
+        if (RENDERER_GDI_IsWideUiLayout()) {
+          nClipLeft = -0x20;
+        }
       }
     } else {
+      // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
       nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+      if (RENDERER_GDI_IsWideUiLayout()) {
+        nClipRight = RENDERER_nWindowWidth;
+      }
     }
 
     int nTileIndex = 0;
@@ -1249,10 +1269,19 @@ BOOL __fastcall DrawTransWallTile(D2TileLibraryEntryStrc * pTile, int nPosX, int
       nClipRight = RENDERER_nWindowWidth;
       if (nScreenPanels != 1) {
         if (nScreenPanels == 2) {
+          // VP: [issue #26 / R93] wide-UI layouts keep the left strip (see
+          // DrawShadowTile above for the geometry note).
           nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
+          if (RENDERER_GDI_IsWideUiLayout()) {
+            nClipLeft = -0x20;
+          }
         }
       } else {
+        // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
         nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+        if (RENDERER_GDI_IsWideUiLayout()) {
+          nClipRight = RENDERER_nWindowWidth;
+        }
       }
 
       nScreenPanels = 0;
@@ -1295,10 +1324,19 @@ BOOL __fastcall DrawWallTile(D2TileLibraryEntryStrc * pTile, int nPosX, int nPos
     int nClipRight = RENDERER_nWindowWidth;
     if (nScreenPanels != 1) {
       if (nScreenPanels == 2) {
+        // VP: [issue #26 / R93] wide-UI layouts keep the left strip (see
+        // DrawShadowTile above for the geometry note).
         nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
+        if (RENDERER_GDI_IsWideUiLayout()) {
+          nClipLeft = -0x20;
+        }
       }
     } else {
+      // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
       nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+      if (RENDERER_GDI_IsWideUiLayout()) {
+        nClipRight = RENDERER_nWindowWidth;
+      }
     }
 
     nScreenPanels = 0;

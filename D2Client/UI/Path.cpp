@@ -85,10 +85,20 @@ void __fastcall TypeOfUiOverlayOverWorld(uint32_t eBorderType) {
         GAME::View::SetViewRectangleSize(D2GameView, -nViewOffsetX, 0, WindowSizeX - nViewOffsetX, WindowSizeY);
       return;
       case 2:
-        // VP-BEGIN [issue #26 / R92]: mirror of case 1 - the retail left cut
-        // (+quarter) blacks out the outer left margin at 720p.
+        // VP-BEGIN [issue #26 / R92+R93]: wide-UI layouts (1280x720) keep the
+        // tile walk at the full panned span. R92 widened the walk by flipping
+        // the LEFT edge to -quarter; R93 corrects that: pView.left doubles as
+        // the NON-perspective wall-tile pan origin (screen_x = pView.left -
+        // nCenterX + tile anchor in the dWallPass / WALL2 alpha / shadow
+        // passes), so it must stay at retail's +quarter - the case-2 world
+        // pan is +quarter and the software paths would draw walls detached
+        // from the floor otherwise. The extra span rides the RIGHT edge
+        // instead: +3*quarter keeps width = window + 2*quarter (the span the
+        // perspective path needs and the span WALL2_AllocDrawList's grid
+        // column count / rcCull derive from); the floor-side left-margin
+        // coverage rides the rcExtendedView.left widening below.
         if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
-          GAME::View::SetViewRectangleSize(D2GameView, -nViewOffsetX, 0, WindowSizeX + nViewOffsetX, WindowSizeY);
+          GAME::View::SetViewRectangleSize(D2GameView, nViewOffsetX, 0, WindowSizeX + 3 * nViewOffsetX, WindowSizeY);
           D2GameView->rcExtendedView.left -= nViewOffsetX;
           return;
         }

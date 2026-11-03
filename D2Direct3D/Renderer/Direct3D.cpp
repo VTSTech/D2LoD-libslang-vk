@@ -4358,6 +4358,15 @@ void __stdcall RENDERER_D3D_InitPerspectiveVertexBuffer() {
 }
 
 // NOTE: Register params: pTileLibraryEntryStrc (ECX): D2TileLibraryEntryStrc *, nTilePosX (EDX): int
+// VP: [issue #26 / R93] TRUE on the Vanilla Plus wide-UI backbuffer sizes
+// (1280x720 / dormant 1344x700). Same dims test as the R92 perspective-rect
+// guard in RENDERER_D3D_CalculateViewportRect - the renderer only knows its
+// own backbuffer dims, no D2Client imports across the module boundary.
+static BOOL RENDERER_D3D_IsWideUiLayout(void) {
+    return (RENDERER_nWindowWidth == 1280 && RENDERER_nWindowHeight == 720)
+        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700);
+}
+
 int32_t __fastcall RENDERER_D3D_BuildShadowTileVertices(D2TileLibraryEntryStrc * pTileLibraryEntryStrc, int nTilePosX, int32_t nTilePosY, uint8_t byLightRow, uint32_t dwAlpha, int32_t nScreenSplitIndex) {
     bool _bRendered;
     int nSubtileY;
@@ -4369,10 +4378,23 @@ int32_t __fastcall RENDERER_D3D_BuildShadowTileVertices(D2TileLibraryEntryStrc *
     int nPanelXOffset = -0x20;
     if (nScreenSplitIndex != 1) {
       if (nScreenSplitIndex == 2) {
+        // VP: [issue #26 / R93] wide-UI layouts keep the outer strip: the
+        // 800-class panel floats 240 px inboard at 1280x720, so the retail
+        // left-half cut (the open panel reaches the screen edge at
+        // 640x480/800x600) blacked out the visible margin beyond it. The
+        // panel art overdraws its own rect afterwards, so the full-width
+        // clip is safe.
         nPanelXOffset = RENDERER_nWindowWidth / 2 - 0x20;
+        if (RENDERER_D3D_IsWideUiLayout()) {
+          nPanelXOffset = -0x20;
+        }
       }
     } else {
+      // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
       nPanelWidth = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+      if (RENDERER_D3D_IsWideUiLayout()) {
+        nPanelWidth = RENDERER_nWindowWidth;
+      }
     }
 
     nScreenSplitIndex = 0;
@@ -4530,10 +4552,23 @@ BOOL __thiscall RENDERER_D3D_BuildWallTileVerticesNoPerspective(void * pThis, D2
     int nPanelXOffset = -0x20;
     if (pThis != (void*)0x1) {
       if (pThis == (void*)0x2) {
+        // VP: [issue #26 / R93] wide-UI layouts keep the outer strip - the
+        // 800-class panel floats 240 px inboard at 1280x720, so the retail
+        // left-half cut blacked out the visible margin beyond the open panel
+        // (issue #26). Panel art overdraws its rect afterwards. Mirrors the
+        // BuildShadowTileVertices guard above; D2's D3D video mode defaults
+        // to perspective OFF, so this non-perspective clip is the live path.
         nPanelXOffset = RENDERER_nWindowWidth / 2 - 0x20;
+        if (RENDERER_D3D_IsWideUiLayout()) {
+          nPanelXOffset = -0x20;
+        }
       }
     } else {
+      // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
       nPanelWidth = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+      if (RENDERER_D3D_IsWideUiLayout()) {
+        nPanelWidth = RENDERER_nWindowWidth;
+      }
     }
 
     int nSubtileCount = 0;

@@ -2378,6 +2378,15 @@ void __fastcall ClearScreen(BOOL bPartial) {
     (*GLIDEDLL_grBufferClear_12)(0, '\0', 0);
 }
 
+// VP: [issue #26 / R93] TRUE on the Vanilla Plus wide-UI backbuffer sizes
+// (1280x720 / dormant 1344x700). Same dims test as the R92 perspective-bounds
+// guard below - the renderer only knows its own backbuffer dims, no D2Client
+// imports across the module boundary.
+static BOOL RENDERER_GLIDE_IsWideUiLayout(void) {
+    return (RENDERER_nWindowWidth == 1280 && RENDERER_nWindowHeight == 720)
+        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700);
+}
+
 static void __stdcall RENDERER_GLIDE_CalculateScreenBounds(int32_t nViewportMode, RECT * pnBounds, int32_t nScreenPanels, int * pnXOffset) {
     if (!pnBounds) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x54);
@@ -2392,11 +2401,24 @@ static void __stdcall RENDERER_GLIDE_CalculateScreenBounds(int32_t nViewportMode
       pnBounds->bottom += 0x20;
       pnBounds->left = -0x20;
       if (nScreenPanels == 1) {
+        // VP: [issue #26 / R93] wide-UI layouts keep the right strip: the
+        // 800-class panel floats 240 px inboard at 1280x720, so the retail
+        // half cut (edge-hugging panels at 640x480/800x600) blacked out the
+        // visible margin beyond the open panel. Non-perspective bounds -
+        // D2's video modes default perspective OFF, so this branch is the
+        // live path there.
         pnBounds->right -= RENDERER_nWindowWidth / 2;
+        if (RENDERER_GLIDE_IsWideUiLayout()) {
+          pnBounds->right = RENDERER_nWindowWidth;
+        }
         return;
       }
       if (nScreenPanels == 2) {
+        // VP: [issue #26 / R93] mirror - keep the left strip on wide layouts.
         pnBounds->left = RENDERER_nWindowWidth / 2 - 0x20;
+        if (RENDERER_GLIDE_IsWideUiLayout()) {
+          pnBounds->left = -0x20;
+        }
         return;
       }
     } else {
@@ -2518,9 +2540,19 @@ BOOL __fastcall RENDERER_GLIDE_DrawShadowTileSimple(D2TileLibraryEntryStrc * pTi
     int nWindowMaxX = RENDERER_nWindowWidth;
     int nWindowMinX = -0x20;
     if (nSubtileIdx == 1) {
+      // VP: [issue #26 / R93] wide-UI layouts keep the right strip - the
+      // 800-class panel floats 240 px inboard at 1280x720, so the retail
+      // half cut blacked out the visible margin beyond the open panel.
       nWindowMaxX = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+      if (RENDERER_GLIDE_IsWideUiLayout()) {
+        nWindowMaxX = RENDERER_nWindowWidth;
+      }
     } else if (nSubtileIdx == 2) {
+      // VP: [issue #26 / R93] mirror - keep the left strip on wide layouts.
       nWindowMinX = RENDERER_nWindowWidth / 2 - 0x20;
+      if (RENDERER_GLIDE_IsWideUiLayout()) {
+        nWindowMinX = -0x20;
+      }
     }
 
     nSubtileIdx = 0;
@@ -2671,9 +2703,19 @@ BOOL __thiscall RENDERER_GLIDE_DrawWallTileSimple(int32_t nScreenPanels, D2TileL
     int nWindowMaxX = RENDERER_nWindowWidth;
     int nWindowMinX = -0x20;
     if (nScreenPanels == 1) {
+      // VP: [issue #26 / R93] wide-UI layouts keep the right strip - the
+      // 800-class panel floats 240 px inboard at 1280x720, so the retail
+      // half cut blacked out the visible margin beyond the open panel.
       nWindowMaxX = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+      if (RENDERER_GLIDE_IsWideUiLayout()) {
+        nWindowMaxX = RENDERER_nWindowWidth;
+      }
     } else if (nScreenPanels == 2) {
+      // VP: [issue #26 / R93] mirror - keep the left strip on wide layouts.
       nWindowMinX = RENDERER_nWindowWidth / 2 - 0x20;
+      if (RENDERER_GLIDE_IsWideUiLayout()) {
+        nWindowMinX = -0x20;
+      }
     }
 
     int nSubtileIdx = 0;

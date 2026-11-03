@@ -327,7 +327,9 @@ gate "site-5: spell grid shifts (R45)"      D2Client/UI/SpellSel.cpp        'VPR
 gate "site-5: spell right-grid icons bar-anchored (R45)" D2Client/UI/SpellSel.cpp 'SPELLSEL_DrawSkillGrid\(UNIT::Player::GetPlayerUnit_UI\(\), nStartX,' 2
 gate "site-5: spell swap-grid icons ride panel (R45)" D2Client/UI/SpellSel.cpp 'SPELLSEL_DrawSkillGrid\(UNIT::Player::GetPlayerUnit_UI\(\), 0x50 \+ VPRES_GetWideUiOffsetX' 2
 gate "site-5: spell icons not vanilla-anchored (R45)" D2Client/UI/SpellSel.cpp 'DrawSkillGrid\(UNIT::Player::GetPlayerUnit_UI\(\), 0x50,' 0
-gate "site-5: summit clouds gate"          D2Client/GAME/View.cpp          'VPRES_IsWideLayoutMode' 1
+# R93: 1 -> 2 (the issue #26 border-3 scene-build guard adds a second
+# VPRES_IsWideLayoutMode call in GAMEVIEW_PrepareScene)
+gate "site-5: summit clouds gate"          D2Client/GAME/View.cpp          'VPRES_IsWideLayoutMode' 2
 gate "site-5: level edges gate (GAME)"     D2Client/GAME/Draw.cpp          'VPRES_IsWideLayoutMode' 1
 # R92: 1 -> 2 (the issue #26 warp-fade wide guard adds a second classifier call)
 gate "site-5: level edges gate (client)"   D2Client/D2Client.cpp           'VPRES_IsWideLayoutMode' 2
@@ -685,8 +687,10 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-# R92: string bumped R91 -> R92 (issue #26 fix round: wide-layout panel-open world cull)
-gate "res: self-id 0.0.7-R92"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R92' 1
+# R93: string bumped R92 -> R93 (issue #26 round 2: the R92 field pass fixed
+# the left strip only; round 2 covers the non-perspective half-cuts, the
+# border-3 scene skip and the case-2 walk pan-anchor correction)
+gate "res: self-id 0.0.7-R93"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R93' 1
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the
@@ -703,6 +707,23 @@ gate "issue26: wide glide bounds (R92)"       D2Glide/Renderer/Glide.cpp        
 gate "issue26: wide click reject (R92)"       D2Client/UNIT/CUnit.cpp           'issue #26 / R92' 1
 gate "issue26: wide warp fade (R92)"          D2Client/D2Client.cpp             'issue #26 / R92' 1
 gate "issue26: wide weather clamps (R92)"     D2Client/Draw/Weather.cpp         'issue #26 / R92' 4
+# R93 (rev 123): the R92 field pass (owner: "left side ... no more blackness
+# ... right side still does ... both panels ... black on all sides") showed
+# three more members of the cull family: (1) the NON-perspective half-screen
+# tile clips in every renderer (D3D defaults perspective OFF, so
+# BuildWallTileVerticesNoPerspective / BuildShadowTileVertices + the Glide
+# Simple drawers + the DDraw/GDI wall/shadow/trans clips are the live path);
+# (2) GAMEVIEW_PrepareScene skipped WALL2_BuildSceneDrawList entirely for
+# border 3 (both panels open = nothing rendered = all black); (3) R92's
+# case-2 walk left flip broke the non-perspective wall pan (pView.left IS
+# the pan origin in the software passes) - R93 keeps the retail +quarter
+# anchor and rides the extra span on the right edge (w+3q).
+gate "issue26: d3d nonpersp clips (R93)"      D2Direct3D/Renderer/Direct3D.cpp  'issue #26 / R93' 5
+gate "issue26: glide nonpersp clips (R93)"    D2Glide/Renderer/Glide.cpp        'issue #26 / R93' 7
+gate "issue26: ddraw clips (R93)"             D2DDraw/Renderer/DirectDraw.cpp   'issue #26 / R93' 7
+gate "issue26: gdi window clips (R93)"        D2Gdi/Renderer/Windowed.cpp       'issue #26 / R93' 7
+gate "issue26: border3 scene build (R93)"     D2Client/GAME/View.cpp            'issue #26 / R93' 1
+gate "issue26: case2 pan anchor (R93)"        D2Client/UI/Path.cpp              'issue #26 / R92\+R93' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared

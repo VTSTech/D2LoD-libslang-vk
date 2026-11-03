@@ -16,6 +16,67 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
 
 - Nothing yet — the next round's entry goes here.
 
+## [R93] — 2026-11-03 (issue #26 fix round 2; self-ID `Vanilla+0.0.7-R93`)
+
+Track S follow-up. The R92 field pass came back **half-fixed** — owner: "The
+left side of the screen now has no more blackness when a panel is open, but the
+right side still does. when both panels are open, it is still black on all
+sides." Round 2 found the three members of the panel-cull family R92 missed.
+
+### Root causes (all confirmed against the R92 field report)
+
+1. **D3D defaults perspective OFF.** R92 fixed the *perspective* cull rect
+   (`CalculateViewportRect`), but with the Perspective video option off (the
+   default) wall/shadow tiles go through the **non-perspective** vertex
+   builders — `BuildWallTileVerticesNoPerspective` / `BuildShadowTileVertices`
+   — which carry their own half-screen cuts (`case 1 → right cut at w/2`,
+   `case 2 → left cut at w/2-0x20`). That is the live path on the owner's
+   build: with the inventory open the right margin still lost every wall,
+   shadow and structure (the jagged "black triangles"); the left margin was
+   inside the retail clip all along, which is why it looked fixed.
+2. **Both panels open = the scene is never built.**
+   `GAMEVIEW_PrepareScene` skips `WALL2_BuildSceneDrawList` entirely for
+   border type 3 — a retail fill-rate shortcut that is exact only when the two
+   panels cover the window (640x480/800x600). At 1280x720 the 800-class UI
+   floats 240 px inboard, the outer strips still show world, and the skip
+   rendered them as pure black backbuffer ("both panels … black on all
+   sides") on **every** renderer.
+3. **R92's case-2 walk flip broke the software wall pan.** In the
+   non-perspective passes the wall draw position is `pView.left - nCenterX +
+   tile anchor` (`Draw.cpp` dWallPass / WALL2 alpha / shadow passes) —
+   `pView.left` is the **pan origin**, not just a walk bound. R92 flipped the
+   case-2 view-rect left edge from `+q` to `-q`, which would have drawn
+   software-path walls 640 px off the floor with the left panel open. (It is
+   also why the left margin appeared fixed in the owner's R92 test: the
+   misplaced wall span covered it.)
+
+### Fixed (wide layouts 1280x720/1344x700 only — retail modes byte-identical)
+
+- **Every non-perspective half-screen tile clip opens its margin side** on
+  wide backbuffer dims (same 1280x720/1344x700 test as the R92 renderer
+  guards; the panel art overdraws its own rect afterwards, so the full-width
+  clip is safe): `D2Direct3D` `BuildShadowTileVertices` +
+  `BuildWallTileVerticesNoPerspective`; `D2Glide`
+  `CalculateScreenBounds` (non-perspective branch) + `DrawShadowTileSimple` +
+  `DrawWallTileSimple`; `D2DDraw` and `D2Gdi` `DrawShadowTile` /
+  `DrawTransWallTile` / `DrawWallTile`.
+- **`D2Client/GAME/View.cpp`** — border 3 builds the scene draw list on wide
+  layouts (retail keeps the skip: byte-identical + fill rate).
+- **`D2Client/UI/Path.cpp`** case 2 — the wide view rect keeps the retail
+  `+q` **left** anchor (the software wall pan stays correct) and rides the
+  extra span on the **right** edge (`w+3q`, same `w+2q` width the WALL2 grid
+  column count and rcCull derive from); the floor-side left-margin coverage
+  still rides the `rcExtendedView.left` widening R92 added.
+
+Verification: all 7 changed TUs compile clean under llvm-mingw i686 (the
+clang link stops at the known GCC-only `__gcclibcxx_demangle_callback` symbol
+— unchanged since R90b; the owner's MSYS2 build links it); gates **338/338**
+(6 new R93 pins + the site-5 summit-clouds classifier count 1 → 2); self-ID →
+`Vanilla+0.0.7-R93`. Field ask: same test as R92 — at 1280x720 open the
+inventory alone, a left panel alone, then both: **both** outer margins must
+render the world with no black band and no jagged triangles in every state,
+units in the margins clickable.
+
 ## [R92] — 2026-11-03 (issue #26 fix round; self-ID `Vanilla+0.0.7-R92`)
 
 Track S — "[720p] With only Left or Right UI Panel open, Black triangles on that
@@ -65,6 +126,12 @@ Verification: all 7 changed TUs compile under llvm-mingw; gates re-run
 self-ID → `Vanilla+0.0.7-R92`. Field ask: at 1280x720 open each panel alone and
 both — the outer margins must render the world (no black strip, no triangles),
 units there clickable, rain reaching the margins.
+
+Field result: **PARTIAL** — owner build + 720p test: "The left side of the
+screen now has no more blackness when a panel is open, but the right side still
+does. when both panels are open, it is still black on all sides." Three family
+members missed (the non-perspective half-cuts, the border-3 scene skip, the
+case-2 pan-anchor flip) — fixed in [R93].
 
 ## [R91] — 2026-11-03 (docs + field-verify round; self-ID `Vanilla+0.0.7-R91`)
 

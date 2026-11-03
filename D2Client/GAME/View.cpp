@@ -475,6 +475,18 @@ void __fastcall GAMEVIEW_PrepareScene(D2GameViewStrc * pGameView, uint32_t nFlag
     uint32_t nBorderType = UI::Path::DRAW_GetTypeOfBorder();
     if (nBorderType != 3) {
       Wall2::WALL2_BuildSceneDrawList(pGameView, nFlags);
+    } else if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+      // VP-BEGIN [issue #26 / R93]: wide-UI layouts build the scene draw list
+      // with both panels open too. Retail skips it when both panels are up
+      // because at 640x480/800x600 the two 320/400-px panels cover the whole
+      // window; the 800-class UI floats 240 px inboard at 1280x720, so the
+      // outer strips still show world and the skip rendered them as pure
+      // black backbuffer (issue #26: "Both panels. all black outside of
+      // panel"). Border 3's view rect is the full unpanned window (Path.cpp
+      // case 3), the light grids run at zero pan and every renderer falls
+      // through to its full-width no-pan clip, so the standard build is the
+      // whole fix. Retail modes keep the skip (byte-identical + fill rate).
+      Wall2::WALL2_BuildSceneDrawList(pGameView, nFlags);
     }
 
     pGameView->nFlags &= -2;
