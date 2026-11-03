@@ -631,31 +631,24 @@ void __stdcall RENDERER_D3D_AllocateTextureCaches() {
         uSmallCacheAlloc = g_nVideoMemoryFree;
       }
     }
-    if (!g_bPerspectiveMode) {
-      gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = 0;
-      gnTextureMemoryUsageBytes.nGlideSubtileCacheMemBytes = 0;
-      nSmackerBase = RENDERER_D3D_CreateSmackerSurfaces(0);
-      nGenericNodeBytes = d3dTextureCache::RENDERER_D3D_InitializeTextureCachePool(gD3DGenericTextureCache.aCaches, nSmackerBase, (uSmallCacheAlloc - nSmackerBase) * 0x46 / 100 + nSmackerBase, 0x100, 0x100);
-      nGenericCacheEnd = gD3DGenericTextureCache.aCaches[0].nMaxNodes * g_nBytesPerPixel;
-      uSubtileCacheAlloc = (uint32_t)((uint64_t)((uSmallCacheAlloc - nSmackerBase) * 0x50) * 0x51eb851f >> 0x20);
-    } else {
+    if (g_bPerspectiveMode) {
       uint32_t uVideoMemBudget;
-      if (!(gnD3DTextureCapFlags & 0x40)) {
-        gnD3DTextureCacheBlockSize = 0x100;
-        gnD3DTextureCacheCount = 0x80;
-      } else {
-        gnD3DTextureCacheBlockSize = 0xa0;
+      if (gadwBitMasks[6] & gnD3DTextureCapFlags) {
         gnD3DTextureCacheCount = 0x50;
+        gnD3DTextureCacheBlockSize = 0xa0;
+      } else {
+        gnD3DTextureCacheCount = 0x80;
+        gnD3DTextureCacheBlockSize = 0x100;
       }
 
       nSmackerBase = gnD3DTextureCacheCount * gnD3DTextureCacheBlockSize;
       uSubtileCacheAlloc = uSmallCacheAlloc >> 1;
-      if (0x5fffff < uSubtileCacheAlloc) {
+      if (uSubtileCacheAlloc >= 0x600000) {
         uSubtileCacheAlloc = 0x600000;
       }
 
       uVideoMemBudget = uSmallCacheAlloc >> 3;
-      if (0x2fffff < uVideoMemBudget) {
+      if (uVideoMemBudget >= 0x300000) {
         uVideoMemBudget = 0x300000;
       }
 
