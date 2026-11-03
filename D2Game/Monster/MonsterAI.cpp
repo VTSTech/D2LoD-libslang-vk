@@ -25,7 +25,6 @@
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/Preset.h"
-#include "D2Common/Game.h"
 #include "D2Common/Merc.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Common/Text.h"
@@ -332,12 +331,12 @@ static uint32_t __stdcall NPC_BeginInteraction(::SGAMEDATA * pGame, D2MonsterAiS
     UNIT::SUNITNPC::SendMercForHireList(GAME::Clients::CLIENT_GetGame(pClient), pClient, pNpcUnitTmp, _bFirstInteraction);
     UNIT::SUnit::SetInteractInfo(pPlayer, UNIT_MONSTER, pNpcUnit->nUnitGUID);
     pNewAiSub->nState = 0;
-    D2GSPacketSrv0x27_TextStrc* pTxtMsg = D2Common::Game::STRUCT_AllocTxtMessageForPacket0x27(pGame->pMemoryPool);
+    D2GSPacketSrv0x27_TextStrc* pTxtMsg = D2Common::Text::STRUCT_AllocTxtMessageForPacket0x27(pGame->pMemoryPool);
     Quests::QUESTS::QUEST_OnNpcInteraction(pClient, pPlayer, pNpcUnit, pTxtMsg);
     npcInfoPkt.nUnitGUID = pNpcUnit->nUnitGUID;
     npcInfoPkt.nId = 0x27;
     npcInfoPkt.eUnitType = (uint8_t)pNpcUnit->eUnitType;
-    D2Common::Game::BuildPacket0x27Messages(pTxtMsg, (uint32_t*)&npcInfoPkt.nMessageCount);
+    D2Common::Text::BuildPacket0x27Messages(pTxtMsg, (uint32_t*)&npcInfoPkt.nMessageCount);
     // VP-BEGIN [quest-gossip-mark]: issue #13 — the gossip batch leaving for the client (Akara's reward line rides this); msgs=0 here = nothing for the client to echo
     D2BOOT_MarkFmt("quest: npc interact 0x27 send npc=0x%04x type=%u msgs=%u", (unsigned)pNpcUnit->nClassId, (unsigned)npcInfoPkt.eUnitType, (unsigned)pTxtMsg->nCount);
     // VP-END [quest-gossip-mark]
