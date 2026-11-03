@@ -48,6 +48,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
+#include "D2Client/UI/Help.data.h"
 #include "D2Common/Drlg/D2DrlgRoomCoordsStrc.h"
 #include "D2Common/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
@@ -232,6 +233,15 @@ D2SeedStrc * __fastcall GetObjectControlSeed(::SGAMEDATA * pGame, D2RoomStrc * p
 
 D2ObjectRngShrines * __fastcall GetShrinesRng(::SGAMEDATA * pGame) {
     return &pGame->pObjectControl->sShrinesRng;
+}
+
+void __fastcall IncrementObjectTypeCount(int * pThis, uint32_t nObjectType) {
+    if (nObjectType >= 100) {
+      return;
+    }
+
+    short int* pnTypeCount = (short int*)(pThis[0x43c] + 0x1048 + nObjectType * 2);
+    (*pnTypeCount)++;
 }
 
 void __fastcall Send_0x26_Chat(D2ClientStrc * pClient, char * * ppMessage) {

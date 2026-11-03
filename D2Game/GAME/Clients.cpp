@@ -71,6 +71,8 @@
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
+#include "D2Game/GAME/Clients.data.h"
+#include "D2Game/GAME/Server.data.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/PLAYER/PlayerModes.h"
 #include "support/d2_boot.h" // [d2boot] loading-screen freeze diagnostics
@@ -91,6 +93,13 @@
 
 static_assert(sizeof(void*) != 4 || sizeof(::D2ClientStrc) == 0x518, "D2_NEW_AT(D2ClientStrc): the 32-bit layout must be the 0x518 bytes 1.14d allocates");
 
+
+static D2ClientStrc * QServerClientBucketByName[256] = {}; D2_STATIC_GUARD(QServerClientBucketByName, "QServerClientBucketByName");
+D2ClientStrc * QServerClientBucketById[256] = {}; D2_GLOBAL_GUARD(QServerClientBucketById, "QServerClientBucketById");
+// also labelled: lpCriticalSection_008846a8
+CRITICAL_SECTION gQServerClientByIdCs = {}; D2_GLOBAL_GUARD(gQServerClientByIdCs, "gQServerClientByIdCs");
+// also labelled: lpCriticalSection_008846c0
+static CRITICAL_SECTION gQServerClientByNameCs = {}; D2_STATIC_GUARD(gQServerClientByNameCs, "gQServerClientByNameCs");
 
 namespace D2Game::GAME::Clients {
 
@@ -267,6 +276,18 @@ void __fastcall FreeClientList(::SGAMEDATA * pGame) {
       D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\GAME\\Clients.cpp", 0x617);
       pMemoryToFree = pNextClient;
     }
+}
+
+// Updates the player's portal-visited bitmask: gets the level ID of the player's current room, maps it to the corresponding portal flag, and OR's it into the player's persistent portal flags. No-op if room or player unit is null.
+void __stdcall CLIENT_UpdatePortalFlags(D2ClientStrc * gameContext) {
+    if (!(gameContext->pRoom && gameContext->pPlayer)) {
+      return;
+    }
+
+    eD2LevelId eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(gameContext->pRoom);
+    uint32_t nCurrentPortalFlags = D2Common::Units::GetPlayerPortalFlags(gameContext->pPlayer);
+    uint32_t nLevelPortalFlag = D2Common::DUNGEON::Dungeon::GetPortalFlagFromLevelId(eLevel);
+    D2Common::Units::SetPlayerPortalFlags(gameContext->pPlayer, nCurrentPortalFlags | nLevelPortalFlag);
 }
 
 // Server-side handler invoked when a client's active room changes (pRoom = new room). If different from the client's current room, swaps room data/active-room-ex between the old and new levels, then diffs the adjacency lists: reveals and streams units for newly-adjacent rooms (CLIENT_RevealRoomAndSendUnits) and clears/hides map for rooms no longer adjacent (RoomClearForClientAndHideMap), re-resolving the client's player unit and issuing a movement/position packet update when the client's own room is cleared. Updates pClient->pRoom and OR-merges the new level's portal flag into the player's explored-portal flags. Custom calling convention: pClient in ESI, pRoom on stack.

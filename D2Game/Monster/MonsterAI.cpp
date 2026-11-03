@@ -58,6 +58,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
+#include "D2Client/UI/npcmenu.data.h"
 #include "D2Common/Units/Missile.h"
 #include "D2Game/SKILLS/SkillAss.h"
 #include "support/d2_boot.h" // [d2boot] quest gossip diagnostics [R54] (issue #13)

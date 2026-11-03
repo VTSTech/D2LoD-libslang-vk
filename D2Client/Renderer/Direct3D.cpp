@@ -8,6 +8,9 @@
 #include "globals/globals.h"
 #include "support/d2_boot.h"
 #include "D2CMP/tagPALETTEENTRY.h"
+#include "D2Client/GAME/View.data.h"
+#include "D2Direct3D/Renderer/Direct3D.data.h"
+#include "D2gfx/D2GFX.data.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 

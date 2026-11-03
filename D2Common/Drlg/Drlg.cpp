@@ -11,8 +11,6 @@
 #include "D2Client/Engine.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/UI/SkillDesc.h"
-#include "D2Common/Collision.h"
-#include "D2Common/D2DynamicPathStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2RoomCoordListStrc.h"
 #include "D2Common/D2RoomExStrc.h"
@@ -55,7 +53,6 @@
 #include "D2Common/Drlg/TileSub.h"
 #include "D2Common/Drlg/Transform.h"
 #include "D2Common/Seed.h"
-#include "D2Game/D2PathTypeArg.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/Quests/QUESTS.h"
@@ -68,6 +65,8 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
+#include "D2Common/Drlg/Drlg.data.h"
+#include "D2Common/Drlg/OutPlace.data.h"
 #include "D2Common/Unit.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
@@ -108,6 +107,206 @@ typedef int (__fastcall *fpLevelDataFn1)(D2DrlgLevelPlacementStrc * pLevelUnknow
 #define RECON_FPTD_fpLevelDataFn2
 typedef uint8_t (__fastcall *fpLevelDataFn2)(D2DrlgLevelStrc * pDrlgLevel, fpLevelDataFn1 fpLevelDataFn1, int param_1_00);
 #endif
+
+int gaWildernessLevelSeedOffsets[170] = {
+    0x0,
+    0x2,
+    0x3,
+    0x1,
+    0x0,
+    0x4,
+    0x0,
+    0x2,
+    0x3,
+    0x2,
+    0x3,
+    0x4,
+    0x0,
+    0x3,
+    0x11,
+    0x2,
+    0x1,
+    0x8,
+    0x0,
+    0x3,
+    0x11,
+    0x3,
+    0x0,
+    0x8,
+    0x0,
+    0x3,
+    0x11,
+    0x1,
+    0x1,
+    0x10,
+    0x0,
+    0x3,
+    0x11,
+    0x3,
+    0x3,
+    0x10,
+    0x2,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x8,
+    0x2,
+    0x0,
+    0x0,
+    0x2,
+    0x2,
+    0x8,
+    0x2,
+    0x0,
+    0x0,
+    0x3,
+    0x0,
+    0x8,
+    0x2,
+    0x0,
+    0x0,
+    0x3,
+    0x2,
+    0x8,
+    0x2,
+    0x0,
+    0x0,
+    0x0,
+    0x1,
+    0x400,
+    0x2,
+    0x0,
+    0x0,
+    0x1,
+    0x1,
+    0x400,
+    0x2,
+    0x0,
+    0x0,
+    0x2,
+    0x1,
+    0x200,
+    0x2,
+    0x0,
+    0x0,
+    0x2,
+    0x2,
+    0x80,
+    0x2,
+    0x0,
+    0x0,
+    0x3,
+    0x2,
+    0x100,
+    0x23f,
+    0x240,
+    0x241,
+    0x242,
+    0x243,
+    0x244,
+    0x0,
+    0x245,
+    0x246,
+    0x247,
+    0x0,
+    0x248,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x221,
+    0x222,
+    0x223,
+    0x224,
+    0x0,
+    0x225,
+    0x226,
+    0x0,
+    0x0,
+    0x227,
+    0x228,
+    0x229,
+    0x22a,
+    0x0,
+    0x22b,
+    0x0,
+    0x22c,
+    0x0,
+    0x22d,
+    0x22e,
+    0x0,
+    0x0,
+    0x22f,
+    0x0,
+    0x0,
+    0x0,
+    0x230,
+    0x231,
+    0x232,
+    0x233,
+    0x0,
+    0x0,
+    0x234,
+    0x235,
+    0x0,
+    0x236,
+    0x0,
+    0x237,
+    0x0,
+    0x0,
+    0x0,
+    0x238,
+    0x0,
+    0x239,
+    0x23a,
+    0x0,
+    0x0,
+    0x0,
+    0x23b,
+    0x0,
+    0x0,
+    0x23c,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0
+}; D2_GLOBAL_GUARD(gaWildernessLevelSeedOffsets, "gaWildernessLevelSeedOffsets");
+static int gnDrlgLevelGenerationState[8] = { 0x0, -0xa0, -0x60, -0x40, -0x40, -0x60, -0xa0, 0x0 }; D2_STATIC_GUARD(gnDrlgLevelGenerationState, "gnDrlgLevelGenerationState");
+static uint8_t gaOutRoomPathDirectionDelta[24] = {
+    0x0,
+    0x1,
+    0x2,
+    0x3,
+    0x0,
+    0x1,
+    0x1,
+    0x1,
+    0x3,
+    0x2,
+    0x1,
+    0x2,
+    0x0,
+    0x3,
+    0x2,
+    0x1,
+    0x0,
+    0x1,
+    0x0,
+    0xff,
+    0x1,
+    0x0,
+    0xff,
+    0x0
+}; D2_STATIC_GUARD(gaOutRoomPathDirectionDelta, "gaOutRoomPathDirectionDelta");
 
 namespace D2Common::Drlg {
 
@@ -3069,69 +3268,6 @@ void __stdcall DRLGLEVEL_ParseLevelData(D2DrlgLevelDataList * pLevelData, fpLeve
       /* Second pass cursor advances by ONE 16-byte entry (EDI = index*0x10 added to
                          pLevelData), not by a whole list. */ pLevelData1 = (D2DrlgLevelDataList*)(pLevelData->aEntry + (int)fnPlacementValidator);
     } while (((D2DrlgLevelDataEntry*)pLevelData1)->neD2LevelId != LEVEL_None);
-}
-
-// Pathfinding entry point for units that cannot reach their target directly (path type fallback). Builds a Bresenham waypoint list from the unit's current packed position toward the destination. For each waypoint, checks collision via CheckCollision_BlockPlayer_Type; on blockage, delegates to DRLGPATH_FindPathDualScan to find the best reachable point. After traversal, simplifies collinear waypoints via DRLGPATH_SimplifyCollinearWaypoints and returns the resulting waypoint count. Only valid for PLAYER or MONSTER unit owners; halts otherwise.
-int32_t __fastcall PATH_FindPathTowardFallback(D2PathTypeArg * pPathTypeArg) {
-    int32_t nDualScanLen;
-    int32_t nPrevPointIdx;
-    int nPointCount_00;
-    D2PathPointStrc aBresenhamPoints[78];
-    uint32_t nInitialDir;
-    int32_t nErrorLine;
-    D2DynamicPathStrc* pDynamicPath = pPathTypeArg->pDynamicPath;
-    D2UnitStrc* pOwner = pDynamicPath->pOwner;
-    if (!pOwner || pOwner->eUnitType != UNIT_PLAYER && (!pOwner || pOwner->eUnitType != UNIT_MONSTER)) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2ad);
-      exit(-1);
-    }
-
-    D2RoomStrc* pRoom = pPathTypeArg->pRoom;
-    int32_t nUnitWidth = pPathTypeArg->nUnitWidth;
-    int32_t nCollisionPattern = pPathTypeArg->nCollisionPattern;
-    int32_t nPointIdx = 0;
-    uint32_t nMaxSteps = (uint32_t)pDynamicPath->nDistMax;
-    uint32_t nCurPacked = (uint32_t)((uint32_t)(uint16_t)pPathTypeArg->pCoords.nOffsetX | (uint32_t)(uint16_t)pPathTypeArg->pCoords.nPosX << 16);
-    int nBestPointIdx = 0;
-    if (pDynamicPath->pTargetUnit && pDynamicPath->nDistMax < 0x28) {
-      nMaxSteps = 0x28;
-    }
-
-    uint32_t nDstPacked = (uint32_t)((uint32_t)(uint16_t)pPathTypeArg->pCoords.nOffsetY | (uint32_t)(uint16_t)pPathTypeArg->pCoords.nPosY << 16);
-    uint32_t nStartPacked = nCurPacked;
-    nErrorLine = Path::DRLGPATH_BuildBresenhamPointList(nCurPacked, nDstPacked, nMaxSteps, &nInitialDir, aBresenhamPoints);
-    int32_t nPointCount = nErrorLine;
-    if (nErrorLine <= 2) {
-      return 0;
-    }
-    if (nErrorLine > 0) {
-      do {
-        nDualScanLen = Collision::CheckCollision_BlockPlayer_Type(pRoom, (uint32_t)aBresenhamPoints[nPointIdx].nX, (uint32_t)aBresenhamPoints[nPointIdx].nY, nUnitWidth, nCollisionPattern);
-        nPrevPointIdx = nPointIdx;
-        if (nDualScanLen) {
-          nDualScanLen = Path::DRLGPATH_FindPathDualScan((uint32_t*)pPathTypeArg, (int32_t)aBresenhamPoints, nCurPacked, &nBestPointIdx, &nPointCount, nMaxSteps - nPointIdx, nInitialDir);
-          nPrevPointIdx = nBestPointIdx;
-          nErrorLine = nPointCount;
-          nPointCount_00 = nBestPointIdx;
-          if (!nDualScanLen) {
-            nErrorLine = Path::DRLGPATH_SimplifyCollinearWaypoints(pDynamicPath->PathPoints, aBresenhamPoints, nStartPacked, nPointCount_00);
-            return nErrorLine;
-          }
-        }
-
-        nPointIdx = nPrevPointIdx + 1;
-        nCurPacked = (uint32_t)((uint32_t)(uint16_t)aBresenhamPoints[nPrevPointIdx].nX | (uint32_t)(uint16_t)aBresenhamPoints[nPrevPointIdx].nY << 16);
-        nBestPointIdx = nPointIdx;
-      } while (nPointIdx < nErrorLine);
-    }
-
-    nPointCount_00 = nErrorLine;
-    if (!nErrorLine) {
-      return 0;
-    }
-
-    nErrorLine = Path::DRLGPATH_SimplifyCollinearWaypoints(pDynamicPath->PathPoints, aBresenhamPoints, nStartPacked, nPointCount_00);
-    return nErrorLine;
 }
 
 void __fastcall DRLGGRID_OrFlagOnCellList(D2DrlgGridStrc * nGridPtr, int * pnCellNode, int32_t nFlag) {

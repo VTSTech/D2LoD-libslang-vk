@@ -14,6 +14,7 @@
 #include "D2Common/Chat.h"
 #include "D2Common/Chat/Ignorelist/ChatIgnoreList.h"
 #include "Fog/Debug.h"
+#include "Fog/Engine/Application.data.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -401,64 +402,6 @@ void __thiscall LoadFromFile(::IgnoreList * pThis) {
     LoadFromFile(pThis);
     ExceptionList = __frame0.pPrevExceptionList;
     return pThis;
-}
-
-// @sourcefile .\Chat\Ignorelist.cpp
-void __thiscall AddAccountMapping(::IgnoreList * pThis, char * szRaw, int32_t nRawLen) {
-    int32_t bIsOnline;
-    ::MappingEntryNode* pNameEntry;
-    char* pszPatternDup;
-    size_t nOpenParenIdx;
-    uint32_t nCharIdx;
-    char cPatternPrefix[256];
-    char szCharName[256];
-    char szAccountName[256];
-    if (szRaw && *szRaw != '\0') {
-      bIsOnline = pThis->_vfptr->GetPersistentSetting(pThis);
-      if (bIsOnline) {
-        Storm::Source::SMem::SMemZero(szCharName, 0x100);
-        Storm::Source::SMem::SMemZero(szAccountName, 0x100);
-        nOpenParenIdx = 0;
-        nCharIdx = 0;
-        if (*szRaw != '\0') {
-          while (nCharIdx < nRawLen - 1U) {
-            if (szRaw[nCharIdx + 1] == '(') {
-              nOpenParenIdx = nCharIdx + 1;
-              Storm::Source::SMem::SMemCopy(szAccountName, szRaw, nOpenParenIdx);
-            }
-            if (szRaw[nCharIdx + 1] == ')') {
-              Storm::Source::SMem::SMemCopy(szCharName, szRaw + nOpenParenIdx + 1, nCharIdx - nOpenParenIdx);
-            }
-            if (szAccountName[0] != '\0' && szCharName[0] != '\0') {
-              break;
-            }
-
-            nCharIdx++;
-            if (szRaw[nCharIdx] == '\0') {
-              break;
-            }
-          }
-        }
-        if (szAccountName[0] != '\0' && szCharName[0] != '\0') {
-          pNameEntry = pThis->tAccountMappings.Ptr(szAccountName);
-          if (!pNameEntry) {
-            pNameEntry = pThis->tAccountMappings.New(szAccountName, 0, 0);
-          }
-          if (pNameEntry->szMappedValue) {
-            Storm::Source::SMem::SMemFree(pNameEntry->szMappedValue, ".\\Chat\\Ignorelist.cpp", 0x142, 0);
-          }
-
-          memset(cPatternPrefix + 1, 0, 0xff);
-          cPatternPrefix[0] = '*';
-          Storm::Source::SSTR::SStrPack(cPatternPrefix, szCharName, 0x100);
-          pszPatternDup = Storm::Source::SSTR::SStrDup(cPatternPrefix);
-          pNameEntry->szMappedValue = pszPatternDup;
-          return;
-        }
-
-        return;
-      }
-    }
 }
 
 } // namespace D2Common::Chat::Ignorelist::IgnoreList

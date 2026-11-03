@@ -11,6 +11,7 @@
 #include "D2Win/Src/D2WinButton.h"
 #include "D2Win/Src/D2WinMain.h"
 #include "globals/globals.h"
+#include "D2Multi/ChatDlg.data.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -72,12 +73,6 @@ BOOL __stdcall CHATDLG_DestroyFormsAndOpenCreateGameDialog(D2ControlMsg * pContr
 }
 
 BOOL __stdcall CHATDLG_OpenChatCommandsDialogRestoreFocus(D2ControlMsg * pControlMsg) {
-    OOGUtilities::UIMENU_DialogWindowChatCommands();
-    Launcher::LAUNCHER_RestoreFocusToControl();
-    return 1;
-}
-
-BOOL __stdcall CHATDLG_OpenChatCommandsDialogRestoreFocus2(D2ControlMsg * pControlMsg) {
     OOGUtilities::UIMENU_DialogWindowChatCommands();
     Launcher::LAUNCHER_RestoreFocusToControl();
     return 1;

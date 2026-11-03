@@ -19,6 +19,7 @@
 #include "Storm/Source/SSTR.h"
 #include "Storm/Storm.h"
 #include "globals/globals.h"
+#include "D2Hell/D2Hell.data.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -47,13 +48,46 @@ typedef BOOL (__stdcall *pfnStormErrorHandler)(DWORD dwErrorCode, char * szBuffe
 #endif
 
 static LPCSTR lpCaption_006cc848 = (LPCSTR)s_Diablo_2_EXE_006cc838; D2_STATIC_GUARD(lpCaption_006cc848, "lpCaption_006cc848");
+static char s___AUTMESSAGESOURCE___0072f9fc[24] = {
+    '.',
+    '?',
+    'A',
+    'U',
+    'T',
+    'M',
+    'E',
+    'S',
+    'S',
+    'A',
+    'G',
+    'E',
+    'S',
+    'O',
+    'U',
+    'R',
+    'C',
+    'E',
+    '@',
+    '@',
+    '\x00',
+    '\x00',
+    '\x00',
+    '\x00'
+}; D2_STATIC_GUARD(s___AUTMESSAGESOURCE___0072f9fc, "s___AUTMESSAGESOURCE___0072f9fc");
+StormLinkedListStrc gFaultHandlerList = {
+    /* .nLinkOffset = */ 0x0,
+    /* .head = */ {
+        /* .pPrevLink = */ (StormLinkStrc*)&gFaultHandlerList.head.pPrevLink,
+        /* .pNext = */ 0x0
+    }
+}; D2_GLOBAL_GUARD(gFaultHandlerList, "gFaultHandlerList");
 static CRITICAL_SECTION gcsErrorHandlerList = {}; D2_STATIC_GUARD(gcsErrorHandlerList, "gcsErrorHandlerList");
 static uint32_t gbFaultHandlerListInitialized = 0; D2_STATIC_GUARD(gbFaultHandlerListInitialized, "gbFaultHandlerListInitialized");
 static pfnFaultError g_pfnFaultErrorCallback = (pfnFaultError)0; D2_STATIC_GUARD(g_pfnFaultErrorCallback, "g_pfnFaultErrorCallback");
 
 namespace D2Hell {
 
-void __fastcall D2FILE_CreateProcess(LPCSTR szText) {
+bool __fastcall D2FILE_CreateProcess(LPCSTR szText) {
     _STARTUPINFOA processInfo;
     _PROCESS_INFORMATION startupInfo;
     processInfo.cb = 0x44;
@@ -63,11 +97,12 @@ void __fastcall D2FILE_CreateProcess(LPCSTR szText) {
     DWORD dwGle = GetLastError(); // [d2boot] capture before our own API calls clobber it
     D2BOOT_MarkFmt("CreateProcess -> %d gle=%u", (int)bCreated, (unsigned)dwGle); // [d2boot]
     if (!bCreated) {
-      return;
+      return bCreated != 0;
     }
 
     /* HANDLE hObject for CloseHandle */ CloseHandle(startupInfo.hProcess);
     /* HANDLE hObject for CloseHandle */ CloseHandle(startupInfo.hThread);
+    return bCreated != 0;
 }
 
 // NOTE: Return type changed void→char (1 callers, MEDIUM confidence)

@@ -124,23 +124,28 @@ gate "d2boot-fix: rev36 hangwatch map span"  support/d2_hangwatch.cpp      '%08l
 # ---- enum & stores (flag 38 = UI_VANILLAPLUS) -----------------------------
 gate "UI_VANILLAPLUS defined = 38"        d2_enums.h                      'UI_VANILLAPLUS = 38'        1
 gate "UI_VANILLAPLUS using-decl"          d2_enums.h                      'using eD2UIvars_ns::UI_VANILLAPLUS' 1
-gate "dismiss table extern [39]"          globals/globals.h               'gUIFlagDismissModeTable\[39\]' 1
-gate "options table extern [6]"           globals/globals.h               'gaEscMenuOptionsTable\[6\]' 1
-gate "gnUIFlagCount bumped to 0x27"       globals/D2Client.cpp            'gnUIFlagCount = 0x27'       1
-gate "dismiss table sized [39]"           globals/D2Client.cpp            'gUIFlagDismissModeTable\[39\] = \{' 1
+gate "dismiss table decl [39] (ui.data.h)" D2Client/UI/ui.data.h           'gUIFlagDismissModeTable\[39\]' 1
+gate "options table static [6] (EscMenu.cpp)" D2Client/UI/EscMenu.cpp      'static D2EscMenuItemStrc gaEscMenuOptionsTable\[6\]' 1
+gate "gnUIFlagCount bumped to 0x27"       D2Client/UI/ui.cpp              'gnUIFlagCount = 0x27'       1
+gate "dismiss table sized [39]"           D2Client/UI/ui.cpp              'gUIFlagDismissModeTable\[39\] = \{' 1
 gate "flag-store member VanillaPlus@0x98" globals/globals.h               '/\* 0x98 \*/ BOOL VanillaPlus' 1
 gate "anDismissMode grown to 39"          globals/globals.h               'anDismissMode\[39\]'          1
-gate "dismiss alias row (1 upstream + 1 fork)" globals/D2Client.cpp       'gaUIFlagDescs\[9\]\.anDismissMode\[0\]' 2
-gate "options header nItemCount 0x6"      globals/D2Client.cpp            '0x6, // VP:'                1
-gate "options table sized [6]"            globals/D2Client.cpp            'gaEscMenuOptionsTable\[6\] = \{ // VP:' 1
-gate "row-10 click callback wired"        globals/D2Client.cpp            'ESCMENU_ShowVanillaPlusOptions' 1
-gate "row-10 init callback wired (row + comment)" globals/D2Client.cpp        'ESCMENU_InitVanillaPlusLabel' 2
-gate "row-10 draw callback wired (row + comment)" globals/D2Client.cpp        'VANILLAPLUS_DrawRowLabel'   2
+gate "dismiss alias row (1 upstream + 1 fork)" D2Client/UI/ui.cpp          'gaUIFlagDescs\[9\]\.anDismissMode\[0\]' 2
+gate "options header nItemCount 0x6"      D2Client/UI/EscMenu.cpp         '0x6, // VP:'                1
+gate "options table sized [6]"            D2Client/UI/EscMenu.cpp         'gaEscMenuOptionsTable\[6\] = \{ // VP:' 1
+gate "row-10 click callback wired"        D2Client/UI/EscMenu.cpp         'ESCMENU_ShowVanillaPlusOptions' 1
+gate "row-10 init callback wired (row + comment)" D2Client/UI/EscMenu.cpp     'ESCMENU_InitVanillaPlusLabel' 2
+# [R102 merge] the row-10 table moved into EscMenu.cpp (wiring + VP comment) and the
+# resolution-label code already in this TU references the row-label convention twice,
+# so the marker count is 4.
+gate "row-10 draw callback wired (row + comment)" D2Client/UI/EscMenu.cpp     'VANILLAPLUS_DrawRowLabel'   4
 
 # ---- Draw.cpp / ui.cpp dispatch + guards ----------------------------------
 # Upstream 1775 filed SetUiFlagInit/SetUIFlagUnregister into ui.cpp; the row-10
 # register/unregister blocks follow them there (the DRAW_UI render block stays in Draw.cpp).
-gate "SetUiFlagInit/unregister VP blocks"  D2Client/UI/ui.cpp      'VP-BEGIN \[row-10 options page\]' 2
+# [R102 merge] the TU restructure moved the row-10 dismiss-table alias block into ui.cpp
+# (beside the register/unregister blocks already pinned here), so the marker count is 3.
+gate "SetUiFlagInit/unregister VP blocks"  D2Client/UI/ui.cpp      'VP-BEGIN \[row-10 options page\]' 3
 gate "render VP block"                     D2Client/UI/Draw.cpp    'VP-BEGIN \[row-10 options page\]' 1
 # rev47 track G: PRESENCE is not PLACEMENT. Row "auto-gold tick wired in
 # DRAW_UI" stayed green through the d6affdd merge port even though the port
@@ -214,27 +219,30 @@ gate "automap tolerant frees"             D2Client/UI/Automap.cpp         'D2_FR
 
 # ---- sound-defect: class sound tables + sounds.txt null guard ---------------
 gate "sounds.txt null guard in SOUND_PlaySound" D2Client/Sound/Sound.cpp 'VP: lookup returns null' 1
-gate "class sound tables right-sized [11]" globals/globals.h            'extern int gaUnitSoundIds\w+\[11\]' 7
-gate "class sound tables initialized"      globals/globals.cpp          'int gaUnitSoundIds\w+\[11\] = \{' 7
-gate "pointer table targets Amazon table"  globals/D2Client.cpp         'gaUnitSoundIdsAmazon' 1
+# [R102 merge] upstream 962f88d5 (define shared globals in their TU) moved the six
+# definitions into D2Client/UNIT/UnitSnd.cpp (decls in UnitSnd.data.h); Amazon stays in
+# globals.cpp (retail site) with its extern in globals.h.
+gate "class sound externs right-sized [11]" D2Client/UNIT/UnitSnd.data.h 'extern int gaUnitSoundIds\w+\[11\]' 6
+gate "class sound tables initialized"      D2Client/UNIT/UnitSnd.cpp     'int gaUnitSoundIds\w+\[11\] = \{' 6
+gate "pointer table targets Amazon table"  D2Client/UNIT/UnitSnd.cpp     'gaUnitSoundTableByClassId\[7\] = \{ gaUnitSoundIdsAmazon' 1
 # restored retail values (1.14d Game.exe .data): full-initializer tripwire per class
 # [R99 re-pin] upstream 0fe2eda8 (ghidra 1870 sound names) recovered the retail tables
 # in multi-line hex form (values verified identical to the fork's decimal hand-build);
 # each class now pins the upstream spelling's opening line plus its unique first value.
 gate "sound table Amazon restored (retail .data)"      globals/globals.cpp 'int gaUnitSoundIdsAmazon\[11\] = \{' 1
 gate "sound table Amazon value [0] (retail .data)"     globals/globals.cpp '^\s+0xb3e,\s*$' 1
-gate "sound table Barbarian restored (retail .data)"   globals/globals.cpp 'int gaUnitSoundIdsBarbarian\[11\] = \{' 1
-gate "sound table Barbarian value [0] (retail .data)"  globals/globals.cpp '^\s+0xb56,\s*$' 1
-gate "sound table Necromancer restored (retail .data)" globals/globals.cpp 'int gaUnitSoundIdsNecromancer\[11\] = \{' 1
-gate "sound table Necromancer value [0] (retail .data)" globals/globals.cpp '^\s+0xb4e,\s*$' 1
-gate "sound table Paladin restored (retail .data)"     globals/globals.cpp 'int gaUnitSoundIdsPaladin\[11\] = \{' 1
-gate "sound table Paladin value [0] (retail .data)"    globals/globals.cpp '^\s+0xb46,\s*$' 1
-gate "sound table Sorceress restored (retail .data)"   globals/globals.cpp 'int gaUnitSoundIdsSorceress\[11\] = \{' 1
-gate "sound table Sorceress value [0] (retail .data)"  globals/globals.cpp '^\s+0xb5e,\s*$' 1
-gate "sound table Assassin restored (retail .data)"    globals/globals.cpp 'int gaUnitSoundIdsAssassin\[11\] = \{' 1
-gate "sound table Assassin value [0] (retail .data)"   globals/globals.cpp '^\s+0xb66,\s*$' 1
-gate "sound table Druid restored (retail .data)"       globals/globals.cpp 'int gaUnitSoundIdsDruid\[11\] = \{' 1
-gate "sound table Druid value [0] (retail .data)"      globals/globals.cpp '^\s+0xb6e,\s*$' 1
+gate "sound table Barbarian restored (retail .data)"   D2Client/UNIT/UnitSnd.cpp 'int gaUnitSoundIdsBarbarian\[11\] = \{' 1
+gate "sound table Barbarian value [0] (retail .data)"  D2Client/UNIT/UnitSnd.cpp '^\s+0xb56,\s*$' 1
+gate "sound table Necromancer restored (retail .data)" D2Client/UNIT/UnitSnd.cpp 'int gaUnitSoundIdsNecromancer\[11\] = \{' 1
+gate "sound table Necromancer value [0] (retail .data)" D2Client/UNIT/UnitSnd.cpp '^\s+0xb4e,\s*$' 1
+gate "sound table Paladin restored (retail .data)"     D2Client/UNIT/UnitSnd.cpp 'int gaUnitSoundIdsPaladin\[11\] = \{' 1
+gate "sound table Paladin value [0] (retail .data)"    D2Client/UNIT/UnitSnd.cpp '^\s+0xb46,\s*$' 1
+gate "sound table Sorceress restored (retail .data)"   D2Client/UNIT/UnitSnd.cpp 'int gaUnitSoundIdsSorceress\[11\] = \{' 1
+gate "sound table Sorceress value [0] (retail .data)"  D2Client/UNIT/UnitSnd.cpp '^\s+0xb5e,\s*$' 1
+gate "sound table Assassin restored (retail .data)"    D2Client/UNIT/UnitSnd.cpp 'int gaUnitSoundIdsAssassin\[11\] = \{' 1
+gate "sound table Assassin value [0] (retail .data)"   D2Client/UNIT/UnitSnd.cpp '^\s+0xb66,\s*$' 1
+gate "sound table Druid restored (retail .data)"       D2Client/UNIT/UnitSnd.cpp 'int gaUnitSoundIdsDruid\[11\] = \{' 1
+gate "sound table Druid value [0] (retail .data)"      D2Client/UNIT/UnitSnd.cpp '^\s+0xb6e,\s*$' 1
 # the decompile's phantom "init flag" (really Amazon[0]'s low byte) must stay gone
 gate "bUnitSoundTableInit phantom gone (cpp)" globals/globals.cpp 'uint8_t bUnitSoundTableInit' 0
 gate "bUnitSoundTableInit phantom gone (h)"   globals/globals.h   'uint8_t bUnitSoundTableInit' 0
@@ -259,7 +267,7 @@ gate "sound: no raw IEEE-754 volume literals left"    D2Sound/Src/D2SoundSmp.cpp
 # The registry value is the slider POSITION (0/1/2); stop 2 is attached at
 # runtime by the Resolution row's init callback because no MPQ label asset
 # exists for it. EscMenu.cpp mapping: 0 -> mode 0, 1 -> mode 2, 2 -> mode 4.
-gate "resolution: draw callback wired (row)" globals/globals.cpp         'UI_SLIDER_DrawResolutionValue' 1
+gate "resolution: draw callback wired (row)" D2Client/UI/EscMenu.cpp    'fpDrawCallback = \*/ &D2Client::UI::EscMenu::UI_SLIDER_DrawResolutionValue' 1
 gate "resolution: draw fn defined"           D2Client/UI/EscMenu.cpp     '__fastcall UI_SLIDER_DrawResolutionValue' 1
 # Both resolution callbacks (Apply + LoadAndApply) live in EscMenu.cpp on the
 # 1775+ layout; main carried LoadAndApply in Storm/_unnamespaced.cpp until the

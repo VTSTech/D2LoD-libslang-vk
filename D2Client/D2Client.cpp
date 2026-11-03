@@ -99,13 +99,21 @@
 #include "Storm/Source/SFile.h"
 #include "Storm/Storm.h"
 #include "globals/globals.h"
+#include "D2Client/Engine.data.h"
+#include "D2Client/GAME/Game/Game.data.h"
+#include "D2Client/GAME/Sound.data.h"
+#include "D2Client/Sound/SoundHdr.data.h"
+#include "D2Client/UI/Chat.data.h"
 #include "D2Client/UI/Chat.h"
 #include "D2Client/UI/MiniPanel.h"
+#include "D2Client/UI/UseItem.data.h"
+#include "D2Client/UI/npcmenu.data.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/Unit.h"
 #include "D2Game/GAME/Arena.h"
 #include "D2Game/Monster/AI/AI.h"
+#include "D2gfx/D2GFX.data.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -1388,20 +1396,6 @@ void __fastcall MONSTER_FreeMonsterPath(int * pUnit) {
 
     D2_FREE_AT(*(void**)(nMonsterData + 0x2c), ".\\UNIT\\Monster.cpp", 0x66);
     *(uint32_t*)(nMonsterData + 0x2c) = 0;
-}
-
-int __stdcall NPCMENU_ConfirmTransactionReturn() {
-    UI::Dialog::FreeDialogStrc(UI::Dialog::gpNpcTransactionConfirmDialog);
-    UI::Dialog::gpNpcTransactionConfirmDialog = 0;
-    if (gnNpcMenuTransactionType == 5) {
-      UI::npcmenu::NPCMENU_BuildMercHireMenu();
-      return 1;
-    }
-
-    UI::Inv::INV_ReturnToShopFromRepair();
-    _Interaction::geNpcUiState = NPCUI_SHOP;
-    GAME::Select::ClearSelectedUnit();
-    return 1;
 }
 
 int __stdcall NPCMENU_GetCurrentMenuId() {

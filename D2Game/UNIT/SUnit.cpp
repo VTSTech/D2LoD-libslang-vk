@@ -48,7 +48,6 @@
 #include "D2Common/Units.h"
 #include "D2Game/Ai/AiGeneral.h"
 #include "D2Game/D2DamageStrc.h"
-#include "D2Game/D2Game.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Arena.h"
 #include "D2Game/GAME/Clients.h"
@@ -71,6 +70,7 @@
 #include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
+#include "D2Game/Quests/QUESTS/A1Q2.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
 #include "D2Game/UNIT/Item.h"
 #include "D2Game/UNIT/Party.h"
@@ -89,6 +89,7 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillAss.h"
+#include "D2Game/UNIT/SUnit.data.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -113,6 +114,7 @@ typedef void (__fastcall *fpSUnitIterateCallback)(::SGAMEDATA * pGame, D2UnitStr
 #endif
 
 static int ganUnitHashTableBaseOffsets[6] = { 0x1120, 0x1320, 0x1520, 0x1920, 0x1720, 0x0 }; D2_STATIC_GUARD(ganUnitHashTableBaseOffsets, "ganUnitHashTableBaseOffsets");
+uint32_t gnSeedCounter = 0; D2_GLOBAL_GUARD(gnSeedCounter, "gnSeedCounter");
 
 namespace D2Game::UNIT::SUnit {
 

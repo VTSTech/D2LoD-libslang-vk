@@ -20,6 +20,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
+#include "D2Client/GAME/Game/Game.data.h"
 #include "D2Client/UI/Inv.h"
 #include "support/d2_boot.h" // [d2boot] loading-screen freeze diagnostics
 

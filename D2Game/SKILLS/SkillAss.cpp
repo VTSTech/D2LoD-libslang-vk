@@ -76,6 +76,7 @@
 #include "D2Common/Unit.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/SKILLS/SkillSor.h"
+#include "D2Game/SKILLS/SkillsServer.data.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -2428,6 +2429,15 @@ BOOL __fastcall Skills_SrvDoFunc_048_BladeFury(::SGAMEDATA * pGame, D2UnitStrc *
     }
 
     return bMissileCreated;
+}
+
+void __fastcall SKILLSASS_StatExpireCallback_ClearStateSetFlag(D2UnitStrc * pUnit, eD2States eState, int32_t pStatList) {
+    D2Common::DATATBLS::ItemStats::SetState(pUnit, eState, 0);
+    if (!pUnit) {
+      return;
+    }
+
+    pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
 }
 
 // Server sustain function for the Assassin Blade Sentinel charge-up (skill 26 / STATE_inferno). If the unit already has the inferno state, extends the state timeout and fires another BladeSentinel if the cooldown has elapsed; otherwise checks mana, allocates a new state statlist, attaches it, and marks the skill param. Returns TRUE if the skill fired or state was initiated.

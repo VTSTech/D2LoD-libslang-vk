@@ -25,6 +25,7 @@
 #include "D2Client/UI/Automap.h"
 #include "D2DDraw/Renderer/DirectDraw.h"
 #include "support/d2_boot.h" // [d2boot] issue #26 D3D perspective-toggle promote guards [R97]
+#include "D2Direct3D/Renderer/Direct3D.data.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 

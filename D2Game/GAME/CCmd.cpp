@@ -26,6 +26,7 @@
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 #include "support/d2_boot.h" // [d2boot] loading-screen freeze diagnostics
+#include "D2Game/GAME/Server.data.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 

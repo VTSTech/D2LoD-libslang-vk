@@ -12,6 +12,7 @@
 #include "globals/globals.h"
 #include "support/d2_boot.h"
 #include "D2Win/D2WinAnimImage.h"
+#include "D2Win/Src/D2WinPalette.data.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -21,6 +22,67 @@
 
 
 static uint32_t gbPaletteGammaShiftEnabled = 0x1; D2_STATIC_GUARD(gbPaletteGammaShiftEnabled, "gbPaletteGammaShiftEnabled");
+static int gnPaletteGammaShiftState = 0; D2_STATIC_GUARD(gnPaletteGammaShiftState, "gnPaletteGammaShiftState");
+// [vanilla-plus fix 24, merged] TRUE extent = 39 bytes: D2WINPAL_LoadPaletteFiles
+// writes 9 PALETTEENTRY (36B) + 1 manual RGB triple (3B) here (D2WINPAL_LoadPaletteFiles,
+// pDstIndexCounter = (PALETTEENTRY*)gnPaletteIndexCounter);
+// the peFlags 4th byte of the 10th slot is never written (merge correction of the earlier
+// 40B note - the write overran a 4B uint32_t decl into gPaletteAct1[0..35], tinting act1
+// plane-0 remap entries 0-8; extent now exact and guarded).
+static uint8_t gnPaletteIndexCounter[39] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+}; D2_STATIC_GUARD(gnPaletteIndexCounter, "gnPaletteIndexCounter");
+static uint8_t gPaletteTransposeBase[3328] = {}; D2_STATIC_GUARD(gPaletteTransposeBase, "gPaletteTransposeBase");
+static uint8_t gPaletteMenuInGame[256] = {}; D2_STATIC_GUARD(gPaletteMenuInGame, "gPaletteMenuInGame");
+static uint8_t gPaletteAct1Outdoor[32768] = {}; D2_STATIC_GUARD(gPaletteAct1Outdoor, "gPaletteAct1Outdoor");
+static uint8_t gPaletteAct2[65536] = {}; D2_STATIC_GUARD(gPaletteAct2, "gPaletteAct2");
+uint8_t gPaletteAct1[196608] = {}; D2_GLOBAL_GUARD(gPaletteAct1, "gPaletteAct1");
+static uint8_t gPaletteUnits[256] = {}; D2_STATIC_GUARD(gPaletteUnits, "gPaletteUnits");
+static uint8_t gPaletteDataMenuInGame[256] = {}; D2_STATIC_GUARD(gPaletteDataMenuInGame, "gPaletteDataMenuInGame");
+static PALETTEENTRY MostLikelyCurrentPalletePtr[256] = {}; D2_STATIC_GUARD(MostLikelyCurrentPalletePtr, "MostLikelyCurrentPalletePtr");
+static uint8_t gPaletteDataBase[12544] = {}; D2_STATIC_GUARD(gPaletteDataBase, "gPaletteDataBase");
+static uint8_t gPaletteAct5[65536] = {}; D2_STATIC_GUARD(gPaletteAct5, "gPaletteAct5");
+uint8_t gPaletteActNeutral[65536] = {}; D2_GLOBAL_GUARD(gPaletteActNeutral, "gPaletteActNeutral");
+static uint32_t gbGammaShiftActive = 0; D2_STATIC_GUARD(gbGammaShiftActive, "gbGammaShiftActive");
+static unsigned int gdwPaletteShiftStartTick = {}; D2_STATIC_GUARD(gdwPaletteShiftStartTick, "gdwPaletteShiftStartTick");
 
 namespace D2Win::Src::D2WinPalette {
 
