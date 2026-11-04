@@ -110,6 +110,32 @@ The gate is a human audit instrument, not a build prerequisite: CI builds the
 tree either way, and a red gate in CI only blocked shipping without stopping
 the merge. Run it by hand whenever the merge surface moved (steps 0-4 above).
 
+## Bundle identity (agent-built merge rounds)
+
+When the agent sandbox ships a merge round as a git bundle (the handoff §8
+overlay workflow: bundles for upstream merges, zips for regular rounds), every
+commit the bundle carries must be authored AND committed as:
+
+    Super-Z (GLM-5.3-Flash) <super-z@z.ai>
+
+Never the sandbox default (`Z User <z@container>`) — it leaks the container
+identity into the fork's permanent history and makes the owner's `git shortlog`
+attribution lie. Set the repo-local identity BEFORE the first commit of the
+round (amending after the fact rewrites hashes and forces a bundle rebuild):
+
+    git config user.name  "Super-Z (GLM-5.3-Flash)"
+    git config user.email "super-z@z.ai"
+
+Verify before bundling (author and committer, both):
+
+    git log origin/main..main --format='%h | A: %an <%ae> | C: %cn <%ce>'
+
+If commits already went out under the wrong identity, re-author locally
+(`git commit --amend --reset-author` on the tip; for a merge+docs pair,
+`git reset --soft` back and recommit), re-verify, and rebuild the bundle —
+hashes change, so any doc that cites the merge hash must be updated in the
+same rewrite.
+
 ## When a gate fires
 
 - `tools/check-vanilla-plus.sh FAIL <gate>` - a marked edit was dropped or
