@@ -15,6 +15,7 @@ namespace d2linux {
 
 struct HostOptions {
     bool smoke = false;       // --smoke: dummy drivers, a few frames, exit 0
+    bool list_video = false;  // --list-video: compiled drivers + session, exit 0
     int  smoke_frames = 3;
     int  window_w = 800;
     int  window_h = 600;

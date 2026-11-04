@@ -85,6 +85,65 @@ if(NOT D2LINUX_BUILD_ID)
 endif()
 
 # ---------------------------------------------------------------------------
+# [d2linux] Which video backends did SDL actually configure? The answer is in
+# the generated SDL_build_config.h (SDL_VIDEO_DRIVER_*), and it is the
+# difference between a binary that opens a window and one that only ever
+# smokes headless. CI's i386 job is console-only BY DESIGN (no :i386 X11/
+# Wayland dev libraries exist); a local desktop build that lands dummy-only
+# is missing the dev libraries - say so at configure time, not at first
+# SDL_Init. The runtime twin of this report is `./d2linux --list-video`.
+# (System-package SDL3 is skipped: its backend set is the packager's choice
+# and the config header's location varies per distro; --list-video reports
+# it just as well at runtime.)
+# ---------------------------------------------------------------------------
+function(d2linux_report_video_backends _sdl3_binary_dir _context)
+    # SDL writes the config in two steps (CMakeLists: configure_file the
+    # intermediate during configure, file(GENERATE) the final per-config
+    # copy during generate) - at report time only the intermediate exists.
+    # The recursive glob is the fallback for an SDL that changes the scheme.
+    set(_d2l_cfg_h "${_sdl3_binary_dir}/CMakeFiles/SDL_build_config.h.intermediate")
+    if(NOT EXISTS "${_d2l_cfg_h}")
+        file(GLOB_RECURSE _d2l_cfgs "${_sdl3_binary_dir}/SDL_build_config.h")
+        if(NOT _d2l_cfgs)
+            return()
+        endif()
+        list(GET _d2l_cfgs 0 _d2l_cfg_h)
+    endif()
+    file(READ "${_d2l_cfg_h}" _d2l_cfg)
+    set(_d2l_found "")
+    foreach(_b X11 WAYLAND KMSDRM VIVANTE DIRECTFB RPI OFFSCREEN DUMMY)
+        if(_d2l_cfg MATCHES "#define SDL_VIDEO_DRIVER_${_b} 1")
+            string(TOLOWER "${_b}" _d2l_bl)
+            list(APPEND _d2l_found "${_d2l_bl}")
+        endif()
+    endforeach()
+    if(NOT _d2l_found)
+        return()
+    endif()
+    list(JOIN _d2l_found " " _d2l_found_s)
+    list(FIND _d2l_found "x11" _d2l_i_x11)
+    list(FIND _d2l_found "wayland" _d2l_i_wl)
+    if(_d2l_i_x11 GREATER -1 OR _d2l_i_wl GREATER -1)
+        message(STATUS "d2linux: SDL3 video backends (${_context}): ${_d2l_found_s}")
+    elseif(NOT SDL_X11 AND NOT SDL_WAYLAND)
+        # Both desktop options were explicitly turned off (CI's i386 job, the
+        # check script's console retry): by request, not a misconfiguration.
+        message(STATUS "d2linux: SDL3 video backends (${_context}): ${_d2l_found_s} "
+            "(console-only by request: SDL_X11=OFF SDL_WAYLAND=OFF - the binary "
+            "runs --smoke headless only)")
+    else()
+        message(WARNING
+            "d2linux: SDL3 configured WITHOUT a desktop video backend "
+            "(${_context}; compiled: ${_d2l_found_s}). d2linux builds but only "
+            "ever runs headless: ./d2linux dies with 'No available video device' "
+            "on any machine. If a desktop run is wanted: install the X11/Wayland "
+            "dev set (docs/linux-port.md, Build) and reconfigure on a FRESH "
+            "build dir (rm -rf), or pass the console flags knowingly "
+            "(-DSDL_X11=OFF -DSDL_WAYLAND=OFF, what CI does).")
+    endif()
+endfunction()
+
+# ---------------------------------------------------------------------------
 # SDL3. Resolution order:
 #   1. -DD2_SDL3_DIR=<path>  - a checkout to build in-tree (sandbox/verify)
 #   2. external/SDL          - the git submodule (preferred; see docs)
@@ -113,6 +172,8 @@ if(D2_SDL3_SOURCE)
         set(D2_SDL3_TARGET SDL3::SDL3)
     endif()
     message(STATUS "d2linux: SDL3 vendored from ${D2_SDL3_SOURCE} -> ${D2_SDL3_TARGET}")
+    d2linux_report_video_backends(
+        "${CMAKE_BINARY_DIR}/SDL3" "vendored")
 else()
     find_package(SDL3 CONFIG QUIET)
     if(NOT SDL3_FOUND)

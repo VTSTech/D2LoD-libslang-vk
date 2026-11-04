@@ -1,69 +1,98 @@
-d2linux M1 CI round 3 — the gate reflects the toolchain, not add_definitions
-(branch `linux`, applies on top of your round-2 commit, e.g. f71a415)
-========================================================================
+d2linux - M13 overlay: the video failure is self-diagnosing
+============================================================
+commit f8820cbd (on top of the m12 gate-fix, 2ddd6675)
 
-WHAT THIS IS
-  Your round-2 log cracked the case. Read it back: the fail-fast verify
-  step PASSED (plain `gcc -m32` compiles and links fine on the runner),
-  the raw diagnosis probe SUCCEEDED (no FAILED marker, no ld errors) --
-  and yet check_cxx_compiler_flag("-m32") said Failed. The module lied.
+WHAT THIS FIXES
+---------------
+Your desktop run died with a bare "SDL_Init failed: No available video
+device". Two different causes hide behind that line, and the old binary
+could not tell them apart:
 
-ROOT CAUSE (confirmed by inspecting the try_compile children)
-  check_cxx_compiler_flag passes the flag through the child project's
-  add_definitions() (Internal/CheckCompilerFlag sets
-  CMAKE_REQUIRED_DEFINITIONS). add_definitions reaches the COMPILE step
-  only: the child compiled a 32-bit object and then linked it against
-  64-bit crt objects -- link.txt of the generated child literally has no
-  -m32. That fails on every WORKING multilib toolchain. cmake 3.28.3
-  (the runner) and 3.31.6 behave the same; it is not your toolchain, it
-  never was. The CMAKE_FLAGS COMPILE_DEFINITIONS route seeds the child's
-  CMAKE_CXX_FLAGS instead, which rides both compile and link -- that is
-  the probe that succeeded in your own log.
+  1. The BINARY is console-only. CI's i386 artifact is built with
+     SDL_X11=OFF SDL_WAYLAND=OFF by design (no :i386 X11/Wayland dev
+     libraries exist), so its only video driver is SDL's "dummy" - it
+     cannot open a window on ANY machine, desktop or not. Same for any
+     build that went through check-build-linux.sh's console retry.
+  2. The SHELL has no display session (SSH without -X, WSL without
+     WSLg, a bare server console). The driver exists but there is no X
+     server to connect to.
 
-THE FIX
-  platform/linux/build.cmake -- the gate is the raw try_compile probe
-  (compile+link, cached); check_cxx_compiler_flag is gone. When the
-  toolchain genuinely cannot do i386, the FATAL_ERROR still carries the
-  compiler's own verdict.
+QUICK CHECKS ON YOUR BOX (before applying anything)
+---------------------------------------------------
+  echo "DISPLAY='$DISPLAY' WAYLAND_DISPLAY='$WAYLAND_DISPLAY' XDG_SESSION_TYPE='$XDG_SESSION_TYPE'"
+  ldd ./d2linux | grep -Ei 'libX11|libwayland' || echo "no X11/Wayland linkage (console-only binary)"
 
-  .github/workflows/build.yml -- under i386, SDL now configures
-  console-only up front (D2LINUX_SDL_FLAGS pass-through + the same flags
-  in the in-tree artifact step). Runners have no :i386 X11 dev libraries,
-  so the full-SDL attempt was a deterministic per-run failure that the
-  console retry had to rescue every time; the smoke forces the SDL dummy
-  drivers anyway. Real backend configure stays the default for local
-  native-arch builds.
+If you ran the CI artifact: that is cause 1, guaranteed. If DISPLAY is
+empty in that echo: cause 2. If DISPLAY is set AND ldd shows libX11:
+install the dev set below, rebuild SDL (fresh build dir), rerun.
 
-APPLY (from the repo root, on branch linux)
-  1. unzip this overlay over the tree (paths are tree-relative).
-  2. Commit as your own:
-       git add -A && git commit
-     suggested subject:
-       "linux: M1 CI round 3 -- the -m32 gate reflects the toolchain,
-        not add_definitions"
+WHAT THE OVERLAY CHANGES
+------------------------
+- platform/linux/build.cmake   after the vendored SDL3 configures, cmake
+  now reports the compiled video backends ("d2linux: SDL3 video
+  backends (vendored): x11 offscreen dummy"); console-only-by-request
+  is a neutral STATUS line, a misconfigured dummy-only state is a loud
+  WARNING with the fix.
+- platform/linux/d2_linux_main.cpp
+  SDL_Init splits: video is fatal + self-diagnosing (drivers, session
+  env, WSL note, one of four verdicts); audio is best-effort, so a
+  soundcard-less box no longer dies inside a combined init. New flag:
+      ./d2linux --list-video
+  prints the compiled video/audio drivers + the session environment and
+  exits - the first move for any display problem.
+- platform/linux/d2_linux.h        HostOptions.list_video
+- tools/check-build-linux.sh       every CI build logs its backend report
+- docs/linux-port.md               "Troubleshooting: No available video
+                                   device" section with the four verdicts
 
-WHAT TO EXPECT FROM THE NEXT CI RUN
-  - "Verify the i386 toolchain": OK (it already passed for you).
-  - Configure: first attempt succeeds (console-only), no retry noise.
-  - Build: the 44-TU i386 slice + shims + static SDL3 -> ELF 32-bit.
-  - Smoke: `d2linux smoke OK (3 frames, dummy video/audio)` -- this is
-    the first CI run that actually reaches and runs the i386 smoke, so
-    this is the M1 exit ring: if anything in the slice trips at RUNTIME
-    on the runner (it linked clean here), the smoke is where it shows.
+APPLY
+-----
+From the repo root (branch linux), with this zip's files over the tree:
 
-VERIFICATION DONE (sandbox, this round)
-  - Failure path: fresh clone with no multilib at all -> gate fails with
-    the compiler's verdict (Scrt1.o/crti.o not found, skipping
-    incompatible libstdc++/libm/libgcc), exit 1. The gate still catches
-    genuinely broken environments.
-  - Happy path: full 44-TU i386 build through the check script with the
-    new console-first flow -> configure OK on the FIRST attempt, "compile
-    errors: 0", ELF 32-bit statically linked. (The i386 --smoke run stays
-    CI's ring; this container refuses static-i386 execution.)
-  - Native arch end-to-end: configure -> build -> --smoke OK, exit 0.
+  git apply --stat d2linux-m13-video-diagnostics.patch   # optional sanity
+  # or just copy the 5 files over their paths, then:
+  git add -A && git commit -m "linux: the video failure is self-diagnosing"
 
-NEXT (step 2, toward M2)
-  globals.cpp + the boot chain (D2Launch/D2Client/D2Multi/D2Common) --
-  the step-1 weak globals yield to the strong ones automatically. Then
-  the Storm/MPQ wiring onto the M0 presentation surface (title screen
-  offline). A green CI run on this push closes M1.
+The check script now also runs --list-video, so apply BEFORE pushing if
+you want CI's first round to be green on an up-to-date tree.
+
+VERIFY (your box)
+-----------------
+  cmake -S . -B build-native -G Ninja -DD2LINUX_ARCH=native \
+        -DCMAKE_BUILD_TYPE=Release     # fresh dir; install dev pkgs first if
+                                       # the configure warns
+  cmake --build build-native -j --target d2linux
+  ./build-native/d2linux --list-video   # want x11 (or wayland) in the list
+  ./build-native/d2linux                # wants a display session
+  ./build-native/d2linux --smoke        # unchanged, exit 0
+
+If --list-video still says only "offscreen dummy evdev": the dev
+libraries were missing at configure time (see the cmake warning), or you
+reused a stale build dir - rm -rf the build dir and reconfigure.
+
+Dev set (docs/linux-port.md, Build):
+  sudo apt-get install libx11-dev libxext-dev libxrandr-dev libxcursor-dev \
+    libxi-dev libxfixes-dev libxss-dev libxtst-dev libwayland-dev \
+    libxkbcommon-dev libdecor-0-dev libegl1-mesa-dev libasound2-dev
+
+NOTE: libxtst-dev (XTEST) is a HARD dependency of SDL3's X11 configure;
+without it configure fatal-errors with "Couldn't find dependency package
+for XTEST". libdecor-0-dev is SOFT (bare windows on GNOME Wayland
+without it).
+
+SANDBOX VERIFICATION (this exact commit)
+----------------------------------------
+- console-only configure: STATUS "offscreen dummy (console-only by
+  request...)"; no warning (by design for CI)
+- configure WITHOUT the flags on a partial-X11 box (ext headers
+  extracted into a prefix): STATUS "x11 offscreen dummy"
+- i386 configure via the sysroot recipe: -m32 probe OK, report fires,
+  configure done
+- runtime: --smoke exit 0 (both builds); --list-video exit 0 pre-init;
+  console-only real run -> verdict "no desktop backend compiled in";
+  x11 build without DISPLAY -> verdict "no display session"; dead
+  DISPLAY=:99 -> verdict "force the backend"; broken audio driver ->
+  "audio subsystem unavailable - continuing without", host keeps
+  running
+- tools/check-build-linux.sh repo HEAD: OK, backend report + smoke
+  verdict in the log (banner f8820cbd)

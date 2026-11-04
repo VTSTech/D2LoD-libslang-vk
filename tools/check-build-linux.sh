@@ -76,6 +76,12 @@ if command -v file >/dev/null; then
   file "$WORK/build/d2linux" | sed 's/^/binary: /'
 fi
 
+# Which backends did the binary actually get? Same ground truth the runtime
+# diagnosis uses - the CI log records it for every build (a console-only
+# i386 artifact is expected here; a dummy-only NATIVE build means the X11/
+# Wayland dev libraries were absent at configure time).
+"$WORK/build/d2linux" --list-video | sed 's/^/video: /'
+
 # Headless smoke: --smoke forces the SDL dummy video/audio drivers itself;
 # the exit code and the verdict line are the check.
 if ! "$WORK/build/d2linux" --smoke >"$WORK/smoke.log" 2>&1; then

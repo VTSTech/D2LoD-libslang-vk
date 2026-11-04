@@ -115,6 +115,36 @@ WM-decorated X11 path.
 Windows owner note: the skeleton runs under WSL2/WSLg (GUI apps just work);
 `--smoke` runs anywhere, display or not.
 
+## Troubleshooting: `No available video device`
+
+`./d2linux` needs a display; `--smoke` does not (it forces the dummy drivers).
+When `SDL_Init(SDL_INIT_VIDEO)` fails, the binary prints its own diagnosis -
+the drivers compiled into THIS binary, the session environment, and the fix
+that follows from the combination. `./d2linux --list-video` prints the same
+report without running. The four verdicts:
+
+- **`video drivers compiled in: dummy offscreen`** — this binary is
+  console-only: either a CI artifact (the i386 job builds
+  `SDL_X11=OFF SDL_WAYLAND=OFF` by design — no :i386 X11/Wayland dev
+  libraries exist) or a local configure without the dev libraries. It cannot
+  open a window on any machine. Fix: install the dev set from Build above and
+  reconfigure on a **fresh** build dir: `cmake -S . -B build-native -G Ninja
+  -DD2LINUX_ARCH=native`.
+- **`kmsdrm` only** — the binary draws on the Linux console (a real VT), not
+  inside a desktop session. Run it from a TTY (may need video-group/root for
+  DRM master), or rebuild with the X11/Wayland dev set.
+- **`x11`/`wayland` compiled in, `DISPLAY`/`WAYLAND_DISPLAY` unset** — no
+  display session in this shell: run from a desktop session, or `ssh -X`, or
+  WSLg (Windows 11) / an X server on the Windows side with DISPLAY set.
+- **`x11`/`wayland` compiled in, session present** — force the backend the
+  session actually runs: `SDL_VIDEODRIVER=x11 ./d2linux` (X11/XWayland) or
+  `SDL_VIDEODRIVER=wayland ./d2linux`.
+
+Configure-time companion: when the vendored SDL3 lands without a desktop
+backend, cmake warns in the same words (search the configure log for
+"WITHOUT a desktop video backend"). CI logs record the report of every build
+via `check-build-linux.sh` → `--list-video`.
+
 ## Rules for this track
 
 1. Decomp TU edits are `#ifdef`-guarded, PE-identical when the guard is off —
