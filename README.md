@@ -10,7 +10,7 @@
        width="88" height="31" alt="Made Openly: Mostly AI">
 </a>
 
-[![Release](https://img.shields.io/badge/release-0.0.7--R101-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
+[![Release](https://img.shields.io/badge/release-0.0.7--R104-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
 [![Gates](https://img.shields.io/badge/vanilla%2B%20gates-380%2F380-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 [![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/xQXpH5Nj5)
