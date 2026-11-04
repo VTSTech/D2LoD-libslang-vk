@@ -95,6 +95,7 @@
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/QuestLog.h"
+#include "D2Client/UNIT/PlrSkills.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Game/Quests/QUESTS/A1Q3.h"
@@ -3104,7 +3105,7 @@ void __fastcall TakeWaypoint(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWORD nwpI
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
-    uint16_t _nWaypointMasks;
+    int _nWaypointMasks;
     D2ClientStrc* pClient;
     POINT ptPos;
     int* pX;

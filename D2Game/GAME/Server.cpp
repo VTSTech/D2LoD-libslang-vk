@@ -473,7 +473,7 @@ void __fastcall BroadcastPlayerJoin(::SGAMEDATA * pGame, D2ClientStrc * pClient)
               for (pRoomCorpse = D2Common::INVENTORY::Inventory::INVENTORY_GetCorpse(pUnit->pInventory); pRoomCorpse; pRoomCorpse = D2Common::INVENTORY::Inventory::INVENTORY_GetNextCorpse(pRoomCorpse)) {
                 dwCorpseGUIDArg = D2Common::INVENTORY::Inventory::ROOMCORPSE_GetGUID(pRoomCorpse);
                 if (dwCorpseGUIDArg != -1) {
-                  SCmd::NET_D2GS_SERVER_Send_0x8E_CorpseAssign(pClient, D2Client::UNIT::GetGUID(pUnit), dwCorpseGUIDArg, 1);
+                  SCmd::NET_D2GS_SERVER_Send_0x8E_CorpseAssign(pClient, D2Client::UNIT::GetGUID(pUnit), dwCorpseGUIDArg, true);
                 }
               }
             }
@@ -1561,19 +1561,21 @@ static void GAME_SendNearbyUnitPositions(D2ClientStrc * pClient) {
       exit(-1);
     }
 
-    uint32_t nMaxUnitsToSend;
-    nMaxUnitsToSend = (499 - pPacketList->nSize) / 9;
-    if ((int)nMaxUnitsToSend <= 0) {
+    {
+      uint32_t nMaxUnitsToSend;
+      nMaxUnitsToSend = (499 - pPacketList->nSize) / 9;
+      if ((int)nMaxUnitsToSend <= 0) {
+        return;
+      }
+      if (!(nMaxUnitsToSend <= 0x37)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf23);
+        exit(-1);
+      }
+
+      Clients::GAME_CollectNearbyUnitPositions(pClient, nMaxUnitsToSend);
+      SCmd::GAME_SendNearbyUnitPositionPacket(pClient);
       return;
     }
-    if (!(nMaxUnitsToSend <= 0x37)) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf23);
-      exit(-1);
-    }
-
-    Clients::GAME_CollectNearbyUnitPositions(pClient, nMaxUnitsToSend);
-    SCmd::GAME_SendNearbyUnitPositionPacket(pClient);
-    return;
 }
 
 void __fastcall Unlock(::SGAMEDATA * pGame) {
@@ -2541,7 +2543,7 @@ void __stdcall Unused_GetUnitList(D2UnitStrc * * ppUnitArray, int32_t pStatRoot,
 
 // Searches the game on nServerId for nCount specific units identified by (pClassIds[i], pOutBuffer[i]) pairs and exports their type+mode into pUnitTypes (stride 0xd). Uses FindUnitFromTable for each entry; non-player hits additionally call a PFN_UnitTypeToName_ARRAY dispatch. Returns the count of units found. Counterpart to QSERVER_ExportUnitListByServerId for targeted rather than bulk export.
 int32_t __stdcall QSERVER_FindUnitsAndExportByServerId(uint16_t nServerId, int32_t nCount, eD2UnitType * pUnitTypes, uint32_t * pClassIds, void * pOutBuffer) {
-    uint16_t _nServerId;
+    int _nServerId;
     BOOL bBadCodePtr;
     int nSearchIdx;
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gQServerGameListCs);

@@ -1753,7 +1753,16 @@ static void __stdcall INV_FormatEtherealSocketedText(D2UnitStrc * pUnit, uint16_
 
       pwLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0xd7d);
       D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, pwLocaleStr);
-      memset(wszTmp + 16, 0, 10 * sizeof(wszTmp[0]));
+      wszTmp[0x10] = 0;
+      wszTmp[0x11] = 0;
+      wszTmp[0x12] = 0;
+      wszTmp[0x13] = 0;
+      wszTmp[0x14] = 0;
+      wszTmp[0x15] = 0;
+      wszTmp[0x16] = 0;
+      wszTmp[0x17] = 0;
+      wszTmp[0x18] = 0;
+      wszTmp[0x19] = 0;
       pwLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
       nSocketCount = D2Common::ITEMS::Items::ITEM_GetSocketsCount(pUnit);
       Storm::Source::SSTR::SStrPrintf(szSocketCount, 10, "(%i)", (uint8_t)nSocketCount);
@@ -1825,7 +1834,16 @@ static BOOL __stdcall INV_FormatPlayerNameWithBase(uint16_t * wszText1, uint16_t
 static void __stdcall INV_FormatQuantityText(D2ItemsTxt * pQualityRecord, uint16_t * wszText, D2UnitStrc * pUnit) {
     uint16_t wszNumBuffer[10];
     char szNumBuffer[12];
-    memset(wszNumBuffer, 0, 10 * sizeof(wszNumBuffer[0]));
+    wszNumBuffer[0] = L'\0';
+    wszNumBuffer[1] = 0;
+    wszNumBuffer[2] = 0;
+    wszNumBuffer[3] = 0;
+    wszNumBuffer[4] = 0;
+    wszNumBuffer[5] = 0;
+    wszNumBuffer[6] = 0;
+    wszNumBuffer[7] = 0;
+    wszNumBuffer[8] = 0;
+    wszNumBuffer[9] = 0;
     uint16_t* pwColorPrefix = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
     uint16_t* pwColorSuffix = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
     int nQuantity = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_quantity, 0);
@@ -1848,7 +1866,16 @@ static void __stdcall INV_FormatQuantityText(D2ItemsTxt * pQualityRecord, uint16
 static void INV_FormatDurabilityText(uint16_t * wszText, D2UnitStrc * pUnit) {
     uint16_t wszNumBuf[10];
     char szNumBuffer[12];
-    memset(wszNumBuf, 0, 10 * sizeof(wszNumBuf[0]));
+    wszNumBuf[0] = L'\0';
+    wszNumBuf[1] = 0;
+    wszNumBuf[2] = 0;
+    wszNumBuf[3] = 0;
+    wszNumBuf[4] = 0;
+    wszNumBuf[5] = 0;
+    wszNumBuf[6] = 0;
+    wszNumBuf[7] = 0;
+    wszNumBuf[8] = 0;
+    wszNumBuf[9] = 0;
     uint16_t* pwColorPrefix = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
     uint16_t* pwDurabilitySuffix = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
     uint32_t bHasDurability = D2Common::ITEMS::Items::ITEM_CheckIfItemHasDurability(pUnit);
@@ -1896,7 +1923,16 @@ static void INV_FormatDurabilityText(uint16_t * wszText, D2UnitStrc * pUnit) {
 static void __stdcall INV_FormatStackCountText(int32_t nStackCount, uint16_t * wszText) {
     uint16_t wszNumBuffer[10];
     char szNumBuffer[12];
-    memset(wszNumBuffer, 0, 10 * sizeof(wszNumBuffer[0]));
+    wszNumBuffer[0] = L'\0';
+    wszNumBuffer[1] = 0;
+    wszNumBuffer[2] = 0;
+    wszNumBuffer[3] = 0;
+    wszNumBuffer[4] = 0;
+    wszNumBuffer[5] = 0;
+    wszNumBuffer[6] = 0;
+    wszNumBuffer[7] = 0;
+    wszNumBuffer[8] = 0;
+    wszNumBuffer[9] = 0;
     uint16_t* pwColorPrefix = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
     uint16_t* pwColorSuffix = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
     uint16_t* pwLabelStr = D2Lang::StrTable::strtable::GetLocaleString(0xd8d);
@@ -1912,7 +1948,16 @@ static void __stdcall INV_FormatStackCountText(int32_t nStackCount, uint16_t * w
 static void __stdcall INV_FormatReqStrText(D2ItemsTxt * pItemsTxt, int32_t nReqAdjust, uint16_t * wszText) {
     uint16_t wszNumBuffer[10];
     char szNumBuffer[12];
-    memset(wszNumBuffer, 0, 10 * sizeof(wszNumBuffer[0]));
+    wszNumBuffer[0] = L'\0';
+    wszNumBuffer[1] = 0;
+    wszNumBuffer[2] = 0;
+    wszNumBuffer[3] = 0;
+    wszNumBuffer[4] = 0;
+    wszNumBuffer[5] = 0;
+    wszNumBuffer[6] = 0;
+    wszNumBuffer[7] = 0;
+    wszNumBuffer[8] = 0;
+    wszNumBuffer[9] = 0;
     uint16_t* pwColorPrefix = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
     uint16_t* pwColorSuffix = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
     int nReqStr = (uint32_t)(uint16_t)pItemsTxt->nReqStr + nReqAdjust;
@@ -1934,7 +1979,16 @@ static void __stdcall INV_FormatReqStrText(D2ItemsTxt * pItemsTxt, int32_t nReqA
 static void __stdcall INV_FormatReqDexText(D2ItemsTxt * pItemsTxt, int32_t nReqAdjust, uint16_t * wszText) {
     uint16_t wszNumBuffer[10];
     char szNumBuffer[12];
-    memset(wszNumBuffer, 0, 10 * sizeof(wszNumBuffer[0]));
+    wszNumBuffer[0] = L'\0';
+    wszNumBuffer[1] = 0;
+    wszNumBuffer[2] = 0;
+    wszNumBuffer[3] = 0;
+    wszNumBuffer[4] = 0;
+    wszNumBuffer[5] = 0;
+    wszNumBuffer[6] = 0;
+    wszNumBuffer[7] = 0;
+    wszNumBuffer[8] = 0;
+    wszNumBuffer[9] = 0;
     uint16_t* pwColorPrefix = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
     uint16_t* pwColorSuffix = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
     int nReqDex = (uint32_t)(uint16_t)pItemsTxt->wReqDex + nReqAdjust;
@@ -2240,7 +2294,7 @@ void __stdcall szPrintfBuffer(D2UnitStrc * pUnit, uint16_t * wszText) {
 
 static void __stdcall INV_FormatBlockChanceText(uint16_t * wszText, D2ItemsTxt * pItemsTxt, D2UnitStrc * pUnit) {
     D2SkillStrc* pSkill;
-    eD2States eHolyShieldState;
+    BOOL eHolyShieldState;
     int nClassIdOrLevel;
     int32_t nHolyShieldBonus;
     uint16_t wszLineBuffer[256];
@@ -2263,7 +2317,7 @@ static void __stdcall INV_FormatBlockChanceText(uint16_t * wszText, D2ItemsTxt *
       pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pPlayerUnit_lcl, SKILL_HolyShield);
       if (pSkill) {
         eHolyShieldState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pPlayerUnit_lcl, STATE_holyshield);
-        if (eHolyShieldState != STATE_none) {
+        if (eHolyShieldState) {
           nClassIdOrLevel = D2Common::Skills::GetSkillLevel(pPlayerUnit_lcl, pSkill, 1);
           nHolyShieldBonus = D2Common::Skills::SKILLS_GetParam45WithDiminishing(nClassIdOrLevel, 0x75);
           nBlockChance += nHolyShieldBonus;
@@ -2304,12 +2358,21 @@ static void __stdcall INV_FormatBlockChanceText(uint16_t * wszText, D2ItemsTxt *
 // Formats defense range text for shields and boots, displaying min-max defense values. For shields, checks if Holy Shield skill is active and adds its defense bonus to both min and max values before formatting the output string.
 static void __stdcall INV_FormatDefenseRangeText(D2UnitStrc * pUnit, D2ItemsTxt * pStatRecord, uint16_t * wszText) {
     D2SkillStrc* pSkill;
-    eD2States iStateCheck;
+    BOOL iStateCheck;
     int nSkillLevel;
     int32_t nSkillDmgCalc;
     uint16_t wszTempConversionBuffer[10];
     char szPrintfBuffer[12];
-    memset(wszTempConversionBuffer, 0, 10 * sizeof(wszTempConversionBuffer[0]));
+    wszTempConversionBuffer[0] = L'\0';
+    wszTempConversionBuffer[1] = 0;
+    wszTempConversionBuffer[2] = 0;
+    wszTempConversionBuffer[3] = 0;
+    wszTempConversionBuffer[4] = 0;
+    wszTempConversionBuffer[5] = 0;
+    wszTempConversionBuffer[6] = 0;
+    wszTempConversionBuffer[7] = 0;
+    wszTempConversionBuffer[8] = 0;
+    wszTempConversionBuffer[9] = 0;
     uint16_t* pwSeparator = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
     uint16_t* pwColorSuffix = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
     D2ItemsTxt* nMinDefense = (D2ItemsTxt*)(uint32_t)pStatRecord->nMinDam;
@@ -2323,7 +2386,7 @@ static void __stdcall INV_FormatDefenseRangeText(D2UnitStrc * pUnit, D2ItemsTxt 
       pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pPlayerUnit_lcl, SKILL_HolyShield);
       if (pSkill) {
         iStateCheck = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pPlayerUnit_lcl, STATE_holyshield);
-        if (iStateCheck != STATE_none) {
+        if (iStateCheck) {
           nSkillLevel = D2Common::Skills::GetSkillLevel(pPlayerUnit_lcl, pSkill, 1);
           nSkillDmgCalc = D2Common::Skills::SKILL_CalcMinDamage(pPlayerUnit_lcl, 0x75, nSkillLevel, 1);
           nStatRecord = (int)(nMinDefense->szFlippyFile + (nSkillDmgCalc >> 8));
@@ -2365,7 +2428,16 @@ void __stdcall INV_FormatArmorClassText(D2UnitStrc * pUnit, D2UnitStrc * pUnit2,
       return;
     }
 
-    memset(wszArmorValue, 0, 10 * sizeof(wszArmorValue[0]));
+    wszArmorValue[0] = L'\0';
+    wszArmorValue[1] = 0;
+    wszArmorValue[2] = 0;
+    wszArmorValue[3] = 0;
+    wszArmorValue[4] = 0;
+    wszArmorValue[5] = 0;
+    wszArmorValue[6] = 0;
+    wszArmorValue[7] = 0;
+    wszArmorValue[8] = 0;
+    wszArmorValue[9] = 0;
     uint16_t* pwColorPrefix = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
     uint16_t* pwColorSuffix = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
     uint32_t nPrevStatActive = 0;
@@ -2436,7 +2508,16 @@ void __stdcall INV_FormatArmorClassText(D2UnitStrc * pUnit, D2UnitStrc * pUnit2,
 static void AppendQuanity(uint16_t * wszText, D2UnitStrc * pUnit) {
     uint16_t wszTempBuffer[10];
     char szPrintfBuffer[12];
-    memset(wszTempBuffer, 0, 10 * sizeof(wszTempBuffer[0]));
+    wszTempBuffer[0] = L'\0';
+    wszTempBuffer[1] = 0;
+    wszTempBuffer[2] = 0;
+    wszTempBuffer[3] = 0;
+    wszTempBuffer[4] = 0;
+    wszTempBuffer[5] = 0;
+    wszTempBuffer[6] = 0;
+    wszTempBuffer[7] = 0;
+    wszTempBuffer[8] = 0;
+    wszTempBuffer[9] = 0;
     uint16_t* pwColorPrefix = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
     uint16_t* wszText2 = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
     int nQuantity = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_quantity, 0);
@@ -2824,7 +2905,12 @@ static void __stdcall INV_FormatRunewordName(uint16_t * wszText, D2UnitStrc * pI
       return;
     }
 
-    memset(wszRuneLetter, 0, 6 * sizeof(wszRuneLetter[0]));
+    wszRuneLetter[0] = L'\0';
+    wszRuneLetter[1] = 0;
+    wszRuneLetter[2] = 0;
+    wszRuneLetter[3] = 0;
+    wszRuneLetter[4] = 0;
+    wszRuneLetter[5] = 0;
     int bHeaderWritten = 0;
     uint16_t* pwszNewline = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
     D2UnitStrc* pUnit = D2Common::INVENTORY::Inventory::INVENTORY_GetFirstItem(pInventory);
@@ -7969,31 +8055,25 @@ void __fastcall ITEM_BuildSetItemTooltip(D2UnitStrc * pUnit) {
       SkillDesc::SKILLDESC_AppendSetBonusTextByStateValue(pOwnerUnit, pItemToDescribe, wszItemBuffsAlt, 0x200);
     }
 
-    nSetItemLoopIdx = 0;
-    if (pSetsTxt->nTxtSetItemsCount > 0) {
-      ppSetItemsTxtEntry = pSetsTxt->pTxtSetItems;
-      do {
-        pSetItemsTxt = *ppSetItemsTxtEntry;
-        if (!pSetItemsTxt) {
-          break;
-        }
+    for (nSetItemLoopIdx = 0; nSetItemLoopIdx < pSetsTxt->nTxtSetItemsCount; nSetItemLoopIdx++) {
+      pSetItemsTxt = pSetsTxt->pTxtSetItems[nSetItemLoopIdx];
+      if (!pSetItemsTxt) {
+        break;
+      }
 
-        pOwnerUnit = GetSetItem((int)pSetItemsTxt->nId, pUnitInventory);
-        if (pSetItemsTxt->stringId) {
-          wsprintf(wszWorkBuf, D2Lang::StrTable::strtable::GetLocaleString(0x2769), D2Lang::StrTable::strtable::GetLocaleString(pSetItemsTxt->stringId), 0);
-          D2Lang::Unicode::UNISYS::AppendToBuffer(wszWorkBuf, pwSeparator);
-        }
+      pOwnerUnit = GetSetItem((int)pSetItemsTxt->nId, pUnitInventory);
+      if (pSetItemsTxt->stringId) {
+        wsprintf(wszWorkBuf, D2Lang::StrTable::strtable::GetLocaleString(0x2769), D2Lang::StrTable::strtable::GetLocaleString(pSetItemsTxt->stringId), 0);
+        D2Lang::Unicode::UNISYS::AppendToBuffer(wszWorkBuf, pwSeparator);
+      }
 
-        nColor = 2;
-        if (!pOwnerUnit) {
-          nColor = 1;
-        }
+      nColor = 2;
+      if (!pOwnerUnit) {
+        nColor = 1;
+      }
 
-        ui::AppendAsWideChar(wszWorkBuf, nColor);
-        D2Lang::Unicode::UNISYS::AppendToBuffer(wszSetBonusList, wszWorkBuf);
-        ppSetItemsTxtEntry++;
-        nSetItemLoopIdx++;
-      } while (nSetItemLoopIdx < pSetsTxt->nTxtSetItemsCount);
+      ui::AppendAsWideChar(wszWorkBuf, nColor);
+      D2Lang::Unicode::UNISYS::AppendToBuffer(wszSetBonusList, wszWorkBuf);
     }
 
     pwLocaleStr = ui::AppendAsWideChar(wszSetBonusList, 2);
@@ -8086,47 +8166,49 @@ void __stdcall INV_ShowTransmogrifyTooltip() {
 
     D2ItemsTxt* pTransmogItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nCurrentItemClassId);
     if (pTransmogItemsTxt) {
-      uint16_t* pwString;
-      aTextHeight[1] = 0;
-      pTransmogItemsTxt = D2Common::DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(pTransmogItemsTxt->dwTMogType, aTextHeight + 1);
-      if (!pTransmogItemsTxt) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe64);
-        exit(-1);
-      }
+      {
+        uint16_t* pwString;
+        aTextHeight[1] = 0;
+        pTransmogItemsTxt = D2Common::DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(pTransmogItemsTxt->dwTMogType, aTextHeight + 1);
+        if (!pTransmogItemsTxt) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe64);
+          exit(-1);
+        }
 
-      pwString = D2Lang::StrTable::strtable::GetLocaleString(0x150b);
-      D2Lang::Unicode::UNISYS::STRING_CopyWideString(__frame0.wszTextBuffer, pwString);
-      pwString = D2Lang::StrTable::strtable::GetLocaleString(pTransmogItemsTxt->wNameStr);
-      D2Lang::Unicode::UNISYS::STRING_CopyWideString(__frame0.wszTextBuffer, pwString);
-      D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, pwLineEnd);
-      pwString = D2Lang::StrTable::strtable::GetLocaleString(0x150b);
-      D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, pwString);
-      D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, pwLineEnd);
-      Fog::File::CONTAINER_InitializeBuffer(__frame0.wszItemName, 2, 0x80, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
-      GetItemName(pItemToDescribe, __frame0.wszItemName, 0x80);
-      ui::MoveArgumentToEAX(__frame0.wszItemName);
-      D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, __frame0.wszItemName);
-      __frame0.wszFullTooltip = L'\0';
-      Fog::File::CONTAINER_InitializeBuffer(__frame0.local_110e, 2, 0x3ff, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
-      if (g_nCurrentInventoryPage - 1U <= 8) {
-        INV_FormatItemTooltipWithCost(__frame0.wszTextBuffer, &__frame0.wszFullTooltip);
-      } else {
-        D2Lang::Unicode::UNISYS::STRING_CopyWideString(&__frame0.wszFullTooltip, __frame0.wszTextBuffer);
-      }
+        pwString = D2Lang::StrTable::strtable::GetLocaleString(0x150b);
+        D2Lang::Unicode::UNISYS::STRING_CopyWideString(__frame0.wszTextBuffer, pwString);
+        pwString = D2Lang::StrTable::strtable::GetLocaleString(pTransmogItemsTxt->wNameStr);
+        D2Lang::Unicode::UNISYS::STRING_CopyWideString(__frame0.wszTextBuffer, pwString);
+        D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, pwLineEnd);
+        pwString = D2Lang::StrTable::strtable::GetLocaleString(0x150b);
+        D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, pwString);
+        D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, pwLineEnd);
+        Fog::File::CONTAINER_InitializeBuffer(__frame0.wszItemName, 2, 0x80, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+        GetItemName(pItemToDescribe, __frame0.wszItemName, 0x80);
+        ui::MoveArgumentToEAX(__frame0.wszItemName);
+        D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, __frame0.wszItemName);
+        __frame0.wszFullTooltip = L'\0';
+        Fog::File::CONTAINER_InitializeBuffer(__frame0.local_110e, 2, 0x3ff, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+        if (g_nCurrentInventoryPage - 1U <= 8) {
+          INV_FormatItemTooltipWithCost(__frame0.wszTextBuffer, &__frame0.wszFullTooltip);
+        } else {
+          D2Lang::Unicode::UNISYS::STRING_CopyWideString(&__frame0.wszFullTooltip, __frame0.wszTextBuffer);
+        }
 
-      ui::MoveArgumentToEAX(&__frame0.wszFullTooltip);
-      D2Win::Src::D2WinFont::TEXT_CalcTextDimensions(&__frame0.wszFullTooltip, &__frame0.iTextWidth, aTextHeight);
-      if (gaInventoryState == aTextHeight[0] || gaInventoryState - aTextHeight[0] < 0) {
-        D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(&__frame0.wszFullTooltip, nInventoryContextMode, pInventoryContextUi + aTextHeight[0], 0, 0);
+        ui::MoveArgumentToEAX(&__frame0.wszFullTooltip);
+        D2Win::Src::D2WinFont::TEXT_CalcTextDimensions(&__frame0.wszFullTooltip, &__frame0.iTextWidth, aTextHeight);
+        if (gaInventoryState == aTextHeight[0] || gaInventoryState - aTextHeight[0] < 0) {
+          D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(&__frame0.wszFullTooltip, nInventoryContextMode, pInventoryContextUi + aTextHeight[0], 0, 0);
+          return;
+        }
+
+        D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(&__frame0.wszFullTooltip, gaInventoryItemSlots, gaInventoryState, 0, 0);
         return;
       }
-
-      D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(&__frame0.wszFullTooltip, gaInventoryItemSlots, gaInventoryState, 0, 0);
-      return;
-    } else {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe61);
-      exit(-1);
     }
+
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe61);
+    exit(-1);
 }
 
 void __stdcall LoadItemDesc(D2UnitStrc * pUnit, int32_t bUsePlayer) {

@@ -767,6 +767,7 @@ BOOL __stdcall RENDERER_GLIDE_InitTextureMemory() {
 
     int32_t nAllocSize;
     int nVramStart;
+    int nTotalTexMem;
     uint32_t nSecondaryTMUFlag;
     uint32_t nSubtileTexSize;
     uint32_t nFloorTexSize;
@@ -788,18 +789,14 @@ BOOL __stdcall RENDERER_GLIDE_InitTextureMemory() {
       nSmallTexSize = (nMaskTmp | 0x1000) + 1;
     }
 
-    int nTotalTexMem = 0;
-    if (gnGlideTextureMemoryUsed > 0) {
+    for (nTotalTexMem = 0; nTotalTexMem < gnGlideTextureMemoryUsed; nTotalTexMem++) {
       FxU32 nTexMemAddr;
-      do {
-        nTexMemAddr = (*GLIDEDLL_grTexMinAddress_4)(nTotalTexMem);
-        gnGlideTexMemBaseAddress[nTotalTexMem] = nTexMemAddr;
-        nTexMemAddr = (*GLIDEDLL_grTexMaxAddress_4)(nTotalTexMem);
-        gnGlideTextureMemoryMax[nTotalTexMem] = nTexMemAddr;
-        pnTexMemBase = gnGlideTexMemBaseAddress + nTotalTexMem;
-        nTotalTexMem++;
-        nCacheEnd += nTexMemAddr - *pnTexMemBase;
-      } while (nTotalTexMem < gnGlideTextureMemoryUsed);
+      nTexMemAddr = (*GLIDEDLL_grTexMinAddress_4)(nTotalTexMem);
+      gnGlideTexMemBaseAddress[nTotalTexMem] = nTexMemAddr;
+      nTexMemAddr = (*GLIDEDLL_grTexMaxAddress_4)(nTotalTexMem);
+      gnGlideTextureMemoryMax[nTotalTexMem] = nTexMemAddr;
+      pnTexMemBase = gnGlideTexMemBaseAddress + nTotalTexMem;
+      nCacheEnd += nTexMemAddr - *pnTexMemBase;
     }
 
     nMaskTmp = gnGlideTexMemBaseAddress[0];
@@ -2090,28 +2087,30 @@ void __stdcall RENDERER_GLIDE_InitSpriteCache() {
       exit(-1);
     }
 
-    BOOL bIsPerspective;
-    if (gpGlideSpritePixelBuffer) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4b);
-      exit(-1);
-    }
+    {
+      BOOL bIsPerspective;
+      if (gpGlideSpritePixelBuffer) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4b);
+        exit(-1);
+      }
 
-    gpGlideSpriteBuffer = D2_ALLOC_AT(0x10000, ".\\Src\\glSprite.cpp", 0x4c);
-    gpGlideSpritePixelBuffer = D2_ALLOC_AT(0x10000, ".\\Src\\glSprite.cpp", 0x4d);
-    D2CMP::SRC::CelCmp::CELCMP_SetPixelDataFreeCallback(GLIDE_PixelDataFreeCallback_ClearCacheNodes);
-    gnGlideSpriteSecondaryTMUEnabled = 0;
-    gnGlideTMUIndex = (uint32_t)(gnGlideTextureMemoryUsed > 1);
-    if (gnGlideTextureMemoryUsed <= 1) {
+      gpGlideSpriteBuffer = D2_ALLOC_AT(0x10000, ".\\Src\\glSprite.cpp", 0x4c);
+      gpGlideSpritePixelBuffer = D2_ALLOC_AT(0x10000, ".\\Src\\glSprite.cpp", 0x4d);
+      D2CMP::SRC::CelCmp::CELCMP_SetPixelDataFreeCallback(GLIDE_PixelDataFreeCallback_ClearCacheNodes);
+      gnGlideSpriteSecondaryTMUEnabled = 0;
+      gnGlideTMUIndex = (uint32_t)(gnGlideTextureMemoryUsed > 1);
+      if (gnGlideTextureMemoryUsed <= 1) {
+        return;
+      }
+
+      bIsPerspective = RENDERER_GLIDE_IsPerspectiveMode();
+      if (bIsPerspective) {
+        return;
+      }
+
+      gnGlideSpriteSecondaryTMUEnabled = 1;
       return;
     }
-
-    bIsPerspective = RENDERER_GLIDE_IsPerspectiveMode();
-    if (bIsPerspective) {
-      return;
-    }
-
-    gnGlideSpriteSecondaryTMUEnabled = 1;
-    return;
 }
 
 int32_t __fastcall RENDERER_GLIDE_InitDebugFont(FxU32 dwTexMemStart, int32_t nTexMemAlignment) {
@@ -2911,7 +2910,7 @@ void __stdcall RENDERER_GLIDE_InitPerspectiveTables() {
 }
 
 BOOL __fastcall RENDERER_GLIDE_DrawShadowTileSimple(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, uint8_t nAlpha, int32_t nSubtileIdx) {
-    bool _bDrawn;
+    int _bDrawn;
     int nScreenY;
     uint32_t dwAlphaWord;
     bool bDrawn;
@@ -3271,15 +3270,15 @@ static int32_t __stdcall RENDERER_GLIDE_DrawWallTilePerspective(int32_t nScreenP
     exit(-1);
 }
 
-static BOOL __stdcall RENDERER_GLIDE_DrawTransparentWallTile(int32_t nPosX, int32_t nPosY, int32_t pLight, GrColor_t nColor, D2TileLibraryEntryStrc * pTileLibraryEntry, int32_t nScreenPanels) {
+static BOOL __stdcall RENDERER_GLIDE_DrawTransparentWallTile(int32_t nPosX, int32_t nPosY, int32_t pLight, uint8_t nColor, D2TileLibraryEntryStrc * pTileLibraryEntry, int32_t nScreenPanels) {
     BOOL bPerspective = D2CMP::SRC::SpriteCache::SPRITECACHE_AllocEntry(pTileLibraryEntry, 1, 0);
     if (bPerspective) {
       RENDERER_GLIDE_SetColorCombine(1);
-      if ((char)nColor == -1) {
+      if (nColor == 0xff) {
         RENDERER_GLIDE_SetAlphaBlendMode(1);
       } else {
         RENDERER_GLIDE_SetAlphaBlendMode(4);
-        (*GLIDEDLL_grConstantColorValue_4)(nColor & 0xff);
+        (*GLIDEDLL_grConstantColorValue_4)((GrColor_t)nColor);
       }
 
       RENDERER_GLIDE_SetTextureFiltering(1);
@@ -3298,7 +3297,7 @@ static BOOL __stdcall RENDERER_GLIDE_DrawTransparentWallTile(int32_t nPosX, int3
 }
 
 BOOL __fastcall DrawTransWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, D2GfxLightStrc * pLight, int32_t nScreenPanels, int32_t nAlpha) {
-    BOOL bResult = RENDERER_GLIDE_DrawTransparentWallTile(nPosX, nPosY, (int32_t)pLight, nAlpha, pTile, nScreenPanels);
+    BOOL bResult = RENDERER_GLIDE_DrawTransparentWallTile(nPosX, nPosY, (int32_t)pLight, (uint8_t)nAlpha, pTile, nScreenPanels);
     return bResult;
 }
 
@@ -3391,7 +3390,7 @@ BOOL __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
     // Static local variables (originally global data)
     static void * gapGlideGroundQuadCornerPtrs[4] = { (void*)gaGlideGroundTileVertices, (void*)&gaGlideGroundTileVertices[5].fX, (void*)&gaGlideGroundTileVertices[35].fX, (void*)&gaGlideGroundTileVertices[30].fX }; D2_STATIC_GUARD(gapGlideGroundQuadCornerPtrs, "D2Glide::Renderer::Glide::DrawGroundTile::gapGlideGroundQuadCornerPtrs");
 
-    uint8_t _nAlpha;
+    int _nAlpha;
     uint8_t byIntensity;
     BOOL nTexHandle = glBlocks::GLBLOCKS_LoadFloorTileTexture(pTile);
     FxU32 bResult = 0;

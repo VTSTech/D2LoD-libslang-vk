@@ -84,9 +84,9 @@
       ],
       "namespace": "Storm::Source::SFile",
       "calledFunctions": [
-        "PKWARE_explode",
         "SFILE_DecompressLzw",
-        "SMemAlloc"
+        "SMemAlloc",
+        "explode"
       ],
       "usedTypes": [
         "int32_t"
@@ -1615,7 +1615,7 @@
       ]
     },
     {
-      "name": "SFILE_CloseStreamHandle1",
+      "name": "UnlinkAll",
       "address": "00418900",
       "lines": [
         {
@@ -1623,12 +1623,12 @@
           "address": "00418900"
         }
       ],
-      "namespace": "Storm::Source::SFile",
+      "namespace": "TSList<ARCHIVEREC, TSGetLink<ARCHIVEREC>>",
       "calledFunctions": [
-        "SFILE_CloseStreamHandle1"
+        "UnlinkAll"
       ],
       "usedTypes": [
-        "D2StormListHead",
+        "TSList<ARCHIVEREC, TSGetLink<ARCHIVEREC>>",
         "uint32_t"
       ]
     },
@@ -1651,7 +1651,7 @@
       ]
     },
     {
-      "name": "SFILE_CloseStreamHandle3",
+      "name": "UnlinkAll",
       "address": "00418980",
       "lines": [
         {
@@ -1659,17 +1659,17 @@
           "address": "00418980"
         }
       ],
-      "namespace": "Storm::Source::SFile",
+      "namespace": "TSList<FILEREC, TSGetLink<FILEREC>>",
       "calledFunctions": [
-        "SFILE_CloseStreamHandle3"
+        "UnlinkAll"
       ],
       "usedTypes": [
-        "D2StormListHead",
+        "TSList<FILEREC, TSGetLink<FILEREC>>",
         "uint32_t"
       ]
     },
     {
-      "name": "SFILE_CloseStreamHandle4",
+      "name": "UnlinkAll",
       "address": "004189c0",
       "lines": [
         {
@@ -1677,12 +1677,12 @@
           "address": "004189c0"
         }
       ],
-      "namespace": "Storm::Source::SFile",
+      "namespace": "TSList<EVENTREC, TSGetLink<EVENTREC>>",
       "calledFunctions": [
-        "SFILE_CloseStreamHandle4"
+        "UnlinkAll"
       ],
       "usedTypes": [
-        "D2StormListHead",
+        "TSList<EVENTREC, TSGetLink<EVENTREC>>",
         "uint32_t"
       ]
     },
@@ -1824,12 +1824,11 @@
       "namespace": "Storm::Source::SFile",
       "calledFunctions": [
         "SFILE_CloseStream1",
-        "SFILE_CloseStreamHandle1"
+        "UnlinkAll"
       ],
       "usedTypes": [
         "D2StormListHead",
         "StormLinkStrc",
-        "StormLinkStrc *",
         "uint32_t"
       ]
     },
@@ -1850,7 +1849,6 @@
       "usedTypes": [
         "D2StormListHead",
         "StormLinkStrc",
-        "StormLinkStrc *",
         "uint32_t"
       ]
     },
@@ -1866,12 +1864,11 @@
       "namespace": "Storm::Source::SFile",
       "calledFunctions": [
         "SFILE_CloseStream3",
-        "SFILE_CloseStreamHandle3"
+        "UnlinkAll"
       ],
       "usedTypes": [
         "D2StormListHead",
         "StormLinkStrc",
-        "StormLinkStrc *",
         "uint32_t"
       ]
     },
@@ -1887,12 +1884,11 @@
       "namespace": "Storm::Source::SFile",
       "calledFunctions": [
         "SFILE_CloseStream4",
-        "SFILE_CloseStreamHandle4"
+        "UnlinkAll"
       ],
       "usedTypes": [
         "D2StormListHead",
         "StormLinkStrc",
-        "StormLinkStrc *",
         "uint32_t"
       ]
     },
@@ -1913,7 +1909,6 @@
       "usedTypes": [
         "D2StormListHead",
         "StormLinkStrc",
-        "StormLinkStrc *",
         "uint32_t"
       ]
     },
@@ -2081,7 +2076,7 @@
       "usedTypes": [
         "D2ArchiveStrc",
         "D2ArchiveStrc *",
-        "StormLinkStrc *",
+        "StormLinkStrc",
         "uint32_t"
       ]
     },
@@ -2458,8 +2453,7 @@
         "SFILE_FreeArchiveRecord"
       ],
       "usedTypes": [
-        "D2StormAsyncOpStrc",
-        "int32_t"
+        "D2StormAsyncOpStrc"
       ]
     },
     {
@@ -2923,7 +2917,7 @@
       "usedTypes": [
         "D2ArchiveStrc",
         "D2ArchiveStrc *",
-        "StormLinkStrc *",
+        "StormLinkStrc",
         "int32_t",
         "uint32_t",
         "uint8_t"
@@ -3239,7 +3233,7 @@
       "namespace": "Storm::Source::SFile",
       "calledFunctions": [
         "StaticFini_gMpqArchiveList",
-        "SFILE_CloseStreamHandle1"
+        "UnlinkAll"
       ]
     },
     {
@@ -3269,7 +3263,7 @@
       "namespace": "Storm::Source::SFile",
       "calledFunctions": [
         "StaticFini_gSFileOpenFileList",
-        "SFILE_CloseStreamHandle3"
+        "UnlinkAll"
       ]
     },
     {
@@ -3284,7 +3278,7 @@
       "namespace": "Storm::Source::SFile",
       "calledFunctions": [
         "StaticFini_gSFileAudioStreamList",
-        "SFILE_CloseStreamHandle4"
+        "UnlinkAll"
       ]
     },
     {

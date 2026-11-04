@@ -29,7 +29,7 @@
 #include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Game/Monster/AI/AI.h"
+#include "D2Client/UNIT/PlrSkills.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -93,8 +93,8 @@ void __fastcall PLAYERLIST_AddPlayerEntry(::SGAMEDATA * pGame, D2UnitStrc * pUni
       return;
     }
 
-    eD2States eState2 = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit1, STATE_playerbody);
-    if (eState2 != STATE_none) {
+    BOOL eState2 = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit1, STATE_playerbody);
+    if (eState2) {
       return;
     }
 
@@ -358,7 +358,7 @@ void __fastcall Send0x8bRelationshipStatus(D2UnitStrc * pUnit, D2UnitStrc * pUni
     }
 
     uint8_t bIsPartied = (uint8_t)pListEntry->bIsPartied;
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x8B_PlayerRelationship(SUnit::SUNIT_GetClient(pUnit, ".\\UNIT\\PlayerList.cpp", 0x10b), dwTargetArg, bIsPartied);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x8B_PlayerRelationship(SUnit::SUNIT_GetClient(pUnit, ".\\UNIT\\PlayerList.cpp", 0x10b), dwTargetArg, (bool)bIsPartied);
 }
 
 // Looks up the relationship list entry for pOtherUnit in pUnit's player list and sends packet 0x8C (RelationshipUpdate) with the current nRelationshipFlags to pOtherUnit's client. Read-only: does not modify flags. No-op if units are the same or no entry exists.

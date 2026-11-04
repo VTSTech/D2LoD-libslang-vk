@@ -105,14 +105,15 @@ int32_t __stdcall HasPeerName() {
 }
 
 BOOL __stdcall NET_MCP_CLIENT_ReadAndParsePacket() {
+    uint16_t nSize;
     char szPacketBuf[1024];
     if (!D2Client::MCP::MCPD2QSSocket) {
       return 0;
     }
 
-    size_t nSize = Fog::Src::D2QSSocket::ReadBytesFromSocket(D2Client::MCP::MCPD2QSSocket, szPacketBuf, 0x400);
-    if ((short int)nSize) {
-      /* At self point nSize is removed from packet structure */ HandleIncomingPacket(szPacketBuf, (uint16_t)nSize);
+    uint32_t uVar1 = Fog::Src::D2QSSocket::ReadBytesFromSocket(D2Client::MCP::MCPD2QSSocket, szPacketBuf, 0x400);
+    if ((short int)uVar1) {
+      /* At self point nSize is removed from packet structure */ HandleIncomingPacket(szPacketBuf, (uint16_t)uVar1);
     }
 
     return 1;
@@ -284,15 +285,15 @@ void __stdcall CopyCharListToGlobal(char * pBytes, size_t nSize) {
     D2Client::MCP::CharListPacket = D2_ALLOC_AT(nSize, ".\\Src\\McpConnect.cpp", 0x227);
     memcpy(D2Client::MCP::CharListPacket, pBytes, nSize);
     if (*pBytes == '\x17') {
-      if (*(uint16_t*)((int)D2Client::MCP::CharListPacket + 1) >= 0x100) {
+      if (!(*(uint16_t*)((int)D2Client::MCP::CharListPacket + 1) < 0x100)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x233);
         exit(-1);
       }
-      if (*(uint16_t*)((int)D2Client::MCP::CharListPacket + 3) >= 0x100) {
+      if (!(*(uint16_t*)((int)D2Client::MCP::CharListPacket + 3) < 0x100)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x234);
         exit(-1);
       }
-      if (*(uint16_t*)((int)D2Client::MCP::CharListPacket + 5) >= 0x100) {
+      if (!(*(uint16_t*)((int)D2Client::MCP::CharListPacket + 5) < 0x100)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x235);
         exit(-1);
       }
@@ -303,15 +304,15 @@ void __stdcall CopyCharListToGlobal(char * pBytes, size_t nSize) {
 
       return;
     } else if (*pBytes == '\x19') {
-      if (*(uint16_t*)((int)D2Client::MCP::CharListPacket + 1) >= 0x100) {
+      if (!(*(uint16_t*)((int)D2Client::MCP::CharListPacket + 1) < 0x100)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x242);
         exit(-1);
       }
-      if (*(uint16_t*)((int)D2Client::MCP::CharListPacket + 3) >= 0x100) {
+      if (!(*(uint16_t*)((int)D2Client::MCP::CharListPacket + 3) < 0x100)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x243);
         exit(-1);
       }
-      if (*(uint16_t*)((int)D2Client::MCP::CharListPacket + 5) >= 0x100) {
+      if (!(*(uint16_t*)((int)D2Client::MCP::CharListPacket + 5) < 0x100)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x244);
         exit(-1);
       }
@@ -663,24 +664,24 @@ void __fastcall NET_MCP_CLIENT_Send_0x0C(char * szText) {
 }
 
 void __stdcall NET_MCP_CLIENT_Send_0x0D() {
-    uint32_t dwPacketBuf;
+    uint8_t dwPacketBuf[4];
     SetD2GSJoinResult(0);
-    dwPacketBuf = (uint32_t)((uint32_t)(uint8_t)0xd << 24 | (uint32_t)((uint32_t)dwPacketBuf & 0xffffffu));
-    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)((uintptr_t)&dwPacketBuf + 3), 1);
+    dwPacketBuf[3] = 0xd;
+    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)(dwPacketBuf + 3), 1);
 }
 
 void __stdcall NET_MCP_CLIENT_Send_0x0F() {
-    uint32_t dwPacketBuf;
+    uint8_t dwPacketBuf[4];
     SetD2GSJoinResult(0);
-    dwPacketBuf = (uint32_t)((uint32_t)(uint8_t)0xf << 24 | (uint32_t)((uint32_t)dwPacketBuf & 0xffffffu));
-    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)((uintptr_t)&dwPacketBuf + 3), 1);
+    dwPacketBuf[3] = 0xf;
+    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)(dwPacketBuf + 3), 1);
 }
 
 void __stdcall NET_MCP_CLIENT_Send_0x10() {
-    uint32_t dwPacketBuf;
+    uint8_t dwPacketBuf[4];
     SetD2GSJoinResult(0);
-    dwPacketBuf = (uint32_t)((uint32_t)(uint8_t)0x10 << 24 | (uint32_t)((uint32_t)dwPacketBuf & 0xffffffu));
-    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)((uintptr_t)&dwPacketBuf + 3), 1);
+    dwPacketBuf[3] = 0x10;
+    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)(dwPacketBuf + 3), 1);
 }
 
 void __fastcall NET_MCP_CLIENT_Send_0x11_RequestLadderData(uint8_t nLadderFilterMode, uint16_t wRequestId) {
@@ -695,17 +696,17 @@ void __fastcall NET_MCP_CLIENT_Send_0x11_RequestLadderData(uint8_t nLadderFilter
 }
 
 void __stdcall NET_MCP_CLIENT_Send_0x12_MOTD() {
-    uint32_t dwPacketBuf;
+    uint8_t dwPacketBuf[4];
     SetD2GSJoinResult(0);
-    dwPacketBuf = (uint32_t)((uint32_t)(uint8_t)0x12 << 24 | (uint32_t)((uint32_t)dwPacketBuf & 0xffffffu));
-    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)((uintptr_t)&dwPacketBuf + 3), 1);
+    dwPacketBuf[3] = 0x12;
+    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)(dwPacketBuf + 3), 1);
 }
 
 void __stdcall NET_MCP_CLIENT_Send_0x13_CancelGameCreate() {
-    uint32_t dwPacketBuf;
+    uint8_t dwPacketBuf[4];
     SetD2GSJoinResult(0);
-    dwPacketBuf = (uint32_t)((uint32_t)(uint8_t)0x13 << 24 | (uint32_t)((uint32_t)dwPacketBuf & 0xffffffu));
-    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)((uintptr_t)&dwPacketBuf + 3), 1);
+    dwPacketBuf[3] = 0x13;
+    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)(dwPacketBuf + 3), 1);
 }
 
 // Tail-calls NET_MCP_CLIENT_Send and returns that BOOL in EAX; its only caller tests EAX to decide whether the realm character-list request failed. Typed void, that decision came from an uninitialised local.
@@ -852,10 +853,10 @@ BOOL __fastcall NET_MCP_CLIENT_Incoming0x06(char * pBytes, size_t nSize) {
 
 BOOL __fastcall NET_MCP_CLIENT_Incoming0x08(char * pBytes, size_t nSize) {
     // Static local variables (originally global data)
-    static pfnVoidNoArgCallback g_pfnMCPCallback1; D2_STATIC_GUARD_BSS(g_pfnMCPCallback1, "D2MCPClient::McpConnect::NET_MCP_CLIENT_Incoming0x08::g_pfnMCPCallback1");
+    static pfnMCPPacketCallback g_pfnMCPCallback1; D2_STATIC_GUARD_BSS(g_pfnMCPCallback1, "D2MCPClient::McpConnect::NET_MCP_CLIENT_Incoming0x08::g_pfnMCPCallback1");
 
     if (g_pfnMCPCallback1) {
-      (*g_pfnMCPCallback1)();
+      (*g_pfnMCPCallback1)(*(uint16_t*)(pBytes + 1), pBytes + 3);
     }
 
     return 1;
@@ -863,10 +864,10 @@ BOOL __fastcall NET_MCP_CLIENT_Incoming0x08(char * pBytes, size_t nSize) {
 
 BOOL __fastcall NET_MCP_CLIENT_Incoming0x09(char * pBytes, size_t nSize) {
     // Static local variables (originally global data)
-    static pfnVoidNoArgCallback g_pfnMCPCallback2; D2_STATIC_GUARD_BSS(g_pfnMCPCallback2, "D2MCPClient::McpConnect::NET_MCP_CLIENT_Incoming0x09::g_pfnMCPCallback2");
+    static pfnMCPPacketCallback g_pfnMCPCallback2; D2_STATIC_GUARD_BSS(g_pfnMCPCallback2, "D2MCPClient::McpConnect::NET_MCP_CLIENT_Incoming0x09::g_pfnMCPCallback2");
 
     if (g_pfnMCPCallback2) {
-      (*g_pfnMCPCallback2)();
+      (*g_pfnMCPCallback2)(*(uint16_t*)(pBytes + 1), pBytes + 4);
     }
 
     return 1;

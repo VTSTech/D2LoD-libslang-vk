@@ -15,6 +15,7 @@
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Storm/H/CCritSect.h"
+#include "Storm/Source/SFile.h"
 #include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
@@ -49,7 +50,7 @@ template<> void TSExplicitList<CELLIST, -572662307>::Destructor() {
     *pBackLink = (int)nNext;
     pTVar1->m_prevlink->m_next = this->m_terminator.m_next;
     pTVar1->m_prevlink = 0;
-    this->m_terminator.m_next = 0;
+    pTVar1->m_next = 0;
 }
 
 // stpl-orphan: a COMDAT copy in TSExplicitList<TSHashObjectChunk<CELLIST, HASHKEY_NONE>, 16> that no member owns
@@ -64,9 +65,9 @@ void __thiscall Destructor_Unreferenced(TSExplicitList<TSHashObjectChunk<::CELLI
 
     pBackLink = (int*)D2_StormNextLink(pTVar1, -1);
     *pBackLink = (int)nNext;
-    pTVar1->m_prevlink->m_next = pThis->m_terminator.m_next;
+    pTVar1->m_prevlink->m_next = pTVar1->m_next;
     pTVar1->m_prevlink = 0;
-    pThis->m_terminator.m_next = 0;
+    pTVar1->m_next = 0;
 }
 
 template<> TSExplicitList<::CELLIST, -572662307>* TSExplicitList<CELLIST, -572662307>::ScalarDeletingDestructor(uint32_t dwFlags) {
@@ -86,7 +87,7 @@ template<> TSExplicitList<::CELLIST, -572662307>* TSExplicitList<CELLIST, -57266
       *pBackLink = (int)nNext;
       pTVar1->m_prevlink->m_next = this->m_terminator.m_next;
       pTVar1->m_prevlink = 0;
-      this->m_terminator.m_next = 0;
+      pTVar1->m_next = 0;
     }
     if (dwFlags & 1 && this) {
       Storm::Source::SMem::SMemFree(this, "delete", -1, 0);
@@ -102,8 +103,8 @@ template<> void TSExplicitList<CELLIST, -572662307>::Clear() {
     uint32_t uLinkOffset;
     while (true) {
       int nNext;
-      pObject = (void*)this->m_terminator.m_next;
-      if ((int)pObject <= 0) {
+      pObject = (int)(void*)this->m_terminator.m_next > 0 ? (void*)this->m_terminator.m_next : 0;
+      if (!pObject) {
         break;
       }
 
@@ -157,9 +158,9 @@ void __thiscall Destructor_Unreferenced2(TSExplicitList<::CELLIST, -572662307>* 
 
     pBackLink = (int*)D2_StormNextLink(pTVar1, -1);
     *pBackLink = (int)nNext;
-    pTVar1->m_prevlink->m_next = pThis->m_terminator.m_next;
+    pTVar1->m_prevlink->m_next = pTVar1->m_next;
     pTVar1->m_prevlink = 0;
-    pThis->m_terminator.m_next = 0;
+    pTVar1->m_next = 0;
 }
 
 template<> ::CELLIST * TSExplicitList<CELLIST, -572662307>::DeleteNode(::CELLIST * pNode) {
@@ -178,9 +179,9 @@ template<> ::CELLIST * TSExplicitList<CELLIST, -572662307>::DeleteNode(::CELLIST
       int* pBackLink;
       pBackLink = (int*)D2_StormNextLink(pTVar1, -1);
       *pBackLink = (int)nNext;
-      pTVar1->m_prevlink->m_next = pNode->m_frames.m_terminator.m_next;
+      pTVar1->m_prevlink->m_next = pTVar1->m_next;
       pTVar1->m_prevlink = 0;
-      pNode->m_frames.m_terminator.m_next = 0;
+      pTVar1->m_next = 0;
     }
 
     pNode->Destructor();
@@ -197,15 +198,15 @@ void __thiscall Destructor_Unreferenced(::CELLIST * pThis) {
       int* pBackLink;
       pBackLink = (int*)D2_StormNextLink(pTVar1, -1);
       *pBackLink = (int)nNext;
-      pTVar1->m_prevlink->m_next = pThis->m_frames.m_terminator.m_next;
+      pTVar1->m_prevlink->m_next = pTVar1->m_next;
       pTVar1->m_prevlink = 0;
-      pThis->m_frames.m_terminator.m_next = 0;
+      pTVar1->m_next = 0;
     }
 
     pThis->Destructor();
 }
 
-template<> void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::ReallocData(uint32_t nAlloc) {
+template<> __attribute__((noinline)) inline void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::ReallocData(uint32_t nAlloc) {
     TSExplicitList<::CELLIST, -572662307>* pBucketSlot;
     int* pBackLink;
     TSLink<::CELLIST>* pTVar2;
@@ -287,7 +288,7 @@ template<> void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::ReallocDat
     Storm::Source::SMem::SMemFree(pBlock, s___AV__TSExplicitList_UCELLIST____00741f44, -2, 0);
 }
 
-template<> void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::Destructor() {
+template<> __attribute__((noinline)) inline void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::Destructor() {
     TSExplicitList<::CELLIST, -572662307>* pBucketSlot;
     int* pBackLink;
     TSLink<::CELLIST>* nNext;
@@ -302,9 +303,9 @@ template<> void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::Destructor
         if (nNext) {
           pBackLink = (int*)D2_StormNextLink(pTVar1, -1);
           *pBackLink = (int)nNext;
-          pTVar1->m_prevlink->m_next = pBucketSlot->m_terminator.m_next;
+          pTVar1->m_prevlink->m_next = pTVar1->m_next;
           pTVar1->m_prevlink = 0;
-          pBucketSlot->m_terminator.m_next = 0;
+          pTVar1->m_next = 0;
         }
 
         nBucketIdx++;
@@ -349,9 +350,9 @@ template<> void TSGrowableArray<CELLIST>::Destructor() {
         if (nNext) {
           pBackLink = (int*)D2_StormNextLink(pTVar1, -1);
           *pBackLink = (int)nNext;
-          pTVar1->m_prevlink->m_next = nEntryAddr->m_frames.m_terminator.m_next;
+          pTVar1->m_prevlink->m_next = pTVar1->m_next;
           pTVar1->m_prevlink = 0;
-          nEntryAddr->m_frames.m_terminator.m_next = 0;
+          pTVar1->m_next = 0;
         }
 
         nEntryAddr->Destructor();
@@ -395,7 +396,7 @@ template<> ::CELLIST * TSExportTableSimple<CELLIST, HCELLIST__*, 0>::Ptr(uint32_
     return pCVar1;
 }
 
-template<> uint32_t TSExportTableSimple<CELLIST, HCELLIST__*, 0>::GenerateUniqueHandle() {
+template<> __attribute__((noinline)) inline uint32_t TSExportTableSimple<CELLIST, HCELLIST__*, 0>::GenerateUniqueHandle() {
     uint32_t* pnCounter;
     while (true) {
       ::CELLIST* pCounterField;
@@ -478,12 +479,12 @@ template<> void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::SetCount(u
         pTVar3 = pFlushSlot->m_terminator.m_prevlink;
         pTVar1 = &pFlushSlot->m_terminator;
         if (pTVar3) {
-          uVar2 = pFlushSlot->m_terminator.m_next;
+          uVar2 = pTVar1->m_next;
           pBackLink2 = (int*)D2_StormNextLink(pTVar1, -1);
           *pBackLink2 = (int)pTVar3;
-          pTVar1->m_prevlink->m_next = pFlushSlot->m_terminator.m_next;
+          pTVar1->m_prevlink->m_next = pTVar1->m_next;
           pTVar1->m_prevlink = 0;
-          pFlushSlot->m_terminator.m_next = 0;
+          pTVar1->m_next = 0;
         }
 
         nShrinkIdx++;
@@ -512,7 +513,7 @@ template<> ::CELLIST * TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*
     return pFoundEntry;
 }
 
-template<> void TSHashTable<CELLIST, HASHKEY_NONE>::Destructor() {
+template<> __attribute__((noinline)) inline void TSHashTable<CELLIST, HASHKEY_NONE>::Destructor() {
     uint32_t uLinkOffset;
     pfnEHHandlerRoutine pExHandler = D2CMP::SRC::CelCmp::__GSHandlerCheck_EH_6ca286;
     void* pPrevSehFrame = ExceptionList;
@@ -536,7 +537,7 @@ template<> void TSHashTable<CELLIST, HASHKEY_NONE>::Destructor() {
       *pPrevLinkPtr = (uint32_t)(uintptr_t)pActiveHead;
       pTVar1->m_prevlink->m_next = this->tFullList.m_terminator.m_next;
       pTVar1->m_prevlink = 0;
-      this->tFullList.m_terminator.m_next = 0;
+      pTVar1->m_next = 0;
     }
 
     ExceptionList = pPrevSehFrame;
@@ -551,7 +552,7 @@ template<> ::CELLIST * TSExplicitList<CELLIST, -572662307>::NewNode(uint32_t nLo
       pNewEntry->m_linktofull.m_prevlink = 0;
       pNewEntry->m_linktofull.m_next = 0;
       pTVar1 = &pNewEntry->m_frames.m_terminator;
-      pNewEntry->m_frames.m_terminator.m_next = 0;
+      pTVar1->m_next = 0;
       pTVar1->m_prevlink = pTVar1;
       pNewEntry->m_frames.m_linkoffset = 0;
       pNewEntry->m_frames.m_terminator.m_next = ~(uint32_t)pTVar1;
@@ -605,7 +606,7 @@ template<> ::CELLIST * __thiscall TSHashTable<CELLIST, HASHKEY_NONE>::InternalNe
     int pNextLink = pList->m_linkoffset;
     if ((int)pTailLink < 0) {
       *(TSLink<::CELLIST>**)~pTailLink = (TSLink<::CELLIST>*)pInsertPoint;
-      pList->m_terminator.m_next = (int)pNewEntry;
+      pActiveHead->m_next = (int)pNewEntry;
       return pNewEntry;
     }
     if (pNextLink < 0) {
@@ -613,7 +614,7 @@ template<> ::CELLIST * __thiscall TSHashTable<CELLIST, HASHKEY_NONE>::InternalNe
     }
 
     *(TSLink<::CELLIST>**)(pTailLink + pNextLink) = (TSLink<::CELLIST>*)pInsertPoint;
-    pList->m_terminator.m_next = (int)pNewEntry;
+    pActiveHead->m_next = (int)pNewEntry;
     return pNewEntry;
 }
 
@@ -626,9 +627,9 @@ template<> void __thiscall TSHashTable<CELLIST, HASHKEY_NONE>::InternalDelete(TS
       int* pBackLink;
       pBackLink = (int*)D2_StormNextLink(pTVar1, -1);
       *pBackLink = (int)nNext;
-      pTVar1->m_prevlink->m_next = pNode->m_frames.m_terminator.m_next;
+      pTVar1->m_prevlink->m_next = pTVar1->m_next;
       pTVar1->m_prevlink = 0;
-      pNode->m_frames.m_terminator.m_next = 0;
+      pTVar1->m_next = 0;
     }
 
     pNode->Destructor();
@@ -688,7 +689,7 @@ template<> TSHashObjectChunk<::CELLIST, HASHKEY_NONE>* TSHashObjectChunk<CELLIST
       *pBackLink = (int)nNext;
       pTVar1->m_prevlink->m_next = this->m_link.m_next;
       pTVar1->m_prevlink = 0;
-      this->m_link.m_next = 0;
+      pTVar1->m_next = 0;
     }
 
     ((TSGrowableArray<::CELLIST>*)this)->Destructor();
@@ -714,9 +715,9 @@ template<> void __thiscall TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::InternalD
       int* pBackLink;
       pBackLink = (int*)D2_StormNextLink(pTVar1, -1);
       *pBackLink = (int)nNextEntry;
-      pTVar1->m_prevlink->m_next = pNode->m_frames.m_terminator.m_next;
+      pTVar1->m_prevlink->m_next = pTVar1->m_next;
       pTVar1->m_prevlink = 0;
-      pNode->m_frames.m_terminator.m_next = 0;
+      pTVar1->m_next = 0;
     }
 
     pNode->Destructor();
@@ -724,7 +725,7 @@ template<> void __thiscall TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::InternalD
 }
 
 // Resize the pool block array to nNewCapacity slots; realloc or alloc+copy; re-init moved nodes
-template<> void TSGrowableArray<CELLIST>::ReallocData(uint32_t nAlloc) {
+template<> __attribute__((noinline)) inline void TSGrowableArray<CELLIST>::ReallocData(uint32_t nAlloc) {
     int* pBackLinkR;
     TSLink<::TCELENTRY>* pFreeListSlot;
     uint32_t nAllocPolicy;
@@ -856,7 +857,7 @@ template<> ::CELLIST * TSGrowableArray<CELLIST>::New() {
       pNewNode->m_linktofull.m_prevlink = 0;
       pNewNode->m_linktofull.m_next = 0;
       pTVar1 = &pNewNode->m_frames.m_terminator;
-      pNewNode->m_frames.m_terminator.m_next = 0;
+      pTVar1->m_next = 0;
       pTVar1->m_prevlink = pTVar1;
       pNewNode->m_frames.m_linkoffset = 0;
       pNewNode->m_frames.m_terminator.m_next = ~(uint32_t)pTVar1;
@@ -937,7 +938,7 @@ template<> ::CELLIST * __thiscall TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::In
     int pListTail = pList->m_linkoffset;
     if ((int)pOldTail < 0) {
       *(TSLink<::CELLIST>**)~pOldTail = (TSLink<::CELLIST>*)ppInsertSlot;
-      pList->m_terminator.m_next = (int)pNewNode;
+      pFreeListHead->m_next = (int)pNewNode;
       return pNewNode;
     }
     if (pListTail < 0) {
@@ -945,12 +946,12 @@ template<> ::CELLIST * __thiscall TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::In
     }
 
     *(TSLink<::CELLIST>**)(pOldTail + pListTail) = (TSLink<::CELLIST>*)ppInsertSlot;
-    pList->m_terminator.m_next = (int)pNewNode;
+    pFreeListHead->m_next = (int)pNewNode;
     return pNewNode;
 }
 
 // Check load factor; if chain too long trigger a rehash of the CelList hash table
-template<> int32_t TSHashTable<CELLIST, HASHKEY_NONE>::MonitorFullness(uint32_t nSlot) {
+template<> __attribute__((noinline)) inline int32_t TSHashTable<CELLIST, HASHKEY_NONE>::MonitorFullness(uint32_t nSlot) {
     TSLink<::CELLIST>* pTVar1;
     if (this->nSlotMask >= 0x3ff) {
       return 0;
@@ -1010,7 +1011,7 @@ template<> void TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::Destructor() {
       *pBackLink = (int)pPoolNext;
       pTVar1->m_prevlink->m_next = this->tChunkList.m_terminator.m_next;
       pTVar1->m_prevlink = 0;
-      this->tChunkList.m_terminator.m_next = 0;
+      pTVar1->m_next = 0;
     }
 
     this->tReuseList.UnlinkAll();
@@ -1027,7 +1028,7 @@ template<> void TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::Destructor() {
       *pBackLink = (int)pCelListNext;
       pTVar2->m_prevlink->m_next = this->tReuseList.m_terminator.m_next;
       pTVar2->m_prevlink = 0;
-      this->tReuseList.m_terminator.m_next = 0;
+      pTVar2->m_next = 0;
     }
 
     this->TSHashTable<::CELLIST, HASHKEY_NONE>::Destructor();
@@ -1060,7 +1061,7 @@ template<> TSExportTableSimple<::CELLIST, HCELLIST__*, 0>* TSExportTableSimple<C
 }
 
 // Allocates a CelList hash entry, links it into the bucket for nHashKey and returns it. The tail is MOV [EAX],ECX at 006047ed with EAX still holding the new node, and CELCMP_AllocateCelListKeyThreadSafe (006048c0) tail-returns it - nothing writes EAX after the call. CELCMP_AllocateCelListKey then writes six fields through the result (+0x18/+0x1c/+0x24/+0x28/+0x2c), so typing this void made every cel-list key allocation write through an uninitialised pointer.
-template<> ::CELLIST * TSHashTable<CELLIST, HASHKEY_NONE>::New(uint32_t dwHashVal, HASHKEY_NONE * pKey, uint32_t nExtraBytes, uint32_t dwFlags) {
+template<> __attribute__((noinline)) inline ::CELLIST * TSHashTable<CELLIST, HASHKEY_NONE>::New(uint32_t dwHashVal, HASHKEY_NONE * pKey, uint32_t nExtraBytes, uint32_t dwFlags) {
     TSLink<::CELLIST>* ppBucketSlot;
     uint32_t nBucketIndex = dwHashVal & this->nSlotMask;
     int32_t bRehashed = this->MonitorFullness(nBucketIndex);

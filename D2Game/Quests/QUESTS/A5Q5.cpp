@@ -57,6 +57,7 @@
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/QuestLog.h"
+#include "D2Client/UNIT/PlrSkills.h"
 #include "D2Common/Text.h"
 #include "D2Common/Units/Missile.h"
 #include "D2Game/Monster/AI/AI.h"
@@ -157,7 +158,7 @@ void __fastcall Q35_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
     }
 
     pQuestData->nQuestPacketFlags = '\0';
-    QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, true);
+    QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, 1);
     pQuestSpecificData->bQualKehkTalked = 0;
 }
 
@@ -393,7 +394,7 @@ void __fastcall Q35_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q5.cpp", 0x19d);
         if (pQuestData->nStateFlagPrev != 1) {
           pQuestData->nQuestPacketFlags = '\0';
-          QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, true);
+          QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, 1);
         }
 
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q35_UpdateQuestStep);
@@ -405,7 +406,7 @@ void __fastcall Q35_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       if (nMessageIndex == 0x4e22) {
         if (pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag < 4 && pQuestData->nStateFlagPrev != 3) {
           pQuestData->nQuestPacketFlags = '\0';
-          QUEST_SetStateAndBroadcast(pQuestData, 3, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, true);
+          QUEST_SetStateAndBroadcast(pQuestData, 3, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, 1);
         }
         if (pQuestSpecificData->nResurrectionCount > 0) {
           return;
@@ -571,13 +572,19 @@ static uint32_t __stdcall RewardExperienceFromAncients(::SGAMEDATA * pQuestData,
     int32_t ePlayerClassId;
     QUEST_SendQuestInfoToUnit(pQuestData, pUnit);
     uint32_t nExpRemaining = 1400000;
-    if (pQuestData->nDifficulty != 1) {
-      if (pQuestData->nDifficulty == 2) {
-        nExpRemaining = 40000000;
-      }
-    } else {
-      nExpRemaining = 20000000;
+    switch (pQuestData->nDifficulty) {
+      case 1:
+        {
+          nExpRemaining = 20000000;
+          break;
+        }
+      case 2:
+        {
+          nExpRemaining = 40000000;
+          break;
+        }
     }
+
     if (!pUnit) {
       ePlayerClassId = -1;
     } else {
@@ -873,7 +880,7 @@ void __fastcall Q35_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     }
 
     pQuestData->nQuestPacketFlags = '\0';
-    QUEST_SetStateAndBroadcast(pQuestData, 0xd, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, true);
+    QUEST_SetStateAndBroadcast(pQuestData, 0xd, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, 1);
 }
 
 // [A5Q5 = Rite of Passage] Q35_Callback_03 (sub-handler idx 3): level-entry/intro handler for the Arreat Summit. On first scroll-read (text id 0x6d) and not Completed, sets nStateFlag 3 and broadcasts 1(RewardAwaits)+syncs records. On entering LEVEL_ArreatSummit advances nStateFlag to 2/3 with broadcasts and re-syncs the Ancients-statue display.
@@ -902,7 +909,7 @@ void __fastcall Q35_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
         QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q5.cpp", 899);
         if (pQuestData->nStateFlagPrev != 1) {
           pQuestData->nQuestPacketFlags = '\0';
-          QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, true);
+          QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, 1);
         }
 
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q35_UpdateQuestStep);
@@ -916,7 +923,7 @@ void __fastcall Q35_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     bDidBroadcast = false;
     if (pQuestData->nStateFlagPrev < 2 && pQuestData->nStateFlag > 2) {
       pQuestData->nQuestPacketFlags = '\0';
-      QUEST_SetStateAndBroadcast(pQuestData, 2, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, true);
+      QUEST_SetStateAndBroadcast(pQuestData, 2, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, 1);
       bDidBroadcast = true;
     }
     if (pQuestData->nStateFlag < 3) {
@@ -1102,17 +1109,12 @@ uint32_t __fastcall Q35_AreAncientsReadyToFight(::SGAMEDATA * pGame) {
 // [A5Q5 = Rite of Passage] Q35_FindAncientByClassId: looks up a live spawned Ancient unit by classId among the tracked GUIDs. No quest-state writes.
 D2UnitStrc * __fastcall Q35_FindAncientByClassId(::SGAMEDATA * pGame, int32_t nClassId) {
     int nAncientClassId;
+    int i;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_RiteOfPassage);
     D2QuestDataA5Q5Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q5;
-    int i = 0;
-    if (pQuestSpecificData->nSpawnedAncientCount <= 0) {
-      return nullptr;
-    }
-
-    int* pGUIDEntry = pQuestSpecificData->anAncientMonsterGUID;
-    do {
+    for (i = 0; i < pQuestSpecificData->nSpawnedAncientCount; i++) {
       D2UnitStrc* pAncient;
-      pAncient = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_MONSTER, *pGUIDEntry);
+      pAncient = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_MONSTER, pQuestSpecificData->anAncientMonsterGUID[i]);
       if (!pAncient) {
         nAncientClassId = -1;
       } else {
@@ -1121,10 +1123,7 @@ D2UnitStrc * __fastcall Q35_FindAncientByClassId(::SGAMEDATA * pGame, int32_t nC
       if (nAncientClassId == nClassId) {
         return pAncient;
       }
-
-      i++;
-      pGUIDEntry++;
-    } while (i < pQuestSpecificData->nSpawnedAncientCount);
+    }
 
     return nullptr;
 }
@@ -1308,7 +1307,7 @@ BOOL __fastcall OBJOP_A5Q5_AncientsAltarActivate(D2ObjectOperateFnArg * pOperati
             QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q5.cpp", 0x59f);
           }
           if (pQuestData->nStateFlagPrev != 3) {
-            QUEST_SetStateAndBroadcast(pQuestData, 3, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, true);
+            QUEST_SetStateAndBroadcast(pQuestData, 3, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, 1);
           }
         }
 

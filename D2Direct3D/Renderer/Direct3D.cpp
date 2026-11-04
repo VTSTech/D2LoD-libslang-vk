@@ -29,7 +29,6 @@
 #include "Fog/Src/DataArrays.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
-#include "Fog/d3dFloorCache.h"
 #include "Storm/Source/SBMP.h"
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SMem.h"
@@ -42,7 +41,7 @@
 #include "D2gfx/D2GFX.data.h"
 #include "Fog/Debug.h"
 #include "Fog/Engine/Application.data.h"
-#include "Fog/Engine/Application.h"
+#include "Game/Main.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -2841,7 +2840,7 @@ void __fastcall PlayCutScene(char * szFile, int nResolutionMode, void * fpFrame)
     }
 
     g_pD3DSurfaceBackbuffer->lpVtbl->Flip(g_pD3DSurfaceBackbuffer, nullptr, dwFlags);
-    Fog::d3dFloorCache::D3D_PlayBinkVideo(szFile, nResolutionMode, (fnBinkFrameCallback)fpFrame);
+    d3dFloorCache::D3D_PlayBinkVideo(szFile, nResolutionMode, (fnBinkFrameCallback)fpFrame);
     g_bCutscenePlaying = 0;
 }
 
@@ -4021,49 +4020,51 @@ void __fastcall DebugFillBackBuffer(int nPosX, int nPosY) {
 void __stdcall RENDERER_D3D_InitializeTexturePools() {
     D3DVERTEXBUFFERDESC sVBDesc;
     int32_t nErrorLine;
-    if (!gpD3DTextureSpritePoolMemory0) {
-      DWORD dwParam;
-      if (!gpD3DTextureSpritePoolMemory1) {
-        gpD3DTextureSpritePoolMemory0 = D2_ALLOC_AT(0x10000, ".\\Src\\d3dSprite.cpp", 0x57);
-        gpD3DTextureSpritePoolMemory1 = D2_ALLOC_AT(0x10000, ".\\Src\\d3dSprite.cpp", 0x58);
-        nErrorLine = RENDERER_D3D_CreateSystemMemoryTexture(gD3DGenericTextureCache.apSpriteSurfaces, gD3DGenericTextureCache.apSpriteTextures, 0x100, 0x100);
-        if (!nErrorLine) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5e);
-          exit(-1);
-        } else {
-          nErrorLine = RENDERER_D3D_CreateSystemMemoryTexture(gD3DGenericTextureCache.apSpriteSurfaces + 1, gD3DGenericTextureCache.apSpriteTextures + 1, 0x80, 0x80);
-          if (!nErrorLine) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x61);
-            exit(-1);
-          } else {
-            nErrorLine = RENDERER_D3D_CreateSystemMemoryTexture(gD3DGenericTextureCache.apSpriteSurfaces + 2, gD3DGenericTextureCache.apSpriteTextures + 2, 0x20, 0x20);
-            if (!nErrorLine) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 100);
-              exit(-1);
-            }
+    if (gpD3DTextureSpritePoolMemory0) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x55);
+      exit(-1);
+    }
 
-            sVBDesc.dwSize = 0x10;
-            sVBDesc.dwCaps = 0x10800;
-            sVBDesc.dwFVF = 0x1c4;
-            sVBDesc.dwNumVertices = 0x30;
-            dwParam = g_pDirect3D7->lpVtbl->CreateVertexBuffer(g_pDirect3D7, &sVBDesc, &g_pD3DSpriteQuadVB, 4, nullptr);
-            if (dwParam) {
-              RENDERER_DIRECT3D_ErrorLog("CreateVertexBuffer failed!", dwParam);
-              return;
-            }
-
-            gd3dVertexBufferOffset = 0;
-            D2CMP::SRC::CelCmp::CELCMP_SetPixelDataFreeCallback(D3D_PixelDataFreeCallback_ClearCacheNodes);
-            return;
-          }
-        }
-      } else {
+    {
+      DWORD dwHResult;
+      if (gpD3DTextureSpritePoolMemory1) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x56);
         exit(-1);
       }
-    } else {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x55);
-      exit(-1);
+
+      gpD3DTextureSpritePoolMemory0 = D2_ALLOC_AT(0x10000, ".\\Src\\d3dSprite.cpp", 0x57);
+      gpD3DTextureSpritePoolMemory1 = D2_ALLOC_AT(0x10000, ".\\Src\\d3dSprite.cpp", 0x58);
+      nErrorLine = RENDERER_D3D_CreateSystemMemoryTexture(gD3DGenericTextureCache.apSpriteSurfaces, gD3DGenericTextureCache.apSpriteTextures, 0x100, 0x100);
+      if (!nErrorLine) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5e);
+        exit(-1);
+      } else {
+        nErrorLine = RENDERER_D3D_CreateSystemMemoryTexture(gD3DGenericTextureCache.apSpriteSurfaces + 1, gD3DGenericTextureCache.apSpriteTextures + 1, 0x80, 0x80);
+        if (!nErrorLine) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x61);
+          exit(-1);
+        } else {
+          nErrorLine = RENDERER_D3D_CreateSystemMemoryTexture(gD3DGenericTextureCache.apSpriteSurfaces + 2, gD3DGenericTextureCache.apSpriteTextures + 2, 0x20, 0x20);
+          if (!nErrorLine) {
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 100);
+            exit(-1);
+          }
+
+          sVBDesc.dwSize = 0x10;
+          sVBDesc.dwCaps = 0x10800;
+          sVBDesc.dwFVF = 0x1c4;
+          sVBDesc.dwNumVertices = 0x30;
+          dwHResult = g_pDirect3D7->lpVtbl->CreateVertexBuffer(g_pDirect3D7, &sVBDesc, &g_pD3DSpriteQuadVB, 4, nullptr);
+          if (dwHResult) {
+            RENDERER_DIRECT3D_ErrorLog("CreateVertexBuffer failed!", dwHResult);
+            return;
+          }
+
+          gd3dVertexBufferOffset = 0;
+          D2CMP::SRC::CelCmp::CELCMP_SetPixelDataFreeCallback(D3D_PixelDataFreeCallback_ClearCacheNodes);
+          return;
+        }
+      }
     }
 }
 
@@ -4779,7 +4780,7 @@ static BOOL RENDERER_D3D_IsWideUiLayout(void) {
 }
 
 int32_t __fastcall RENDERER_D3D_BuildShadowTileVertices(D2TileLibraryEntryStrc * pTileLibraryEntryStrc, int nTilePosX, int32_t nTilePosY, uint8_t byLightRow, uint32_t dwAlpha, int32_t nScreenSplitIndex) {
-    bool _bRendered;
+    int _bRendered;
     int nSubtileY;
     bool bRendered;
     short int* pSubtileCoords;
@@ -4978,6 +4979,9 @@ BOOL __thiscall RENDERER_D3D_BuildWallTileVerticesNoPerspective(void * pThis, D2
     // Glide toggles clean. Widened to int; also kills the silent wrong-record
     // class (wrong-node MRU promotes / wrong-textured quads) the wrap produced
     // whenever a shifted format word happened to stay in range. [R98]
+    // (1851+ regen note: upstream's re-spell now types the same slot int as
+    // well - _nParam4 - the widening is upstream-faithful; the fork keeps its
+    // named iterator for the VP guards below.) [R105]
     int nSubtileByteOffset;
     short int* psSubtileCoords;
     int nSubtileScreenX;

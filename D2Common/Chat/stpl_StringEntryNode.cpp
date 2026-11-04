@@ -15,6 +15,7 @@
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Storm/H/CCritSect.h"
+#include "Storm/Source/SFile.h"
 #include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
@@ -240,7 +241,7 @@ template<> void TSHashTable<StringEntryNode, HASHKEY_STRI>::Unlink(::StringEntry
     *pPrevLink = (int)nHeadEntry;
     pTVar1->m_prevlink->m_next = pNode->m_linktofull.m_next;
     pTVar1->m_prevlink = 0;
-    pNode->m_linktofull.m_next = 0;
+    pTVar1->m_next = 0;
 }
 
 template<> void TSHashTable<StringEntryNode, HASHKEY_STRI>::Delete(::StringEntryNode * pNode) {
@@ -255,8 +256,8 @@ template<> void TSExplicitList<StringEntryNode, -572662307>::UnlinkAll() {
     int nSlotOffset;
     while (true) {
       int* pSlot;
-      nSlotOffset = this->m_terminator.m_next;
-      if (nSlotOffset <= 0) {
+      nSlotOffset = this->m_terminator.m_next > 0 ? this->m_terminator.m_next : 0;
+      if (!nSlotOffset) {
         break;
       }
 
@@ -281,7 +282,7 @@ template<> void TSExplicitList<StringEntryNode, -572662307>::UnlinkAll() {
 template<> TSExplicitList<::StringEntryNode, -572662307>* TSExplicitList<StringEntryNode, -572662307>::CopyConstructor(TSExplicitList<::StringEntryNode, -572662307>* pSource) {
     uint32_t* pSentinelHead = (uint32_t*)&this->m_terminator;
     *pSentinelHead = 0;
-    this->m_terminator.m_next = 0;
+    pSentinelHead[1] = 0;
     uint32_t dwCapacity = pSource->m_linkoffset;
     *pSentinelHead = (uint32_t)pSentinelHead;
     this->m_linkoffset = dwCapacity;
@@ -293,7 +294,7 @@ template<> TSExplicitList<::StringEntryNode, -572662307>* TSExplicitList<StringE
 TSExplicitList<::StringEntryNode, -572662307>* __thiscall CopyConstructor_Unreferenced(TSExplicitList<::StringEntryNode, -572662307>* pThis, TSExplicitList<::StringEntryNode, -572662307>* pSource) {
     uint32_t* pSentinelHead = (uint32_t*)&pThis->m_terminator;
     *pSentinelHead = 0;
-    pThis->m_terminator.m_next = 0;
+    pSentinelHead[1] = 0;
     uint32_t dwCapacity = pSource->m_linkoffset;
     *pSentinelHead = (uint32_t)pSentinelHead;
     pThis->m_linkoffset = dwCapacity;
@@ -352,7 +353,7 @@ template<> void TSHashObject<StringEntryNode, HASHKEY_STRI>::Destructor() {
     *pPrevLink = (int)nHeadEntry;
     pTVar1->m_prevlink->m_next = this->m_linktoslot.m_next;
     pTVar1->m_prevlink = 0;
-    this->m_linktoslot.m_next = 0;
+    pTVar1->m_next = 0;
 }
 
 template<> void TSHashTable<StringEntryNode, HASHKEY_STRI>::InternalClear(int32_t bUnlinkOnly) {
@@ -415,9 +416,9 @@ void __thiscall Destructor_Unreferenced(TSExplicitList<::StringEntryNode, -57266
 
     pPrevLink = (int*)D2_StormNextLink(pTVar1, -1);
     *pPrevLink = (int)nHeadEntry;
-    pTVar1->m_prevlink->m_next = pThis->m_terminator.m_next;
+    pTVar1->m_prevlink->m_next = pTVar1->m_next;
     pTVar1->m_prevlink = 0;
-    pThis->m_terminator.m_next = 0;
+    pTVar1->m_next = 0;
 }
 
 template<> void TSExplicitList<StringEntryNode, -572662307>::ChangeLinkOffset(int32_t nLinkOffset) {

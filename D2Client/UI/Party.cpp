@@ -246,7 +246,11 @@ static void __fastcall UI_DrawPartyMemberName(D2UiPartyStrc * pUiParty, int32_t 
     pTruncate = wszName + 99;
     memcpy(szEllipsisUtf8, "...", 4);
     szEllipsisUtf8[4] = '\0';
-    memset(wszEllipsis, 0, 5 * sizeof(wszEllipsis[0]));
+    wszEllipsis[0] = L'\0';
+    wszEllipsis[1] = L'\0';
+    wszEllipsis[2] = L'\0';
+    wszEllipsis[3] = L'\0';
+    wszEllipsis[4] = L'\0';
     int32_t nTextWidth;
     nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszName);
     if (bNarrowMode) {
@@ -313,13 +317,13 @@ static void __stdcall UI_DrawPartyMemberClass(int32_t nScreenY, int32_t nCharTyp
     D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(nLocaleId), nX, nY, nColor, bMultiLineCenter);
 }
 
-void __thiscall UI_DrawPartyButtonLabelText(int32_t eButtonType, int32_t nBaseY, int32_t bHostileMode, int16_t nPartyId) {
+void __thiscall UI_DrawPartyButtonLabelText(int32_t eButtonType, int32_t nBaseY, int32_t bHostileMode, uint16_t nPartyId) {
     uint16_t nLocaleId;
     int32_t nTextFlags = 0;
     int nX = 0xbe;
     switch (eButtonType) {
       case 1:
-        if (nPartyId == -1) {
+        if (nPartyId == 0xffff) {
           return;
         }
       if (bHostileMode) {
@@ -514,7 +518,11 @@ static void __stdcall UI_DrawPartyMemberLevelName(D2UiPartyStrc * pUiParty, int3
       nPixelWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszLevelName);
       wLastCharTmp = wszLevelName[nPixelWidth - 1];
       memcpy(szEllipsis, "....", 5);
-      memset(wszEllipsis, 0, 5 * sizeof(wszEllipsis[0]));
+      wszEllipsis[0] = L'\0';
+      wszEllipsis[1] = L'\0';
+      wszEllipsis[2] = L'\0';
+      wszEllipsis[3] = L'\0';
+      wszEllipsis[4] = L'\0';
       D2Lang::UTF8_ConvertToWideChar(wszEllipsis, szEllipsis, 5);
       wszEllipsis[3] = wLastCharTmp;
       nPixelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszEllipsis);
@@ -596,8 +604,8 @@ int32_t __fastcall UI_CalculateCenteredTextXPosition(uint16_t nLocaleId, int32_t
 
     uint16_t* pSrc = D2Lang::StrTable::strtable::GetLocaleString(nLocaleId);
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszText, pSrc);
-    int32_t nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszText);
-    return nCenterX - nTextWidth / 2;
+    int32_t nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszText) / 2;
+    return nCenterX - nTextWidth;
 }
 
 static void __stdcall ShowToolTipOnPartyButtons(int16_t nLocaleIdLine1, int16_t nLocaleIdLine2, int32_t nOffsetX, int32_t bIsTwoLiner) {
@@ -1505,7 +1513,16 @@ static void __stdcall UI_DrawPartyMemberLevel(uint32_t nCharLevel, int32_t dwCol
     }
 
     size_t nMaxLen = 0x14;
-    memset(wszLevel, 0, 10 * sizeof(wszLevel[0]));
+    wszLevel[0] = L'\0';
+    wszLevel[1] = 0;
+    wszLevel[2] = 0;
+    wszLevel[3] = 0;
+    wszLevel[4] = 0;
+    wszLevel[5] = 0;
+    wszLevel[6] = 0;
+    wszLevel[7] = 0;
+    wszLevel[8] = 0;
+    wszLevel[9] = 0;
     D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(wszLine, D2Lang::StrTable::strtable::GetLocaleString(0xd28), nMaxLen);
     uint16_t* pwszCur = D2Lang::StrTable::strtable::GetLocaleString(0xf9d);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszLine, pwszCur);

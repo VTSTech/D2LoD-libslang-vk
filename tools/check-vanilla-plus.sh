@@ -40,7 +40,8 @@ gate() { # gate <name> <file> <ERE> <expected>
 # banner would red the suite by design. Check it manually: d2boot.log line 1
 # (SMOKE-CHECKLIST item 0).
 gate "boot: log overwrites per run"       support/d2_boot.cpp             '0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL' 2
-gate "boot: ini template hook"            D2Client/Engine/Application.cpp 'VP-BEGIN \[alt-toggle\]'    1
+# refiled R106: D2Client/Engine/Application.cpp -> Game/Main.cpp (upstream 316d537a)
+gate "boot: ini template hook"            Game/Main.cpp                    'VP-BEGIN \[alt-toggle\]'    1
 
 # ---- [d2boot] rev 33: SP loading-screen freeze trace (overlay round) -------
 # Marks along the single-player enter-world handshake, so d2boot.log alone
@@ -181,7 +182,8 @@ gate "fork-api include in Game.cpp"       D2Client/GAME/Game/Game.cpp     'inclu
 gate "fork-api include in CUnit.cpp"      D2Client/UNIT/CUnit.cpp         'include "D2Client/UI/VanillaPlusCore\.h"' 1
 gate "fork-api include in Draw.cpp"       D2Client/UI/Draw.cpp            'include "D2Client/UI/VanillaPlusCore\.h"' 1
 gate "fork-api include in ShowItems.cpp"  D2Client/UI/ShowItems.cpp       'include "D2Client/UI/VanillaPlusCore\.h"' 1
-gate "fork-api include in Application.cpp" D2Client/Engine/Application.cpp 'include "D2Client/UI/VanillaPlusCore\.h"' 1
+# refiled R106: D2Client/Engine/Application.cpp -> Game/Main.cpp (upstream 316d537a)
+gate "fork-api include in Game/Main.cpp"   Game/Main.cpp                    'include "D2Client/UI/VanillaPlusCore\.h"' 1
 gate "fork-api include in D2Client.cpp"   D2Client/D2Client.cpp           'include "D2Client/UI/VanillaPlusCore\.h"' 1
 
 # ---- persistent orb text (FEATURES.md row 1, repurposed post-0.0.4) --------
@@ -724,7 +726,8 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # to halt line=200 - the D3D floor/subtile texture-cache promote range checks -
 # on the first frame after a runtime 1 -> 0 flip; R97 guards both promote
 # callers and re-arms the probes, see the R97 rows below)
-gate "res: self-id 0.0.7-R105"                D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R105' 1
+# refiled R106: D2Client/Engine/Application.cpp -> Game/Main.cpp (upstream 316d537a)
+gate "res: self-id 0.0.7-R105"                Game/Main.cpp                    'Vanilla\+0\.0\.7-R105' 1
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the

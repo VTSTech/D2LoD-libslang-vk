@@ -3,6 +3,8 @@
 #include "Storm/WindowHandle.h"
 #include "D2Client/Message.h"
 #include "D2Client/UI/EscMenu.h"
+#include "D2Hell/D2Hell.h"
+#include "Storm/H/stpl.h"
 #include "Storm/Source/SEVT.h"
 #include "Storm/Source/SErr.h"
 #include "Storm/Source/SFile.h"
@@ -44,8 +46,10 @@ static char s___AUWNDREC___00708850[16] = {
 }; D2_STATIC_GUARD(s___AUWNDREC___00708850, "s___AUWNDREC___00708850");
 D2StormListHead gpWndTrackingListHead = {
     /* .nLinkOffset = */ 0x0,
-    /* .pPrevLink = */ (StormLinkStrc*)&gpWndTrackingListHead.pPrevLink,
-    /* .pNext = */ 0x0
+    /* .terminator = */ {
+        /* .pPrevLink = */ (StormLinkStrc*)&gpWndTrackingListHead.terminator.pPrevLink,
+        /* .pNext = */ 0x0
+    }
 }; D2_GLOBAL_GUARD(gpWndTrackingListHead, "gpWndTrackingListHead");
 static uint32_t gpActiveWindow = 0; D2_STATIC_GUARD(gpActiveWindow, "gpActiveWindow");
 
@@ -219,13 +223,15 @@ uint32_t __thiscall WND_GetNodeData(int32_t pThis, int32_t pNode) {
     return *(uint32_t*)(pThis + 8);
 }
 
-void __fastcall WND_RemoveAllChildren(D2StormListHead * pWindow) {
+} // namespace Storm::WindowHandle
+
+template<> __attribute__((noinline)) inline void TSList<WNDREC, TSGetLink<WNDREC>>::UnlinkAll() {
     int* pBacklink;
     int* pNode;
     while (true) {
       int nNext;
-      pNode = (int*)pWindow->pNext;
-      if ((int)pNode <= 0) {
+      pNode = (int)(int*)this->m_terminator.m_next > 0 ? (int*)this->m_terminator.m_next : 0;
+      if (!pNode) {
         break;
       }
 
@@ -240,20 +246,22 @@ void __fastcall WND_RemoveAllChildren(D2StormListHead * pWindow) {
     }
 }
 
+namespace Storm::WindowHandle {
+
 void __fastcall WND_DetachAndClearChildren(D2StormListHead * pWindow) {
     int* pBacklink;
-    WND_RemoveAllChildren(pWindow);
-    StormLinkStrc** pNode = &pWindow->pPrevLink;
-    StormLinkStrc* nNext = *pNode;
+    ((TSList<WNDREC, TSGetLink<WNDREC>>*)pWindow)->UnlinkAll();
+    StormLinkStrc* pSVar1 = &pWindow->terminator;
+    StormLinkStrc* nNext = pSVar1->pPrevLink;
     if (!nNext) {
       return;
     }
 
-    pBacklink = (int*)D2_StormNextLink(pNode, -1);
+    pBacklink = (int*)D2_StormNextLink(pSVar1, -1);
     *pBacklink = (int)nNext;
-    (*pNode)->pNext = pWindow->pNext;
-    *pNode = 0;
-    pWindow->pNext = 0;
+    pSVar1->pPrevLink->pNext = pSVar1->pNext;
+    pSVar1->pPrevLink = 0;
+    pSVar1->pNext = 0;
 }
 
 int * * __thiscall WND_AllocRecord(int * * ppList, int32_t nMode, int32_t nSize, uint32_t dwFlags) {
@@ -300,7 +308,7 @@ void __stdcall SMSG_AddWindow(uint32_t hWnd) {
       pEntry = pRecord;
     } else {
       pEntry = 0;
-      pRecord = (StormWndRecStrc*)&gpWndTrackingListHead.pPrevLink;
+      pRecord = (StormWndRecStrc*)&gpWndTrackingListHead.terminator;
     }
 
     StormLinkStrc* nNext = pRecord->link.pPrevLink;
@@ -313,10 +321,10 @@ void __stdcall SMSG_AddWindow(uint32_t hWnd) {
       pRecord->link.pNext = 0;
     }
 
-    pRecord->link.pPrevLink = gpWndTrackingListHead.pPrevLink;
-    pRecord->link.pNext = gpWndTrackingListHead.pPrevLink->pNext;
-    gpWndTrackingListHead.pPrevLink->pNext = (int)pEntry;
-    gpWndTrackingListHead.pPrevLink = &pRecord->link;
+    pRecord->link.pPrevLink = gpWndTrackingListHead.terminator.pPrevLink;
+    pRecord->link.pNext = gpWndTrackingListHead.terminator.pPrevLink->pNext;
+    gpWndTrackingListHead.terminator.pPrevLink->pNext = (int)pEntry;
+    gpWndTrackingListHead.terminator.pPrevLink = &pRecord->link;
     pEntry->hWnd = (HWND)hWnd;
 }
 
@@ -343,7 +351,7 @@ uint32_t __thiscall WND_RemoveAndFreeRecord(void * pListHead, StormWndRecStrc * 
 
 // @blizzard FindWindow (SMSG.CPP)
 uint32_t __fastcall SMSG_FindWindow(int32_t nHandle) {
-    uint32_t nRecord = gpWndTrackingListHead.pNext <= 0 ? 0 : gpWndTrackingListHead.pNext;
+    uint32_t nRecord = gpWndTrackingListHead.terminator.pNext <= 0 ? 0 : gpWndTrackingListHead.terminator.pNext;
     while (true) {
       if ((int)nRecord <= 0) {
         return 0;
@@ -551,23 +559,23 @@ int32_t __thiscall WND_EntryArray_AllocOrReuse(int32_t pThis, int32_t pReuseEntr
 }
 
 void StaticInit_gWndTrackingList() {
-    gpWndTrackingListHead.pNext = ~(uintptr_t)((char*)&gpWndTrackingListHead + 4);
+    gpWndTrackingListHead.terminator.pNext = ~(uintptr_t)((char*)&gpWndTrackingListHead + 4);
     atexit(StaticFini_gWndTrackingList);
 }
 
 // Runs at exit: removes every element from the tracked window list, then unlinks the list head itself.
 void StaticFini_gWndTrackingList() {
     uint32_t* pNextLink;
-    WND_RemoveAllChildren(&gpWndTrackingListHead);
-    if (!gpWndTrackingListHead.pPrevLink) {
+    ((TSList<WNDREC, TSGetLink<WNDREC>>*)&gpWndTrackingListHead)->UnlinkAll();
+    if (!gpWndTrackingListHead.terminator.pPrevLink) {
       return;
     }
 
     pNextLink = (uint32_t*)D2_StormNextLink((char*)&gpWndTrackingListHead + 4, -1);
-    *pNextLink = (uint32_t)(uintptr_t)gpWndTrackingListHead.pPrevLink;
-    gpWndTrackingListHead.pPrevLink->pNext = gpWndTrackingListHead.pNext;
-    gpWndTrackingListHead.pPrevLink = 0;
-    gpWndTrackingListHead.pNext = 0;
+    *pNextLink = (uint32_t)(uintptr_t)gpWndTrackingListHead.terminator.pPrevLink;
+    gpWndTrackingListHead.terminator.pPrevLink->pNext = gpWndTrackingListHead.terminator.pNext;
+    gpWndTrackingListHead.terminator.pPrevLink = 0;
+    gpWndTrackingListHead.terminator.pNext = 0;
 }
 
 } // namespace Storm::WindowHandle

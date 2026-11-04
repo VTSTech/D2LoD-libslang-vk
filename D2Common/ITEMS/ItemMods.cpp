@@ -114,7 +114,7 @@ static int32_t ITEMMOD_GetMaxLevelAtIndex(D2GemsTxt * pMagixAffixLine, uint32_t 
     pModPtrTable[0] = pMagixAffixLine->aWeaponMods;
     pModPtrTable[1] = pMagixAffixLine->aHelmMods;
     pModPtrTable[2] = pMagixAffixLine->aShieldMods;
-    if (nIndex >= 3) {
+    if (!(nIndex < 3)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8f);
       exit(-1);
     }
@@ -439,7 +439,7 @@ static void __stdcall ITEMMOD_MaximizeStatForEnhanced(eD2UnitStat eEnhancedProp,
 
         nCurrentAC = Items::ITEM_GetTxtItemTypes_throwable(pUnit);
         if (nCurrentAC && pItemsTxt->nMinMisDam) {
-          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_mindamage, (uint32_t)(uint8_t)pItemsTxt->nMinMisDam, 0);
+          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_mindamage, (uint32_t)pItemsTxt->nMinMisDam, 0);
         }
       }
     }
@@ -580,34 +580,36 @@ int32_t __fastcall PropertyFunc_SimpleStatWithContext(int32_t nType, D2UnitStrc 
     int32_t nValue;
     eD2UnitStat eTargetStat = eStatCode;
     if (pProperty) {
-      D2StatListExStrc* pStatList;
-      pProperty = (D2SetsTxtFStrc*)pProperty->fparam;
-      if (!pProperty) {
-        return 0;
-      }
-      if ((int)eStatCode >= 0x10 && (int)eStatCode <= 0x12 || nType == 1) {
-        ITEMMOD_MaximizeStatForEnhanced(eStatCode, pItemUnit);
-      }
+      {
+        D2StatListExStrc* pStatList;
+        pProperty = (D2SetsTxtFStrc*)pProperty->fparam;
+        if (!pProperty) {
+          return 0;
+        }
+        if ((int)eStatCode >= 0x10 && (int)eStatCode <= 0x12 || nType == 1) {
+          ITEMMOD_MaximizeStatForEnhanced(eStatCode, pItemUnit);
+        }
 
-      ITEMMOD_ScaleValueForStatType((int*)&pProperty, eTargetStat);
-      pStatList = ITEMMOD_GetOrCreateStatList(pItemUnit, nState, dwStatListFlags, pUnit);
-      if (!pStatList) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2f0);
-        exit(-1);
-      }
+        ITEMMOD_ScaleValueForStatType((int*)&pProperty, eTargetStat);
+        pStatList = ITEMMOD_GetOrCreateStatList(pItemUnit, nState, dwStatListFlags, pUnit);
+        if (!pStatList) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2f0);
+          exit(-1);
+        }
 
-      nValue = (int32_t)pProperty;
-      if (bClearStat) {
-        nStatVal = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, eTargetStat, 0);
-        nValue = -nStatVal;
-      }
+        nValue = (int32_t)pProperty;
+        if (bClearStat) {
+          nStatVal = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, eTargetStat, 0);
+          nValue = -nStatVal;
+        }
 
-      Stats::StatsEx::STATLIST_AddStatValue(pStatList, eTargetStat, nValue, 0);
-      return 1;
-    } else {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2e2);
-      exit(-1);
+        Stats::StatsEx::STATLIST_AddStatValue(pStatList, eTargetStat, nValue, 0);
+        return 1;
+      }
     }
+
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2e2);
+    exit(-1);
 }
 
 // Property function wrapper - delegates to ITEMMOD_ApplyRandomStatValue (normal mode).
@@ -1239,10 +1241,10 @@ int32_t __fastcall PropertyFunc_PackedStat(int32_t nType, D2UnitStrc * pUnit, D2
 
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x44e);
           exit(-1);
-        } else {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x44d);
-          exit(-1);
         }
+
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x44d);
+        exit(-1);
       } else {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x44c);
         exit(-1);
@@ -2128,7 +2130,7 @@ uint32_t __fastcall ITEMPROP_AddEnhancedDamage(uint32_t nType, D2UnitStrc * pUni
 
           nStatIdSaved = Items::ITEM_GetTxtItemTypes_throwable(pItem);
           if (nStatIdSaved && pBaseTxtLine->nMinMisDam) {
-            Stats::StatsEx::STATLIST_SetUnitStat(pItem, UNITSTAT_item_throw_mindamage, (uint32_t)(uint8_t)pBaseTxtLine->nMinMisDam, 0);
+            Stats::StatsEx::STATLIST_SetUnitStat(pItem, UNITSTAT_item_throw_mindamage, (uint32_t)pBaseTxtLine->nMinMisDam, 0);
           }
         }
       }
@@ -2671,12 +2673,8 @@ void __stdcall ITEMMOD_ApplyPropertyToUnitStatsExpansion(uint32_t nType, D2UnitS
     // Static local variables (originally global data)
     static int PropertiesFuncCount = 0x25; D2_STATIC_GUARD(PropertiesFuncCount, "D2Common::ITEMS::ItemMods::ITEMMOD_ApplyPropertyToUnitStatsExpansion::PropertiesFuncCount");
 
-    if (!pSetsTxtF) {
-      return;
-    }
-
-    int nFuncCode = pSetsTxtF->fcode;
-    D2PropertiesTxt* pPropTxt = nFuncCode >= 0 && nFuncCode < sgptDataTable->nTxtPropertiesSize ? sgptDataTable->pTxtProperties + nFuncCode : nullptr;
+    int nFuncCode;
+    D2PropertiesTxt* pPropTxt = pSetsTxtF && (nFuncCode = pSetsTxtF->fcode) >= 0 && nFuncCode < sgptDataTable->nTxtPropertiesSize ? sgptDataTable->pTxtProperties + nFuncCode : nullptr;
     if (!pPropTxt) {
       return;
     }

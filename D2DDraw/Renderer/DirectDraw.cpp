@@ -7,22 +7,24 @@
 #include "D2CMP/SRC/LRUCache.h"
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2CMP/SRC/SubTile.h"
-#include "D2Client/D2Client.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxSettingsStrc.h"
 #include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Draw.h"
 #include "D2Client/GAME/View.h"
+#include "D2Client/Message.h"
 #include "D2Client/Renderer/Glide.h"
 #include "D2Client/Renderer/Renderer.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
 #include "D2Direct3D/Renderer/Direct3D.h"
 #include "D2Glide/Renderer/Glide.h"
 #include "D2Multi/OOGUtilities.h"
+#include "D2Sound/Src/D2SoundSmp.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/Memory.h"
+#include "Fog/SMem.h"
 #include "Fog/Source/SFile.h"
 #include "Fog/Src/DataArrays.h"
 #include "Fog/Src/ErrorManager.h"
@@ -73,6 +75,7 @@ static uint32_t gbDDrawWindowInitialized = 0; D2_STATIC_GUARD(gbDDrawWindowIniti
 static BOOL gbDDrawPaletteSet = 0; D2_STATIC_GUARD(gbDDrawPaletteSet, "gbDDrawPaletteSet");
 uint32_t gnCutSceneActiveFlag = 0; D2_GLOBAL_GUARD(gnCutSceneActiveFlag, "gnCutSceneActiveFlag");
 IDirectDraw1 * pWindowHandleBuffer = 0; D2_GLOBAL_GUARD(pWindowHandleBuffer, "pWindowHandleBuffer");
+IDirectDrawSurface1 * gpDDrawPrimarySurface = 0; D2_GLOBAL_GUARD(gpDDrawPrimarySurface, "gpDDrawPrimarySurface");
 IDirectDrawSurface1 * gpDDrawBackBuffer = 0; D2_GLOBAL_GUARD(gpDDrawBackBuffer, "gpDDrawBackBuffer");
 IDirectDrawSurface1 * pDirectDrawSurface = 0; D2_GLOBAL_GUARD(pDirectDrawSurface, "pDirectDrawSurface");
 IDirectDrawPalette * pDirectDrawPalette = 0; D2_GLOBAL_GUARD(pDirectDrawPalette, "pDirectDrawPalette");
@@ -83,8 +86,14 @@ uint32_t gnDDrawRenderWidth = 0; D2_GLOBAL_GUARD(gnDDrawRenderWidth, "gnDDrawRen
 static uint32_t gaD2ddDebugFontCharOffsets[96] = {}; D2_STATIC_GUARD(gaD2ddDebugFontCharOffsets, "gaD2ddDebugFontCharOffsets");
 static void * lpBuffer_00881428[96] = {}; D2_STATIC_GUARD(lpBuffer_00881428, "lpBuffer_00881428");
 static D2ddDebugFont * gpD2ddDebugFont = 0; D2_STATIC_GUARD(gpD2ddDebugFont, "gpD2ddDebugFont");
-uint8_t gaSmackerPaletteRemap[260] = {}; D2_GLOBAL_GUARD(gaSmackerPaletteRemap, "gaSmackerPaletteRemap");
+uint8_t gaSmackerPaletteRemap[256] = {}; D2_GLOBAL_GUARD(gaSmackerPaletteRemap, "gaSmackerPaletteRemap");
+void * gpSmackerImageBuffer = 0; D2_GLOBAL_GUARD(gpSmackerImageBuffer, "gpSmackerImageBuffer");
 uint32_t gbSmackerPaletteDirty = 0; D2_GLOBAL_GUARD(gbSmackerPaletteDirty, "gbSmackerPaletteDirty");
+static uint32_t gnBinkDDrawYOffset = 0; D2_STATIC_GUARD(gnBinkDDrawYOffset, "gnBinkDDrawYOffset");
+static uint32_t gnBinkDDrawXOffset = 0; D2_STATIC_GUARD(gnBinkDDrawXOffset, "gnBinkDDrawXOffset");
+static void * gpBinkVideoDirectDraw = 0; D2_STATIC_GUARD(gpBinkVideoDirectDraw, "gpBinkVideoDirectDraw");
+static uint32_t gnBinkDDrawSurfaceType = 0; D2_STATIC_GUARD(gnBinkDDrawSurfaceType, "gnBinkDDrawSurfaceType");
+static uint32_t g_bBinkDDrawVideoQuitRequested = 0; D2_STATIC_GUARD(g_bBinkDDrawVideoQuitRequested, "g_bBinkDDrawVideoQuitRequested");
 
 namespace D2DDraw::Renderer::DirectDraw {
 
@@ -639,97 +648,99 @@ static BOOL InternalOpenWindow(int32_t nResolutionMode) {
       exit(-1);
     }
 
-    HRESULT HVar1;
-    if (!nResolutionMode) {
-      RENDERER_nWindowWidth = 0x280;
-      RENDERER_nWindowHeight = 0x1e0;
-    } else {
-      RENDERER_nWindowWidth = 800;
-      RENDERER_nWindowHeight = 600;
-    }
+    {
+      HRESULT HVar1;
+      if (!nResolutionMode) {
+        RENDERER_nWindowWidth = 0x280;
+        RENDERER_nWindowHeight = 0x1e0;
+      } else {
+        RENDERER_nWindowWidth = 800;
+        RENDERER_nWindowHeight = 600;
+      }
 
-    RENDERER_DDRAW_SetHorizontalBounds(nResolutionMode);
-    gnDDrawDisplayModeIndex = gdwDirectDrawPaletteSizes[nResolutionMode];
-    gnDDrawSurfaceWidth = gdwDirectDrawSurfaceWidths[nResolutionMode];
-    HVar1 = pWindowHandleBuffer->lpVtbl->SetCooperativeLevel(pWindowHandleBuffer, (HWND)gnGlideWindowHandle, 0x11);
-    if (HVar1 && HVar1 != -0x7789fdbb) {
-      DirectDrawErrorHandler("SetCooperativeLevel failed!", HVar1);
-      return 0;
-    }
-    if (!pWindowHandleBuffer) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1da);
-      exit(-1);
-    }
+      RENDERER_DDRAW_SetHorizontalBounds(nResolutionMode);
+      gnDDrawDisplayModeIndex = gdwDirectDrawPaletteSizes[nResolutionMode];
+      gnDDrawSurfaceWidth = gdwDirectDrawSurfaceWidths[nResolutionMode];
+      HVar1 = pWindowHandleBuffer->lpVtbl->SetCooperativeLevel(pWindowHandleBuffer, (HWND)gnGlideWindowHandle, 0x11);
+      if (HVar1 && HVar1 != -0x7789fdbb) {
+        DirectDrawErrorHandler("SetCooperativeLevel failed!", HVar1);
+        return 0;
+      }
+      if (!pWindowHandleBuffer) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1da);
+        exit(-1);
+      }
 
-    nLine = pWindowHandleBuffer->lpVtbl->SetDisplayMode(pWindowHandleBuffer, gnDDrawDisplayModeIndex, gnDDrawSurfaceWidth, 8);
-    if (nLine) {
-      szErrorMsg = "SetDisplayMode failed!";
-    } else {
-      memset(&ddSurfDesc, 0, 0x6c);
-      ddSurfDesc.dwBackBufferCount = 2;
-      gnDDrawFlipState = 2;
-      ddSurfDesc.dwSize = 0x6c;
-      ddSurfDesc.dwFlags = 0x21;
-      ddSurfDesc.ddsCaps = 0x4218;
-      HVar1 = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&gpDDrawPrimarySurface, nullptr);
-      if (HVar1) {
+      nLine = pWindowHandleBuffer->lpVtbl->SetDisplayMode(pWindowHandleBuffer, gnDDrawDisplayModeIndex, gnDDrawSurfaceWidth, 8);
+      if (nLine) {
+        szErrorMsg = "SetDisplayMode failed!";
+      } else {
         memset(&ddSurfDesc, 0, 0x6c);
-        ddSurfDesc.ddsCaps = 0x4218;
+        ddSurfDesc.dwBackBufferCount = 2;
+        gnDDrawFlipState = 2;
         ddSurfDesc.dwSize = 0x6c;
         ddSurfDesc.dwFlags = 0x21;
-        ddSurfDesc.dwBackBufferCount = 1;
-        gnDDrawFlipState = 1;
+        ddSurfDesc.ddsCaps = 0x4218;
         HVar1 = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&gpDDrawPrimarySurface, nullptr);
         if (HVar1) {
           memset(&ddSurfDesc, 0, 0x6c);
+          ddSurfDesc.ddsCaps = 0x4218;
           ddSurfDesc.dwSize = 0x6c;
-          ddSurfDesc.dwFlags = 1;
-          ddSurfDesc.ddsCaps = 0x4200;
-          gnDDrawFlipState = 0;
-          nLine = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&gpDDrawPrimarySurface, nullptr);
+          ddSurfDesc.dwFlags = 0x21;
+          ddSurfDesc.dwBackBufferCount = 1;
+          gnDDrawFlipState = 1;
+          HVar1 = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&gpDDrawPrimarySurface, nullptr);
+          if (HVar1) {
+            memset(&ddSurfDesc, 0, 0x6c);
+            ddSurfDesc.dwSize = 0x6c;
+            ddSurfDesc.dwFlags = 1;
+            ddSurfDesc.ddsCaps = 0x4200;
+            gnDDrawFlipState = 0;
+            nLine = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&gpDDrawPrimarySurface, nullptr);
+            if (nLine) {
+              szErrorMsg = "CreateSurface (primary single buffered) failed!";
+              goto report_ddraw_failure;
+            }
+          }
+        }
+        if (gnDDrawFlipState) {
+          dwDDSCapsBackBuffer = 4;
+          nLine = gpDDrawPrimarySurface->lpVtbl->GetAttachedSurface(gpDDrawPrimarySurface, (DDSCAPS*)&dwDDSCapsBackBuffer, &gpDDrawBackBuffer);
           if (nLine) {
-            szErrorMsg = "CreateSurface (primary single buffered) failed!";
+            szErrorMsg = "GetAttachedSurface (backbuffer) failed!";
             goto report_ddraw_failure;
           }
         }
-      }
-      if (gnDDrawFlipState) {
-        dwDDSCapsBackBuffer = 4;
-        nLine = gpDDrawPrimarySurface->lpVtbl->GetAttachedSurface(gpDDrawPrimarySurface, (DDSCAPS*)&dwDDSCapsBackBuffer, &gpDDrawBackBuffer);
-        if (nLine) {
-          szErrorMsg = "GetAttachedSurface (backbuffer) failed!";
-          goto report_ddraw_failure;
-        }
-      }
 
-      memset(&ddSurfDesc, 0, 0x6c);
-      ddSurfDesc.dwSize = 0x6c;
-      nLine = gpDDrawPrimarySurface->lpVtbl->GetSurfaceDesc(gpDDrawPrimarySurface, &ddSurfDesc);
-      if (nLine) {
-        szErrorMsg = "GetSurfaceDesc (primary) failed!";
-      } else {
-        ddSurfDesc.dwFlags = 7;
-        ddSurfDesc.ddsCaps = 0x840;
-        nLine = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&pDirectDrawSurface, nullptr);
+        memset(&ddSurfDesc, 0, 0x6c);
+        ddSurfDesc.dwSize = 0x6c;
+        nLine = gpDDrawPrimarySurface->lpVtbl->GetSurfaceDesc(gpDDrawPrimarySurface, &ddSurfDesc);
         if (nLine) {
-          szErrorMsg = "CreateSurface (render) failed!";
+          szErrorMsg = "GetSurfaceDesc (primary) failed!";
         } else {
-          nLine = gpDDrawPrimarySurface->lpVtbl->SetPalette(gpDDrawPrimarySurface, pDirectDrawPalette);
-          if (!nLine) {
-            gbDDrawWindowInitialized = 1;
-            gbDDrawPaletteSet = 0;
-            return 1;
-          }
+          ddSurfDesc.dwFlags = 7;
+          ddSurfDesc.ddsCaps = 0x840;
+          nLine = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&pDirectDrawSurface, nullptr);
+          if (nLine) {
+            szErrorMsg = "CreateSurface (render) failed!";
+          } else {
+            nLine = gpDDrawPrimarySurface->lpVtbl->SetPalette(gpDDrawPrimarySurface, pDirectDrawPalette);
+            if (!nLine) {
+              gbDDrawWindowInitialized = 1;
+              gbDDrawPaletteSet = 0;
+              return 1;
+            }
 
-          szErrorMsg = "SetPalette failed!";
+            szErrorMsg = "SetPalette failed!";
+          }
         }
       }
-    }
 
-    report_ddraw_failure:
-    DirectDrawErrorHandler(szErrorMsg, nLine);
-    Fog::Src::LogManager::LOGFILE_WriteStringToFile("Opening DirectDraw window failed!");
-    return 0;
+      report_ddraw_failure:
+      DirectDrawErrorHandler(szErrorMsg, nLine);
+      Fog::Src::LogManager::LOGFILE_WriteStringToFile("Opening DirectDraw window failed!");
+      return 0;
+    }
 }
 
 BOOL __stdcall InternalCutsceneWindow() {
@@ -817,7 +828,7 @@ void __fastcall PlayCutScene(char * szFile, int32_t nResolutionMode, void * fpFr
       return;
     }
 
-    D2Client::BINK_PlayVideoFile(szFile, nResolutionMode, (fnBinkFrameCallback)fpFrame);
+    BINK_PlayVideoFile(szFile, nResolutionMode, (fnBinkFrameCallback)fpFrame);
     gnCutSceneActiveFlag = 0;
 }
 
@@ -1917,50 +1928,52 @@ void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex) {
     int nRectLeft = pRect->left;
     int nLeft = pRect->right;
     if (nRectLeft <= nLeft) {
-      uint8_t* pRowDst;
-      nTop = pRect->top;
-      nBottom = pRect->bottom;
-      if (!(nTop <= nBottom)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x166);
-        exit(-1);
-      }
-      if (!(nLeft >= 0 && nRectLeft < RENDERER_nWindowWidth && nBottom >= 0 && nTop < RENDERER_nWindowHeight)) {
-        return;
-      }
-      if (nRectLeft < 0) {
-        pRect->left = 0;
-      }
-      if (nLeft >= RENDERER_nWindowWidth) {
-        pRect->right = RENDERER_nWindowWidth - 1;
-      }
-      if (nTop < 0) {
-        pRect->top = 0;
-      }
-      if (nBottom >= RENDERER_nWindowHeight) {
-        pRect->bottom = RENDERER_nWindowHeight - 1;
-      }
-
-      nFillWidth = pRect->right - pRect->left;
-      nRowCount = pRect->bottom - pRect->top;
-      if (!(nFillWidth && nRowCount)) {
-        return;
-      }
-
-      pRowDst = gpRenderBackBufferBits + pRect->top * RENDERER_nWindowWidth + pRect->left;
-      do {
-        nRowCount--;
-        if (nFillWidth > 0) {
-          memset(pRowDst, (uint32_t)((uint32_t)((uint32_t)byPaletteHigh & 0xffffffu) << 8 | (uint32_t)(uint8_t)nPaletteIndex), nFillWidth);
+      {
+        uint8_t* pRowDst;
+        nTop = pRect->top;
+        nBottom = pRect->bottom;
+        if (!(nTop <= nBottom)) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x166);
+          exit(-1);
+        }
+        if (!(nLeft >= 0 && nRectLeft < RENDERER_nWindowWidth && nBottom >= 0 && nTop < RENDERER_nWindowHeight)) {
+          return;
+        }
+        if (nRectLeft < 0) {
+          pRect->left = 0;
+        }
+        if (nLeft >= RENDERER_nWindowWidth) {
+          pRect->right = RENDERER_nWindowWidth - 1;
+        }
+        if (nTop < 0) {
+          pRect->top = 0;
+        }
+        if (nBottom >= RENDERER_nWindowHeight) {
+          pRect->bottom = RENDERER_nWindowHeight - 1;
         }
 
-        pRowDst += RENDERER_nWindowWidth;
-      } while (nRowCount);
+        nFillWidth = pRect->right - pRect->left;
+        nRowCount = pRect->bottom - pRect->top;
+        if (!(nFillWidth && nRowCount)) {
+          return;
+        }
 
-      return;
-    } else {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x165);
-      exit(-1);
+        pRowDst = gpRenderBackBufferBits + pRect->top * RENDERER_nWindowWidth + pRect->left;
+        do {
+          nRowCount--;
+          if (nFillWidth > 0) {
+            memset(pRowDst, (uint32_t)((uint32_t)((uint32_t)byPaletteHigh & 0xffffffu) << 8 | (uint32_t)(uint8_t)nPaletteIndex), nFillWidth);
+          }
+
+          pRowDst += RENDERER_nWindowWidth;
+        } while (nRowCount);
+
+        return;
+      }
     }
+
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x165);
+    exit(-1);
 }
 
 void __fastcall DrawSolidSquare(POINT * pPoint, BYTE nSize, BYTE nPaletteIndex) {
@@ -2210,9 +2223,9 @@ BOOL __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
 
 // @sourcefile .\Src\ddSmack.cpp
 void __fastcall CloseSmacker(D2SmackerContextStrc * pContext) {
-    if (*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256)) {
-      D2_FREE_AT((void*)*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256), ".\\Src\\ddSmack.cpp", 0xf0);
-      memset(gaSmackerPaletteRemap + 256, 0, 4 * sizeof(gaSmackerPaletteRemap[0]));
+    if (gpSmackerImageBuffer) {
+      D2_FREE_AT(gpSmackerImageBuffer, ".\\Src\\ddSmack.cpp", 0xf0);
+      gpSmackerImageBuffer = 0;
     }
     if (!(pContext->eMode == 's' && pContext->hSmack)) {
       return;
@@ -2226,12 +2239,12 @@ void __fastcall CloseSmacker(D2SmackerContextStrc * pContext) {
 static void __stdcall RENDERER_DDRAW_BlitSmackerFrame(int32_t nHeight, int32_t nWidth, D2SmackerContextStrc * pDestRect) {
     uint8_t* pPixelSrc;
     int32_t nPixelCount;
-    if (!*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256)) {
+    if (!gpSmackerImageBuffer) {
       return;
     }
 
     uint8_t* nDestOffset = gpRenderBackBufferBits + (pDestRect->nY - nHeight) * RENDERER_nWindowWidth + pDestRect->nX;
-    uint8_t* pCurrentSrc = (uint8_t*)*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256);
+    uint8_t* pCurrentSrc = (uint8_t*)gpSmackerImageBuffer;
     while (nHeight) {
       nHeight--;
       if (nWidth) {
@@ -2274,7 +2287,7 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
       pBuffer->hSmack = nResult;
       if (nResult) {
         pImageBuffer = D2_ALLOC_AT(*(int*)((int)nResult + 4) * *(int*)((int)nResult + 8), ".\\Src\\ddSmack.cpp", 0x42);
-        *(uint32_t*)((char*)&gaSmackerPaletteRemap + 256) = (uint32_t)(uintptr_t)pImageBuffer;
+        gpSmackerImageBuffer = pImageBuffer;
         memset(pImageBuffer, 0, *(int*)((int)nResult + 4) * *(int*)((int)nResult + 8));
         SmackToBuffer(pBuffer->hSmack, 0, 0, *(uint32_t*)((int)nResult + 4), *(uint32_t*)((int)nResult + 8), pImageBuffer, 0);
         gbSmackerPaletteDirty = 0;
@@ -2282,13 +2295,13 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
       }
     } else {
       uint8_t bVar1;
-      *(uint32_t*)((char*)&gaSmackerPaletteRemap + 256) = (uint32_t)(uintptr_t)D2_ALLOC_AT(0x6db0, ".\\Src\\ddSmack.cpp", 0x53);
-      memset((void*)*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256), 0, 0x6db0);
+      gpSmackerImageBuffer = D2_ALLOC_AT(0x6db0, ".\\Src\\ddSmack.cpp", 0x53);
+      memset(gpSmackerImageBuffer, 0, 0x6db0);
       nVersion = 0;
       nFileSize = 0;
       bLoaded = Storm::Source::SFile::SFileLoadFileEx(nullptr, szSmacker, (void**)&nVersion, &nFileSize, 0, 3, 0);
       if (bLoaded && nVersion) {
-        bDecoded = Storm::Source::SBMP::SBmpDecodeImage(2, (void*)nVersion, nFileSize, aPaletteRgb, (uint8_t*)*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256), 0x6db0, &nImageHeight, &nImageWidth, &nBitDepth);
+        bDecoded = Storm::Source::SBMP::SBmpDecodeImage(2, (void*)nVersion, nFileSize, aPaletteRgb, (uint8_t*)gpSmackerImageBuffer, 0x6db0, &nImageHeight, &nImageWidth, &nBitDepth);
         Storm::Source::SMem::SMemFree((void*)nVersion, ".\\Src\\ddSmack.cpp", 0x78, 0);
         if (bDecoded && nImageHeight == 0x1d4 && nImageWidth == 0x3c && nBitDepth == 8) {
           nColorIdx = 0;
@@ -2302,9 +2315,9 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
         }
       }
     }
-    if (*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256)) {
-      D2_FREE_AT((void*)*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256), ".\\Src\\ddSmack.cpp", 0xf0);
-      memset(gaSmackerPaletteRemap + 256, 0, 4 * sizeof(gaSmackerPaletteRemap[0]));
+    if (gpSmackerImageBuffer) {
+      D2_FREE_AT(gpSmackerImageBuffer, ".\\Src\\ddSmack.cpp", 0xf0);
+      gpSmackerImageBuffer = 0;
     }
     if (!(pBuffer->eMode == 's' && pBuffer->hSmack)) {
       return;
@@ -2356,6 +2369,160 @@ void __fastcall PlayerSmacker(D2SmackerContextStrc * pContext) {
         return;
       }
     }
+}
+
+void __stdcall BINK_RenderVideoFrame() {
+    DDSURFACEDESC nDDSurfDescSize;
+    if (!gnGlideWindowHandle) {
+      return;
+    }
+
+    BinkDoFrame(gpBinkVideoDirectDraw);
+    if (!RENDERER_SelectedRendererCore) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x42);
+      exit(-1);
+    }
+
+    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&RENDERER_SelectedRendererCore->sLock);
+    nDDSurfDescSize.dwSize = 0x6c;
+    memset(&nDDSurfDescSize.dwFlags, 0, 0x68);
+    HRESULT hLockResult = gpDDrawPrimarySurface->lpVtbl->Lock(gpDDrawPrimarySurface, nullptr, &nDDSurfDescSize, 0x21, (HANDLE)0x0);
+    if (!hLockResult) {
+      BinkCopyToBuffer(gpBinkVideoDirectDraw, nDDSurfDescSize.lpSurface, nDDSurfDescSize.lPitch, *(uint32_t*)((int)gpBinkVideoDirectDraw + 4), gnBinkDDrawXOffset, gnBinkDDrawYOffset, gnBinkDDrawSurfaceType);
+      gpDDrawPrimarySurface->lpVtbl->Unlock(gpDDrawPrimarySurface, (LPVOID)0x0);
+    }
+
+    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&RENDERER_SelectedRendererCore->sLock);
+    if (*(int*)((int)gpBinkVideoDirectDraw + 0xc) == *(int*)((int)gpBinkVideoDirectDraw + 8)) {
+      g_bBinkDDrawVideoQuitRequested = 1;
+      return;
+    }
+
+    BinkNextFrame(gpBinkVideoDirectDraw);
+}
+
+void __fastcall BINK_PlayVideoFile(char * szFileName, int32_t nParam, fnBinkFrameCallback pfnFrameCallback) {
+    // Static local variables (originally global data)
+    static uint32_t gbBinkDDrawVideoExitRequested; D2_STATIC_GUARD_BSS(gbBinkDDrawVideoExitRequested, "D2DDraw::Renderer::DirectDraw::BINK_PlayVideoFile::gbBinkDDrawVideoExitRequested");
+    static unsigned int gdwBinkVideoLastClickTick; D2_STATIC_GUARD_BSS(gdwBinkVideoLastClickTick, "D2DDraw::Renderer::DirectDraw::BINK_PlayVideoFile::gdwBinkVideoLastClickTick");
+
+    DWORD dwCurrentTick;
+    int nBinkWaitResult;
+    uint32_t nOpenFlags;
+    tagMSG msgPeek;
+    HANDLE pFileHandle;
+    int bClickedToSkip;
+    bClickedToSkip = 0;
+    g_bBinkDDrawVideoQuitRequested = 0;
+    if (!(!gpBinkVideoDirectDraw && !gnRenderState)) {
+      return;
+    }
+
+    gnBinkDDrawSurfaceType = BinkDDSurfaceType(gpDDrawPrimarySurface);
+    BinkSetSoundSystem(BinkOpenDirectSound, 0);
+    uint32_t nFileOpenMode;
+    nFileOpenMode = 4;
+    BOOL bDirectCommand;
+    bDirectCommand = Fog::Source::SFile::GetUseDirectCommand();
+    if (bDirectCommand) {
+      nFileOpenMode = 5;
+    }
+
+    Storm::Source::SFile::SFileOpenFileEx(nullptr, szFileName, nFileOpenMode, &pFileHandle);
+    if (pFileHandle) {
+      DWORD dwStartTick;
+      nOpenFlags = 0x800000;
+      switch (nParam) {
+        case 1:
+          {
+            nOpenFlags = 0x30800000;
+            break;
+          }
+        case 2:
+          {
+            nOpenFlags = 0x10800000;
+            break;
+          }
+        case 3:
+          {
+            nOpenFlags = 0x40800000;
+            break;
+          }
+      }
+
+      gpBinkVideoDirectDraw = (void*)BinkOpen(pFileHandle, nOpenFlags);
+      if (gpBinkVideoDirectDraw) {
+        gnBinkDDrawXOffset = (uint32_t)(RENDERER_nWindowWidth - *(int*)gpBinkVideoDirectDraw) >> 1;
+        if (gnBinkDDrawXOffset & 3) {
+          gnBinkDDrawXOffset = (gnBinkDDrawXOffset | 3) + 1;
+        }
+
+        gnBinkDDrawYOffset = (uint32_t)(RENDERER_nWindowHeight - *(int*)((int)gpBinkVideoDirectDraw + 4)) >> 1;
+        dwStartTick = GetTickCount();
+        while ((!g_bBinkDDrawVideoQuitRequested || (dwCurrentTick = GetTickCount() , dwCurrentTick < dwStartTick + 500)) && !gnRenderState) {
+          if (pfnFrameCallback) {
+            (*pfnFrameCallback)();
+          }
+          if (bClickedToSkip) {
+            break;
+          }
+
+          /* UINT wRemoveMsg for PeekMessageA */ /* UINT wMsgFilterMax for PeekMessageA */ /* UINT wMsgFilterMin for PeekMessageA */ /* HWND hWnd for PeekMessageA */ /* LPMSG lpMsg for PeekMessageA */ bDirectCommand = PeekMessageA(&msgPeek, (HWND)0x0, 0, 0, 1);
+          if (bDirectCommand) {
+            if (msgPeek.message <= 0x201) {
+              if (msgPeek.message == 0x201) {
+                goto request_skip;
+              }
+              if (msgPeek.message != 0x12) {
+                if (msgPeek.message == 0x102) {
+                  goto request_skip;
+                }
+              } else {
+                g_bBinkDDrawVideoQuitRequested = 1;
+                gbBinkDDrawVideoExitRequested = 1;
+              }
+            } else {
+              if (!(msgPeek.message != 0x204 && msgPeek.message != 0x207)) {
+                request_skip:
+                bClickedToSkip = 1;
+                gdwBinkVideoLastClickTick = GetTickCount();
+              }
+            }
+
+            /* MSG * lpMsg for TranslateMessage */ TranslateMessage(&msgPeek);
+            /* MSG * lpMsg for DispatchMessageA */ DispatchMessageA(&msgPeek);
+          } else {
+            nBinkWaitResult = BinkWait(gpBinkVideoDirectDraw);
+            if (!nBinkWaitResult) {
+              BINK_RenderVideoFrame();
+            } else {
+              /* DWORD dwMilliseconds for Sleep */ Sleep(1);
+            }
+          }
+        }
+
+        if (gpBinkVideoDirectDraw) {
+          D2Sound::Src::D2SoundSmp::SOUNDSMP_SetGlobalVolume(0);
+          BinkClose(gpBinkVideoDirectDraw);
+          /* HANDLE hObject for CloseHandle */ CloseHandle(pFileHandle);
+          D2Sound::Src::D2SoundSmp::SOUNDSMP_SetGlobalVolume(0xff);
+          gpBinkVideoDirectDraw = 0;
+        }
+        if (!gbBinkDDrawVideoExitRequested) {
+          return;
+        }
+
+        exit(-1);
+      }
+
+      /* HANDLE hObject for CloseHandle */ CloseHandle(pFileHandle);
+    }
+    if (!gpBinkVideoDirectDraw) {
+      return;
+    }
+
+    BinkClose(gpBinkVideoDirectDraw);
+    gpBinkVideoDirectDraw = 0;
 }
 
 } // namespace D2DDraw::Renderer::DirectDraw

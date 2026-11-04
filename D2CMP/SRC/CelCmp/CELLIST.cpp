@@ -3,6 +3,7 @@
 #include "D2CMP/SRC/CelCmp/CELLIST.h"
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Storm/H/stpl.h"
+#include "Storm/Source/SFile.h"
 #include "Storm/Source/SMem.h"
 #include "globals/globals.h"
 #include "D2CMP/SRC/CelCmp/TCELENTRY.h"
@@ -20,9 +21,9 @@ void __thiscall Destructor(::CELLIST * pThis) {
       int* pBackLink;
       pBackLink = (int*)D2_StormNextLink(pTVar1, -1);
       *pBackLink = (int)nNext;
-      pTVar1->m_prevlink->m_next = pThis->m_frames.m_terminator.m_next;
+      pTVar1->m_prevlink->m_next = pTVar1->m_next;
       pTVar1->m_prevlink = 0;
-      pThis->m_frames.m_terminator.m_next = 0;
+      pTVar1->m_next = 0;
     }
 
     pThis->Destructor();
@@ -36,9 +37,9 @@ void __thiscall Destructor(::CELLIST * pThis) {
       int* pBackLink;
       pBackLink = (int*)D2_StormNextLink(pTVar1, -1);
       *pBackLink = (int)nNext;
-      pTVar1->m_prevlink->m_next = pThis->m_frames.m_terminator.m_next;
+      pTVar1->m_prevlink->m_next = pTVar1->m_next;
       pTVar1->m_prevlink = 0;
-      pThis->m_frames.m_terminator.m_next = 0;
+      pTVar1->m_next = 0;
     }
 
     pThis->Destructor();
@@ -62,7 +63,7 @@ void __thiscall Destructor(::CELLIST * pThis) {
     pThis->nDirections = pSource->nDirections;
     TSLink<::TCELENTRY>* pTVar1 = &pThis->m_frames.m_terminator;
     pTVar1->m_prevlink = 0;
-    pThis->m_frames.m_terminator.m_next = 0;
+    pTVar1->m_next = 0;
     int nAllocPolicy = pSource->m_frames.m_linkoffset;
     pTVar1->m_prevlink = pTVar1;
     pThis->m_frames.m_linkoffset = nAllocPolicy;

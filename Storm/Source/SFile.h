@@ -7,6 +7,8 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
+#include "D2Hell/D2Hell.h"
+#include "Storm/H/stpl.h"
 
 // Forward declarations
 struct D2ArchiveStrc;
@@ -222,11 +224,6 @@ struct IDirectSoundBufferVtbl {
     /* 0x50 */ HRESULT (__stdcall *Restore)(void *);
 };
 
-struct StormLinkStrc {
-    /* 0x00 */ struct StormLinkStrc * pPrevLink; // points at the previous node's link, or at the list head's own link
-    /* 0x04 */ int pNext; // pointer to the NEXT ITEM (not its link); end of list is ~(int)&headLink, i.e. negative
-};
-
 struct __attribute__((packed)) StormEventRecStrc {
     /* 0x00 */ StormLinkStrc link;
     /* 0x08 */ HANDLE hEvent;
@@ -431,10 +428,7 @@ void __thiscall SFILE_RemoveFileRecordFromList4(int32_t pThis, int * pLink);
 uint32_t __thiscall SFILE_CompareFileRecord5(int32_t pThis, int32_t pLink);
 uint32_t __thiscall SFILE_CompareFileRecord6(int32_t pThis, int32_t pRecord);
 void __thiscall SFILE_RemoveFileRecordFromList5(int32_t pThis, int * pNode);
-void __fastcall SFILE_CloseStreamHandle1(struct D2StormListHead * pThis);
 void __fastcall SFILE_CloseStreamHandle2(struct D2StormListHead * pThis);
-void __fastcall SFILE_CloseStreamHandle3(struct D2StormListHead * pThis);
-void __fastcall SFILE_CloseStreamHandle4(struct D2StormListHead * pThis);
 void __fastcall SFILE_CloseStreamHandle5(struct D2StormListHead * pThis);
 // @sourcefile .\SOURCE\SFILE.CPP
 void __fastcall SFILE_FreeArchiveRecord(struct D2ArchiveStrc * pArchive);

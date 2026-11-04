@@ -477,8 +477,7 @@ static int32_t GFXUTIL_GetBodyLocWeaponToken(int32_t nBodyLoc, D2UnitStrc * pUni
     D2UnitStrc* pWeaponUnit;
     D2UnitStrc* pQuiverItem;
     D2ItemsTxt* pItemsTxt;
-    eD2States eHolyShieldState;
-    BOOL BVar1;
+    BOOL eHolyShieldState;
     D2InventoryStrc* pInventory;
     uint32_t nWeaponClass2;
     if (nBodyLoc >= 0x10) {
@@ -508,9 +507,9 @@ static int32_t GFXUTIL_GetBodyLocWeaponToken(int32_t nBodyLoc, D2UnitStrc * pUni
         holy_shield_or_none:
         if (nBodyLoc == 7) {
           eHolyShieldState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_holyshield);
-          if (eHolyShieldState != STATE_none) {
-            BVar1 = D2Common::INVENTORY::Inventory::INVENTORY_GetEquippedShield(pInventory, nullptr);
-            if (BVar1) {
+          if (eHolyShieldState) {
+            eHolyShieldState = D2Common::INVENTORY::Inventory::INVENTORY_GetEquippedShield(pInventory, nullptr);
+            if (eHolyShieldState) {
               return 0x20687368;
             }
           }
@@ -1334,13 +1333,8 @@ static BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAn
       exit(-1);
     }
 
-    nComponentIdx = 0;
     pCofEntry = pCofDataBase + 0x1c;
-    if (*pCofDataBase <= 0) {
-      return 0;
-    }
-
-    do {
+    for (nComponentIdx = 0; nComponentIdx < *pCofDataBase; nComponentIdx++) {
       if (*pCofEntry >= 0x10) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x3fb);
         exit(-1);
@@ -1393,9 +1387,8 @@ static BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAn
         }
       }
 
-      nComponentIdx++;
       pCofEntry += 9;
-    } while (nComponentIdx < *pCofDataBase);
+    }
 
     return 0;
 }

@@ -58,7 +58,6 @@
 #include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/GAME/Game/Game.data.h"
-#include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillAss.h"
 #include "D2Launch/MainMenus.h"
 
@@ -1028,7 +1027,16 @@ void __fastcall SPELLSEL_DrawSkillRequirementTooltip(short * pwSkillId, int32_t 
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszTooltip, pWszStr);
     pWszStr = D2Lang::StrTable::strtable::GetLocaleString(0xf9d);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszTooltip, pWszStr);
-    /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ memset(wszNumBuf, 0, 10 * sizeof(wszNumBuf[0]));
+    /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wszNumBuf[0] = L'\0';
+    wszNumBuf[1] = 0;
+    wszNumBuf[2] = 0;
+    wszNumBuf[3] = 0;
+    wszNumBuf[4] = 0;
+    wszNumBuf[5] = 0;
+    wszNumBuf[6] = 0;
+    wszNumBuf[7] = 0;
+    wszNumBuf[8] = 0;
+    wszNumBuf[9] = 0;
     wsprintfA(szNumBuf, "%i", nChargeCount);
     D2Lang::UTF8_ConvertToWideChar(wszNumBuf, szNumBuf, 9);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszTooltip, wszNumBuf);
@@ -1281,8 +1289,8 @@ int __stdcall SPELLSEL_IsWaitingForSkill() {
       return BooleanWaitingForSkillingMaybe;
     }
 
-    eD2States eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_uninterruptable);
-    if (eState == STATE_none) {
+    BOOL eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_uninterruptable);
+    if (!eState) {
       return BooleanWaitingForSkillingMaybe;
     }
 
@@ -2102,7 +2110,16 @@ void __stdcall SKILLTREE_DrawSkillNode(eD2Skills eSkill, D2SkillsTxt * pSkillTxt
       return;
     }
 
-    /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ memset(wszLevelBuf, 0, 10 * sizeof(wszLevelBuf[0]));
+    /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wszLevelBuf[0] = L'\0';
+    wszLevelBuf[1] = 0;
+    wszLevelBuf[2] = 0;
+    wszLevelBuf[3] = 0;
+    wszLevelBuf[4] = 0;
+    wszLevelBuf[5] = 0;
+    wszLevelBuf[6] = 0;
+    wszLevelBuf[7] = 0;
+    wszLevelBuf[8] = 0;
+    wszLevelBuf[9] = 0;
     wsprintfA(szLevelBuf, "%d", nDisplayLevel);
     D2Lang::UTF8_ConvertToWideChar(wszLevelBuf, szLevelBuf, 9);
     if (nDisplayLevel > 9) {
@@ -2126,8 +2143,7 @@ void __stdcall SKILLTREE_DrawSkillNode(eD2Skills eSkill, D2SkillsTxt * pSkillTxt
 }
 
 void __stdcall DRAW_UI_SkillSkillsWithAvailableSkills() {
-    eD2States eState;
-    BOOL BVar1;
+    BOOL eState;
     D2SkillStrc* pSkill;
     int nSkillDescIdx;
     int nSkillIconState;
@@ -2144,13 +2160,22 @@ void __stdcall DRAW_UI_SkillSkillsWithAvailableSkills() {
     }
 
     uint32_t nClassId = pUnit->nClassId;
-    memset(wszNewSkillsBuf, 0, 10 * sizeof(wszNewSkillsBuf[0]));
+    wszNewSkillsBuf[0] = L'\0';
+    wszNewSkillsBuf[1] = 0;
+    wszNewSkillsBuf[2] = 0;
+    wszNewSkillsBuf[3] = 0;
+    wszNewSkillsBuf[4] = 0;
+    wszNewSkillsBuf[5] = 0;
+    wszNewSkillsBuf[6] = 0;
+    wszNewSkillsBuf[7] = 0;
+    wszNewSkillsBuf[8] = 0;
+    wszNewSkillsBuf[9] = 0;
     uint32_t nClassId2 = nClassId;
     int32_t nNewSkills = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_newskills, 0);
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szNewSkillsBuf, "%i", nNewSkills);
     D2Lang::UTF8_ConvertToWideChar(wszNewSkillsBuf, szNewSkillsBuf, 9);
     D2UnitStrc* pUnit2 = UNIT::Player::GetPlayerUnit_UI();
-    if ((!pUnit2 || (eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit2, STATE_uninterruptable) , eState == STATE_none)) && !BooleanWaitingForSkillingMaybe) {
+    if ((!pUnit2 || (eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit2, STATE_uninterruptable) , !eState)) && !BooleanWaitingForSkillingMaybe) {
       nNewSkills = 0;
     } else {
       nNewSkills = 1;
@@ -2172,8 +2197,8 @@ void __stdcall DRAW_UI_SkillSkillsWithAvailableSkills() {
         nSkillDescIdx = (int)pSkillTxt->skilldesc;
         D2SkillDescTxt* pSkillDescTxt;
         if ((pSkillDescTxt = nSkillDescIdx >= 0 && nSkillDescIdx < sgptDataTable->nTxtSkillDescSize ? sgptDataTable->pTxtSkillDesc + nSkillDescIdx : nullptr) && nSkillTreeActiveTab == pSkillDescTxt->skillpage) {
-          BVar1 = D2Common::Skills::SkillCalculateIfWeCanSkillThisSkill(pUnit, eSkill);
-          if (BVar1) {
+          eState = D2Common::Skills::SkillCalculateIfWeCanSkillThisSkill(pUnit, eSkill);
+          if (eState) {
             bCanSkill = 1;
             nCurLevel = 0;
             pCurSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnit, eSkill, -1);
@@ -2249,7 +2274,16 @@ void __stdcall SKILLTREE_DrawAllSkillNodes() {
 
     D2UnitStrc* pUnitCopy = pUnit;
     if (!gnSpellSelSkillTreeOffsetY) {
-      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ memset(wszLevelBuf, 0, 10 * sizeof(wszLevelBuf[0]));
+      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wszLevelBuf[0] = L'\0';
+      wszLevelBuf[1] = 0;
+      wszLevelBuf[2] = 0;
+      wszLevelBuf[3] = 0;
+      wszLevelBuf[4] = 0;
+      wszLevelBuf[5] = 0;
+      wszLevelBuf[6] = 0;
+      wszLevelBuf[7] = 0;
+      wszLevelBuf[8] = 0;
+      wszLevelBuf[9] = 0;
       wsprintfA(szLevelBuf, "%d", 0);
       D2Lang::UTF8_ConvertToWideChar(wszLevelBuf, szLevelBuf, 9);
       ui::UI_DrawTextCentered(ScreenSizeX - gnPanelOffsetX - 0x41, gnPanelOffsetY - 400 + ScreenSizeY, ScreenSizeX - gnPanelOffsetX - 0x19, wszLevelBuf, 0);

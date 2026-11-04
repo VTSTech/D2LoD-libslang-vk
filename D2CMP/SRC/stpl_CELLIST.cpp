@@ -15,6 +15,7 @@
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Storm/H/CCritSect.h"
+#include "Storm/Source/SFile.h"
 #include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
@@ -168,7 +169,7 @@ template<> void TSHashTable<CELLIST, HASHKEY_NONE>::Unlink(::CELLIST * pNode) {
     *pBackLink = (int)nFirstEntry;
     pTVar1->m_prevlink->m_next = pNode->m_linktofull.m_next;
     pTVar1->m_prevlink = 0;
-    pNode->m_linktofull.m_next = 0;
+    pTVar1->m_next = 0;
 }
 
 template<> ::CELLIST * TSExplicitList<CELLIST, -572662307>::RawNext(::CELLIST * pNode) {
@@ -238,7 +239,7 @@ void __thiscall SetLinkOffset_Unreferenced(TSExplicitList<::CELLIST, -572662307>
 template<> TSExplicitList<::CELLIST, -572662307>* TSExplicitList<CELLIST, -572662307>::CopyConstructor(TSExplicitList<::CELLIST, -572662307>* pSource) {
     uint32_t* pLink = (uint32_t*)&this->m_terminator;
     *pLink = 0;
-    this->m_terminator.m_next = 0;
+    pLink[1] = 0;
     int nSrcVal = pSource->m_linkoffset;
     *pLink = (uint32_t)pLink;
     this->m_linkoffset = nSrcVal;
@@ -289,7 +290,7 @@ template<> void TSHashObject<CELLIST, HASHKEY_NONE>::Destructor() {
     *pBackLink = (int)nEntry;
     pTVar1->m_prevlink->m_next = this->m_linktoslot.m_next;
     pTVar1->m_prevlink = 0;
-    this->m_linktoslot.m_next = 0;
+    pTVar1->m_next = 0;
 }
 
 template<> void TSExplicitList<CELLIST, -572662307>::LinkNode(::CELLIST * pNode, uint32_t nLinkType, ::CELLIST * pExisting) {
@@ -385,8 +386,8 @@ template<> void TSExplicitList<CELLIST, -572662307>::UnlinkAll() {
     uint32_t uLinkOffset;
     while (true) {
       int* pBackLink;
-      nBucketIdx = this->m_terminator.m_next;
-      if (nBucketIdx <= 0) {
+      nBucketIdx = this->m_terminator.m_next > 0 ? this->m_terminator.m_next : 0;
+      if (!nBucketIdx) {
         break;
       }
 
@@ -415,8 +416,8 @@ template<> void TSExplicitList<TSHashObjectChunk<CELLIST, HASHKEY_NONE>, 16>::Un
     uint32_t uLinkOffset;
     while (true) {
       int* pBackLink;
-      nBucketIdx = this->m_terminator.m_next;
-      if (nBucketIdx <= 0) {
+      nBucketIdx = this->m_terminator.m_next > 0 ? this->m_terminator.m_next : 0;
+      if (!nBucketIdx) {
         break;
       }
 
@@ -515,9 +516,9 @@ void __thiscall Destructor_Unreferenced(TSExplicitList<::CELLIST, -572662307>* p
 
     pBackLink = (int*)D2_StormNextLink(pTVar1, -1);
     *pBackLink = (int)nNext;
-    pTVar1->m_prevlink->m_next = pThis->m_terminator.m_next;
+    pTVar1->m_prevlink->m_next = pTVar1->m_next;
     pTVar1->m_prevlink = 0;
-    pThis->m_terminator.m_next = 0;
+    pTVar1->m_next = 0;
 }
 
 template<> void TSExplicitList<TSHashObjectChunk<CELLIST, HASHKEY_NONE>, 16>::Destructor() {
@@ -539,7 +540,7 @@ template<> void TSExplicitList<TSHashObjectChunk<CELLIST, HASHKEY_NONE>, 16>::De
     *pBackLink = (int)nNext;
     pTVar1->m_prevlink->m_next = this->m_terminator.m_next;
     pTVar1->m_prevlink = 0;
-    this->m_terminator.m_next = 0;
+    pTVar1->m_next = 0;
 }
 
 template<> void TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0>::DeleteUnlock(::CELLIST * pNode, int32_t nLockedHandle) {
@@ -569,9 +570,9 @@ template<> void TSExplicitList<TSHashObjectChunk<CELLIST, HASHKEY_NONE>, 16>::Cl
       if (nNext) {
         pBackLink = (uint32_t*)D2_StormNextLink(pTVar1, -1);
         *pBackLink = (uint32_t)(uintptr_t)nNext;
-        pTVar1->m_prevlink->m_next = pObject->m_link.m_next;
+        pTVar1->m_prevlink->m_next = pTVar1->m_next;
         pTVar1->m_prevlink = 0;
-        pObject->m_link.m_next = 0;
+        pTVar1->m_next = 0;
       }
 
       ((TSGrowableArray<::CELLIST>*)pObject)->Destructor();
@@ -579,7 +580,7 @@ template<> void TSExplicitList<TSHashObjectChunk<CELLIST, HASHKEY_NONE>, 16>::Cl
     }
 }
 
-template<> TSHashTable<::CELLIST, HASHKEY_NONE>* TSHashTable<CELLIST, HASHKEY_NONE>::Constructor() {
+template<> __attribute__((noinline)) inline TSHashTable<::CELLIST, HASHKEY_NONE>* TSHashTable<CELLIST, HASHKEY_NONE>::Constructor() {
     this->pVtable = (TSHashTable<::CELLIST, HASHKEY_NONE>::Vtable*)(void*)TSHashTable<::CELLIST, HASHKEY_NONE>::vftable;
     TSExplicitList<::CELLIST, -572662307>* pBucketSlot = &this->tFullList;
     this->tFullList.m_terminator.m_next = 0;
@@ -808,7 +809,7 @@ template<> void TSExplicitList<TSHashObjectChunk<CELLIST, HASHKEY_NONE>, 16>::As
 template<> TSExplicitList<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>, 16>* TSExplicitList<TSHashObjectChunk<CELLIST, HASHKEY_NONE>, 16>::CopyConstructor(TSExplicitList<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>, 16>* pSource) {
     TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>* pTVar1 = &this->m_terminator;
     pTVar1->m_prevlink = 0;
-    this->m_terminator.m_next = 0;
+    pTVar1->m_next = 0;
     int pNodeVal = pSource->m_linkoffset;
     pTVar1->m_prevlink = pTVar1;
     this->m_linkoffset = pNodeVal;

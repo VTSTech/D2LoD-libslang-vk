@@ -33,7 +33,7 @@ namespace D2Client::Archive {
 
 // Writes formatted text to a file handle using wvsprintfA. Variadic printf-style format arguments follow pFormat on the stack. Epilogue is a bare RET (no stack cleanup by callee), so the convention is __cdecl, not __stdcall.
 BOOL ARCHIVE_WriteFormattedText(HANDLE hFile, char * pFormat, ...) {
-    bool _bResult;
+    int _bResult;
     va_list __va;
     va_start(__va, pFormat);
     bool bResult;
@@ -160,8 +160,8 @@ void __fastcall ARCHIVE_ClearList(int32_t nList) {
     int* pNode;
     while (true) {
       int nNext;
-      pNode = *(int**)(nList + 8);
-      if ((int)pNode <= 0) {
+      pNode = (int)*(int**)(nList + 8) > 0 ? *(int**)(nList + 8) : 0;
+      if (!pNode) {
         break;
       }
 

@@ -938,10 +938,10 @@ void __fastcall NET_D2GS_SERVER_Send_0x22_UpdateItemSkill(D2ClientStrc * pClient
     D2UnitStrc* pUnit;
     pUnit = UNIT::SUnit::FindUnitFromTable(Clients::CLIENT_GetGame(pClient), (eD2UnitType)eUnitType, nUnitGUID);
     if (pUnit) {
-      eD2States unitState;
+      BOOL unitState;
       unitState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_playerbody);
       packet.bBody = 1;
-      if (unitState != STATE_none) {
+      if (unitState) {
         goto send_packet;
       }
     }
@@ -973,49 +973,51 @@ void __fastcall NET_D2GS_SERVER_Send_0x94_SETALLSKILLS(D2ClientStrc * pClient, D
     uint8_t* pSkillEntryBuf;
     size_t nAllocSize;
     D2SkillListStrc* pSkillsList;
-    if (pUnit) {
+    if (!pUnit) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x55a);
+      exit(-1);
+    }
+
+    {
       D2SkillStrc* pSkill;
       pSkillsList = pUnit->pSkillsList;
-      if (pSkillsList) {
-        pSkill = D2Common::Skills::GetFirstSkill(pSkillsList);
-        nSkillCountIter = 0;
-        while (pSkill) {
-          pSkill = D2Common::Skills::GetNext(pSkill);
-          nSkillCountIter++;
-        }
-
-        pGame = Clients::CLIENT_GetGame(pClient);
-        nAllocSize = nSkillCountIter * 3 + 6;
-        pPktBuf = (uint8_t*)D2_ALLOC_POOL_AT(pGame->pMemoryPool, nAllocSize, ".\\GAME\\SCmd.cpp", 0x568);
-        pSkillEntryBuf = pPktBuf + 6;
-        *pPktBuf = 0x94;
-        if (!(nSkillCountIter < 0x100)) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x56e);
-          exit(-1);
-        }
-
-        pPktBuf[1] = (uint8_t)nSkillCountIter;
-        *(int*)(pPktBuf + 2) = pUnit->nUnitGUID;
-        pSkill = D2Common::Skills::GetFirstSkill(pSkillsList);
-        while (pSkill) {
-          nSkillCountIter = D2Common::Skills::GetSkillLevel(pUnit, pSkill, 0);
-          pSkillEntryBuf[2] = (uint8_t)nSkillCountIter;
-          eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\GAME\\SCmd.cpp", 0x576);
-          *(short int*)pSkillEntryBuf = (short int)eSkillId;
-          pSkill = D2Common::Skills::GetNext(pSkill);
-          pSkillEntryBuf += 3;
-        }
-
-        SCMD_QueuePacketForClient(pPktBuf, nAllocSize, pClient);
-        D2_FREE_POOL_AT(pGame->pMemoryPool, pPktBuf, ".\\GAME\\SCmd.cpp", 0x57e);
-        return;
-      } else {
+      if (!pSkillsList) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x55d);
         exit(-1);
       }
-    } else {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x55a);
-      exit(-1);
+
+      pSkill = D2Common::Skills::GetFirstSkill(pSkillsList);
+      nSkillCountIter = 0;
+      while (pSkill) {
+        pSkill = D2Common::Skills::GetNext(pSkill);
+        nSkillCountIter++;
+      }
+
+      pGame = Clients::CLIENT_GetGame(pClient);
+      nAllocSize = nSkillCountIter * 3 + 6;
+      pPktBuf = (uint8_t*)D2_ALLOC_POOL_AT(pGame->pMemoryPool, nAllocSize, ".\\GAME\\SCmd.cpp", 0x568);
+      pSkillEntryBuf = pPktBuf + 6;
+      *pPktBuf = 0x94;
+      if (!(nSkillCountIter < 0x100)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x56e);
+        exit(-1);
+      }
+
+      pPktBuf[1] = (uint8_t)nSkillCountIter;
+      *(int*)(pPktBuf + 2) = pUnit->nUnitGUID;
+      pSkill = D2Common::Skills::GetFirstSkill(pSkillsList);
+      while (pSkill) {
+        nSkillCountIter = D2Common::Skills::GetSkillLevel(pUnit, pSkill, 0);
+        pSkillEntryBuf[2] = (uint8_t)nSkillCountIter;
+        eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\GAME\\SCmd.cpp", 0x576);
+        *(short int*)pSkillEntryBuf = (short int)eSkillId;
+        pSkill = D2Common::Skills::GetNext(pSkill);
+        pSkillEntryBuf += 3;
+      }
+
+      SCMD_QueuePacketForClient(pPktBuf, nAllocSize, pClient);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pPktBuf, ".\\GAME\\SCmd.cpp", 0x57e);
+      return;
     }
 }
 
@@ -1330,21 +1332,27 @@ static BOOL __stdcall SCMD_DispatchUnitPartyData(D2UnitStrc * pUnit, int32_t nUn
       exit(-1);
     } else {
       int32_t nResult;
-      if (!pUnit2) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x713);
-        exit(-1);
-      }
-      if (pUnit2->eUnitType != UNIT_PLAYER) {
-        if (pUnit2->eUnitType != UNIT_MONSTER) {
-          return 0;
+      if (pUnit2) {
+        switch (pUnit2->eUnitType) {
+          case UNIT_PLAYER:
+            {
+              nPartyDataChanged = PLAYERDATA_AllocPartyData(pUnit2, nUnitLife, eLevel, pUnit);
+              return nPartyDataChanged;
+            }
+          case UNIT_MONSTER:
+            {
+              nResult = SCMD_CheckMonsterPositionDesync(pUnit, pUnit2, nUnitLife);
+              return nResult;
+            }
+          default:
+            {
+              return 0;
+            }
         }
-
-        nResult = SCMD_CheckMonsterPositionDesync(pUnit, pUnit2, nUnitLife);
-        return nResult;
       }
 
-      nPartyDataChanged = PLAYERDATA_AllocPartyData(pUnit2, nUnitLife, eLevel, pUnit);
-      return nPartyDataChanged;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x713);
+      exit(-1);
     }
 }
 
@@ -1861,11 +1869,9 @@ void __fastcall NET_D2GS_SERVER_Send_0x60_SETWARPDEST(D2ClientStrc * pClient, D2
 }
 
 void __fastcall NET_D2GS_SERVER_Send_0x61_CanGoToAct(D2ClientStrc * pClient, uint8_t nAct) {
-    uint8_t aPacketFrame[4];
-    *(uint16_t*)((char*)&aPacketFrame + 2) = (uint16_t)((uint32_t)pClient >> 0x10);
-    aPacketFrame[1] = nAct;
-    aPacketFrame[0] = 0x61;
-    SCMD_QueuePacketForClient(aPacketFrame, 2, pClient);
+    uint16_t uStack_6 = (uint16_t)((uint32_t)pClient >> 0x10);
+    D2GSPacketSrv0x61 aPacketFrame = (D2GSPacketSrv0x61)(uint16_t)((uint16_t)(uint8_t)nAct << 8 | (uint16_t)(uint8_t)0x61);
+    SCMD_QueuePacketForClient(&aPacketFrame.nId, 2, pClient);
 }
 
 void __fastcall NET_D2GS_SERVER_Send_0x63_WAYPOINTLIST(D2ClientStrc * pClient, D2GSPacketSrv0x63 * pWaypointData) {
@@ -2039,11 +2045,11 @@ void __fastcall NET_D2GS_SERVER_Send_0x88_Unused(D2ClientStrc * pClient, char * 
     SCMD_QueuePacketForClient(&sPacket.nPacketId, wDataLen + 0xb, pClient);
 }
 
-void __fastcall NET_D2GS_SERVER_Send_0x8B_PlayerRelationship(D2ClientStrc * pClient, uint32_t dwTargetArg, uint8_t byTypeArg) {
+void __fastcall NET_D2GS_SERVER_Send_0x8B_PlayerRelationship(D2ClientStrc * pClient, uint32_t dwTargetArg, bool byTypeArg) {
     D2GSPacketSrv0x8B byPacketId;
     byPacketId.nUnitGUID = dwTargetArg;
     byPacketId.nPacketId = 0x8b;
-    byPacketId.bInParty = (bool)byTypeArg;
+    byPacketId.bInParty = byTypeArg;
     SCMD_QueuePacketForClient(&byPacketId.nPacketId, 6, pClient);
 }
 
@@ -2124,21 +2130,21 @@ void __fastcall NET_D2GS_SERVER_Send_0x8E_LINKDEADBODY_Argument(::SGAMEDATA * pG
     SCMD_QueuePacketForClient(pPacketBuf, nSize, pClient);
 }
 
-void __fastcall NET_D2GS_SERVER_Send_0x8E_CorpseAssign_Sender(::SGAMEDATA * pGame, int32_t nUnitGUID, int32_t nCorpseGUID, uint8_t byCorpseFlagArg) {
+void __fastcall NET_D2GS_SERVER_Send_0x8E_CorpseAssign_Sender(::SGAMEDATA * pGame, int32_t nUnitGUID, int32_t nCorpseGUID, bool byCorpseFlagArg) {
     D2GSPacketSrv0x8E sPacket;
     sPacket.nOwnerGUID = nUnitGUID;
     sPacket.nCorpseGUID = nCorpseGUID;
-    sPacket.nAssign = (bool)byCorpseFlagArg;
+    sPacket.nAssign = byCorpseFlagArg;
     sPacket.nPacketId = 0x8e;
     UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)NET_D2GS_SERVER_Send_0x8E_LINKDEADBODY_Argument, &sPacket);
 }
 
-void __fastcall NET_D2GS_SERVER_Send_0x8E_CorpseAssign(D2ClientStrc * pClient, uint32_t dwUnitGUID_param, uint32_t dwCorpseGUIDArg, uint8_t byCorpseFlagArg) {
+void __fastcall NET_D2GS_SERVER_Send_0x8E_CorpseAssign(D2ClientStrc * pClient, uint32_t dwUnitGUID_param, uint32_t dwCorpseGUIDArg, bool byCorpseFlagArg) {
     D2GSPacketSrv0x8E aPacket;
     aPacket.nCorpseGUID = dwCorpseGUIDArg;
     aPacket.nOwnerGUID = dwUnitGUID_param;
     aPacket.nPacketId = 0x8e;
-    aPacket.nAssign = (bool)byCorpseFlagArg;
+    aPacket.nAssign = byCorpseFlagArg;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 10, pClient);
 }
 

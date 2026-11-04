@@ -478,7 +478,7 @@ void INVENTORY_AppendItemToList(D2UnitStrc * pItem, D2InventoryStrc * pInventory
     if (pPrevLastItem) {
       if (pPrevLastItem->eUnitType == UNIT_ITEM && (pLastItemData = pPrevLastItem->pUnitData.pUnitDataItem , pLastItemData != 0) && pLastItemData != (D2UnitDataItemStrc*)-92) {
         pLastItemData->sInvNode.pNextItem = pItem;
-        pItemData->sInvNode.pPrevItem = pInventoryStrc->pLastItem;
+        pDVar1->pPrevItem = pInventoryStrc->pLastItem;
         pInventoryStrc->pLastItem = pItem;
         pDVar1->pInventory = pInventoryStrc;
         return;
@@ -487,7 +487,7 @@ void INVENTORY_AppendItemToList(D2UnitStrc * pItem, D2InventoryStrc * pInventory
       pInventoryStrc->pFirstItem = pItem;
     }
 
-    pItemData->sInvNode.pPrevItem = pInventoryStrc->pLastItem;
+    pDVar1->pPrevItem = pInventoryStrc->pLastItem;
     pInventoryStrc->pLastItem = pItem;
     pDVar1->pInventory = pInventoryStrc;
 }
@@ -618,7 +618,7 @@ static BOOL __stdcall INVENTORY_PlaceItemInGrid(int32_t nnX, int32_t nnY, int32_
           if (pOwner) {
             if (pOwner->eUnitType == UNIT_ITEM && (pDVar3 = pOwner->pUnitData.pUnitDataPlayer , pDVar3 != 0) && pDVar3 != (D2UnitDataPlayerStrc*)-92) {
               pDVar3->pInteractedNPCs[1] = (D2UnitDataPlayerInteractedNPCStrc*)pUnit;
-              pDVar2->sInvNode.pPrevItem = pInventory->pLastItem;
+              pDVar1->pPrevItem = pInventory->pLastItem;
               pInventory->pLastItem = pUnit;
               pDVar1->pInventory = pInventory;
               goto insert_in_page_list;
@@ -627,7 +627,7 @@ static BOOL __stdcall INVENTORY_PlaceItemInGrid(int32_t nnX, int32_t nnY, int32_
             pInventory->pFirstItem = pUnit;
           }
 
-          pDVar2->sInvNode.pPrevItem = pInventory->pLastItem;
+          pDVar1->pPrevItem = pInventory->pLastItem;
           pInventory->pLastItem = pUnit;
           pDVar1->pInventory = pInventory;
         }
@@ -708,7 +708,7 @@ BOOL __stdcall PutItemInInventory(D2InventoryStrc * pInventory, D2UnitStrc * pUn
           if (pDVar3) {
             if (pDVar3->eUnitType == UNIT_ITEM && (pDVar4 = pDVar3->pUnitData.pUnitDataPlayer , pDVar4 != 0) && pDVar4 != (D2UnitDataPlayerStrc*)-92) {
               pDVar4->pInteractedNPCs[1] = (D2UnitDataPlayerInteractedNPCStrc*)pUnit;
-              pDVar2->sInvNode.pPrevItem = pInventory->pLastItem;
+              pDVar1->pPrevItem = pInventory->pLastItem;
               pInventory->pLastItem = pUnit;
               pDVar1->pInventory = pInventory;
               goto set_unit_position;
@@ -717,7 +717,7 @@ BOOL __stdcall PutItemInInventory(D2InventoryStrc * pInventory, D2UnitStrc * pUn
             pInventory->pFirstItem = pUnit;
           }
 
-          pDVar2->sInvNode.pPrevItem = pInventory->pLastItem;
+          pDVar1->pPrevItem = pInventory->pLastItem;
           pInventory->pLastItem = pUnit;
           pDVar1->pInventory = pInventory;
         }
@@ -1148,7 +1148,7 @@ BOOL __stdcall INVENTORY_AutoPlaceItemInGrid(D2InventoryStrc * pInventory, D2Uni
 // Checks whether an item (pUnit) can be placed at grid position (nGridX, nGridY) on page eInvPage in pInventory without colliding with existing items. Reads item dimensions via ITEM_GetItemsTxt_nWidthAndHeight, reinitializes the grid layout, then walks the item's footprint cells. Writes collision count to *pnParam; returns 1 if all cells are clear, 0 if any cell is occupied or inputs are invalid.
 // @sourcefile .\INVENTORY\Inventory.cpp
 BOOL __stdcall INVENTORY_CheckGridCollisions(D2InventoryStrc * pInventory, D2UnitStrc * pUnit, int32_t nGridX, int32_t nGridY, int32_t eInvPage, D2UnitStrc * * ppCollidedItemOut, int * pnCollidingItemCount, uint32_t nPage) {
-    bool _bResult;
+    int _bResult;
     bool bResult;
     int pInventorySaved;
     D2GridScreenCoordinates sGridDims;
@@ -4877,7 +4877,7 @@ static BOOL __stdcall INVENTORY_CanTransferMercItems(D2UnitStrc * pUnit, D2Inven
 // Determines whether two units can complete a merc-item trade by making temporary inventory copies. Allocates two scratch inventories from pMemory, copies each unit's inventory into them, then calls INVENTORY_CanTransferMercItems in both directions to find which unit is the buyer. Sets *pbMercIsBuyer accordingly (false = pUnit2 buys, true = pUnit buys). Frees both scratch inventories before returning. Returns 1 if a valid transfer direction was found, 0 otherwise.
 // @sourcefile .\INVENTORY\Inventory.cpp
 BOOL __stdcall CreateCopyOfInventoryForTrading(D2PoolManagerStrc * pMemory, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, BOOL * pbMercIsBuyer) {
-    bool _bSuccess;
+    int _bSuccess;
     bool bSuccess;
     D2InventoryStrc* pInventory2;
     D2PoolManagerStrc* pMemory_00 = pMemory;

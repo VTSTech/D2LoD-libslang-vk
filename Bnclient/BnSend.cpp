@@ -802,15 +802,12 @@ void __fastcall BNSEND_StoreReadUserData(uint8_t * pbReadData, size_t nSize) {
 
 // @sourcefile .\BnSend.cpp
 uint32_t __fastcall NET_SID_CLIENT_Send_0x26_ReadUserData(char * szAccount, uint32_t nCount, uint32_t nRequestId, char * * pszKeys) {
+    uint32_t nIdx;
     uint32_t nLen = Storm::Source::SSTR::SStrLen(szAccount);
     int nStringsSize = nLen + 1;
-    if (nCount > 0) {
-      uint32_t nIdx = 0;
-      do {
-        nLen = Storm::Source::SSTR::SStrLen(pszKeys[nIdx]);
-        nIdx++;
-        nStringsSize = nStringsSize + 1 + nLen;
-      } while (nIdx < nCount);
+    for (nIdx = 0; nIdx < nCount; nIdx++) {
+      nLen = Storm::Source::SSTR::SStrLen(pszKeys[nIdx]);
+      nStringsSize = nStringsSize + 1 + nLen;
     }
 
     char* pPacketBuf = (char*)D2_ALLOC_AT(nStringsSize + 0xc, ".\\BnSend.cpp", 0x506);
@@ -914,7 +911,7 @@ BOOL __fastcall NET_SID_CLIENT_Send_0x5A_ResetPassword(char * szText1, char * sz
 
     nLen1 = Storm::Source::SSTR::SStrLen(szText1);
     _Size_00 = nLen1 + 1;
-    if (_Size_00 > 0x100) {
+    if (!(_Size_00 <= 0x100)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x581);
       exit(-1);
     }
@@ -955,7 +952,7 @@ BOOL __fastcall NET_SID_CLIENT_Send_0x5B_ChangeEmail(char * szText1, char * szTe
 
     nLen1 = Storm::Source::SSTR::SStrLen(szText1);
     _Size = nLen1 + 1;
-    if (_Size > 0x100) {
+    if (!(_Size <= 0x100)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5a4);
       exit(-1);
     }
@@ -963,7 +960,7 @@ BOOL __fastcall NET_SID_CLIENT_Send_0x5B_ChangeEmail(char * szText1, char * szTe
     memcpy(szPacketBuf, szText1, _Size);
     nLen2 = Storm::Source::SSTR::SStrLen(szText2);
     _Size_00 = nLen2 + 1;
-    if (_Size_00 > 0x100) {
+    if (!(_Size_00 <= 0x100)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5ac);
       exit(-1);
     }
@@ -2258,12 +2255,13 @@ int __fastcall BNNEWS_AllocateNewsEntry(uint32_t * pNewsTable) {
     return nNewCount * 0x408 + pNewsTable[2];
 }
 
-void __thiscall BNNEWS_EnsureCapacity(uint32_t * pNewsTable, int dwAdditionalCount) {
-    if (!(pNewsTable[1] + dwAdditionalCount > *pNewsTable)) {
+void __thiscall BNNEWS_EnsureCapacity(D2BnNewsTableStrc * pNewsTable, uint32_t dwAdditionalCount) {
+    uint32_t nRequired = pNewsTable->nCount + dwAdditionalCount;
+    if (nRequired <= pNewsTable->nCapacity) {
       return;
     }
 
-    BNNEWS_ReallocateNewsTable((D2BnNewsTableStrc*)pNewsTable, pNewsTable[1] + dwAdditionalCount);
+    BNNEWS_ReallocateNewsTable(pNewsTable, nRequired);
 }
 
 void __thiscall BNNEWS_SetNewsEntryCount(D2BnNewsTableStrc * pNewsTable, uint32_t dwNewCount) {
@@ -3132,12 +3130,13 @@ int __fastcall BNSEND_SendString(char * szString) {
     return 1;
 }
 
-void __fastcall NET_SID_CLIENT_Send_0x33_GetFileTime(char * szText, uint32_t dwRequestId) {
+BOOL __fastcall NET_SID_CLIENT_Send_0x33_GetFileTime(char * szText, uint32_t dwRequestId) {
     SID_C2S_GetFileTime dwFileTimeParam;
     dwFileTimeParam.dwRequestId = dwRequestId;
     dwFileTimeParam.dwUnknown = 0;
     uint32_t nTextLen = Storm::Source::SSTR::SStrCopy(dwFileTimeParam.szFilename, szText, 0x104);
     NET_SID_CLIENT_Send(0x33, (char*)&dwFileTimeParam, (uintptr_t)&dwFileTimeParam + (nTextLen - (uintptr_t)&dwFileTimeParam) + 9);
+    return 1;
 }
 
 void StaticInit_gpBNetNewsCache() {

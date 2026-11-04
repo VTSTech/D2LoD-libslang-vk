@@ -15,6 +15,7 @@
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Storm/H/CCritSect.h"
+#include "Storm/Source/SFile.h"
 #include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
@@ -30,7 +31,7 @@ template<> TSLink<::TCELENTRY>* TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Link(::
     return &ptr->m_link;
 }
 
-template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::LinkNode(::TCELENTRY * ptr, uint32_t nLinkType, ::TCELENTRY * pExisting) {
+template<> __attribute__((noinline)) inline void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::LinkNode(::TCELENTRY * ptr, uint32_t nLinkType, ::TCELENTRY * pExisting) {
     int nLinkBase;
     uint32_t pTmp;
     ::TCELENTRY* pEntry = ptr;
@@ -124,8 +125,8 @@ template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::UnlinkAll() {
     int* pNode;
     while (true) {
       int nNext;
-      pNode = (int*)this->m_terminator.m_next;
-      if ((int)pNode <= 0) {
+      pNode = (int)(int*)this->m_terminator.m_next > 0 ? (int*)this->m_terminator.m_next : 0;
+      if (!pNode) {
         break;
       }
 
@@ -159,13 +160,13 @@ template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Destructor() {
     *pBackLink = (int)nNext;
     pTVar1->m_prevlink->m_next = this->m_terminator.m_next;
     pTVar1->m_prevlink = 0;
-    this->m_terminator.m_next = 0;
+    pTVar1->m_next = 0;
 }
 
 template<> TSList<::TCELENTRY, TSGetLink<TCELENTRY>>* TSList<TCELENTRY, TSGetLink<TCELENTRY>>::CopyConstructor(TSList<::TCELENTRY, TSGetLink<TCELENTRY>>* pSource) {
     TSLink<::TCELENTRY>* pTVar1 = &this->m_terminator;
     pTVar1->m_prevlink = 0;
-    this->m_terminator.m_next = 0;
+    pTVar1->m_next = 0;
     int uPrevHead = pSource->m_linkoffset;
     pTVar1->m_prevlink = pTVar1;
     this->m_linkoffset = uPrevHead;

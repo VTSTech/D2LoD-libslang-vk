@@ -121,12 +121,17 @@ static void __fastcall MONSTER_EquipFromClassTable(D2UnitStrc * pUnit) {
       sEquipEntry.dwItemCode = *pEquipTableEntry;
       *(uint32_t*)((char*)&sEquipEntry + 4) = pEquipTableEntry[1];
       pItemsTxt = D2Common::DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(sEquipEntry.dwItemCode, &bNormalCode);
-      if (pGame->nDifficulty != 1) {
-        if (pGame->nDifficulty == 2) {
-          sEquipEntry.dwItemCode = pItemsTxt->dwUltraCode;
-        }
-      } else {
-        sEquipEntry.dwItemCode = pItemsTxt->dwUberCode;
+      switch (pGame->nDifficulty) {
+        case 1:
+          {
+            sEquipEntry.dwItemCode = pItemsTxt->dwUberCode;
+            break;
+          }
+        case 2:
+          {
+            sEquipEntry.dwItemCode = pItemsTxt->dwUltraCode;
+            break;
+          }
       }
 
       MONSTER_CreateAndEquipItem(pGame, pUnit, &sEquipEntry, nMonsterLevel, QUALITY_MAGIC);
@@ -743,7 +748,7 @@ static void MONSTER_SpawnMinionGroup(D2UnknownCreateMonsterStrc * pGame, D2UnitS
 
 // Server-side monster spawner. Validates classId against MonStats/MonStats2 tables, derives the spawn collision mask from MonStats2.spawnCol, and computes the legal spawn rectangle (from the supplied coord-list rect or the room's own coords, transformed room->world). Searches outward in a spiraling ring (radius step 3, up to nSpawnRadius*3), advancing a walk cursor via the room RNG, testing each candidate with PtInRect, optional grid-zone match, MONSTERAI_CanSpawnMonsterAt and a width collision check; certain class ranges use FindDiagonalNonCollisionCoords instead. On finding a free tile it creates the UNIT_MONSTER (unless flag bit0 set), bumps the region spawn count, assigns AI param, sets alignment from MonStats.Align, applies special umods (unless bit1), attaches quest hooks (MONSTER_OnCreateAttachQuests) and spawns the minion group (unless bit6). Returns the new unit, a sentinel (flag bit0), or NULL on failure.
 D2UnitStrc * __fastcall CreateMonster(D2UnknownCreateMonsterStrc * pMonsterSpawnData) {
-    eCollisionFlags _eCollisionMask;
+    int _eCollisionMask;
     int iVar1;
     int iVar2;
     eCollisionFlags eCollisionResult;

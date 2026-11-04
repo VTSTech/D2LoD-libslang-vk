@@ -51,7 +51,6 @@
 #include "D2Game/Quests/QUESTS.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
 #include "D2Game/SKILLS/SkillsServer.h"
-#include "D2Game/Save.h"
 #include "D2Game/UNIT/Item.h"
 #include "D2Game/UNIT/Party.h"
 #include "D2Game/UNIT/PlayerList.h"
@@ -481,15 +480,21 @@ static void __stdcall CLIENT_AddUnitToProximitySortedList(int32_t nX, D2UnitStrc
     }
     if (!nPrevSlot && pnManhattanDist < pNodes->nDistance) {
       uint32_t* pSlotEntry;
-      if (pClient->nPacketBuffer.nCount != 1) {
-        pSlotEntry = (uint32_t*)&pNodes[nFreeSlot].pUnit;
-        pSlotEntry[2] = pNodes->nNext;
-        *pSlotEntry = (uint32_t)(uintptr_t)pNodes->pUnit;
-        pSlotEntry[1] = pNodes->nDistance;
+      switch (pClient->nPacketBuffer.nCount) {
+        default:
+          {
+            pSlotEntry = (uint32_t*)&pNodes[nFreeSlot].pUnit;
+            pSlotEntry[2] = pNodes->nNext;
+            *pSlotEntry = (uint32_t)(uintptr_t)pNodes->pUnit;
+            pSlotEntry[1] = pNodes->nDistance;
+          }
+        case 1:
+          {
+            pNodes->nNext = nFreeSlot;
+            nFreeSlot = 0;
+            break;
+          }
       }
-
-      pNodes->nNext = nFreeSlot;
-      nFreeSlot = 0;
     } else {
       pNodes[nFreeSlot].nNext = pNodes[nPrevSlot].nNext;
       pNodes[nPrevSlot].nNext = nFreeSlot;
@@ -1145,7 +1150,7 @@ void __fastcall SendPongByClientId(uint32_t nClientId, int32_t dwSendTick, int32
 }
 
 BOOL __fastcall NET_D2GS_SERVER_GetPlayerNameByClientId(int32_t nClientId, char * szPlayerName) {
-    bool _bNotFound;
+    int _bNotFound;
     bool bNotFound;
     if (!gQServerClientTablesInitialized) {
       return 1;
@@ -1190,7 +1195,7 @@ int32_t __fastcall GetClientId(char * szCharName) {
 }
 
 BOOL __fastcall SERVER_IsPlayerCharacterInGame(char * szCharName, char * szCharNameOut) {
-    bool _bNotFound;
+    int _bNotFound;
     bool bNotFound;
     _bNotFound = 1;
     uint16_t uVar1 = Fog::SMem::HashForName(szCharName);
@@ -1923,7 +1928,7 @@ void __fastcall CleanUp(D2ClientStrc * pClient, uint8_t * pBuffer) {
     char aHeadAppearance[16];
     char aBodyAppearance2[16];
     uint16_t wCharStatusOut;
-    Save::SAVEFILE_WriteEncodedInt14Bit(pBuffer, 0xe);
+    Fog::Save::SAVEFILE_WriteEncodedInt14Bit(pBuffer, 0xe);
     D2UnitStrc* pUnit = CLIENTS_GetControlUnit(pClient, 0);
     if (pUnit) {
       uint8_t bLevel;
@@ -1996,8 +2001,8 @@ void __fastcall CleanUp(D2ClientStrc * pClient, uint8_t * pBuffer) {
         nCharStatus = wCharStatusOut & 0xfff7;
       }
 
-      Save::SAVEFILE_WriteEncodedInt14Bit(pBuffer + 0x1a, nCharStatus);
-      Save::SAVEFILE_WriteEncodedInt14Bit(pBuffer + 0x1c, (uint32_t)(uint16_t)pClient->wGuildFlags);
+      Fog::Save::SAVEFILE_WriteEncodedInt14Bit(pBuffer + 0x1a, nCharStatus);
+      Fog::Save::SAVEFILE_WriteEncodedInt14Bit(pBuffer + 0x1c, (uint32_t)(uint16_t)pClient->wGuildFlags);
       bLevel = pClient->nGuildInfo[0];
       bGuildInfo1 = pClient->nGuildInfo[1];
       bGuildInfo2 = pClient->nGuildInfo[2];

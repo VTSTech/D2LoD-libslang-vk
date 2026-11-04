@@ -10,15 +10,12 @@
 namespace Fog::Save {
 
 DWORD __stdcall CalculateChecksum(uint8_t * pSaveFile, int32_t nSize) {
+    int nIndex;
     DWORD dwChecksum = 0;
-    int nIndex = 0;
-    if (nSize > 0) {
+    for (nIndex = 0; nIndex < nSize; nIndex++) {
       uint8_t* pbCur;
-      do {
-        pbCur = pSaveFile + nIndex;
-        nIndex++;
-        dwChecksum = (uint32_t)*pbCur + (uint32_t)((int)dwChecksum < 0) + dwChecksum * 2;
-      } while (nIndex < nSize);
+      pbCur = pSaveFile + nIndex;
+      dwChecksum = (uint32_t)*pbCur + (uint32_t)((int)dwChecksum < 0) + dwChecksum * 2;
     }
 
     return dwChecksum;
@@ -293,6 +290,27 @@ int32_t __stdcall SAVE_CalculateChecksum(uint8_t * pbData, int32_t nSize) {
     }
 
     return nChecksum;
+}
+
+int __stdcall SAVEFILE_ReadEncodedInt14Bit(uint8_t * pBuffer) {
+    return (pBuffer[1] & 0x7f) * 0x80 + (*pBuffer & 0x7f);
+}
+
+void __stdcall SAVEFILE_WriteEncodedInt14Bit(uint8_t * pBuffer, uint32_t nValue) {
+    *pBuffer = (uint8_t)nValue | 0x80;
+    pBuffer[1] = (uint8_t)(nValue >> 7) | 0x80;
+}
+
+int __stdcall SAVEFILE_ReadEncodedInt32Bit(uint8_t * pBuffer) {
+    return (((uint32_t)pBuffer[3] * 0xff + (uint32_t)pBuffer[2]) * 0xff + (uint32_t)pBuffer[1]) * 0xff - 0xfe0200 + (uint32_t)*pBuffer;
+}
+
+uint32_t __stdcall FOG_ParseStringValue(char * szText, uint32_t nNumber) {
+    *szText = (char)(nNumber / 0xff) + (char)nNumber + '\x01';
+    szText[1] = (char)(nNumber / 0xff % 0xff) + '\x01';
+    szText[2] = (char)(nNumber / 0xfe01 % 0xff) + '\x01';
+    szText[3] = (char)(nNumber / 0xfd02ff % 0xff) + '\x01';
+    return (int)(nNumber / 0xfd02ff / 0xff);
 }
 
 } // namespace Fog::Save

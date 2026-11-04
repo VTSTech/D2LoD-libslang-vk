@@ -170,7 +170,11 @@ bool __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
     _3rdparty::crashy::Printf(pReport, "<Inspector.PrimaryAssignment>%s\n", g_szPrimaryAssignment);
     _3rdparty::crashy::Printf(pReport, "<Inspector.Assignments>%s\n", g_szAssignments);
     BOOL bIsAdmin = 0;
-    memset(sNtAuthority.Value, 0, 5 * sizeof(sNtAuthority.Value[0]));
+    sNtAuthority.Value[0] = '\0';
+    sNtAuthority.Value[1] = '\0';
+    sNtAuthority.Value[2] = '\0';
+    sNtAuthority.Value[3] = '\0';
+    sNtAuthority.Value[4] = '\0';
     sNtAuthority.Value[5] = '\x05';
     BOOL BVar3 = AllocateAndInitializeSid(&sNtAuthority, '\x02', 0x20, 0x220, 0, 0, 0, 0, 0, 0, &pAdminSid);
     if (BVar3) {
@@ -271,17 +275,24 @@ void __stdcall InitializeSystemInfo() {
       }
 
       fGameVersion = fMajorVersionF + fMinorVersionFrac / 100.0;
-      if (osVersionInfo.dwPlatformId != 2) {
-        g_eOSType = 0;
-      } else {
-        g_eOSType = 1;
-        if (osVersionInfo.dwMajorVersion >= 5) {
-          if (osVersionInfo.dwMinorVersion >= 2) {
-            g_eOSType = 4;
-          } else {
-            g_eOSType = 3 - (uint32_t)!osVersionInfo.dwMinorVersion;
+      switch (osVersionInfo.dwPlatformId) {
+        case 2:
+          {
+            g_eOSType = 1;
+            if (osVersionInfo.dwMajorVersion >= 5) {
+              if (osVersionInfo.dwMinorVersion >= 2) {
+                g_eOSType = 4;
+              } else {
+                g_eOSType = 3 - (uint32_t)!osVersionInfo.dwMinorVersion;
+              }
+            }
+
+            break;
           }
-        }
+        default:
+          {
+            g_eOSType = 0;
+          }
       }
     }
 

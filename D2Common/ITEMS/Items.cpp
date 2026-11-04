@@ -63,6 +63,7 @@
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/Inv.h"
+#include "D2Client/UNIT/PlrSkills.h"
 #include "D2Common/D2UnitDataItemStrc.h"
 #include "D2Game/GAME/SCmd.h"
 #include "D2Game/Monster/AI/AI.h"
@@ -2264,8 +2265,8 @@ int __stdcall ITEM_CalcWeaponAttackSpeed(D2UnitStrc * pUnit, D2UnitStrc * pItem)
 
 // Checks whether all charged-skill stats (stat 0xCC) on pItem are at full charges. Returns true if the item has at least one charged stat and all are fully charged. Optionally writes a 4-byte result struct to pOutFullyCharged: byte[0]=hasChargedSkills, byte[1..3]=false if any charge is depleted.
 BOOL __stdcall ITEMS_CheckChargedSkillFullyCharged(D2UnitStrc * pItem, bool * pOutFullyCharged) {
-    bool _bResult;
-    bool _bHasCharged;
+    int _bResult;
+    int _bHasCharged;
     bool bHasCharged;
     bool bResult;
     D2StatStrc aChargeStatBuf[64];
@@ -3691,7 +3692,7 @@ eD2PlayerClassIDDWORD __stdcall TXT_ItemTypes_GetClass(D2UnitStrc * pUnit) {
 // Resolves the display/transform color (palette index) of an item and writes the raw transform-color code to *pColor. Priority order: (1) owner-unit states whose itemtype matches the item (states.txt itemtrans) override the color; otherwise by quality: magic/rare scan the item's prefix/suffix and automagic affixes for the first MagicAffix with a valid transformcolor; set uses SetItems.txt chrtransform/invtransform; unique uses UniqueItems.txt chrtransform/invtransform; normal socketed items derive color from the first socketed gem (Gems.txt). nTransType selects char (0) vs inventory (nonzero) palette via PALETTE_GetItemPalette, combining the item's bTransform/bInvTrans base. Returns the palette pointer/index, or 0 if no color applies. __stdcall.
 uint8_t * __stdcall GetItemColor(D2UnitStrc * pUnit, D2UnitStrc * pItem, char * pColor, int32_t nTransType) {
     uint8_t cTransColor;
-    eD2States eUnitState;
+    BOOL eUnitState;
     uint32_t bIsType;
     D2ItemsTxt* pItemsTxt;
     eD2ItemQuality nQuality;
@@ -3716,7 +3717,7 @@ uint8_t * __stdcall GetItemColor(D2UnitStrc * pUnit, D2UnitStrc * pItem, char * 
         do {
           eStateId = (eD2States)(short int)sgptDataTable->pStatesItemTypesDataTbl[nStateOrAffixIdx];
           eUnitState = DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, eStateId);
-          pDVar1 = eUnitState != STATE_none && (int)eStateId >= 0 && (int)eStateId < sgptDataTable->nTxtStatesSize ? sgptDataTable->pTxtStates + eStateId : nullptr;
+          pDVar1 = eUnitState && (int)eStateId >= 0 && (int)eStateId < sgptDataTable->nTxtStatesSize ? sgptDataTable->pTxtStates + eStateId : nullptr;
           if (pDVar1 && pDVar1->itemtrans < 0x15) {
             bIsType = ITEMS_IsA(pItem, (int)pDVar1->itemtype);
             if (bIsType) {
@@ -4830,7 +4831,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
             Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_mindamage, nClassId, 0);
           }
           if (pItemsTxt->nMaxMisDam != '\0') {
-            nClassId = (int)((uint32_t)(uint8_t)pItemsTxt->nMinMisDam * 3) >> 2;
+            nClassId = (int)((uint32_t)pItemsTxt->nMinMisDam * 3) >> 2;
             if (!nClassId) {
               nClassId = 1;
             }
@@ -4849,7 +4850,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
           Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_maxdamage, (uint32_t)pItemsTxt->n2HandMaxDam, 0);
           Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_mindamage, (uint32_t)pItemsTxt->n2HandMinDam, 0);
           if (pItemsTxt->nMaxMisDam != '\0') {
-            Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_mindamage, (uint32_t)(uint8_t)pItemsTxt->nMinMisDam, 0);
+            Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_mindamage, (uint32_t)pItemsTxt->nMinMisDam, 0);
             nTmpVal2 = (uint32_t)(uint8_t)pItemsTxt->nMaxMisDam;
             Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_maxdamage, nTmpVal2, 0);
           }
@@ -5774,8 +5775,8 @@ void __stdcall ITEM_GetTxtItemTypes_BodyLoc1andBodyLoc2(D2UnitStrc * pUnit, eD2B
 
 // Checks whether pCharUnit meets the strength/dexterity/level/class requirements to equip item pUnit. Reads Items.txt reqstr/reqdex, applies the item_req_percent stat modifier and the -10 ethereal reduction, compares against the character's strength/dexterity (optionally subtracting socketed-item contributions when bIncludeSocketedStats) and required level (ITEM_CalcRequiredLevel vs unit level). Optional out-params pnStrength/pnDexterity/pnLevel each receive the per-requirement pass flag (1/0). Also enforces class restriction (item type class vs char class, with Assassin/Druid hand-to-hand and Barbarian exceptions) and book-quantity. Returns 1 if fully equippable, else 0.
 BOOL __stdcall ITEM_CheckEquipRequirements(D2UnitStrc * pUnit, D2UnitStrc * pCharUnit, int32_t bIncludeSocketedStats, int * pnStrength, int * pnDexterity, int * pnLevel) {
-    bool _bStrOk;
-    bool _bDexOk;
+    int _bStrOk;
+    int _bDexOk;
     eD2ItemTypes eItemType;
     eD2PlayerClassIDDWORD eVar1;
     int nAdjustedReq;

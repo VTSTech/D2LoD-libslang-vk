@@ -106,7 +106,7 @@ static char gszSrcFileSpriteCache[22] = {
     'p',
     '\x00'
 }; D2_STATIC_GUARD(gszSrcFileSpriteCache, "gszSrcFileSpriteCache");
-static uint32_t bUseCompressedData = 0x1; D2_STATIC_GUARD(bUseCompressedData, "bUseCompressedData");
+static BOOL bUseCompressedData = 0x1; D2_STATIC_GUARD(bUseCompressedData, "bUseCompressedData");
 static void* gpszExtDcc = (void*)&gszExtDcc; D2_STATIC_GUARD(gpszExtDcc, "gpszExtDcc");
 static void* gpszExtDc6 = (void*)&gszExtDc6; D2_STATIC_GUARD(gpszExtDc6, "gpszExtDc6");
 static D2LRUCacheStrc gSpriteCacheLru = {}; D2_STATIC_GUARD(gSpriteCacheLru, "gSpriteCacheLru");
@@ -453,56 +453,64 @@ static BOOL SPRITECACHE_FindOrLoad(char * szText, D2GfxDataStrc * pGfxData) {
         }
 
         *pWriteCursor = '\0';
-        if (pGfxData->eUnitType != UNIT_MONSTER) {
-          if (pGfxData->eUnitType == UNIT_OBJECT) {
-            if (pGfxData->nClassId == 0x156) {
-              return 1;
-            }
-            if (pGfxData->nClassId == 0x233) {
-              return 1;
-            }
-          }
-        } else {
-          nSpriteCmpId = pGfxData->nClassId;
-          if (nSpriteCmpId <= 0x209) {
-            if (nSpriteCmpId == 0x209) {
-              return 1;
-            }
-
-            switch (nSpriteCmpId) {
-              case 0xf2:
-
-              case 0xfb:
-
-              case 0x16f:
-                return 1;
-              case 0xf3:
-
-              case 0x11c:
-
-              case 0x14d:
-                check_death_mode:
-                if (!pGfxData->nMode) {
+        switch (pGfxData->eUnitType) {
+          case UNIT_MONSTER:
+            {
+              nSpriteCmpId = pGfxData->nClassId;
+              if (nSpriteCmpId <= 0x209) {
+                if (nSpriteCmpId == 0x209) {
                   return 1;
                 }
+
+                switch (nSpriteCmpId) {
+                  case 0xf2:
+
+                  case 0xfb:
+
+                  case 0x16f:
+                    return 1;
+                  case 0xf3:
+
+                  case 0x11c:
+
+                  case 0x14d:
+                    check_death_mode:
+                    if (!pGfxData->nMode) {
+                      return 1;
+                    }
+                }
+              } else {
+                switch (nSpriteCmpId) {
+                  case 0x220:
+
+                  case 0x22f:
+
+                  case 0x23a:
+
+                  case 0x2c1:
+
+                  case 0x2c5:
+                    goto check_death_mode;
+                  case 0x2c0:
+                    return 1;
+                }
+              }
+
+              break;
             }
-          } else {
-            switch (nSpriteCmpId) {
-              case 0x220:
-
-              case 0x22f:
-
-              case 0x23a:
-
-              case 0x2c1:
-
-              case 0x2c5:
-                goto check_death_mode;
-              case 0x2c0:
+          case UNIT_OBJECT:
+            {
+              if (pGfxData->nClassId == 0x156) {
                 return 1;
+              }
+              if (pGfxData->nClassId == 0x233) {
+                return 1;
+              }
+
+              break;
             }
-          }
         }
+
         if (bUseCompressedData) {
           pGfxData->dwRenderFlags |= 1;
         }
@@ -523,7 +531,7 @@ static BOOL __stdcall SPRITECACHE_LoadDC6(char * szText, D2GfxDataStrc * pGfxDat
     uint8_t byTokenChar;
     int nClassId;
     char* szFormat;
-    int bUseCompressed;
+    BOOL bUseCompressed;
     bUseCompressed = bUseCompressedData;
     if (*szText == '\0') {
       *szText2 = '\0';
@@ -718,7 +726,6 @@ static D2CelFileCacheEntryStrc * __stdcall SPRITECACHE_LoadDCC(char * szText, ch
     int iVar1;
     DWORD nLastPaletteEntry;
     uint32_t nFrameIdx;
-    uint32_t* pPaletteCursor;
     D2CelFileCacheEntryStrc* pCacheEntry;
     char cFilenameChar;
     *szText = '\0';
@@ -796,14 +803,8 @@ static D2CelFileCacheEntryStrc * __stdcall SPRITECACHE_LoadDCC(char * szText, ch
             exit(-1);
           }
 
-          nFrameIdx = 0;
-          if (pCacheEntry->nDirections > 0) {
-            pPaletteCursor = pCacheEntry->adwDirectionOffsets;
-            do {
-              *pPaletteCursor = gdwSpriteCacheThreshold[pCacheEntry->nFramesPerDirection * nFrameIdx];
-              nFrameIdx++;
-              pPaletteCursor++;
-            } while (nFrameIdx < pCacheEntry->nDirections);
+          for (nFrameIdx = 0; nFrameIdx < pCacheEntry->nDirections; nFrameIdx++) {
+            pCacheEntry->adwDirectionOffsets[nFrameIdx] = gdwSpriteCacheThreshold[pCacheEntry->nFramesPerDirection * nFrameIdx];
           }
 
           pCacheEntry->adwDirectionOffsets[pCacheEntry->nDirections] = nLastPaletteEntry;

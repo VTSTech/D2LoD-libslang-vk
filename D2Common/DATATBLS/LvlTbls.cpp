@@ -381,12 +381,12 @@ int32_t __stdcall TXT_Levels_GetMonLvlForDifficulty(eD2LevelId eLevel, eD2Diffic
 // Scans the LevelDefs table for levels with the Portal flag set, counts them, allocates a server array (gpPortalLevelArray) of that size, and fills it with the level indices. Used at startup to build the list of portal-accessible levels. Halts if write index exceeds the counted portal level count.
 // @sourcefile .\DATATBLS\LvlTbls.cpp
 static void LVLTBLS_BuildPortalLevelArray(D2LevelDefsTxt * pTxtLevelDefs) {
-    int* pPortalFieldCur;
     int nLevelsRemaining = sgptDataTable->nTxtLevelsSize;
     nPortalLevelCount = 0;
     void* pPortalLevelIds = gpPortalLevelArray;
     uint32_t nPortalLevels = nPortalLevelCount;
     if (nLevelsRemaining > 0) {
+      int* pPortalFieldCur;
       pPortalFieldCur = &pTxtLevelDefs->Portal;
       nPortalLevels = 0;
       do {
@@ -407,15 +407,9 @@ static void LVLTBLS_BuildPortalLevelArray(D2LevelDefsTxt * pTxtLevelDefs) {
       }
     }
 
-    nLevelsRemaining = 0;
     int nPortalWriteIdx = 0;
-    if (sgptDataTable->nTxtLevelsSize <= 0) {
-      return;
-    }
-
-    pPortalFieldCur = &pTxtLevelDefs->Portal;
-    do {
-      if (*pPortalFieldCur) {
+    for (nLevelsRemaining = 0; nLevelsRemaining < sgptDataTable->nTxtLevelsSize; nLevelsRemaining++) {
+      if (pTxtLevelDefs[nLevelsRemaining].Portal) {
         if (nPortalWriteIdx >= (int)nPortalLevels) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x177);
           exit(-1);
@@ -424,10 +418,7 @@ static void LVLTBLS_BuildPortalLevelArray(D2LevelDefsTxt * pTxtLevelDefs) {
         *(int*)((int)pPortalLevelIds + nPortalWriteIdx * 4) = nLevelsRemaining;
         nPortalWriteIdx++;
       }
-
-      nLevelsRemaining++;
-      pPortalFieldCur += 0x27;
-    } while (nLevelsRemaining < sgptDataTable->nTxtLevelsSize);
+    }
 }
 
 eD2LevelId * __fastcall GetPortalLevelArrayFromPortalFlags(uint32_t * pnPortalLevelCount) {
@@ -746,20 +737,12 @@ D2LvlPrestTxt * __stdcall TXT_LvlPrest_GetLine(int32_t nLvlPrestId) {
 }
 
 D2LvlPrestTxt * __fastcall TXT_LvlPrest_FindLineByLevelId(eD2LevelId eLevel) {
-    int i = 0;
-    if (sgptDataTable->nTxtLvlPrestSize <= 0) {
-      return nullptr;
-    }
-
-    eD2LevelId* pLevelIdField = &sgtDataTable.pTxtLvlPrest->LevelId;
-    do {
-      if (*pLevelIdField == eLevel) {
+    int i;
+    for (i = 0; i < sgptDataTable->nTxtLvlPrestSize; i++) {
+      if (sgtDataTable.pTxtLvlPrest[i].LevelId == eLevel) {
         return sgtDataTable.pTxtLvlPrest + i;
       }
-
-      i++;
-      pLevelIdField += 0x6c;
-    } while (i < sgptDataTable->nTxtLvlPrestSize);
+    }
 
     return nullptr;
 }
@@ -794,26 +777,28 @@ D2LvlWarpTxt * __fastcall TXT_LvlWarp_Setup(int32_t nWarpId, uint8_t nDirection)
     int nWarpIdx;
     uint8_t byDirection;
     if (pTxtLvlWarp) {
-      D2LvlWarpTxt* pWarp;
-      nWarpIdx = 0;
-      pWarp = pTxtLvlWarp;
-      if (nTxtLvlWarpSize > 0) {
-        do {
-          if (pWarp->Id == nWarpId && (nDirection == 0x62 || (byDirection = (uint8_t)pWarp->Direction , byDirection == 0x62) || byDirection == nDirection)) {
-            return pWarp;
-          }
+      {
+        D2LvlWarpTxt* pWarp;
+        nWarpIdx = 0;
+        pWarp = pTxtLvlWarp;
+        if (nTxtLvlWarpSize > 0) {
+          do {
+            if (pWarp->Id == nWarpId && (nDirection == 0x62 || (byDirection = (uint8_t)pWarp->Direction , byDirection == 0x62) || byDirection == nDirection)) {
+              return pWarp;
+            }
 
-          nWarpIdx++;
-          pWarp++;
-        } while (nWarpIdx < nTxtLvlWarpSize);
+            nWarpIdx++;
+            pWarp++;
+          } while (nWarpIdx < nTxtLvlWarpSize);
+        }
+
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x33a);
+        exit(-1);
       }
-
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x33a);
-      exit(-1);
-    } else {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x32b);
-      exit(-1);
     }
+
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x32b);
+    exit(-1);
 }
 
 // Compiles lvlmaze.txt into the global sgpTxtLvlMaze table. Defines 7 integer fields (Level, Rooms, Rooms(N), Rooms(H), SizeX, SizeY, Merge) plus an END sentinel, then calls CompileTxt to parse and store the maze generation parameters for each level.
@@ -838,26 +823,28 @@ void __stdcall TXT_FreeTxt_LvlMaze() {
 D2LvlMazeTxt * __fastcall TXT_LvlMaze_FindLineByLevelId(int32_t nLevelId) {
     D2LvlMazeTxt* pLvlMazeEntry;
     if (sgpTxtLvlMaze) {
-      int nLoopIdx;
-      nLoopIdx = 0;
-      pLvlMazeEntry = sgpTxtLvlMaze;
-      if (nTxtLvlMazeSize > 0) {
-        do {
-          if (pLvlMazeEntry->Level == nLevelId) {
-            return sgpTxtLvlMaze + nLoopIdx;
-          }
+      {
+        int nLoopIdx;
+        nLoopIdx = 0;
+        pLvlMazeEntry = sgpTxtLvlMaze;
+        if (nTxtLvlMazeSize > 0) {
+          do {
+            if (pLvlMazeEntry->Level == nLevelId) {
+              return sgpTxtLvlMaze + nLoopIdx;
+            }
 
-          nLoopIdx++;
-          pLvlMazeEntry++;
-        } while (nLoopIdx < nTxtLvlMazeSize);
+            nLoopIdx++;
+            pLvlMazeEntry++;
+          } while (nLoopIdx < nTxtLvlMazeSize);
+        }
+
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x36c);
+        exit(-1);
       }
-
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x36c);
-      exit(-1);
-    } else {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x363);
-      exit(-1);
     }
+
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x363);
+    exit(-1);
 }
 
 // Loads and compiles the lvlsub.txt data table into sgpTxtLvlSub via CompileTxt, defining the column layout (Type, File, CheckAll, BordType, GridSize, Dt1Mask, and Prob/Trials/Max for sub-types 0-4, plus Expansion). Builds gpnLvlSubTypeToIndex, a Type->first-row-index lookup sized to the max Type id. When DRLG preset files are needed (nParam or bGametypeIsOBNetHost set), allocates gpaDrlgLvlSubPresetFiles and preloads each row's preset .ds1 file via AllocDrlgFile (fixing path slashes, skipping expansion-only rows in classic), halting on load failure. Called once during data-table init; no return value.

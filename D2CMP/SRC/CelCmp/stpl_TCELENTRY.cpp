@@ -15,6 +15,7 @@
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Storm/H/CCritSect.h"
+#include "Storm/Source/SFile.h"
 #include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
@@ -27,8 +28,8 @@ template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Clear() {
     int* pObject;
     while (true) {
       int nNext;
-      pObject = (int*)this->m_terminator.m_next;
-      if ((int)pObject <= 0) {
+      pObject = (int)(int*)this->m_terminator.m_next > 0 ? (int*)this->m_terminator.m_next : 0;
+      if (!pObject) {
         break;
       }
 

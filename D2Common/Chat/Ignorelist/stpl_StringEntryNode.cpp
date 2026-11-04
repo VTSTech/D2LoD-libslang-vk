@@ -15,6 +15,7 @@
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Storm/H/CCritSect.h"
+#include "Storm/Source/SFile.h"
 #include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
@@ -61,7 +62,7 @@ template<> void TSExplicitList<StringEntryNode, -572662307>::Destructor() {
     *pPrevLink = (int)nHeadEntry;
     pTVar1->m_prevlink->m_next = this->m_terminator.m_next;
     pTVar1->m_prevlink = 0;
-    this->m_terminator.m_next = 0;
+    pTVar1->m_next = 0;
 }
 
 template<> TSExplicitList<::StringEntryNode, -572662307>* TSExplicitList<StringEntryNode, -572662307>::ScalarDeletingDestructor(uint32_t dwFlags) {
@@ -81,7 +82,7 @@ template<> TSExplicitList<::StringEntryNode, -572662307>* TSExplicitList<StringE
       *pPrevLink = (int)nHeadEntry;
       pTVar1->m_prevlink->m_next = this->m_terminator.m_next;
       pTVar1->m_prevlink = 0;
-      this->m_terminator.m_next = 0;
+      pTVar1->m_next = 0;
     }
     if (dwFlags & 1 && this) {
       Storm::Source::SMem::SMemFree(this, "delete", -1, 0);
@@ -110,12 +111,12 @@ void __thiscall Destructor_UnreferencedCopy(TSExplicitList<::StringEntryNode, -5
 
     pListHead = (int*)D2_StormNextLink(pTVar1, -1);
     *pListHead = (int)nHead;
-    pTVar1->m_prevlink->m_next = pThis->m_terminator.m_next;
+    pTVar1->m_prevlink->m_next = pTVar1->m_next;
     pTVar1->m_prevlink = 0;
-    pThis->m_terminator.m_next = 0;
+    pTVar1->m_next = 0;
 }
 
-template<> void TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>>::ReallocData(uint32_t nAlloc) {
+template<> __attribute__((noinline)) inline void TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>>::ReallocData(uint32_t nAlloc) {
     TSExplicitList<::StringEntryNode, -572662307>* pBucket;
     int* pPrevLink;
     TSLink<::StringEntryNode>* pTVar2;
@@ -218,7 +219,7 @@ template<> ::StringEntryNode * TSHashTable<StringEntryNode, HASHKEY_STRI>::Ptr(u
     return pEntry;
 }
 
-template<> void TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>>::Destructor() {
+template<> __attribute__((noinline)) inline void TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>>::Destructor() {
     TSExplicitList<::StringEntryNode, -572662307>* pBucket;
     int* pPrevLink;
     TSLink<::StringEntryNode>* nHead;
@@ -233,9 +234,9 @@ template<> void TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>>::De
         if (nHead) {
           pPrevLink = (int*)D2_StormNextLink(pTVar1, -1);
           *pPrevLink = (int)nHead;
-          pTVar1->m_prevlink->m_next = pBucket->m_terminator.m_next;
+          pTVar1->m_prevlink->m_next = pTVar1->m_next;
           pTVar1->m_prevlink = 0;
-          pBucket->m_terminator.m_next = 0;
+          pTVar1->m_next = 0;
         }
 
         nBucketIdx++;
@@ -293,7 +294,7 @@ void __thiscall thunk_Destructor(TSGrowableArray<TSExplicitList<StringEntryNode,
     pThis->Destructor();
 }
 
-template<> void TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>>::SetCount(uint32_t nCount) {
+template<> __attribute__((noinline)) inline void TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>>::SetCount(uint32_t nCount) {
     TSLink<::StringEntryNode>* pTVar1;
     uint32_t uVar2;
     TSLink<::StringEntryNode>* pTVar3;
@@ -349,12 +350,12 @@ template<> void TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>>::Se
         pTVar3 = pSrcBucket->m_terminator.m_prevlink;
         pTVar1 = &pSrcBucket->m_terminator;
         if (pTVar3) {
-          uVar2 = pSrcBucket->m_terminator.m_next;
+          uVar2 = pTVar1->m_next;
           pPrevLink = (int*)D2_StormNextLink(pTVar1, -1);
           *pPrevLink = (int)pTVar3;
-          pTVar1->m_prevlink->m_next = pSrcBucket->m_terminator.m_next;
+          pTVar1->m_prevlink->m_next = pTVar1->m_next;
           pTVar1->m_prevlink = 0;
-          pSrcBucket->m_terminator.m_next = 0;
+          pTVar1->m_next = 0;
         }
 
         nBucketIdx++;
@@ -392,7 +393,7 @@ template<> void TSHashTable<StringEntryNode, HASHKEY_STRI>::Destructor() {
       *pListHead = (int)pHead;
       pTVar1->m_prevlink->m_next = this->tFullList.m_terminator.m_next;
       pTVar1->m_prevlink = 0;
-      this->tFullList.m_terminator.m_next = 0;
+      pTVar1->m_next = 0;
     }
 
     ExceptionList = pExSave;
@@ -453,7 +454,7 @@ template<> ::StringEntryNode * __thiscall TSHashTable<StringEntryNode, HASHKEY_S
     int pNext = pList->m_linkoffset;
     if ((int)dwNext < 0) {
       *(TSLink<::StringEntryNode>**)~dwNext = (TSLink<::StringEntryNode>*)pBucketHead;
-      pList->m_terminator.m_next = (int)pNode;
+      pHeadEntry->m_next = (int)pNode;
       return pNode;
     }
     if (pNext < 0) {
@@ -461,7 +462,7 @@ template<> ::StringEntryNode * __thiscall TSHashTable<StringEntryNode, HASHKEY_S
     }
 
     *(TSLink<::StringEntryNode>**)(dwNext + pNext) = (TSLink<::StringEntryNode>*)pBucketHead;
-    pList->m_terminator.m_next = (int)pNode;
+    pHeadEntry->m_next = (int)pNode;
     return pNode;
 }
 
@@ -514,7 +515,7 @@ void __thiscall SetCount_Unreferenced(TSGrowableArray<TSExplicitList<StringEntry
 }
 
 // [override: patch]
-template<> void TSHashTable<StringEntryNode, HASHKEY_STRI>::GrowListArray() {
+template<> __attribute__((noinline)) inline void TSHashTable<StringEntryNode, HASHKEY_STRI>::GrowListArray() {
     TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis = this;
     TSLink<::StringEntryNode>* pBucket;
     TSLink<::StringEntryNode>* ppTempHead;
@@ -671,7 +672,7 @@ template<> TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* TSHashTable<StringEnt
 }
 
 // Check load factor and rehash the string entry hash table if chain length exceeds threshold
-template<> int32_t TSHashTable<StringEntryNode, HASHKEY_STRI>::MonitorFullness(uint32_t nSlot) {
+template<> __attribute__((noinline)) inline int32_t TSHashTable<StringEntryNode, HASHKEY_STRI>::MonitorFullness(uint32_t nSlot) {
     TSLink<::StringEntryNode>* pTVar1;
     if (this->nSlotMask >= 0x3ff) {
       return 0;

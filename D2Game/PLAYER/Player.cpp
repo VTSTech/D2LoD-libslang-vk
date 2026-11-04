@@ -445,12 +445,8 @@ void __fastcall PLAYER_CreateStarterItems(::SGAMEDATA * pGame, D2UnitStrc * pUni
 }
 
 void __fastcall PLAYER_CreateAllStarterItems(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, uint8_t byAct) {
-    if (!pUnit) {
-      return;
-    }
-
-    int i = pUnit->nClassId;
-    D2CharStatsTxt* pCharStatsTxt = i >= 0 && i < sgptDataTable->nTxtCharStatsSize ? sgptDataTable->pTxtCharStats + i : nullptr;
+    int i;
+    D2CharStatsTxt* pCharStatsTxt = pUnit && (i = pUnit->nClassId) >= 0 && i < sgptDataTable->nTxtCharStatsSize ? sgptDataTable->pTxtCharStats + i : nullptr;
     if (!pCharStatsTxt) {
       return;
     }
@@ -645,7 +641,7 @@ void __fastcall PLAYER_PlaceCorpse(::SGAMEDATA * pGame, D2RoomStrc * pRoom, DWOR
       return;
     }
 
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x8E_CorpseAssign_Sender(pGame, nLine, dwPlayerId, 1);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x8E_CorpseAssign_Sender(pGame, nLine, dwPlayerId, true);
 }
 
 void __fastcall PLAYER_SetUniqueId(D2UnitStrc * pUnit, uint32_t dwUniqueId) {

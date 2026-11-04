@@ -912,9 +912,9 @@ void __stdcall QUEST_SendQuestUpdateToPlayer_HaltTail(int nLine) {
     exit(-1);
 }
 
-void __fastcall QUEST_SetStateAndBroadcast(D2QuestDataStrc * pQuestData, int nPrevStateFlag, D2UnitStrc * pUnit, ::fpExecuteOnUnitFunction fpFunction, bool bExecute) {
+void __fastcall QUEST_SetStateAndBroadcast(D2QuestDataStrc * pQuestData, int nPrevStateFlag, D2UnitStrc * pUnit, ::fpExecuteOnUnitFunction fpFunction, uint8_t bExecute) {
     pQuestData->nStateFlagPrev = (uint8_t)nPrevStateFlag;
-    if (!bExecute) {
+    if (bExecute != 1) {
       return;
     }
     if (fpFunction) {
@@ -1749,21 +1749,12 @@ BOOL __fastcall QUESTGUID_SearchForValueInIntArray32(D2QuestGUIDStrc * pQuestGUI
 }
 
 BOOL __fastcall QUEST_HasPlayerParticipated(D2QuestDataStrc * pQuestData, int32_t nPlayerGUID) {
-    int32_t nPlayerCount = (int32_t)pQuestData->sQuestGUID.nPlayerCount;
-    int nSearchIdx = 0;
-    if (!nPlayerCount) {
-      return 0;
-    }
-
-    int* pGuidIter = pQuestData->sQuestGUID.aPlayerGUID;
-    do {
-      if (*pGuidIter == nPlayerGUID) {
+    int nSearchIdx;
+    for (nSearchIdx = 0; nSearchIdx < (int32_t)pQuestData->sQuestGUID.nPlayerCount; nSearchIdx++) {
+      if (pQuestData->sQuestGUID.aPlayerGUID[nSearchIdx] == nPlayerGUID) {
         return 1;
       }
-
-      nSearchIdx++;
-      pGuidIter++;
-    } while (nSearchIdx < nPlayerCount);
+    }
 
     return 0;
 }
@@ -2264,10 +2255,10 @@ void __fastcall AttachToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2RoomStrc
     PLAYER::PlayerMsg::PrepareClientMessage(pGame, "Error attaching to unit", '\x04');
 }
 
-void __stdcall QUEST_InitializeQuestDataStruct(uint32_t pGame, uint32_t nQuestNoInternal, bool bIsNotIntroduction, D2QuestDataStrc * pQuestData) {
+void __stdcall QUEST_InitializeQuestDataStruct(::SGAMEDATA * pGame, uint32_t nQuestNoInternal, bool bIsNotIntroduction, D2QuestDataStrc * pQuestData) {
     memset(pQuestData, 0, 0xf8);
     pQuestData->nQuestNoInternal = nQuestNoInternal;
-    pQuestData->pGame = (::SGAMEDATA*)pGame;
+    pQuestData->pGame = pGame;
     pQuestData->bIsActive = '\0';
     pQuestData->nStateFlagPrev = 0;
     pQuestData->bIsNotIntroduction = '\x01';
@@ -3143,7 +3134,7 @@ void __fastcall Q12_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
       }
       if (pQuestData->nStateFlagPrev < 4) {
         pQuestData->nQuestPacketFlags = '\0';
-        QUEST_SetStateAndBroadcast(pQuestData, 4, nullptr, (::fpExecuteOnUnitFunction)A2Q4::Q12_NotifyArcaneComplete, true);
+        QUEST_SetStateAndBroadcast(pQuestData, 4, nullptr, (::fpExecuteOnUnitFunction)A2Q4::Q12_NotifyArcaneComplete, 1);
       } else if (bFlagOver3) {
         return;
       }

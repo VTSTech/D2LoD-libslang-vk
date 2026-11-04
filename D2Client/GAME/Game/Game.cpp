@@ -728,7 +728,7 @@ void __stdcall ClientSideGameLoop() {
     D2Common::DUNGEON::Dungeon::DRLGROOMEX_UpdateClientRoomExActivation(pDrlgAct);
     UI::Automap::AUTOMAP_Update();
     gClientGameData.gnRecordEntryIndex++;
-    if (gClientGameData.gnRecordEntryIndex != (uint32_t)gClientGameData.gnRecordEntryIndex / 0xd * 0xd) {
+    if (gClientGameData.gnRecordEntryIndex % 0xd != 0) {
       return;
     }
 
@@ -1328,8 +1328,8 @@ int32_t __fastcall GAMEDATA_GetCenteredTextX(uint16_t nStringId, int32_t nCenter
 
     uint16_t* pSourceStr = D2Lang::StrTable::strtable::GetLocaleString(nStringId);
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszText, pSourceStr);
-    int32_t nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszText);
-    return nCenterX - nTextWidth / 2;
+    int32_t nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszText) / 2;
+    return nCenterX - nTextWidth;
 }
 
 void __stdcall GAMEDATA_DrawLoadingScreenText() {
@@ -1414,7 +1414,7 @@ void __fastcall ClientInit_StartingAct(D2IniConfigStrc * pIniConfig) {
     if (!nAct) {
       return;
     }
-    if (nAct >= 6) {
+    if (!(nAct < 6)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd26);
       exit(-1);
     }
@@ -2418,17 +2418,17 @@ void __stdcall GAMEDATA_ShowEndGameCutscene() {
 }
 
 void __fastcall TSIntrusiveList_Clear(D2StormListHead * pListHead) {
-    StormLinkStrc** ppSVar1 = &pListHead->pPrevLink;
-    *ppSVar1 = (StormLinkStrc*)ppSVar1;
+    StormLinkStrc* pSVar1 = &pListHead->terminator;
+    pSVar1->pPrevLink = pSVar1;
     pListHead->nLinkOffset = 0;
-    pListHead->pNext = ~(uint32_t)ppSVar1;
+    pListHead->terminator.pNext = ~(uint32_t)pSVar1;
 }
 
 void __fastcall TSIntrusiveList_Clear_Unreferenced(D2StormListHead * pListHead) {
-    StormLinkStrc** ppSVar1 = &pListHead->pPrevLink;
-    *ppSVar1 = (StormLinkStrc*)ppSVar1;
+    StormLinkStrc* pSVar1 = &pListHead->terminator;
+    pSVar1->pPrevLink = pSVar1;
     pListHead->nLinkOffset = 0;
-    pListHead->pNext = ~(uint32_t)ppSVar1;
+    pListHead->terminator.pNext = ~(uint32_t)pSVar1;
 }
 
 // Client network timeout checks; triggers CLIENT_ConnectionRefused on long waits or failed connects.

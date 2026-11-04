@@ -6,6 +6,11 @@
 #include "globals/globals.h"
 
 
+// =============================================================================
+// Initialized scalars
+// =============================================================================
+
+
 namespace D2Common::Drlg::Maze {
 
 } // namespace D2Common::Drlg::Maze
@@ -289,3 +294,15 @@ namespace D2Client::UI::Dialog {
 namespace D2Client::Draw::LightMap {
 
 } // namespace D2Client::Draw::LightMap
+
+namespace D2Client::Mouse {
+
+} // namespace D2Client::Mouse
+
+namespace D2Client::Forms {
+
+} // namespace D2Client::Forms
+
+namespace D2Client::GAME::Record {
+
+} // namespace D2Client::GAME::Record

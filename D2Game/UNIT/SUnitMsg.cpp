@@ -58,6 +58,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
+#include "D2Client/UNIT/PlrSkills.h"
 #include "D2Game/GAME/Server.data.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Objects/Objects.h"
@@ -108,12 +109,9 @@ void __fastcall PLAYER_InitBaseStats(::SGAMEDATA * pGame, D2UnitStrc * pUnit, ui
     if (nAct >= 5) {
       nAct = 4;
     }
-    if (!pUnit) {
-      return;
-    }
 
-    int nStatValue = pUnit->nClassId;
-    D2CharStatsTxt* pCharStats = nStatValue >= 0 && nStatValue < sgptDataTable->nTxtCharStatsSize ? sgptDataTable->pTxtCharStats + nStatValue : nullptr;
+    int nStatValue;
+    D2CharStatsTxt* pCharStats = pUnit && (nStatValue = pUnit->nClassId) >= 0 && nStatValue < sgptDataTable->nTxtCharStatsSize ? sgptDataTable->pTxtCharStats + nStatValue : nullptr;
     if (!pCharStats) {
       return;
     }
@@ -680,7 +678,7 @@ void __fastcall SendRemoveObject(D2UnitStrc * pItem, D2ClientStrc * pClient) {
 
 // Sends a unit's hover-text (name tag) to a specific client. If the unit has a D2HoverTextStrc, checks whether the viewing player has hostile/party relationship flags; if allowed, formats a 0x26 chat packet with language code and copies the hover message string. If the unit has no hover text, falls back to sending a 0x76 unit-type/GUID packet to clear the hover display.
 void __fastcall PLAYER_SendHoverTextToClient(D2UnitStrc * pUnit, D2ClientStrc * pClient) {
-    uint8_t _byUnitTypeFallback;
+    int _byUnitTypeFallback;
     uint32_t nLangCodeOrFlags;
     uint32_t dwPlayerListFlags;
     int32_t nGUIDFallback;
@@ -1191,12 +1189,11 @@ void __fastcall SERVER_UnitQueuePacketFree(D2UnitStrc * pUnit) {
 void __fastcall SERVER_SendInitUnitPacket(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2ClientStrc * pClient) {
     ::SGAMEDATA* pGame_00;
     bool bIsDead;
-    BOOL BVar1;
     int nSkillLevel;
     D2SkillStrc* pSkill;
     int32_t nMiscVal;
     uint32_t dwTargetGUID;
-    eD2States eDeathState;
+    BOOL eDeathState;
     POINT ptCoords;
     D2MonStatsTxt* pMonStatsTxt;
     short int* pMonSkillEntry;
@@ -1245,8 +1242,8 @@ void __fastcall SERVER_SendInitUnitPacket(::SGAMEDATA * pGame, D2UnitStrc * pUni
 
       break;
       case UNIT_MONSTER:
-        BVar1 = SUnit::CheckForModeZeroDeath(pUnit);
-      if (!BVar1 || (nSkillLevel = D2Common::DATATBLS::ItemStats::STATES_HasLightState(pUnit) , !nSkillLevel)) {
+        eDeathState = SUnit::CheckForModeZeroDeath(pUnit);
+      if (!eDeathState || (nSkillLevel = D2Common::DATATBLS::ItemStats::STATES_HasLightState(pUnit) , !nSkillLevel)) {
         GAME::SCmd::NET_D2GS_SERVER_Send_0xAC_AddMonster(pClient, pUnit);
         D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, (uint16_t)(ptCoords.x + ptCoords.y), 0);
         if (pUnit->nClassId == 0x210) {
@@ -1292,8 +1289,8 @@ void __fastcall SERVER_SendInitUnitPacket(::SGAMEDATA * pGame, D2UnitStrc * pUni
     switch (pUnit->eUnitType) {
       case UNIT_PLAYER:
         PLAYER::PlayerMsg::SendInitUpdateAttributes(pUnit, pClientSaved);
-      BVar1 = SUnit::CheckForModeZeroDeath(pUnit);
-      if (!BVar1 || (eDeathState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_playerbody) , eDeathState == STATE_none)) {
+      eDeathState = SUnit::CheckForModeZeroDeath(pUnit);
+      if (!eDeathState || (eDeathState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_playerbody) , !eDeathState)) {
         PLAYER::Player::PLAYER_SendAllItemsToClient(pUnit, pClientSaved);
       } else {
         dwTargetGUID = D2Common::INVENTORY::Inventory::INVENTORY_GetCursorItemGUID(pUnit->pInventory);
@@ -1315,7 +1312,7 @@ void __fastcall SERVER_SendInitUnitPacket(::SGAMEDATA * pGame, D2UnitStrc * pUni
       case UNIT_MONSTER:
         D2Game::Monster::MonsterMsg::MONSTER_SendUpdateToClient(pGameSaved, pUnit, pClientSaved);
       eDeathState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_valkyrie);
-      if (eDeathState != STATE_none || (nSkillLevel = pUnit->nClassId , nSkillLevel == 0x123) || nSkillLevel == 0x1a1 || nSkillLevel == 0x1a2) {
+      if (eDeathState || (nSkillLevel = pUnit->nClassId , nSkillLevel == 0x123) || nSkillLevel == 0x1a1 || nSkillLevel == 0x1a2) {
         PLAYER::Player::PLAYER_SendAllItemsToClient(pUnit, pClientSaved);
         return;
       }

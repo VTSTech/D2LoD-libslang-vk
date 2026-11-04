@@ -603,49 +603,51 @@ void __fastcall OBJECT_InitializeObject(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     pUnit->pUnitData.pUnitDataPlayer->szCharName[4] = '\0';
     int nObjClassId = pUnit->nClassId;
     GAME::Event::EVENT_ClearTimerList(pGameCopy, pUnit);
-    if ((uint16_t)nObjClassId >= 0x23d) {
+    if (!((uint16_t)nObjClassId < 0x23d)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x260);
       exit(-1);
     }
 
-    D2SeedStrc* pSeed;
-    if (!(pObjectsTxt->InitFn < 0x50)) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x262);
-      exit(-1);
-    }
-
-    pSeed = ObjectsRgn::GetObjectControlSeed(pGameCopy, pRoom);
-    if (pObjectsTxt->InitFn < 0x50 && OBJECTSINITFN[pObjectsTxt->InitFn]) {
-      /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)OBJECTSINITFN[pObjectsTxt->InitFn]);
-      if (bBadCodePtr) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x26a);
+    {
+      D2SeedStrc* pSeed;
+      if (!(pObjectsTxt->InitFn < 0x50)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x262);
         exit(-1);
       }
 
-      s0x00.pGame = pGameCopy;
-      s0x00.nX = nX;
-      s0x00.pSeed = pSeed;
-      s0x00.nY = nY;
-      s0x00.pObject = pUnit;
-      s0x00.pRoom = pRoom;
-      s0x00.pObjectTxt = pObjectsTxt;
-      (*OBJECTSINITFN[pObjectsTxt->InitFn])(&s0x00);
-    }
-    if (pObjectsTxt->Selectable[nAnimModeOrGUID]) {
-      pUnit->eUnitFlags |= UNITFLAG_TARGETABLE;
-    } else {
-      pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
-    }
-    if (pObjectsTxt->PreOperate && !(pUnit->eUnitFlags >> 7 & 1)) {
-      nPreOpSeedRoll = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, 0xe);
-      if (!nPreOpSeedRoll) {
-        D2Common::Units::SetupUpdateFlag(pUnit, 2);
-      }
-    }
+      pSeed = ObjectsRgn::GetObjectControlSeed(pGameCopy, pRoom);
+      if (pObjectsTxt->InitFn < 0x50 && OBJECTSINITFN[pObjectsTxt->InitFn]) {
+        /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)OBJECTSINITFN[pObjectsTxt->InitFn]);
+        if (bBadCodePtr) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x26a);
+          exit(-1);
+        }
 
-    pTimerArg = AllocTimer(pGameCopy);
-    D2Common::Units::SetTimerArg(pUnit, pTimerArg);
-    return;
+        s0x00.pGame = pGameCopy;
+        s0x00.nX = nX;
+        s0x00.pSeed = pSeed;
+        s0x00.nY = nY;
+        s0x00.pObject = pUnit;
+        s0x00.pRoom = pRoom;
+        s0x00.pObjectTxt = pObjectsTxt;
+        (*OBJECTSINITFN[pObjectsTxt->InitFn])(&s0x00);
+      }
+      if (pObjectsTxt->Selectable[nAnimModeOrGUID]) {
+        pUnit->eUnitFlags |= UNITFLAG_TARGETABLE;
+      } else {
+        pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
+      }
+      if (pObjectsTxt->PreOperate && !(pUnit->eUnitFlags >> 7 & 1)) {
+        nPreOpSeedRoll = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, 0xe);
+        if (!nPreOpSeedRoll) {
+          D2Common::Units::SetupUpdateFlag(pUnit, 2);
+        }
+      }
+
+      pTimerArg = AllocTimer(pGameCopy);
+      D2Common::Units::SetTimerArg(pUnit, pTimerArg);
+      return;
+    }
 }
 
 // Selects a random shrine type ID for a given shrine category (1–4; 0 or >4 clamped to 2) that satisfies the level's minimum level requirement. Draws from the pre-built shrine RNG pool (GetShrinesRng), retrying up to 8 times to find a shrine whose dwLevelMin <= nLevelId. Returns the chosen shrine type ID (never 0; remapped to 1). Halts if the shrine pool for the category is empty.
@@ -1825,7 +1827,7 @@ D2UnitStrc * __fastcall Objects_PopulateFn7_CorpseOnStick(::SGAMEDATA * pGame, D
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 40, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
-    uint16_t _nChancePercent;
+    int _nChancePercent;
     BOOL BVar1;
     int nXRange;
     uint32_t nRandVal;
@@ -2093,8 +2095,8 @@ D2UnitStrc * __fastcall Objects_PopulateFn8(::SGAMEDATA * pGame, D2RoomStrc * pR
 
 // Level-generation object populator (density-driven scatter spawner). For a given room, rolls nChancePercent against the object control seed to decide whether to populate at all, then derives a target spawn count from room area * nDensity. Repeatedly picks random tiles inside the room's DRLG coordinate bounds, checks placement via ROOM_CheckSpawnCollisionSimple using ObjectsTxt line 7's footprint, and CreateUnits UNIT_OBJECT clusters (base class ~0xb with a small random variant). Around each valid seed it grows a cluster (up to 8 objects) by stepping in 8 directions scaled by the object's XSpace/YSpace. Deterministic via GetObjectControlSeed so all clients generate identical object layout. Side effect: spawns objects into pRoom. (Cryptic — exact object set inferred from txt line 7.)
 D2UnitStrc * __fastcall Objects_PopulateFn4(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uint8_t nDensity, int32_t nObjectClassId, uint16_t nChancePercent) {
-    uint16_t _nChancePercent;
-    uint8_t _nDensity;
+    int _nChancePercent;
+    int _nDensity;
     BOOL nCollisionResult;
     uint32_t nRandVal;
     D2DrlgRoomCoordsStrc sRoomCoords;
@@ -2250,7 +2252,7 @@ D2UnitStrc * __fastcall Objects_PopulateFn4(::SGAMEDATA * pGame, D2RoomStrc * pR
 // DRLG room object-population routine (server-side, seeded). Rolls nChancePercent against the object-control RNG to decide whether to populate pRoom at all, then computes a target spawn count from room area * nDensity. Repeatedly picks random in-room cells, validates placement via ROOM_CheckSpawnCollisionSimple, and creates UNIT_OBJECT units (nObjectClassId, or a random pick from gaObjectSpawnChanceTbl when class==0x2e) with CreateUnit. Supports growing chains of adjacent objects (offset by Objects.txt XSpace/YSpace via direction tables) up to 8 spawned per cycle. Uses the deterministic LCG seed (0x6ac690c5) so all clients agree. No return.
 D2UnitStrc * __fastcall Objects_PopulateFn5_Crate(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uint8_t nDensity, int32_t nObjectClassId, uint16_t nChancePercent) {
     int32_t _nDensity;
-    uint16_t _nChancePercent;
+    int _nChancePercent;
     BOOL nCollisionResult;
     uint32_t nRandDir;
     uint32_t nChainStopRoll;
@@ -2830,7 +2832,7 @@ void __fastcall OBJECT_CallPopulateFn(::SGAMEDATA * pGame, D2RoomStrc * pRoom, i
     // Static local variables (originally global data)
     static uint8_t gbObjectInitTableSetup = 0x40; D2_STATIC_GUARD(gbObjectInitTableSetup, "D2Game::Objects::OBJECT_CallPopulateFn::gbObjectInitTableSetup");
 
-    bool _bBadCodePtr;
+    int _bBadCodePtr;
     bool bBadCodePtr;
     eD2LevelId eRoomLevelId = D2Common::DUNGEON::Dungeon::GetLevelIdFromPopulatedRoom(pRoom);
     if (eRoomLevelId == LEVEL_None) {
@@ -2857,7 +2859,7 @@ void __fastcall OBJECT_CallPopulateFn(::SGAMEDATA * pGame, D2RoomStrc * pRoom, i
 
 // Spawns one object from an ObjGroup.txt group entry into pRoom during level population. Rolls the game control seed against a cumulative probability table (up to 8 entries); on a hit, looks up the Objects.txt PopulateFn index and dispatches to OBJECTSPOPULATEFN[fn](pGame, pRoom, density, classId, 100). Validates the fn index and code pointer; halts with a fatal error on invalid entries. Skips if the room has no valid level ID.
 void __fastcall OBJECT_PopulateFromObjGroup(::SGAMEDATA * pGame, D2RoomStrc * pRoom, int32_t nObjGroupId) {
-    bool _bBadCodePtr;
+    int _bBadCodePtr;
     bool bBadCodePtr;
     uint32_t nProbRoll;
     D2ObjectsTxt* pObjectsTxt;
@@ -2887,7 +2889,7 @@ void __fastcall OBJECT_PopulateFromObjGroup(::SGAMEDATA * pGame, D2RoomStrc * pR
       nProbAccum += (uint32_t)pObjGroupTxt->nProbability[nGroupEntryIdx];
       if ((int)(nSeedRoll + (int)(sNewSeed.nSeedLow / 100) * -100) < nProbAccum) {
         pObjectsTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nObjClassId);
-        if (pObjectsTxt->PopulateFn >= 10) {
+        if (!(pObjectsTxt->PopulateFn < 10)) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xca8);
           exit(-1);
         }
