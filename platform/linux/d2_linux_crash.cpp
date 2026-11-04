@@ -62,6 +62,13 @@ static void d2_module_name(const char* szPath, char* szOut, size_t nOut) {
     snprintf(szOut, nOut, "%s", p ? p + 1 : (szPath ? szPath : "unknown"));
 }
 
+// The truncations inside d2_phdr_cb and DEBUG_FormatAddressInfo are INTENDED:
+// the PE-shape module fields are 256 bytes and longer paths truncate exactly
+// as they do on Windows (szImagePath/szModuleName), as do symbol lines into
+// the 256-byte address buffer. The analyzer's "may be truncated" note is
+// noise about the spec here - silenced for these two functions only.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
 static int d2_phdr_cb(struct dl_phdr_info* pInfo, size_t, void* pCtx) {
     D2FogDebugModuleTableStrc* pTable = (D2FogDebugModuleTableStrc*)pCtx;
     if (pTable->aEntries[0].pImageBase && (uintptr_t)pInfo->dlpi_addr == 0) {
@@ -265,6 +272,7 @@ bool __stdcall DEBUG_FormatAddressInfo(uint32_t nAddress, char* pOutput) {
     }
     return true;
 }
+#pragma GCC diagnostic pop
 
 // ---------------------------------------------------------------------------
 // Known-folder path (PATH_GetKnownFolderPath): the save path root. XDG's

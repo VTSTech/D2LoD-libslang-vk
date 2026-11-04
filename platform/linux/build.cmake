@@ -316,18 +316,23 @@ else()
                    "the skeleton + shim layer build and the smoke runs as in M0")
 endif()
 
-# [d2linux] The banner states the milestone shape: a console capture answers
-# "which build is this" without the plan open. M1 is a link-time milestone -
-# the game TUs join the binary but nothing calls them until M2's boot chain -
-# so the screen cannot show it; the banner does. The TU count is computed,
-# not hardcoded: step 2 grows the slice and the banner follows.
+# [d2linux] The banner states TWO different facts, and the old single define
+# conflated them (owner round-3 finding): on every native build it printed
+# "milestone 0", which reads as the PROJECT being at M0 when it is the
+# BINARY that has no game TUs - the i386 charter (PLAN.md R1) keeps the game
+# slice out of the 64-bit binary forever, so that line could never change.
+# The project stage is hand-maintained and bumped every code round (the
+# linux twin of the PE-side version self-ID); the binary shape is computed.
 list(LENGTH D2LINUX_GAME_SOURCES D2LINUX_GAME_TU_COUNT)
+set(D2LINUX_PROJECT_STAGE "project: M2 round 1 - user32 surface real (window/pump/input); M0 window + M1 i386 slice done; next: DirectDraw onto the INDEX8 surface")
 if(D2LINUX_ARCH STREQUAL "i386")
-    set(D2LINUX_MILESTONE "milestone 1 (skeleton + shims + game slice: ${D2LINUX_GAME_TU_COUNT} TUs, i386)")
+    set(D2LINUX_BINARY_SHAPE "binary: i386 slice - skeleton + shims + game TUs (${D2LINUX_GAME_TU_COUNT})")
 else()
-    set(D2LINUX_MILESTONE "milestone 0 (skeleton + shims, native arch - no game TUs)")
+    set(D2LINUX_BINARY_SHAPE "binary: native x86-64 skeleton - game TUs are i386-only (charter R1); the slice ships in the CI artifact")
 endif()
-target_compile_definitions(d2linux PRIVATE D2LINUX_MILESTONE="${D2LINUX_MILESTONE}")
+target_compile_definitions(d2linux PRIVATE
+    D2LINUX_PROJECT_STAGE="${D2LINUX_PROJECT_STAGE}"
+    D2LINUX_BINARY_SHAPE="${D2LINUX_BINARY_SHAPE}")
 
 # The shadow dir leads the include path: game headers say #include
 # "d2_platform.h" and must resolve to the SAME file the forced include used

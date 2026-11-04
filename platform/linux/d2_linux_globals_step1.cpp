@@ -68,9 +68,13 @@ extern const char* const z_errmsg[10] __attribute__((weak)) = {
 }  // extern "C"
 
 // The error-text constants the slice externs (globals.cpp's definitions,
-// verbatim content; extern char arrays so the weak attribute is public).
+// verbatim content). Weak DEFINITIONS, no extern keyword: "extern" + init
+// at namespace scope is legal C++ but warns "initialized and declared
+// 'extern'" once per string (owner build, round 3); a plain definition has
+// the same external linkage, and weak keeps the real globals.cpp symbol
+// winning once that TU joins the slice.
 #define D2_WEAK_STR(name, value) \
-    extern char name[] __attribute__((weak)) = value
+    char name[] __attribute__((weak)) = value
 
 D2_WEAK_STR(s_Unknown_006cc780, "Unknown");
 D2_WEAK_STR(s_Do_you_wish_to_terminate_the_appl_006cf1f4, "Do you wish to terminate the application?");

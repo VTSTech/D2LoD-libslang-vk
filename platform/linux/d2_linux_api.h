@@ -350,12 +350,21 @@ typedef struct sockaddr_in SOCKADDR_IN, *PSOCKADDR_IN, *LPSOCKADDR_IN;
 // The winsock fd_set shape. glibc's own fd_set (bits array, select(2) shape)
 // is already in scope by the time game TUs parse, so the winsock spelling is
 // delivered by a confined macro map: the game code says fd_set and means the
-// winsock shape — the shim's select() below translates it honestly.
+// winsock shape — the shim's select() below translates it honestly. The FD_*
+// macros below REPLACE glibc's on purpose (sys/select.h is in scope by here
+// through the C++ headers), so each is #undef'd first — without that, every
+// TU warns "redefined" five times and the noise buries real signal (owner
+// build, round 3).
 #define fd_set d2_winsock_fd_set
 struct d2_winsock_fd_set {
     u_int fd_count;             /* 0x00 */
     SOCKET fd_array[64];        /* 0x04, winsock's FD_SETSIZE */
 };
+#undef FD_SETSIZE
+#undef FD_CLR
+#undef FD_SET
+#undef FD_ISSET
+#undef FD_ZERO
 #define FD_SETSIZE 64
 #define FD_CLR(fd, set) d2_fd_do((set), (fd), -1)
 #define FD_SET(fd, set) d2_fd_do((set), (fd), 1)
