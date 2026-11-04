@@ -323,12 +323,23 @@ endif()
 # slice out of the 64-bit binary forever, so that line could never change.
 # The project stage is hand-maintained and bumped every code round (the
 # linux twin of the PE-side version self-ID); the binary shape is computed.
+# BANNER-STRING RULE: no ';' anywhere in either string. CMake reads ';' as a
+# list separator, so a semicolon splits the value and target_compile_definitions
+# emits broken -D fragments ("missing terminating \" character", "expected
+# unqualified-id before ':'") on every TU (owner round-4 build failure). The
+# guard below turns that into a configure-time FATAL_ERROR instead.
 list(LENGTH D2LINUX_GAME_SOURCES D2LINUX_GAME_TU_COUNT)
-set(D2LINUX_PROJECT_STAGE "project: M2 round 1 - user32 surface real (window/pump/input); M0 window + M1 i386 slice done; next: DirectDraw onto the INDEX8 surface")
+set(D2LINUX_PROJECT_STAGE "project: M2 round 1 - user32 surface real (window/pump/input) / M0 window + M1 i386 slice done / next: DirectDraw onto the INDEX8 surface")
 if(D2LINUX_ARCH STREQUAL "i386")
     set(D2LINUX_BINARY_SHAPE "binary: i386 slice - skeleton + shims + game TUs (${D2LINUX_GAME_TU_COUNT})")
 else()
-    set(D2LINUX_BINARY_SHAPE "binary: native x86-64 skeleton - game TUs are i386-only (charter R1); the slice ships in the CI artifact")
+    set(D2LINUX_BINARY_SHAPE "binary: native x86-64 skeleton - game TUs are i386-only (charter R1), the slice ships in the CI artifact")
+endif()
+if(D2LINUX_PROJECT_STAGE MATCHES ";" OR D2LINUX_BINARY_SHAPE MATCHES ";")
+    message(FATAL_ERROR
+        "d2linux: banner strings must not contain ';' - CMake list semantics "
+        "split the value into broken -D fragments. Use ' / ' as the "
+        "in-banner separator instead (see the BANNER-STRING RULE above).")
 endif()
 target_compile_definitions(d2linux PRIVATE
     D2LINUX_PROJECT_STAGE="${D2LINUX_PROJECT_STAGE}"

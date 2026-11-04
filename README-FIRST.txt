@@ -1,6 +1,6 @@
 d2linux - M2 fixups overlay: the banner tells the truth + the warnings go quiet
 ===============================================================================
-on top of your "M2" commit (d38789a2)
+on top of your "M2" commit (d38789a2); supersedes the first cut of this overlay (baked strings broke the build)
 
 WHY THIS ROUND
 --------------
@@ -48,13 +48,28 @@ WHAT THE OVERLAY CHANGES (5 files)
                                     is the SPEC (PE module fields are 256
                                     bytes; the behavior matches Windows).
 
-VERIFIED (syntax-only, per your no-build split)
------------------------------------------------
-- the two edited SDL-free TUs compile -Wall -Wextra with ZERO warnings
-  through the full forced-include chain (compat + platform shadow + api.h);
-- the banner probe with build.cmake's exact defines prints the 3 lines
-  above;
-- the platform shadow regenerates clean (16 patches).
+ROUND 2 OF THIS OVERLAY (your build failure)
+--------------------------------------------
+The first cut baked the banner strings with ';' separators - CMake reads
+';' as a LIST separator, so target_compile_definitions emitted broken -D
+fragments on every TU ("missing terminating " character"). My probe tested
+gcc quoting but not the CMake layer; that's on me. Fixed:
+
+- banner strings now use ' / ' separators (no ';' anywhere)
+- configure-time FATAL_ERROR guard: a banner string with ';' fails cmake
+  with the reason, never the compiler
+
+VERIFIED THIS TIME (with real cmake + GNU Makefiles, your generator)
+--------------------------------------------------------------------
+- cmake -S . -B /tmp/bannertest -G "Unix Makefiles" -DD2LINUX_ARCH=native
+  configures; flags.make shows ONE well-formed -DD2LINUX_PROJECT_STAGE=...
+  fragment per TU (no list split);
+- the two TUs that failed on your box (d2_linux_main.cpp, d2_linux_audio.cpp)
+  compile with ZERO warnings through the full forced-include chain;
+- the compiled object carries the new banner strings;
+- platform shadow regenerates clean (16 patches).
+
+Your VM build stays the gate of record.
 
 Your VM build is the gate of record, as usual.
 
@@ -62,7 +77,7 @@ APPLY
 -----
 From the repo root (branch linux):
 
-  unzip -o d2linux-m2-banner-warnings-overlay.zip   # 5 files over their paths
+  unzip -o d2linux-m2-banner-warnings-overlay.zip   # 5 files over their paths (overwrites the first cut)
   git add -A && git commit -m "linux: banner states project stage vs binary shape; warning families quiet"
 
 RECONFIGURE, then build (the banner defines are baked at configure time):
