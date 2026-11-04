@@ -16,6 +16,49 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
 
 - **Repo/docs (zero source changes)**: the repository is renamed `D2LoD-libslang-vk` → **`D2VP-QoL`** (owner, 2026-11-03) — every markdown reference and URL re-pointed to the new slug (old GitHub URLs redirect regardless). The glide3x.dll wrapper is now its own repository, [`VTSTech/Glide3xVK`](https://github.com/VTSTech/Glide3xVK) (formerly the `Glide3xVK` branch of this repo; latest wrapper tag 0.4.6) — wrapper pointers in the docs go to the repo now, and the stale `Glide3xVK` branch on this remote is retired.
 
+## [R105] — 2026-11-04 (the sixth upstream sync — upstream `cc23648d..e2e9ec61`; self-ID `Vanilla+0.0.7-R105`)
+
+Merge round, no owner-visible behavior change intended: six upstream commits
+(`2595bd92`/`ccc7d063`/`e2e9ec61` msvc8 evidence bumps, `9addb0ec` six VC8
+near-miss shapes, `3052237a` five more VC8 shapes, `fbdeca80` the structural
+one), 124 files, +1,732/−2,059, Ghidra DB → **1894**, byte-match now 6,560 of
+14,642 functions (44.8%) / 21.14% of bytes. `fbdeca80` folds the D2Multi
+launcher file into ChatDlg (deletes `D2Multi/Launcher.{cpp,h}`,
+`Launcher.data.h`, `Launcher.cpp.map`); no fork surface referenced the
+launcher — verified by grep before staging.
+
+Four conflicted files, resolutions per `docs/merge-upstream.md`:
+
+- **`D2Client/GAME/RosterPets.cpp`** (the R50 pet-recolor sites, issue #8) —
+  upstream `9addb0ec` re-spelled both writes in the VC8 near-miss shape
+  (per-call named locals) while keeping the transcribed inverted polarity
+  `!bHostile`. Convergence-conflict class (1794 rule): upstream's structure,
+  fork's field-verified value — the calls keep upstream's new per-call-local
+  shape but carry the raw flag (`BOOL bHostileSeq/bHostilePal = bHostile`),
+  with dated supersession notes at both sites. The R50 gate row re-pinned to
+  the superseding spelling (raw=4 across `bHostileSeq`/`bHostilePal`, and the
+  inverted check now also catches upstream's `bNotHostile` spelling).
+- **`D2Client/UI/Party.cpp`** (resolution site-6) — upstream inlined the
+  `GetLocaleString` call (dropped the hoisted `wszMessage` local, codegen
+  shape); the fork's `+ VPRES_GetWideUiOffsetY()` term re-planted onto
+  upstream's single-call shape with the trailing `// VP: [resolution site-6]`
+  marker. Site-6 gate count unchanged (54).
+- **`D2Game/GAME/Clients.cpp`** (`GetGuildName`) — upstream recognized retail's
+  plain `strcpy` shape; NOT taken: the rev35 bounded copy is the fix (a
+  corrupt 32+-byte guild name would run off the 0x5B packet area), so the
+  fork loop stays with a dated note for the next merge's auditor.
+- **`README.md`** — fork Verification section kept; upstream's Ghidra version
+  and evidence numbers absorbed (1892 → 1894).
+
+Audit battery (merge-procedure step 4, all green): gates **380/380**;
+rev47 placement audit pre/post-merge diff shows zero marker losses (the 12
+GONE rows are the documented R102 re-homing residue; the only NEW row is the
+intentional Party.cpp marker); rev48 wrong-branch audit 77 stores / 0
+dead-store hits; d2boot include-visibility ALL VISIBLE; merge-site syntax
+sweep (step 4e) — 29 TUs that differ from both parents compiled three-ways,
+**0 unique-to-merge errors**. Self-ID bumped `R104` → **`R105`** (code round:
+the three resolution sites are source changes).
+
 ## [R104] — 2026-11-04 (per-TU restructure fallout sweep — self-ID `Vanilla+0.0.7-R104`)
 
 The `962f88d5` per-TU restructure left five fork anchors naming globals that
