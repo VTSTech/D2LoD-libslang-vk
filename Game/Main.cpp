@@ -1078,7 +1078,7 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
     // marks, the hangwatch arm and the ini bootstrap actually run, in the order the
     // d2boot patch intended. (Re-planted R106: file refiled upstream as Game/Main.cpp.)
     D2BOOT_MarkFmt("ApplicationMain enter (mode=%d)", (int)geModState); // [d2boot]
-    D2BOOT_Mark("Vanilla+0.0.7-R107"); // [d2boot] build self-identification (local builds do not always rotate the commit hash)
+    D2BOOT_Mark("Vanilla+0.0.7-R108"); // [d2boot] build self-identification (local builds do not always rotate the commit hash)
     D2HANGWATCH_Start(); // [vanilla-plus hangwatch] arm the freeze watchdog (evaluates from the first main-loop beat)
     // VP-BEGIN [alt-toggle]: create d2vp.ini next to the exe when missing
     // (documented all-defaults template, one attempt per process) so the

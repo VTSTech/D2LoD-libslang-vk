@@ -730,7 +730,10 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # R106: string bumped R105 -> R106 (the 1894->1908 sync + its compile fix: the
 # seventh sync's broken round never produced an exe, so R106 in d2boot.log
 # unambiguously means the fixed tree)
-gate "res: self-id 0.0.7-R106"                Game/Main.cpp                    'Vanilla\+0\.0\.7-R106' 1
+# R108: string bumped R107 -> R108 (the options-page row round; R107 was the
+# owner-corrected landing of the R106 fix and re-pinned nothing - the gate ran
+# stale until this round)
+gate "res: self-id 0.0.7-R108"                Game/Main.cpp                    'Vanilla\+0\.0\.7-R108' 1
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the
@@ -938,11 +941,13 @@ gate "noshift: unit overlays (R100)"        D2Client/UI/ui.cpp              'PAN
 # shape: one gaVanillaPlusRows entry riding the existing D2VP_* bridge (the
 # write bridge already busts dwNoPanelShiftLastCheck in D2VP_ConfigReloaded,
 # so the very next PANELSHIFT_NoShiftWorld poll re-reads the key). Seventh row
-# forces the Previous Menu row down one pitch (0x124 -> 0x144); the layout
-# check comment in VanillaPlusOptions.cpp carries the arithmetic.
+# forced the Previous Menu row down one pitch (0x124 -> 0x144); R108's eighth
+# row (mana_burn_fix) ran the same move again (0x144 -> 0x164, box 0x171 ->
+# 0x191) - the layout check comment in VanillaPlusOptions.cpp carries the
+# arithmetic, and the two shape pins below are CURRENT (re-pinned R108).
 gate "options page: noshift row present (R101)"  D2Client/UI/VanillaPlusOptions.cpp '"no_panel_shift"' 1
-gate "options page: seven rows (R101)"           D2Client/UI/VanillaPlusOptions.cpp 'VPP_ROW_COUNT = 7' 1
-gate "options page: back row below 7th (R101)"   D2Client/UI/VanillaPlusOptions.cpp 'VPPAGE_BACK_ROW_Y = 0x144' 1
+gate "options page: eight rows (R108)"           D2Client/UI/VanillaPlusOptions.cpp 'VPP_ROW_COUNT = 8' 1
+gate "options page: back row below 8th (R108)"   D2Client/UI/VanillaPlusOptions.cpp 'VPPAGE_BACK_ROW_Y = 0x164' 1
 
 # ---- [issue #26 / R96] D3D perspective-toggle death triage probes -------------
 # Owner field report (R95): toggling perspective in D3D kills the process;
@@ -1012,6 +1017,20 @@ gate "manaburn: SUnitDmg gate include"       D2Game/UNIT/SUnitDmg.cpp          '
 gate "manaburn: SUnitDmg drain shim"         D2Game/UNIT/SUnitDmg.cpp          'DAMAGE_RollDrainStatFixedPoint' 4
 gate "manaburn: VP markers on the shim"      D2Game/UNIT/SUnitDmg.cpp          'VP-BEGIN \[manaburn-fix\]|// VP: \[manaburn-fix\]' 5
 gate "manaburn: ini template entry"          D2Client/UI/VanillaPlusCore.cpp   'mana_burn_fix=0' 1
+
+# ---- [manaburn-fix / R108] the options-page row (toggle no longer ini-only) ---
+# Owner: "I notice the mana_burn_fix toggle is not in the Vanilla+ Options
+# panel, it does get generated in a fresh d2vp.ini thou. For R108 let's add it
+# to the Options Panel." The row is the R101 noshift-row shape: one
+# gaVanillaPlusRows entry riding the existing D2VP_* bridge - and nothing
+# else, because the ini template block shipped with R106 and the server gate
+# (VanillaPlusCombat.cpp) keeps its 2 s poll by design (the stash-server
+# shape): the panel draw re-reads the key fresh every frame and shows the
+# flip immediately, the drain roll picks it up on the next <= 2 s poll, the
+# same latency as an external ini edit. The eighth row moved the Previous
+# Menu row down one pitch (0x144 -> 0x164) and grew the box (0x171 -> 0x191);
+# the layout check comment in VanillaPlusOptions.cpp carries the arithmetic
+gate "options page: manaburn row present (R108)" D2Client/UI/VanillaPlusOptions.cpp '"mana_burn_fix"' 1
 
 echo
 if [ "$FAIL" -eq 0 ]; then

@@ -41,8 +41,8 @@ Every slate row must satisfy all of these before it ships:
 | 7 | Automap scale + position | HUD | D2R larger overlay map | M | Med | `automap_scale` |
 | 8 | Quick-cast keys | Controls | D2R-adjacent (PD2 quick cast) | M–L | Med–High | `quick_cast` |
 | 9 | Shared side-file stash | Stash | None — owner suggestion (PlugY-style side file) | L | Med–High | **Round 1 FIELD-PROVEN (R63, Rev 82; build-fix R64, Rev 83; tab-anchor fixes R65+R66, Revs 84-85; owner on R66: "Great job. I see it. It works.")** — 1 retail-shaped page via a stash-panel "Shared" tab (no hotkey), items + gold, own `_d2vp_shared.sss` file, `.d2s` retail-pure (save-flush design); SP-only v1; mechanism field-proven on the R65 build blind (page swap + cross-char item/gold round trip), tab visibility confirmed on R66. First shipped in release **0.0.7** (cut at R66); in-game **Shared Stash** row on the Vanilla+ Options page added R67 (no longer ini-only). **R75 (Rev 97): a SECOND shared page + pager** (owner: "give the current stash tab label an outline" + "add a 2nd page and buttons/arrows to navigate pages") — the label draws with a 1-px black halo on all four sides, `<`/`>` arrows beside the word step personal → Shared 1 → Shared 2, the word itself toggles back to personal, `_d2vp_shared.sss` v2 stores both pages (v1 files load as page 1), the 0x4F/0x7D param word carries the absolute desired page. (The R68–R71 tab polish — Font24, floating row, backdrop pill — was rolled back by owner decision at `59ff645`; R75 builds on the R66 in-panel tab.) **R82 (Rev 105): TEN shared pages** (owner: "increase the shared stash pages to 10") — the planned v2-header widening: same magic + version, `pageCount` 10 (header 28 → 92 bytes), pre-R82 two-page files read back with pages 3-10 empty (next save rewrites ten), labels `Shared 1`…`Shared 10`, arrows still step one page, one gold pool across all ten. Owed: SMOKE §H items 25 (`.d2s` in retail) + 27 (degrade drill) + the ten-page items 33-35; the "Then 100" leg widens the same two constants. Plan: SHARED-STASH-PLAN.md |
-| 10 | Vanilla+ Options menu page | UI | None — owner suggestion 2026-10-29; in-game settings surface for the gated features | M | Med→Low | **Implemented** (field rev C 2026-10-29: Route B label + cursor fix, field round 2 pending; land: ledger row 34); **seven rows since R67** — the slate's five shipped keys + Shared Stash (R67: the row busts the client stash gate cache too, so the tab follows the toggle the same frame) + No Panel World Shift (R101, issue #26 round 9: the write bridge already busts the PANELSHIFT cache, so the flip applies same-frame; the seventh row moved the Previous Menu row down one pitch, 0x124→0x144) |
-| 11 | Mana Burn fix (melee drain 256x bug) | Combat (D2Game) | D2R 2.4 patch notes ("fixed melee hits draining 256 times too much") + Basin wiki Mana Burn | S | Low | **Implemented** (R106 — `mana_burn_fix`, ini-only; server-side gate TU + VP-marked drain-roll shim in SUnitDmg.cpp; field QA + llvm-mingw gate pending) |
+| 10 | Vanilla+ Options menu page | UI | None — owner suggestion 2026-10-29; in-game settings surface for the gated features | M | Med→Low | **Implemented** (field rev C 2026-10-29: Route B label + cursor fix, field round 2 pending; land: ledger row 34); **eight rows since R67** — the slate's five shipped keys + Shared Stash (R67: the row busts the client stash gate cache too, so the tab follows the toggle the same frame) + No Panel World Shift (R101, issue #26 round 9: the write bridge already busts the PANELSHIFT cache, so the flip applies same-frame; the seventh row moved the Previous Menu row down one pitch, 0x124→0x144) + Mana Burn Fix (R108: the R106 combat gate joins the panel — the eighth row moved the Previous Menu row down one pitch again, 0x144→0x164, and grew the box 0x171→0x191; the server gate keeps its 2 s poll by design, so a flip lands on the next drain roll within 2 s while the panel shows it same-frame) |
+| 11 | Mana Burn fix (melee drain 256x bug) | Combat (D2Game) | D2R 2.4 patch notes ("fixed melee hits draining 256 times too much") + Basin wiki Mana Burn | S | Low | **Implemented** (R106 — `mana_burn_fix`; ini-only at ship, in-game **Mana Burn Fix** row on the Vanilla+ Options page since R108; server-side gate TU + VP-marked drain-roll shim in SUnitDmg.cpp; field QA + llvm-mingw gate pending) |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
 the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipped for 0.0.4, and row 1 shipped as the orb-face readout and was repurposed post-release (see §1).
@@ -315,7 +315,7 @@ the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipp
 
 ---
 
-### 11. Mana Burn fix — `[features] mana_burn_fix` (SHIPPED R106, ini-only)
+### 11. Mana Burn fix — `[features] mana_burn_fix` (SHIPPED R106; Options-page row R108)
 
 - **The bug (retail 1.14d, verified in this tree 2026-11-05)**: monsters with
   the Mana Burn affix drain 256x the intended mana with melee hits — 512x in
@@ -335,8 +335,8 @@ the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipp
   r/ProjectDiablo2 ("applies this multiplication twice … 256 times … 512
   times"); Basin wiki: "it is multiplied by 256 when applied by a melee
   attack. Fixed in D2R."
-- **Shipped (R106)**: gate `mana_burn_fix` (ini-only, server side — new
-  fork TU `D2Game/UNIT/VanillaPlusCombat.{h,cpp}`, the shared-stash
+- **Shipped (R106)**: gate `mana_burn_fix` (ini-only at ship, server side —
+  new fork TU `D2Game/UNIT/VanillaPlusCombat.{h,cpp}`, the shared-stash
   server-gate shape: own statics + 2 s GetTickCount hot-read + the shared
   `ALTTOGGLE_BuildIniPath` helper). In `D2Game/UNIT/SUnitDmg.cpp`, one
   VP-marked static shim (`DAMAGE_RollDrainStatFixedPoint`) plus three
@@ -349,6 +349,18 @@ the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipp
   difficulty x1.4/x2 resist penalty is left alone ON PURPOSE (owner call,
   2026-11-05): with the gate on, Hell Mana Burn drains up to 200% of the
   monster's MonLvl DM per hit — exactly D2R's post-2.4 behavior.
+- **Options-page row (R108, owner ask: "the mana_burn_fix toggle is not in
+  the Vanilla+ Options panel ... For R108 let's add it to the Options
+  Panel")**: the toggle is no longer ini-only — an eighth row **Mana Burn
+  Fix** on the Vanilla+ Options page rides the shared `D2VP_*` bridge (one
+  `gaVanillaPlusRows` entry; the ini template block shipped with R106, so
+  nothing else). The server gate keeps its 2 s poll (the stash-server
+  shape — D2Game cannot import D2Client helpers), so a panel flip lands on
+  the next drain roll within 2 s, the same latency as an external ini edit;
+  the panel draw re-reads the key fresh every frame and shows the flip
+  immediately. The eighth row moved the Previous Menu row down one pitch
+  (0x144 → 0x164) and grew the box (0x171 → 0x191, same 0x13 bottom
+  margin; fits 640x480).
 - **Prior art**: D2R 2.4 fix; Basin wiki Mana Burn page.
 - **Risk**: Low. One roll-site branch, no state, no save surface; off =
   retail byte-for-byte (charter rule 1).

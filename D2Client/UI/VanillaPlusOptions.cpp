@@ -131,11 +131,11 @@ static const uint16_t VPPAGE_FONT_ID = 0xd;        // FontInGameChat - ControlCo
 
 // Page layout (mirrors the ControlConfig panel box for a familiar look).
 static const int VPPAGE_BOX_WIDTH = 0x26c;
-static const int VPPAGE_BOX_HEIGHT = 0x171;
+static const int VPPAGE_BOX_HEIGHT = 0x191;        // R108: was 0x171 - grew one pitch for the eighth row (see the layout check)
 static const int VPPAGE_ROW_PITCH = 0x20;
 static const int VPPAGE_ROW_HEIGHT = 0x1a;
 static const int VPPAGE_FIRST_ROW_Y = 0x50;        // from box top
-static const int VPPAGE_BACK_ROW_Y = 0x144;        // from box top (R101: was 0x124 - moved below the seventh row, see the layout check)
+static const int VPPAGE_BACK_ROW_Y = 0x164;        // from box top (R108: was 0x144 - moved below the eighth row, see the layout check)
 static const int VPPAGE_TEXT_BASELINE_INSET = 4;   // baseline above row bottom
 
 // [features] keys rendered by the page. Adding a slate feature = +1 entry
@@ -147,7 +147,7 @@ struct VPPFeatureRow {
     const char* szKey;        // d2vp.ini [features] key
     const wchar_t* wszLabel;  // row label
 };
-static const VPPFeatureRow gaVanillaPlusRows[7] = {
+static const VPPFeatureRow gaVanillaPlusRows[8] = {
     { "alt_toggle", L"Show Items Toggle" },
     { "auto_gold", L"Auto Gold Pickup" },
     { "portable_save", L"Portable Saves" },
@@ -159,14 +159,29 @@ static const VPPFeatureRow gaVanillaPlusRows[7] = {
     // already busts dwNoPanelShiftLastCheck (D2VP_ConfigReloaded), so flipping
     // it here re-reads the key on the very next PANELSHIFT_NoShiftWorld poll.
     { "no_panel_shift", L"No Panel World Shift" },
+    // VP: [manaburn-fix / R108] mana_burn_fix - the toggle is no longer
+    // ini-only. The row rides the same D2VP_* bridge as the other seven
+    // (the ini template block shipped with R106, so a fresh d2vp.ini already
+    // carries the key). The server gate MANABURN_FixActive
+    // (D2Game/UNIT/VanillaPlusCombat.cpp) keeps its 2 s poll by design - the
+    // shared-stash server-gate shape, D2Game cannot import D2Client helpers -
+    // so a flip here lands on the next drain roll within 2 s, the same
+    // latency as an external ini edit, while the panel draw below re-reads
+    // the key fresh every frame and shows the flip immediately.
+    { "mana_burn_fix", L"Mana Burn Fix" },
 };
-static const int VPP_ROW_COUNT = 7;
-static const int VPP_ROW_BACK = 7; // hit-test index of the Previous Menu row
-// Layout check (R101): the seventh feature row spans boxTop+0x110..0x12a, so
-// the Previous Menu row moves down from boxTop+0x124 (which would overlap it
-// by 6 px) to boxTop+0x144 - the same one-row 0x1a gap the R67 layout kept
-// above it (row 6 ends 0x12a, back row starts 0x12a+0x1a). Back row bottom
-// 0x15e stays inside the 0x171-high box (0x13 bottom margin).
+static const int VPP_ROW_COUNT = 8;
+static const int VPP_ROW_BACK = 8; // hit-test index of the Previous Menu row
+// Layout check (R101, re-run for R108): the seventh feature row spans
+// boxTop+0x110..0x12a, so R101 moved the Previous Menu row down from
+// boxTop+0x124 (which would overlap it by 6 px) to boxTop+0x144 - the same
+// one-row 0x1a gap the R67 layout kept above it (row 6 ends 0x12a, back row
+// starts 0x12a+0x1a). R108: the eighth row (mana_burn_fix) spans
+// boxTop+0x130..0x14a, so the back row moves down one pitch again, to
+// boxTop+0x164 (0x14a+0x1a); its bottom 0x17e grows the box from 0x171 to
+// 0x191 (same 0x13 bottom margin as R101). Still fits every renderer height:
+// at 640x480 the box top is (480-0x191)/2 = 39, bottom 440 < 480; the box is
+// a runtime-sized solid rect, so no asset constrains the height.
 
 // Input handlers (definitions below; the batch array references them).
 // Deliberately NO WM_MOUSEMOVE (0x200) entry - see the header comment block:

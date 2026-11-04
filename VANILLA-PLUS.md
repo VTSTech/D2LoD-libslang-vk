@@ -149,7 +149,10 @@ each can be fixed, replaced and released independently.
   server-side, so it applies in single player and in TCP-IP games hosted
   from this exe. **Default OFF**: set `[features] mana_burn_fix=1` in
   `d2vp.ini` next to `d2vp.exe` (hot-re-read at most every 2 s; missing
-  file/section/key/garbage value = retail behavior byte-for-byte).
+  file/section/key/garbage value = retail behavior byte-for-byte) — or flip
+  the **Mana Burn Fix** row on the Vanilla+ Options page (R108; same key,
+  the panel shows the flip immediately and the server gate picks it up on
+  its next 2 s poll).
 
 ## Build
 
