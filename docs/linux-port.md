@@ -54,10 +54,12 @@ pointer-bearing struct changes layout and the game state corrupts. So:
   headless `--smoke` self-test (forces the SDL `dummy` video/audio drivers,
   runs 3 frames, exit 0). CI runs `tools/check-build-linux.sh`: clean clone →
   submodule init → configure → build → smoke. PE line untouched.
-- **M1 — game logic compiles on Linux i386**: the shim layer — Winsock→BSD
-  sockets, SEH/VEH→signals (+ `libbacktrace` elf path), registry→file-backed,
-  remaining CRT bits; the CMake source list grows game TUs; CI switches to
-  `-DD2LINUX_ARCH=i386` with multilib.
+- **M1 — game logic compiles on Linux i386 (sandbox-green)**: the shim layer —
+  Winsock→BSD sockets, SEH/VEH→signals (the crash twin over /proc + dladdr),
+  registry→file-backed under `~/.config/d2linux/`, the MSVC CRT bits, and the
+  inventory pass's full surface (platform/linux/INVENTORY.md). The slice: 44
+  game TUs (Fog/Storm foundation + PKWARE). CI builds `-DD2LINUX_ARCH=i386`
+  with multilib.
 - **M2 — title screen offline**: MPQ loading via the vendored Storm, one
   renderer path onto the M0 presentation surface (the M0 pattern producer is
   replaced by the game's composed 8-bit frame), input shim. Cinematics stubbed.

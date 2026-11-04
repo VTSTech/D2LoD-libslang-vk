@@ -107,3 +107,188 @@ target_compile_definitions(d2linux PRIVATE D2LINUX_BUILD_ID="${D2LINUX_BUILD_ID}
 target_include_directories(d2linux PRIVATE "${CMAKE_SOURCE_DIR}/platform/linux")
 target_link_libraries(d2linux PRIVATE ${D2_SDL3_TARGET})
 target_compile_options(d2linux PRIVATE -Wall -Wextra)
+
+# ---------------------------------------------------------------------------
+# [d2linux M1] game logic joins the build (PLAN.md §5 M1): the Fog/Storm
+# foundation slice + PKWARE, compiled i386 against the shim layer. The slice
+# list is explicit, not globbed — the plan grows it 5-10 TUs per step, and an
+# explicit list is the step ledger. Each family has its named call sites in
+# the slice (inventory: platform/linux/INVENTORY.md).
+#   step 1 (this list): Fog foundation (memory/log/crash/registry/file),
+#   Storm foundation (registry/compression/system/window), PKWARE, the
+#   globals TU, the PE line's portable CRT impl/support, and the shim layer.
+#   step 2: the boot chain (D2Launch/D2Client/D2Multi/D2Common) toward M2.
+#
+# i386-only: game TUs assume the 32-bit MSVC x86 ABI (PLAN.md §7 R1 — the
+# decomp's casts treat pointers as 32-bit ints); a 64-bit build both fails to
+# compile and would corrupt game state. The `native` arch therefore builds the
+# host skeleton + shim layer only (the M0 shape), as the charter says.
+# ---------------------------------------------------------------------------
+set(D2LINUX_GAME_SOURCES
+    PKWARE/PKWARE.cpp
+    Fog/SMem.cpp
+    Fog/Memory.cpp
+    Fog/BitBuffer.cpp
+    Fog/File.cpp
+    Fog/Fog.cpp
+    Fog/Save.cpp
+    Fog/Debug.cpp
+    Fog/Src/DataArrays.cpp
+    Fog/Src/ErrorManager.cpp
+    Fog/Src/LogManager.cpp
+    Fog/Src/String/FogString.cpp
+    Fog/Src/AsyncData.cpp
+    Fog/Src/Safesock.cpp
+    Fog/Source/SFile.cpp
+    Fog/Source/SSComp.cpp
+    Storm/Source/SSignature.cpp
+    Fog/3rdparty/crashy.cpp
+    Fog/3rdparty/crashy/Report.cpp
+    Storm/Source/SReg.cpp
+    Fog/Source/SSignature.cpp
+    Storm/Source/SErr.cpp
+    Storm/Source/SComp.cpp
+    Storm/Source/SBig.cpp
+    Storm/Source/SMem.cpp
+    Storm/Source/SSTR.cpp
+    Storm/Source/SSystem.cpp
+    Storm/Source/SEVT.cpp
+    Storm/Source/SLog.cpp
+    Storm/Source/SFile.cpp
+    Storm/WindowHandle.cpp
+    Storm/3rdparty/zlib/adler32.cpp
+    Storm/3rdparty/zlib/crc32.cpp
+    Storm/3rdparty/zlib/deflate.cpp
+    Storm/3rdparty/zlib/inffast.cpp
+    Storm/3rdparty/zlib/inflate.cpp
+    Storm/3rdparty/zlib/inftrees.cpp
+    Storm/3rdparty/zlib/trees.cpp
+    Storm/3rdparty/zlib/uncompr.cpp
+    Storm/3rdparty/zlib/zutil.cpp
+    support/d2_crt_impl.cpp
+    support/d2_crt_support.cpp
+    globals/Fog.cpp
+    globals/Storm.cpp
+    # globals/globals.cpp is STEP 2: the 39K-line central-data TU embeds the
+    # game's command dispatch tables (D2Client::CMD_* and friends), whose
+    # closure is the whole client. Step 1 links without it; the few symbols
+    # the foundation slice externs (ExceptionList, the s_* string constants)
+    # get weak definitions in platform/linux/d2_linux_globals_step1.cpp that
+    # yield to globals.cpp's strong ones when step 2 brings it in.
+)
+
+# The shim layer (this track's code) and the crash twin.
+set(D2LINUX_SHIM_SOURCES
+    platform/linux/d2_linux_shim_win32.cpp
+    platform/linux/d2_linux_shim_registry.cpp
+    platform/linux/d2_linux_globals_step1.cpp
+    platform/linux/d2_linux_shim_crt.cpp
+    platform/linux/d2_linux_crash.cpp
+)
+
+# The platform shadow: d2_platform.h with the non-Windows stubs that clash
+# with the SDK-faithful compat layer removed (tools/syntax-check.sh's pattern;
+# the patch list lives in the script). Generated at configure time so an
+# upstream d2_platform.h regen re-applies the patches automatically.
+set(D2LINUX_PLATFORM_SHADOW_DIR "${CMAKE_BINARY_DIR}/platform-shadow")
+find_program(D2LINUX_SH sh)
+add_custom_command(
+    OUTPUT "${D2LINUX_PLATFORM_SHADOW_DIR}/d2_platform.h"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${D2LINUX_PLATFORM_SHADOW_DIR}"
+    COMMAND ${D2LINUX_SH} "${CMAKE_SOURCE_DIR}/platform/linux/mk-platform-shadow.sh"
+            "${CMAKE_SOURCE_DIR}" "${D2LINUX_PLATFORM_SHADOW_DIR}"
+    DEPENDS "${CMAKE_SOURCE_DIR}/d2_platform.h"
+            "${CMAKE_SOURCE_DIR}/platform/linux/mk-platform-shadow.sh"
+    COMMENT "d2linux: generating the platform shadow (d2_platform.h patches)"
+    VERBATIM)
+add_custom_target(d2linux_platform_shadow
+    DEPENDS "${D2LINUX_PLATFORM_SHADOW_DIR}/d2_platform.h")
+
+# Symbolization note: the vendored libbacktrace (thirdparty/libbacktrace) is
+# the PE line's i686-mingw configuration (pecoff.c, hand-written config.h) and
+# carries no ELF backend. The crash twin symbolizes through dladdr() against
+# the -rdynamic executable instead; an ELF libbacktrace configuration (its own
+# config.h + elf.c vendored) is the documented upgrade when the report needs
+# inlined/frame-precise DWARF names.
+
+# ---------------------------------------------------------------------------
+# Game TU flags: the PE charter's compile shape (-w, -fms-extensions, the
+# forced-include chain), plus the linux additions (-fshort-wchar: MSVC's
+# 16-bit wchar_t is part of the ABI the decomp models). D2LINUX_GAME marks
+# the guarded decomp edits (BnSend.h, d2_crt_impl.cpp, d2_crt_support.cpp).
+# ---------------------------------------------------------------------------
+target_sources(d2linux PRIVATE ${D2LINUX_SHIM_SOURCES})
+if(D2LINUX_ARCH STREQUAL "i386")
+    target_sources(d2linux PRIVATE ${D2LINUX_GAME_SOURCES})
+else()
+    message(STATUS "d2linux: arch=native - game TUs stay out (i386 charter, PLAN.md R1); "
+                   "the skeleton + shim layer build and the smoke runs as in M0")
+endif()
+
+# The shadow dir leads the include path: game headers say #include
+# "d2_platform.h" and must resolve to the SAME file the forced include used
+# (#pragma once dedupes per path; the tree file would double-parse).
+set(D2LINUX_INCLUDE_DIRS "${D2LINUX_PLATFORM_SHADOW_DIR}" "${CMAKE_SOURCE_DIR}")
+file(GLOB_RECURSE D2LINUX_GAME_HEADERS CONFIGURE_DEPENDS
+    LIST_DIRECTORIES false
+    "${CMAKE_SOURCE_DIR}/*.h")
+foreach(h IN LISTS D2LINUX_GAME_HEADERS)
+    string(FIND "${h}" "${CMAKE_SOURCE_DIR}/asm_matching/" _in_asm)
+    string(FIND "${h}" "${CMAKE_SOURCE_DIR}/thirdparty/" _in_bt)
+    string(FIND "${h}" "${CMAKE_SOURCE_DIR}/vanilla-plus/" _in_vp)
+    string(FIND "${h}" "${CMAKE_SOURCE_DIR}/external/" _in_ext)
+    string(FIND "${h}" "${CMAKE_SOURCE_DIR}/platform/" _in_plat)
+    if(NOT _in_asm EQUAL 0 AND NOT _in_bt EQUAL 0 AND NOT _in_vp EQUAL 0
+       AND NOT _in_ext EQUAL 0 AND NOT _in_plat EQUAL 0)
+        get_filename_component(_dir "${h}" DIRECTORY)
+        list(APPEND D2LINUX_INCLUDE_DIRS "${_dir}")
+    endif()
+endforeach()
+list(REMOVE_DUPLICATES D2LINUX_INCLUDE_DIRS)
+target_include_directories(d2linux PRIVATE ${D2LINUX_INCLUDE_DIRS})
+
+set(D2LINUX_GAME_FLAGS -w -fms-extensions -fshort-wchar)
+# The forced-include chain rides target_compile_options (which honors the
+# SHELL: prefix — set_property(SOURCE COMPILE_OPTIONS) would pass the spaces
+# through Ninja's response files as literal quotes). It applies to every
+# d2linux source: the host skeleton already lives with d2_platform's shapes
+# (the M0 binary did), and the FILE-guard trick in the compat header keeps
+# glibc's stdio compatible everywhere.
+target_compile_options(d2linux PRIVATE
+    "SHELL:-include ${CMAKE_SOURCE_DIR}/platform/linux/d2_linux_compat.h"
+    "SHELL:-include ${D2LINUX_PLATFORM_SHADOW_DIR}/d2_platform.h"
+    "SHELL:-include ${CMAKE_SOURCE_DIR}/tools/vp_host_api.h"
+    "SHELL:-include ${CMAKE_SOURCE_DIR}/platform/linux/d2_linux_api.h")
+
+foreach(src IN LISTS D2LINUX_GAME_SOURCES)
+    set_property(SOURCE "${src}" PROPERTY COMPILE_OPTIONS
+        ${D2LINUX_GAME_FLAGS} ${D2LINUX_FORCED_INCLUDES})
+    set_property(SOURCE "${src}" PROPERTY COMPILE_DEFINITIONS D2LINUX_GAME=1)
+    set_property(SOURCE "${src}" PROPERTY OBJECT_DEPENDS
+        "${D2LINUX_PLATFORM_SHADOW_DIR}/d2_platform.h"
+        "${CMAKE_SOURCE_DIR}/platform/linux/d2_linux_compat.h"
+        "${CMAKE_SOURCE_DIR}/tools/vp_host_api.h"
+        "${CMAKE_SOURCE_DIR}/platform/linux/d2_linux_api.h")
+endforeach()
+
+# The shim layer compiles with the same forced includes (its declarations live
+# there) but keeps -Wall -Wextra: this is house code, not decomp.
+foreach(src IN LISTS D2LINUX_SHIM_SOURCES)
+    set_property(SOURCE "${src}" PROPERTY COMPILE_OPTIONS ${D2LINUX_FORCED_INCLUDES})
+    set_property(SOURCE "${src}" PROPERTY OBJECT_DEPENDS
+        "${D2LINUX_PLATFORM_SHADOW_DIR}/d2_platform.h"
+        "${CMAKE_SOURCE_DIR}/platform/linux/d2_linux_compat.h"
+        "${CMAKE_SOURCE_DIR}/tools/vp_host_api.h"
+        "${CMAKE_SOURCE_DIR}/platform/linux/d2_linux_api.h")
+endforeach()
+target_compile_definitions(d2linux PRIVATE D2LINUX_GAME=1)
+
+# support/d2_crt_impl.cpp + d2_crt_support.cpp are listed in the game sources;
+# d2_crt_impl's D2LINUX_GAME-gated filter block needs the define too (already
+# set target-wide above). The asm TU the PE build carries (d2_link_support.s)
+# is mingw-only: not in the linux source list.
+
+add_dependencies(d2linux d2linux_platform_shadow)
+target_link_libraries(d2linux PRIVATE pthread dl)
+# -rdynamic: dladdr() resolves the game's own symbols in the crash report.
+target_link_options(d2linux PRIVATE -rdynamic)

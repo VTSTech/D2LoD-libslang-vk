@@ -15,12 +15,20 @@ concurrency:
 
 jobs:
   # [d2linux] native Linux track (branch `linux`, docs/linux-port.md). Builds
-  # the SDL3 host skeleton and runs its headless --smoke self-test. This is
-  # the only CI job: the retired mingw-i686 PE job lives on as the owner's
-  # local Win11 build + the manual PE gate suite. The game-code milestone
-  # (M1) switches this job to -DD2LINUX_ARCH=i386 with the multilib toolchain.
+  # d2linux and runs its headless --smoke self-test. This is the only CI job:
+  # the retired mingw-i686 PE job lives on as the owner's local Win11 build +
+  # the manual PE gate suite.
+  #
+  # M1 (game TUs join the build): the job builds the charter arch, i386 —
+  # the decomp assumes the 32-bit MSVC x86 ABI (PLAN.md §7 R1) — with the
+  # multilib toolchain. The game slice list lives in platform/linux/build.cmake;
+  # the forced-include chain + -fshort-wchar are applied there per source.
   linux-native:
     runs-on: ubuntu-24.04
+    env:
+      # check-build-linux.sh builds the default arch (i386 since M1); CI
+      # verifies exactly what ships.
+      D2LINUX_ARCH: i386
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,10 +37,11 @@ jobs:
       - name: Install the toolchain
         run: |
           sudo apt-get update -qq
-          # SDL3 hard-errors at configure time on Linux without X11 or Wayland
-          # dev libraries (SDL_UNIX_CONSOLE_BUILD would skip that, but the
-          # runner can afford the real backends).
-          sudo apt-get install -y -qq cmake ninja-build \
+          # gcc-multilib g++-multilib: -m32 codegen + the 32-bit libc (M1's
+          # i386 charter; PLAN.md §7 R5). SDL3 hard-errors at configure time
+          # on Linux without X11 or Wayland dev libraries — the runner can
+          # afford the real backends.
+          sudo apt-get install -y -qq cmake ninja-build gcc-multilib g++-multilib \
             libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
             libxfixes-dev libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev \
             libdecor-0-dev libegl1-mesa-dev libasound2-dev
@@ -54,7 +63,7 @@ jobs:
       # in-tree too and keep the binary as an artifact.
       - name: Build in-tree
         run: |
-          cmake -S . -B build-linux -G Ninja -DD2LINUX_ARCH=native
+          cmake -S . -B build-linux -G Ninja -DD2LINUX_ARCH=i386
           cmake --build build-linux -j "$(getconf _NPROCESSORS_ONLN)" --target d2linux
 
       - name: Upload d2linux-<commit>

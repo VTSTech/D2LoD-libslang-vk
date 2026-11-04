@@ -12,7 +12,15 @@
 struct D2BNetGatewayAccessStr;
 struct D2CDKeyHashStrc;
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
+// [d2linux M1] platform/linux/d2_linux_compat.h supplies the real
+// `typedef long __time32_t` (prelude, before this header); the elaborated
+// forward declaration below is an in-built non-Windows fallback that never
+// parsed anywhere (gcc: "using typedef-name after struct") — stood down when
+// the prelude typedef stands. PE path untouched: the guard is never defined
+// under _WIN32.
+#ifndef D2_LINUX_TIME32_SUPPLIED
 struct __time32_t;
+#endif
 struct sockaddr;
 #endif // _WIN32
 #ifndef RECON_FPTD_pfnNewsEntryCallback

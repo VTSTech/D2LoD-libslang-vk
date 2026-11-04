@@ -16,6 +16,13 @@ struct sockaddr;
 
 // Data types
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
+// [d2linux M1] platform/linux/d2_linux_api.h supplies the winsock-flavored
+// shapes (WSADATA, SOCKET, sockaddr_in, ...) — this block's own fallbacks
+// predate a real non-Windows build and clash with the glibc types already in
+// scope there (struct timeval arrives via <bits/types/struct_timeval.h>;
+// fd_set via <sys/select.h>). PE path untouched: the guard is never defined
+// under _WIN32.
+#ifndef D2_LINUX_WINSOCK_SUPPLIED
 
 typedef uint32_t u_int;
 
@@ -50,6 +57,8 @@ struct fd_set {
     /* 0x00 */ u_int fd_count;
     /* 0x04 */ SOCKET fd_array[64];
 };
+
+#endif // D2_LINUX_WINSOCK_SUPPLIED
 
 #endif // _WIN32
 

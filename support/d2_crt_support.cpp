@@ -81,7 +81,11 @@ extern "C" long double CRT_CIPow(long double base, long double exponent) {
 // single match); the SSE2 path at 006830c0 is the branch-free exponent-field
 // floor. Its only caller, Fog/Source/SFile.cpp:614-615 (SFILE_JulianDayNumber),
 // is a floor consumer. Both call sites discard the result.
+#ifdef D2LINUX_GAME
+extern "C" double d2_CRT_Floor(double x) __asm__("CRT_Floor");
+#else
 extern "C" double d2_CRT_Floor(double x) __asm__("_CRT_Floor");
+#endif
 extern "C" double d2_CRT_Floor(double x) { return floor(x); }
 
 // ---------------------------------------------------------------------------

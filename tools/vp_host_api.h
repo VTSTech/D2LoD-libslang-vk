@@ -13,6 +13,8 @@
 // No-op under _WIN32 (the SDK has everything).
 #ifndef _WIN32
 
+extern "C" {
+
 // --- file system (winbase.h) ------------------------------------------------
 BOOL CopyFileA(LPCSTR lpExistingFileName, LPCSTR lpNewFileName, BOOL bFailIfExists);
 BOOL FlushFileBuffers(HANDLE hFile);
@@ -219,5 +221,7 @@ BOOL SetThreadStackGuarantee(ULONG* SizeInBytes);
 struct _RTL_CRITICAL_SECTION { void* DebugInfo; long LockCount; long RecursionCount; void* OwningThread; void* LockSemaphore; unsigned long SpinCount; };
 typedef struct _RTL_CRITICAL_SECTION RTL_CRITICAL_SECTION;
 typedef struct _RTL_CRITICAL_SECTION* PRTL_CRITICAL_SECTION;
+
+}  // extern "C"
 
 #endif // !defined(_WIN32)

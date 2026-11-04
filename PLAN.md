@@ -58,7 +58,7 @@ glide3x wrapper (the shader-preset chain is a stretch goal only after M5).
 
 | Item | Value |
 |---|---|
-| Artifact | `build-linux/d2linux`, native ELF (x86-64 today; **i386 when game code joins at M1**), ~4.2 MB, static SDL3 |
+| Artifact | `build-linux/d2linux`, native ELF **i386 with the M1 slice** (the `native` skeleton remains for shim work), ~15.4 MB static-i386 / ~6.4 MB static-x86-64, static SDL3 |
 | Toolchain | host gcc/clang + vendored SDL3 submodule `external/SDL` pinned **release-3.4.18** (gitlink `829a65d`) |
 | Arch policy | `D2LINUX_ARCH` default **i386** (`-m32`, what game code requires, needs multilib); `native` escape used by M0/CI/sandbox |
 | CI | one job, `linux-native` (ubuntu-24.04): full X11/Wayland dev set → configure → build → `--smoke` verdict, via `tools/check-build-linux.sh` (clean-clone mirror: temp clone → submodule init → configure → build → smoke) |
@@ -139,7 +139,7 @@ Key properties:
 | M | Scope | Status |
 |---|---|---|
 | **M0 — scaffold** | SDL3 host skeleton: window + renderer, INDEX8 staging surface + palette + streaming-texture present, letterboxed logical presentation, 22.05 kHz S16-stereo silence feeder, d2boot-style self-ID banner, headless `--smoke`; CI job `linux-native` | **FIELD-PROVEN** (owner VM `c8e8d54`; pattern + smoke + Wayland titlebar/resize) |
-| **M1 — game logic compiles on Linux i386** | The shim layer (§6): Winsock→BSD sockets, SEH/VEH→signals (+ `libbacktrace` elf path), registry→file-backed, remaining CRT bits; CMake source list grows game TUs; CI switches to `-DD2LINUX_ARCH=i386` with multilib; first gates added (gates follow when game TUs join the build) | next |
+| **M1 — game logic compiles on Linux i386** | The shim layer (§6): Winsock→BSD sockets, SEH/VEH→signals (the crash twin over dladdr; the ELF libbacktrace config is its own later round), registry→file-backed (`~/.config/d2linux/registry.ini`), remaining CRT bits; the slice list grew to 44 TUs (Fog/Storm foundation + PKWARE — platform/linux/INVENTORY.md); CI switched to `-DD2LINUX_ARCH=i386` with multilib; PE gates re-run 380/380 on the shared-TU diff | **sandbox-green** (compiles + links i386, native smoke green, gates green); CI verifies the i386 smoke on this push |
 | **M2 — title screen offline** | MPQ loading via the vendored Storm, one renderer path onto the M0 presentation surface (pattern producer retired), input shim; cinematics stubbed | |
 | **M3 — playable offline** | Single player end to end; DirectDraw/D2Sound shims complete; palette-ramp lighting verified visually | |
 | **M4 — codecs** | binkw32→ffmpeg-based shim (long pole), smackw32→libsmacker, ijl11→libjpeg | |

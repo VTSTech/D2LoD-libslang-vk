@@ -8,7 +8,13 @@
 // d2_link_support.s is what genuinely cannot be expressed here (MSVC's SEH
 // unwinder, which mingw does not share an exception model with).
 
+// [d2linux M1] windows.h is the PE supply of the SDK types; the linux build
+// reaches this TU through the same forced includes as the game TUs
+// (platform/linux/d2_linux_compat.h + the platform shadow), which carry the
+// types d2_crt_impl names. PE path identical: the guard is always defined there.
+#ifdef _WIN32
 #include <windows.h>
+#endif
 #include <string.h>
 #include <stdlib.h>
 
@@ -76,12 +82,16 @@ extern "C" void _eh_vector_destructor_iterator_(void* pArray, uint32_t nElementS
 // makes that contract easy to get subtly wrong. It stays stubbed in
 // d2_link_support.s until it is worth doing properly.
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(D2LINUX_GAME)
 // The Visual C++ 2005 build links the libcmt the original linked, so what is the
 // CRT's own function comes from there. __ftol2 is libcmt's, and defining it
 // here would collide with it. The two vector iterators above stay ours: libcmt's are
 // `eh vector constructor iterator' (??_L) and `eh vector destructor iterator'
 // (??_M), __stdcall, while the tree declares and calls these cdecl.
+// [d2linux M1] the linux build compiles this block too (D2LINUX_GAME): the
+// CRT_ExceptionFilterN handlers are stored onto the tree's global
+// ExceptionList and never dispatched (see the comment below), so an empty
+// body is their whole behaviour there as on VC8.
 
 // libcmt's __CIsqrt takes ST(0) and returns in it; the tree declares and calls
 // __CIsqrt as a cdecl function of a stack argument, a different symbol (one more

@@ -10,9 +10,15 @@
 
 // Data types
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
-
+// [d2linux M1] platform/linux/d2_linux_compat.h supplies the SDK-faithful
+// in_addr (the S_un union with its conversion spellings — Safesock.cpp's
+// regenerated bodies reference the union members directly). This body is the
+// simple regen form that never parsed anywhere; stood down when the compat
+// layer's stands. PE path untouched: the guard is never defined under _WIN32.
+#ifndef D2_LINUX_SDK_IN_ADDR
 struct in_addr {
     /* 0x00 */ uint32_t S_un;
 };
+#endif // D2_LINUX_SDK_IN_ADDR
 
 #endif // _WIN32
