@@ -139,6 +139,17 @@ each can be fixed, replaced and released independently.
   the Vanilla+ Options page ("Persistent Globe Text"). **Default OFF**: set
   `[features] globe_persistent=1` in `d2vp.ini` (hot-re-read at most every 2 s;
   missing file/section/key/garbage value = vanilla).
+- **Mana Burn fix** (D2R 2.4 parity) — repairs a bug that ships in retail
+  1.14d: monsters with the Mana Burn affix drain 256x the intended mana with
+  melee hits (512x in Hell), emptying a mana pool in one blow. With the gate
+  on, a Mana Burn melee hit drains the designed amount instead — 66-100% of
+  the monster's level damage (33-50% for Nightmare/Hell minions); Nightmare
+  and Hell still drain more than Normal, exactly like D2R after its 2.4 fix
+  (the difficulty scaling is retail behavior and is left alone). The fix is
+  server-side, so it applies in single player and in TCP-IP games hosted
+  from this exe. **Default OFF**: set `[features] mana_burn_fix=1` in
+  `d2vp.ini` next to `d2vp.exe` (hot-re-read at most every 2 s; missing
+  file/section/key/garbage value = retail behavior byte-for-byte).
 
 ## Build
 

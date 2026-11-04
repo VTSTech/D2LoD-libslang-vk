@@ -994,6 +994,24 @@ gate "probe: world transition (R97)"        D2Client/GAME/View.cpp             '
 gate "fix: flat wall int iterator (R98)"     D2Direct3D/Renderer/Direct3D.cpp   'int nSubtileByteOffset;' 1
 gate "probe: flat wall wide-tile (R98)"      D2Direct3D/Renderer/Direct3D.cpp   'd3d: flat wall subtiles=%d tile=%p \[R98\]' 1
 
+# ---- [manaburn-fix / R106] melee drain roll consumes the fixed-point stats raw --
+# Retail 1.14d bug (D2R 2.4 parity): the Mana Burn umod stores
+# manadrainmindam/maxdam already in the mana 1/256 fixed point (Umod.cpp
+# ManaBurn scales by 0x100), but the melee drain roll in SUnitDmg.cpp routes
+# them through DAMAGE_RollElementalDamageWithBonus, whose <<8/*0x100 inputs
+# are right for the plain-point fire/cold/lightning stats and wrong here -
+# a second x256 on top of the umod's. Melee hits drained 256x the intended
+# mana (512x in Hell, where the difficulty resist penalty also lands on the
+# drain fields' zero resist base); the missile path reads the stats raw and
+# is correct. mana_burn_fix=1 rolls the raw fixed-point stats through the
+# same statics (same RNG, same shape); 0 = retail byte-for-byte. Difficulty
+# scaling (x1.4 NM / x2 Hell) is left alone - D2R's post-2.4 behavior.
+gate "manaburn: fork TU gate poll"           D2Game/UNIT/VanillaPlusCombat.cpp 'GetPrivateProfileIntA\("features", "mana_burn_fix", 0, szIniPath\)' 1
+gate "manaburn: fork TU entry point"         D2Game/UNIT/VanillaPlusCombat.h   'MANABURN_FixActive' 1
+gate "manaburn: SUnitDmg gate include"       D2Game/UNIT/SUnitDmg.cpp          'include "D2Game/UNIT/VanillaPlusCombat.h"' 1
+gate "manaburn: SUnitDmg drain shim"         D2Game/UNIT/SUnitDmg.cpp          'DAMAGE_RollDrainStatFixedPoint' 4
+gate "manaburn: VP markers on the shim"      D2Game/UNIT/SUnitDmg.cpp          'VP-BEGIN \[manaburn-fix\]|// VP: \[manaburn-fix\]' 5
+gate "manaburn: ini template entry"          D2Client/UI/VanillaPlusCore.cpp   'mana_burn_fix=0' 1
 
 echo
 if [ "$FAIL" -eq 0 ]; then

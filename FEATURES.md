@@ -42,6 +42,7 @@ Every slate row must satisfy all of these before it ships:
 | 8 | Quick-cast keys | Controls | D2R-adjacent (PD2 quick cast) | M–L | Med–High | `quick_cast` |
 | 9 | Shared side-file stash | Stash | None — owner suggestion (PlugY-style side file) | L | Med–High | **Round 1 FIELD-PROVEN (R63, Rev 82; build-fix R64, Rev 83; tab-anchor fixes R65+R66, Revs 84-85; owner on R66: "Great job. I see it. It works.")** — 1 retail-shaped page via a stash-panel "Shared" tab (no hotkey), items + gold, own `_d2vp_shared.sss` file, `.d2s` retail-pure (save-flush design); SP-only v1; mechanism field-proven on the R65 build blind (page swap + cross-char item/gold round trip), tab visibility confirmed on R66. First shipped in release **0.0.7** (cut at R66); in-game **Shared Stash** row on the Vanilla+ Options page added R67 (no longer ini-only). **R75 (Rev 97): a SECOND shared page + pager** (owner: "give the current stash tab label an outline" + "add a 2nd page and buttons/arrows to navigate pages") — the label draws with a 1-px black halo on all four sides, `<`/`>` arrows beside the word step personal → Shared 1 → Shared 2, the word itself toggles back to personal, `_d2vp_shared.sss` v2 stores both pages (v1 files load as page 1), the 0x4F/0x7D param word carries the absolute desired page. (The R68–R71 tab polish — Font24, floating row, backdrop pill — was rolled back by owner decision at `59ff645`; R75 builds on the R66 in-panel tab.) **R82 (Rev 105): TEN shared pages** (owner: "increase the shared stash pages to 10") — the planned v2-header widening: same magic + version, `pageCount` 10 (header 28 → 92 bytes), pre-R82 two-page files read back with pages 3-10 empty (next save rewrites ten), labels `Shared 1`…`Shared 10`, arrows still step one page, one gold pool across all ten. Owed: SMOKE §H items 25 (`.d2s` in retail) + 27 (degrade drill) + the ten-page items 33-35; the "Then 100" leg widens the same two constants. Plan: SHARED-STASH-PLAN.md |
 | 10 | Vanilla+ Options menu page | UI | None — owner suggestion 2026-10-29; in-game settings surface for the gated features | M | Med→Low | **Implemented** (field rev C 2026-10-29: Route B label + cursor fix, field round 2 pending; land: ledger row 34); **seven rows since R67** — the slate's five shipped keys + Shared Stash (R67: the row busts the client stash gate cache too, so the tab follows the toggle the same frame) + No Panel World Shift (R101, issue #26 round 9: the write bridge already busts the PANELSHIFT cache, so the flip applies same-frame; the seventh row moved the Previous Menu row down one pitch, 0x124→0x144) |
+| 11 | Mana Burn fix (melee drain 256x bug) | Combat (D2Game) | D2R 2.4 patch notes ("fixed melee hits draining 256 times too much") + Basin wiki Mana Burn | S | Low | **Implemented** (R106 — `mana_burn_fix`, ini-only; server-side gate TU + VP-marked drain-roll shim in SUnitDmg.cpp; field QA + llvm-mingw gate pending) |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
 the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipped for 0.0.4, and row 1 shipped as the orb-face readout and was repurposed post-release (see §1).
@@ -311,6 +312,49 @@ the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipp
   proven in-tree patterns (ControlConfig text/rows, esc-menu row callbacks, blank
   placeholder = the byte shape field-proven in round 1). Zero D2Game/D2Common
   edits, no loader edits, all retail rows byte-identical.
+
+---
+
+### 11. Mana Burn fix — `[features] mana_burn_fix` (SHIPPED R106, ini-only)
+
+- **The bug (retail 1.14d, verified in this tree 2026-11-05)**: monsters with
+  the Mana Burn affix drain 256x the intended mana with melee hits — 512x in
+  Hell — emptying a mana pool per blow. Two retail defects compound:
+  (1) the affix stores `UNITSTAT_manadrainmindam/maxdam` already in the mana
+  1/256 fixed point (`D2Game/Monsters/Umod.cpp` ManaBurn scales the
+  MonUMod.txt 66/100 / 33/50 percentages by `0x100`), and the melee drain
+  roll (`D2Game/UNIT/SUnitDmg.cpp` `DAMAGE_CalculateOffensiveDamage` →
+  `DAMAGE_RollElementalDamageWithBonus`) shifts them ANOTHER 8 bits — that
+  helper's `<<8`/`*0x100` inputs are right for the plain-point
+  fire/cold/lightning stats it also serves, wrong for the drain family. The
+  missile path (`D2Game/MISSILES/MissilesMode.cpp`) reads the same stats raw
+  and was always correct. (2) `DAMAGE_CalculateResistance` applies the
+  difficulty resist penalty (-40 NM / -100 Hell) to the drain fields' zero
+  resist base (their table entries carry no resist stat), multiplying the
+  drain x1.4 / x2 — the "hidden" Hell doubling. Community record:
+  r/ProjectDiablo2 ("applies this multiplication twice … 256 times … 512
+  times"); Basin wiki: "it is multiplied by 256 when applied by a melee
+  attack. Fixed in D2R."
+- **Shipped (R106)**: gate `mana_burn_fix` (ini-only, server side — new
+  fork TU `D2Game/UNIT/VanillaPlusCombat.{h,cpp}`, the shared-stash
+  server-gate shape: own statics + 2 s GetTickCount hot-read + the shared
+  `ALTTOGGLE_BuildIniPath` helper). In `D2Game/UNIT/SUnitDmg.cpp`, one
+  VP-marked static shim (`DAMAGE_RollDrainStatFixedPoint`) plus three
+  VP-marked call sites (life/mana/stamina drain rolls): gate on → the raw
+  fixed-point stats are rolled through the SAME file statics (same RNG,
+  same shape, same `byScale` consumer); gate off → the retail call,
+  byte-for-byte. The life/stamina sites share the latent double-scale but
+  nothing server-side sets those stats on melee attackers today (missiles
+  carry them via the missile path) — covered anyway for consistency. The
+  difficulty x1.4/x2 resist penalty is left alone ON PURPOSE (owner call,
+  2026-11-05): with the gate on, Hell Mana Burn drains up to 200% of the
+  monster's MonLvl DM per hit — exactly D2R's post-2.4 behavior.
+- **Prior art**: D2R 2.4 fix; Basin wiki Mana Burn page.
+- **Risk**: Low. One roll-site branch, no state, no save surface; off =
+  retail byte-for-byte (charter rule 1).
+- **Exit**: a Hell Mana Burn unique with monlvl DM 40 drains 26-40 mana per
+  hit (not 13,517-20,480); `0` = vanilla byte-for-byte. Field QA + the
+  llvm-mingw build gate pending (owner).
 
 ---
 

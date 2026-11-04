@@ -72,6 +72,7 @@
 #include "D2Game/UNIT/SUnitEvent.h"
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
+#include "D2Game/UNIT/VanillaPlusCombat.h" // VP: [manaburn-fix] drain-roll gate
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/Save.h"
@@ -160,6 +161,36 @@ static uint32_t __stdcall DAMAGE_RollElementalDamageWithBonus(eD2UnitStat eUnitS
     uint32_t nResult = DAMAGE_RollPhysicalDamageRange(nDamageBase * 0x100, nMinPctBonus, pUnit, nMinDamage << 8, nRangePctBonus, nDamageAccum);
     return nResult;
 }
+
+// VP-BEGIN [manaburn-fix] Drain-family roll shim. The manadrain/lifedrain/
+// stamdrain stats are stored in the mana 1/256 fixed point (D2Game/Monsters/
+// Umod.cpp ManaBurn scales the MonUMod.txt 66/100 percentages by 0x100), but
+// the generic elemental roll above - correct for the plain-point fire/cold/
+// lightning stats it also serves - shifts its inputs another 8 bits on the
+// way in. That second x256 is the retail 1.14d Mana Burn bug: melee hits
+// drained 256x the intended mana (512x in Hell, where the difficulty resist
+// penalty also lands on the drain fields' zero resist base); the missile
+// path (D2Game/MISSILES/MissilesMode.cpp) reads the same stats raw and is
+// correct. Basin wiki: "it is multiplied by 256 when applied by a melee
+// attack. Fixed in D2R." With [features] mana_burn_fix=1 the raw fixed-point
+// stats are rolled through the SAME statics (same RNG, same shape, same
+// byScale consumer below); 0 = the retail call, byte-for-byte. Gate plumbing
+// lives in the fork-owned D2Game/UNIT/VanillaPlusCombat.{h,cpp}.
+static uint32_t __stdcall DAMAGE_RollDrainStatFixedPoint(eD2UnitStat eMinStat, eD2UnitStat eMaxStat, uint32_t nDamageAccum, D2UnitStrc * pUnit) {
+    if (!MANABURN_FixActive()) {
+      return DAMAGE_RollElementalDamageWithBonus(eMinStat, ~UNITSTAT_strength, 0, 0, nDamageAccum, pUnit, eMaxStat);
+    }
+
+    int nDrainMax = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eMaxStat, 0);
+    if (nDrainMax * 0x100 < 8) {
+      // Same shape as the retail helper's zero-max guard above.
+      return (int)nDamageAccum < 0 ? 0 : nDamageAccum;
+    }
+
+    int nDrainMin = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eMinStat, 0);
+    return DAMAGE_RollPhysicalDamageRange(nDrainMax, 0, pUnit, nDrainMin, 0, nDamageAccum);
+}
+// VP-END [manaburn-fix]
 
 static int32_t __stdcall DAMAGE_ApplyHealingToUnit(int32_t nHealAmount, D2UnitStrc * pUnit) {
     BOOL _bIsDead;
@@ -906,15 +937,15 @@ void __fastcall DAMAGE_CalculateOffensiveDamage(::SGAMEDATA * pGame, D2UnitStrc 
     if (eAttackerType == UNIT_MONSTER) {
       if (!nElemDmgResult) {
         if (!(pDmgStrc->dwHitFlags & 4)) {
-          nElemRoll = DAMAGE_RollElementalDamageWithBonus(UNITSTAT_lifedrainmindam, ~UNITSTAT_strength, 0, 0, pDmgStrc->dwLifeLeech, pUnit, UNITSTAT_lifedrainmaxdam);
+          nElemRoll = DAMAGE_RollDrainStatFixedPoint(UNITSTAT_lifedrainmindam, UNITSTAT_lifedrainmaxdam, pDmgStrc->dwLifeLeech, pUnit); // VP: [manaburn-fix] retail: DAMAGE_RollElementalDamageWithBonus(UNITSTAT_lifedrainmindam, ~UNITSTAT_strength, 0, 0, pDmgStrc->dwLifeLeech, pUnit, UNITSTAT_lifedrainmaxdam)
           pDmgStrc->dwLifeLeech += (int)(nElemRoll * byScale) / 128;
         }
         if (!(pDmgStrc->dwHitFlags & 8)) {
-          nElemRoll = DAMAGE_RollElementalDamageWithBonus(UNITSTAT_manadrainmindam, ~UNITSTAT_strength, 0, 0, pDmgStrc->dwManaLeech, pUnit, UNITSTAT_manadrainmaxdam);
+          nElemRoll = DAMAGE_RollDrainStatFixedPoint(UNITSTAT_manadrainmindam, UNITSTAT_manadrainmaxdam, pDmgStrc->dwManaLeech, pUnit); // VP: [manaburn-fix] retail: DAMAGE_RollElementalDamageWithBonus(UNITSTAT_manadrainmindam, ~UNITSTAT_strength, 0, 0, pDmgStrc->dwManaLeech, pUnit, UNITSTAT_manadrainmaxdam)
           pDmgStrc->dwManaLeech += (int)(nElemRoll * byScale) / 128;
         }
         if (!(pDmgStrc->dwHitFlags & 0x10)) {
-          nElemRoll = DAMAGE_RollElementalDamageWithBonus(UNITSTAT_stamdrainmindam, ~UNITSTAT_strength, 0, 0, pDmgStrc->dwStamLeech, pUnit, UNITSTAT_stamdrainmaxdam);
+          nElemRoll = DAMAGE_RollDrainStatFixedPoint(UNITSTAT_stamdrainmindam, UNITSTAT_stamdrainmaxdam, pDmgStrc->dwStamLeech, pUnit); // VP: [manaburn-fix] retail: DAMAGE_RollElementalDamageWithBonus(UNITSTAT_stamdrainmindam, ~UNITSTAT_strength, 0, 0, pDmgStrc->dwStamLeech, pUnit, UNITSTAT_stamdrainmaxdam)
           pDmgStrc->dwStamLeech += (int)(nElemRoll * byScale) / 128;
         }
 

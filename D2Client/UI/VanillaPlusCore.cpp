@@ -239,7 +239,16 @@ static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
         ";       screen or the inventory is open; the panel just floats\r\n"
         ";       over it. Applies at 1280x720 / 1344x700 only - at\r\n"
         ";       640x480 / 800x600 the vanilla slide is kept.\r\n"
-        "no_panel_shift=0\r\n";
+        "no_panel_shift=0\r\n"
+        "\r\n"
+        "; Mana Burn fix (D2R 2.4 parity):\r\n"
+        ";   0 = retail behavior: Mana Burn unique monsters drain 256x the\r\n"
+        ";       intended mana with melee hits (512x in Hell) - a bug that\r\n"
+        ";       ships in retail 1.14d and empties a mana pool in one hit\r\n"
+        ";   1 = a Mana Burn melee hit drains the intended amount instead\r\n"
+        ";       (66-100% of the monster's level damage; Nightmare and Hell\r\n"
+        ";       still drain more, exactly like D2R after its 2.4 fix)\r\n"
+        "mana_burn_fix=0\r\n";
     HANDLE hFile = CreateFileA(pszPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW,
                                FILE_ATTRIBUTE_NORMAL, nullptr);
     if (hFile == INVALID_HANDLE_VALUE) {
