@@ -1,7 +1,6 @@
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/dedbe5a2-7079-40d4-af2d-4eb948e975b2" />
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/73c54d57-8baf-44ae-a1ed-c73711978db3" />
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/815fae59-2e1a-4b76-a834-8ba2ea1893ba" />
-
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/0b9b6218-5ca1-4d83-bae2-47e68980c2db" />
 
 # D2VP Vanilla+QoL
 
@@ -10,8 +9,8 @@
        width="88" height="31" alt="Made Openly: Mostly AI">
 </a>
 
-[![Release](https://img.shields.io/badge/release-0.0.7--R104-8f2b2b)](https://github.com/VTSTech/D2VP-QoL/releases/latest)
-[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-380%2F380-2ea043)](tools/check-vanilla-plus.sh)
+[![Release](https://img.shields.io/badge/release-0.0.7--R108-8f2b2b)](https://github.com/VTSTech/D2VP-QoL/releases/latest)
+[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-387%2F387-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 [![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/xQXpH5Nj5)
 
@@ -54,6 +53,7 @@ Options"**.
 | Item Level Tooltips | `[features] item_ilvl` | Appends ` (N)` to the item name on every item tooltip — e.g. `Long Sword (12)` — so an item's level reads at a glance. |
 | Shared Stash | `[features] shared_stash` | An **outlined "Shared" tab** on the stash panel over **ten** retail-shaped pages that every character on the PC shares: items and gold deposited there survive the character. `‹` / `›` arrows beside the label step one page at a time (Shared 1 … Shared 10); clicking the word returns to the personal page; one gold pool across all ten. Stored in its own `_d2vp_shared.sss` beside the saves; older shared-stash files load with the missing pages empty — character `.d2s` files stay retail-compatible, with or without the key. |
 | No Panel World Shift | `[features] no_panel_shift` | With one panel open at the wide layouts (1280x720 / 1344x700) the world — terrain, units, effects — stays exactly where it was: the panel floats over an unmoved camera instead of the vanilla quarter-screen slide. The vanilla slide is kept at 640x480 / 800x600, where it still re-centers the action. |
+| Mana Burn Fix | `[features] mana_burn_fix` | Retail 1.14d bug: Mana Burn unique monsters drained 256x the intended mana with melee hits (512x in Hell) — one blow could empty the pool. With the fix on, a Mana Burn melee hit drains the designed 66–100% of the monster's level damage instead (33–50% for Nightmare/Hell minions — the x1.4/x2 difficulty resist stays, matching D2R's own post-2.4 behavior). Server-side; a flip applies on the next hit, within 2 s. |
 
 No balance changes, no save-format changes: `.d2s`/`.d2x` layouts stay untouched, and
 every feature ships OFF. The wider candidate slate (D2R backports and owner suggestions)
@@ -65,11 +65,32 @@ The short form — per-area records: [`handoff.md`](handoff.md) §2 (field-statu
 per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
 [`handoff.md`](handoff.md) (live) and [`HISTORY.md`](HISTORY.md) (verbatim archive).
 
-- **Shipped: [`R98`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R98)
-  ("Vanilla+ 0.0.7-R98")** — issue #26 round 7: the D3D perspective-toggle crash
-  rooted to the flat-wall builder's `uint8_t` subtile iterator (wraps after 12 subtiles
-  and reads +4-shifted pseudo-records — latent since the original decompilation),
-  iterator widened to `int`. Earlier 0.0.7-line tags:
+- **Shipped: [`R108`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R108)
+  ("Vanilla+ 0.0.7-R108")** — the **Mana Burn Fix** joins the Vanilla+ Options
+  panel as its eighth row (`Esc → Options → "Vanilla+ Options"`), so the R106
+  toggle is no longer ini-only; the build also carries the owner-corrected drain
+  shim (R107). Earlier 0.0.7-line releases:
+  [`R106`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R106) —
+  `mana_burn_fix`: Mana Burn unique monsters drained 256x the intended mana with
+  melee hits (512x in Hell — one blow emptied the pool); the opt-in fix drains the
+  designed 66–100% of the monster's level damage instead (33–50% for Nightmare/Hell
+  minions), matching D2R's own post-2.4 behavior — the build also carries the
+  seventh upstream sync (Ghidra DB → 1908; the byte-match table below is current at
+  6,733/14,626 fns);
+  [`R105`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R105) — the sixth
+  upstream sync (Ghidra DB → 1894, 124 files);
+  [`R104`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R104) — the per-TU
+  restructure fallout sweep; the build also carries the fourth and fifth upstream
+  syncs (R99/R102 — Ghidra DB 1864 → 1892), the unit-sprite pan fix the new retail
+  bodies re-armed under `no_panel_shift=1` (R100; owner: "no_panel_shift is working
+  as intended now"), the **No Panel World Shift** Options row (R101) and the
+  diag-probe retirement (R103) — and it carried the full SMOKE belt green
+  ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04);
+  [`R98`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R98) — issue #26
+  round 7: the D3D perspective-toggle crash rooted to the flat-wall builder's
+  `uint8_t` subtile iterator (wraps after 12 subtiles and reads +4-shifted
+  pseudo-records — latent since the original decompilation), iterator widened to
+  `int`. Earlier 0.0.7-line tags:
   [`R91`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R91) — docs +
   field-verify round: the third upstream sync field-run green and the necro-minion
   skeleton fix confirmed in the field ("Skeletons are finally white again");
@@ -82,19 +103,6 @@ per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
   [`R85`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R85) — the A1Q2
   Bloodraven turn-in fix ([#22](https://github.com/VTSTech/D2VP-QoL/issues/22),
   closed by the owner 2026-11-02).
-- **In the tree (R99–R104; the R104 build carried the full SMOKE belt green —
-  [#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04 — tags pending)**:
-  the fourth upstream sync (R99 — the Ghidra 1864–1877 library rounds, 209 files) and
-  the rounds that closed the loop it opened — R100 fixed the unit-sprite pan the new
-  retail bodies re-armed under `no_panel_shift=1` (14 call sites routed through the
-  border neutralizer; owner: "no_panel_shift is working as intended now"), R101 added
-  the **No Panel World Shift** row to the Vanilla+ Options panel (the toggle is no
-  longer ini-only), R102 took the fifth upstream sync (`94ec239d..cc23648d`, 459
-  files, Ghidra DB → 1892; the byte-match table below is current at 6,493/14,642
-  fns), R103 retired the `d2light-diag`/`d2drop-diag` probes and R104 swept the
-  per-TU restructure fallout (R103/R104 zero owner-visible behavior change). Release
-  notes live under the tagged
-  [GitHub releases](https://github.com/VTSTech/D2VP-QoL/releases).
 - **Field-verified**: boot → intro → title → character select → in game; Direct3D and
   Glide (`-3dfx`) rendering, incl. the native 1280x720 widescreen mode; sound end to
   end; the full SMOKE belt passed on the R83 build
@@ -104,18 +112,18 @@ per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
   boot switch (R86) verified in-game 2026-11-02 — "R86 verified, -nointro works"; the
   `no_panel_shift` feature (R95 Glide pass: "All blackness appears fixed in Glide as
   well"; R100 unit lock: "working as intended now").
-- **Open issues (4)**, triaged in [handoff.md](handoff.md) §9: Necro minion skeleton
-  colors ([#8](https://github.com/VTSTech/D2VP-QoL/issues/8)) — fixed (R51),
-  field-verified R91, owner close pending; intermittent
-  attribute-point crash ([#18](https://github.com/VTSTech/D2VP-QoL/issues/18));
-  Refilling Shrine XP buff ([#25](https://github.com/VTSTech/D2VP-QoL/issues/25));
-  720p panel margins ([#26](https://github.com/VTSTech/D2VP-QoL/issues/26)) —
-  the render fixes and `no_panel_shift` are field-proven (R92–R101), and the remaining
-  asks (the D3D perspective-toggle re-check, the explicit both-panels pass, the R100
-  unit-lock re-checks) rode the R104 full smoke belt green
-  ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04) — owner close
-  pending. A1Q2 Bloodraven turn-in ([#22](https://github.com/VTSTech/D2VP-QoL/issues/22))
-  CLOSED 2026-11-02 — the R85 fix field-proven.
+- **Open issues (1)**, triaged in [handoff.md](handoff.md) §9: the Refilling Shrine
+  XP buff ([#25](https://github.com/VTSTech/D2VP-QoL/issues/25)) — suspected
+  wrong-shrine-effect application (the XP buff belongs to a different shrine type);
+  triage pending. Closed on GitHub: necro minion skeleton colors
+  ([#8](https://github.com/VTSTech/D2VP-QoL/issues/8) — fixed R51, field-verified
+  R91, "Skeletons are finally white again"); the intermittent attribute-point
+  crash ([#18](https://github.com/VTSTech/D2VP-QoL/issues/18)); 720p panel margins
+  ([#26](https://github.com/VTSTech/D2VP-QoL/issues/26) — the render fixes and
+  `no_panel_shift` field-proven R92–R101, the remaining asks green on the R104
+  full smoke belt, [#28](https://github.com/VTSTech/D2VP-QoL/issues/28)); A1Q2
+  Bloodraven turn-in ([#22](https://github.com/VTSTech/D2VP-QoL/issues/22) —
+  the R85 fix field-proven, closed 2026-11-02).
 - A crash writes a symbolised report (`d2crash-<date>-<time>.txt`) next to the
   executable; a 12 s hangwatch dumps one if the main loop ever stops beating. See
   [Crash reports](#crash-reports).
@@ -177,7 +185,7 @@ Two checks stand behind every release:
 
 - **The Vanilla+ gate suite** — [`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh)
   pins the whole Vanilla+ surface (feature gates, 720p anchors, sound constants, boot
-  telemetry) with **380 checks**, green at the current tip.
+  telemetry) with **387 checks**, green at the current tip.
 - **[`asm_matching/`](asm_matching/README.md)** (upstream) compiles the tree with Visual
   C++ 2005 SP1 and byte-compares each function against the 1.14d binary — a check on the
   decompilation itself: where the code comes out identical, the decompiled function was
