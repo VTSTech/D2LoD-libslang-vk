@@ -1,6 +1,9 @@
 # FEATURES.md — D2R backport slate (vanilla-plus)
 
-*v4, 2026-11-05. Status sweep: shipped rows marked Shipped with their first release (1, 3, 6, 9, 10, 11); row 9's SMOKE debts cleared (§H items 25/27 in the R83 full-belt pass [#24], the ten-page items in the R104 pass [#28]); §1/§6/§9/§10 as-built notes refreshed, §9's pre-ship draft marked superseded by the shipped in-panel tab. Earlier: v3, 2026-10-29 — row 9 (`shared_stash`) added from an owner suggestion — side-file design, `.d2s`/`.d2x` untouched; row 4 (`transparent_hud`) added from an owner suggestion — no D2R parity, engine-native draw modes. Scoped by research: D2R official QoL behavior + prior art from the
+*v5, 2026-11-05. Rows 12–13 (`stack_gems`, `stack_runes`) added from an owner suggestion —
+**planned, not implemented**: no D2R parity (Blizzard never shipped rune/gem stacking — a live
+player request through 2.7), PD2 ships it. Earlier: v4, 2026-11-05. Status sweep: shipped rows
+marked Shipped with their first release (1, 3, 6, 9, 10, 11); row 9's SMOKE debts cleared (§H items 25/27 in the R83 full-belt pass [#24], the ten-page items in the R104 pass [#28]); §1/§6/§9/§10 as-built notes refreshed, §9's pre-ship draft marked superseded by the shipped in-panel tab. Earlier: v3, 2026-10-29 — row 9 (`shared_stash`) added from an owner suggestion — side-file design, `.d2s`/`.d2x` untouched; row 4 (`transparent_hud`) added from an owner suggestion — no D2R parity, engine-native draw modes. Scoped by research: D2R official QoL behavior + prior art from the
 classic-D2 modding scene (PD2, BH/slashdiablo maphack, Sting's hackmap, d2dx). Ranked
 **low-risk first** per owner call. **Code-only** per charter Principle 4: no MPQ/data
 edits, no new assets — every feature is pure code + a `d2vp.ini` gate. Hook sites below
@@ -44,9 +47,14 @@ Every slate row must satisfy all of these before it ships:
 | 9 | Shared side-file stash | Stash | None — owner suggestion (PlugY-style side file) | L | Med–High | **Round 1 FIELD-PROVEN (R63, Rev 82; build-fix R64, Rev 83; tab-anchor fixes R65+R66, Revs 84-85; owner on R66: "Great job. I see it. It works.")** — 1 retail-shaped page via a stash-panel "Shared" tab (no hotkey), items + gold, own `_d2vp_shared.sss` file, `.d2s` retail-pure (save-flush design); SP-only v1; mechanism field-proven on the R65 build blind (page swap + cross-char item/gold round trip), tab visibility confirmed on R66. First shipped in release **0.0.7** (cut at R66); in-game **Shared Stash** row on the Vanilla+ Options page added R67 (no longer ini-only). **R75 (Rev 97): a SECOND shared page + pager** (owner: "give the current stash tab label an outline" + "add a 2nd page and buttons/arrows to navigate pages") — the label draws with a 1-px black halo on all four sides, `<`/`>` arrows beside the word step personal → Shared 1 → Shared 2, the word itself toggles back to personal, `_d2vp_shared.sss` v2 stores both pages (v1 files load as page 1), the 0x4F/0x7D param word carries the absolute desired page. (The R68–R71 tab polish — Font24, floating row, backdrop pill — was rolled back by owner decision at `59ff645`; R75 builds on the R66 in-panel tab.) **R82 (Rev 105): TEN shared pages** (owner: "increase the shared stash pages to 10") — the planned v2-header widening: same magic + version, `pageCount` 10 (header 28 → 92 bytes), pre-R82 two-page files read back with pages 3-10 empty (next save rewrites ten), labels `Shared 1`…`Shared 10`, arrows still step one page, one gold pool across all ten. SMOKE debts cleared: §H items 25 (`.d2s` in retail) + 27 (degrade drill) confirmed in the R83 full-belt pass ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24), 2026-11-02), the ten-page items 33-35 rode the R104 full pass ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04); the "Then 100" leg widens the same two constants. Plan: SHARED-STASH-PLAN.md |
 | 10 | Vanilla+ Options menu page | UI | None — owner suggestion 2026-10-29; in-game settings surface for the gated features | M | Med→Low | **Shipped** (landed 2026-10-30, ledger row 34; first release **0.0.6**); **eight rows as of R108** — the slate's five shipped keys + Shared Stash (R67: the row busts the client stash gate cache too, so the tab follows the toggle the same frame) + No Panel World Shift (R101, issue #26 round 9: the write bridge already busts the PANELSHIFT cache, so the flip applies same-frame; the seventh row moved the Previous Menu row down one pitch, 0x124→0x144) + Mana Burn Fix (R108: the R106 combat gate joins the panel — the eighth row moved the Previous Menu row down one pitch again, 0x144→0x164, and grew the box 0x171→0x191; the server gate keeps its 2 s poll by design, so a flip lands on the next drain roll within 2 s while the panel shows it same-frame) |
 | 11 | Mana Burn fix (melee drain 256x bug) | Combat (D2Game) | D2R 2.4 patch notes ("fixed melee hits draining 256 times too much") + Basin wiki Mana Burn | S | Low | **Implemented** (R106 — `mana_burn_fix`; ini-only at ship, in-game **Mana Burn Fix** row on the Vanilla+ Options page since R108; server-side gate TU + VP-marked drain-roll shim in SUnitDmg.cpp; field QA + llvm-mingw gate pending) |
+| 12 | Stackable gems | Inventory | None — owner suggestion 2026-11-05; PD2 stacks gems in its currency tab | M | Med | `stack_gems` |
+| 13 | Stackable runes | Inventory | None — owner suggestion 2026-11-05; PD2 stacks runes in its currency tab | M | Med | `stack_runes` |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
 the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipped for 0.0.4, and row 1 shipped as the orb-face readout and was repurposed post-release (see §1).
+Rows 12–13 are **planned scope** (owner suggestion 2026-11-05, not yet implemented): one
+mechanism — letting a class of items merge into stacks the way arrows/tomes already do —
+behind two separate gates, drafted together in §12/§13.
 **Shipped as of R108**: rows 1, 3, 6, 9, 10 and 11 — plus, outside this slate, the
 pre-slate pair `alt_toggle`/`portable_save` (handoff ledger rows 28–31, releases
 0.0.2/0.0.3) and `no_panel_shift` (born from issue #26, R95–R101). As-built docs for
@@ -394,6 +402,70 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
 
 ---
 
+### 12. Stackable gems — `[features] stack_gems` (PLANNED — owner suggestion 2026-11-05, not implemented)
+
+- **No D2R parity — researched before drafting**: D2R never shipped rune/gem stacking. It is
+  one of the longest-running D2R player requests — 2021 launch-window petitions, "Really?
+  2023 and no stackable runes/gems?" on the Blizzard forums, "stackable runes and gems … they
+  did nothing" replies on the 2.7 notes thread — so this row is a **prior-art backport**, not
+  retail parity: Project Diablo 2 stacks gems (and runes) in its currency tab, and its patch
+  notes read "Hellforge will now drop stacked gems and runes". Same framing as rows 4 and 9
+  (owner suggestion, no-parity).
+- **Behavior**: identical gems occupy one inventory/stash/cube cell with a count; the freed
+  grid squares are the entire payoff (ten perfect amethysts take one cell, not ten). No
+  balance surface: a stack is exactly the sum of its members.
+- **Proposed**: gate `stack_gems`: `0` = vanilla; `1` = gems of the same type merge
+  server-side when one lands in a container that already holds one (pickup, drop, stash
+  move), tracked by the existing stack machinery — the same quantity bookkeeping stacked
+  arrows/tomes already use — with the count drawn by the existing stack-count text. Stack
+  splitting is NOT v1 (picking a stack up takes the whole stack; splitting can ride a later
+  round if wanted). Stack cap is an owner decision at draft time; the vanilla quantity field
+  arrows already use sets the hard upper bound (exact width = tree-verify item).
+- **Candidate regions (all "verify" — no tree-verify pass yet)**: the per-item
+  stackable/maxstack fields on the item unit data (`D2Common/ITEMS/Items.*` — the gem code
+  family gcv/gcw/gcg/gcb/gcs/…; flipping the in-memory fields at item-unit init is code-only
+  and reuses every downstream stack path); the merge-on-add branch beside the row-9
+  inventory ops (`D2Common/INVENTORY/Inventory.*` — add-to-grid already merges stackables —
+  verify); the client stack-count draw (`D2Client/UI/Inv.cpp` region — whatever arrows
+  render today); the cube's partial-consume path (gem recipes must take 1 of N off a stack —
+  the quantity-decrement machinery belt items already exercise — verify the cube calls it).
+- **Contract note (rule 5, row-9 disclosure shape)**: a stacked gem is written to the
+  bitstream the vanilla way — stackable bit + quantity field, the exact encoding retail
+  already reads on arrows/tomes — so `.d2s` layouts stay untouched and retail/ATMA/GoMule
+  keep loading the char. Existing stacks survive a gate flip OFF (they are just legal
+  stackable items; they simply stop growing). Disclose in the ini template comment, like
+  row 9 did.
+- **Prior art**: PD2 currency tab (stacked gems/runes); D3 gem stacking (the model players
+  cite in the D2R request threads).
+- **Risk**: Med. The first row since 9 that changes item state server-side: merges must be
+  server-authoritative (no client-predicted quantities), the one-cell-freed grid math and
+  the cube/vendor consume paths need the QA loop, and duplication is again the worst-case
+  bug class — a merge is destroy-two-add-one through a single code path.
+- **Exit**: twenty identical gems picked up in a row end as one cell with the correct count
+  on the item and in the tooltip; a gem cube recipe consumes from the stack; the stack
+  survives save → load bit-identical (ATMA compare); retail loads the same `.d2s`; `0` from
+  a fresh start = vanilla byte-for-byte (no merge ever happens).
+
+### 13. Stackable runes — `[features] stack_runes` (PLANNED — owner suggestion 2026-11-05, not implemented)
+
+- **Same mechanism as row 12, separate gate** — one tree-verify pass and one implementation
+  round cover both rows; this row exists so gems and runes toggle independently (the ini
+  template ships both keys). §12's contract note, risk shape and exit loop apply verbatim
+  to runes.
+- **Rune-specific surface**: the item codes are `r01`–`r33` (verify in-tree). Two paths
+  matter beyond §12's: runeword/cube recipes consume exactly 1 of a rune off what may be a
+  large stack (the partial-consume path is THE critical verify item — a wrong decrement
+  here is an item-printer bug), and the Hellforge quest reward (runes drop there; v1
+  proposal: always drops fresh, no quest-path edits — merging it into an existing stack,
+  PD2-style, is a later call).
+- **Prior art**: PD2 (runes stack in the currency tab; "Hellforge will now drop stacked
+  runes"); the GoMule/ATMA muling practice of one-cell-per-rune-type this replaces.
+- **Risk / Exit**: as §12. Rune-flavored exit adds: an upgrade recipe (3× Thul → 1× Amn
+  class) consumes 3 off a stack of N without dupe or loss, and two of the same rune in one
+  container always end as one stack with the right count.
+
+---
+
 ## Dropped candidates (and why)
 
 | Candidate | Verdict | Reason |
@@ -423,7 +495,11 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
   (quick cast, auto gold, buff timers, area-level display), slashdiablo maphack (BH),
   Sting's hackmap config surface, bayaraa/d2dx (renderer-side QoL precedents).
 - Owner suggestions: transparent bottom bar (2026-10-29 — explicit no-parity row);
-  shared side-file stash (2026-10-29 — no-parity row, PlugY-style side file).
+  shared side-file stash (2026-10-29 — no-parity row, PlugY-style side file);
+  stackable gems + runes (2026-11-05 — no-parity rows 12–13: D2R never shipped stacking —
+  2021 petitions, the "Really? 2023 and no stackable runes/gems?" Blizzard forum thread,
+  "they did nothing" replies on the 2.7 notes thread — while PD2 ships it, "Hellforge will
+  now drop stacked gems and runes" in the patch notes linked above).
 - Engine grounding: Phrozen Keep draw-mode documentation (25%/50% stipple, color
   blends; 1.10/1.13-era threads) — the paletted transparency family row 4 mode 2 uses.
 - In-tree grounding: handoff.md rows 28–31 (the feature-era map), fix-14 Drop.cpp map;
