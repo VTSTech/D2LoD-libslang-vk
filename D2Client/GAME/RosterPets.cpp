@@ -419,8 +419,13 @@ void __stdcall ROSTER_UpdateHostileColors() {
           // yellow hostile table (issue #8 "Minion Skeletons are Yellow"). Both
           // fields must carry the SAME value: dwCofDataFlags is the roster
           // re-sync latch shadow (see ROSTER_UpdateMercHostileColors).
-          UNIT::CUnit::SetGfxSequenceData(pRosterUnit, (uint32_t)bHostile);
-          UNIT::CUnit::SetPalShiftIndex(pRosterUnit, (uint32_t)bHostile);
+          // [sixth sync 2026-11-04] upstream 9addb0ec re-spelled the site in the VC8
+          // near-miss shape (per-call named locals); shape taken, polarity stays the
+          // field-verified raw flag (R50/R91, issue #8).
+          BOOL bHostileSeq = bHostile;
+          UNIT::CUnit::SetGfxSequenceData(pRosterUnit, bHostileSeq);
+          BOOL bHostilePal = bHostile;
+          UNIT::CUnit::SetPalShiftIndex(pRosterUnit, bHostilePal);
         }
       }
     }
@@ -596,10 +601,14 @@ void __fastcall ROSTER_UpdateMercHostileColors(int32_t nOwnerGUID) {
           if (nPalShift == nGfxSeq) {
             // [R50] same polarity fix as ROSTER_UpdateHostileColors: raw bHostile,
             // own pet -> white sub-table 0; the latch shadow stays equal-valued.
-            UNIT::CUnit::SetPalShiftIndex(pRosterUnit, (uint32_t)bHostile);
+            // [sixth sync 2026-11-04] VC8 per-call-local shape from upstream, raw
+            // polarity kept (R50/R91, issue #8).
+            BOOL bHostilePal = bHostile;
+            UNIT::CUnit::SetPalShiftIndex(pRosterUnit, bHostilePal);
           }
 
-          UNIT::CUnit::SetGfxSequenceData(pRosterUnit, (uint32_t)bHostile);
+          BOOL bHostileSeq = bHostile;
+          UNIT::CUnit::SetGfxSequenceData(pRosterUnit, bHostileSeq);
         }
       }
     }

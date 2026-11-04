@@ -529,12 +529,21 @@ fi
 # Skeletons are Yellow"). Regression signature: any `!bHostile` inside a
 # SetPalShiftIndex/SetGfxSequenceData recolor call in RosterPets.cpp, and both
 # fields must stay equal-valued (dwCofDataFlags is the re-sync latch shadow).
+# [sixth sync 2026-11-04] upstream 9addb0ec re-spelled the two sites in the VC8
+# near-miss shape (per-call named locals). Re-pinned to the superseding form:
+# raw = SetGfxSequenceData(..., bHostileSeq) + SetPalShiftIndex(..., bHostilePal),
+# 4 sites; inverted = the old inline-cast spelling AND upstream's bNotHostile
+# local spelling (both must stay 0).
 if command -v awk >/dev/null 2>&1; then
   eval "$(awk '
     /SetPalShiftIndex\(pRosterUnit, \(uint32_t\)!bHostile\)/ { rp++ }
     /SetGfxSequenceData\(pRosterUnit, \(uint32_t\)!bHostile\)/ { rg++ }
+    /SetPalShiftIndex\(pRosterUnit, bNotHostile\)/ { rp++ }
+    /SetGfxSequenceData\(pRosterUnit, bNotHostile_\)/ { rg++ }
     /SetPalShiftIndex\(pRosterUnit, \(uint32_t\)bHostile\)/ { gp++ }
     /SetGfxSequenceData\(pRosterUnit, \(uint32_t\)bHostile\)/ { gg++ }
+    /SetPalShiftIndex\(pRosterUnit, bHostilePal\)/ { gp++ }
+    /SetGfxSequenceData\(pRosterUnit, bHostileSeq\)/ { gg++ }
     END { printf "vp_rp_bad=%d vp_rp_good=%d", rp+rg, gp+gg }
   ' D2Client/GAME/RosterPets.cpp)"
   if [ "${vp_rp_bad:-0}" -eq 0 ] && [ "${vp_rp_good:-0}" -eq 4 ]; then
@@ -715,7 +724,7 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # to halt line=200 - the D3D floor/subtile texture-cache promote range checks -
 # on the first frame after a runtime 1 -> 0 flip; R97 guards both promote
 # callers and re-arms the probes, see the R97 rows below)
-gate "res: self-id 0.0.7-R104"                D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R104' 1
+gate "res: self-id 0.0.7-R105"                D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R105' 1
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the

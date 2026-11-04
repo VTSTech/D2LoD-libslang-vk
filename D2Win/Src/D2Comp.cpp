@@ -1655,8 +1655,7 @@ static void * D2COMP_AssertNotNull(void * pValue) {
 static void * __stdcall D2COMP_LoadAndValidateCOFFile(char * szCOFFilePath, uint32_t * pnSize) {
     int32_t nLineNum = 0x3eb;
     char* pszSourceFile = ".\\Src\\D2Comp.cpp";
-    D2PoolManagerStrc* pMPQPool = D2WinArchive::ReturnZero();
-    void* nAddress = D2Hell::D2FILE_AllocAndLoadD2File(pMPQPool, szCOFFilePath, pnSize, pszSourceFile, nLineNum);
+    void* nAddress = D2Hell::D2FILE_AllocAndLoadD2File(D2WinArchive::ReturnZero(), szCOFFilePath, pnSize, pszSourceFile, nLineNum);
     if (!nAddress) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3ec);
       exit(-1);
@@ -2899,7 +2898,7 @@ void __stdcall D2COMP_DestroyCompositeUnit(D2CharSelStrc * pCharSel, int32_t bUn
       D2_FREE_AT(pCOFListHead, ".\\Src\\D2Comp.cpp", 0x889);
       if (*(DC6**)(pCharSel->szCharname + 0xbc)) {
         D2WinArchive::IMAGE_FreeImage(*(DC6**)(pCharSel->szCharname + 0xbc));
-        memset(pCharSel->szCharname + 188, 0, 4 * sizeof(pCharSel->szCharname[0]));
+        *(uint32_t*)(pCharSel->szCharname + 188) = 0;
       }
       if (!bUnlink) {
         return;

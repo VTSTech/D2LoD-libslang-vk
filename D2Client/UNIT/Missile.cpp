@@ -1557,8 +1557,8 @@ D2UnitStrc * __fastcall MISSILE_CreatePeriodicTrail(D2UnitStrc * pUnit, int32_t 
     }
 
     nRemainingFramesOrX = Units::GetXPosFromDynamicPathUnit(pUnit);
-    int32_t nRemFrameForSeed = D2Common::Units::Missile::GetRemainingFrames(pUnit);
-    D2Common::Seed::InitSeed_Param_666(&pUnit->sSeed, nRemainingFramesOrX + nRemFrameForSeed);
+    nRemainingFramesOrX += (int32_t)D2Common::Units::Missile::GetRemainingFrames(pUnit);
+    D2Common::Seed::InitSeed_Param_666(&pUnit->sSeed, nRemainingFramesOrX);
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nFlags = 0x2003;
     sSkillArg.pOwner = pOwner;
@@ -5041,8 +5041,7 @@ static void __stdcall MISSILE_CreateDebrisWithCollision(int32_t nPosX, D2UnitStr
     eD2CollisionUnitSize nCollideWidth = COLLISION_UNIT_SIZE_BIG;
     int32_t nX = nPosX;
     int32_t nY = nPosY;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    eCollisionFlags eCollision = D2Common::Collision::CheckCollision_BlockAll_Width(pRoom, nX, nY, nCollideWidth, eCollisionFlag);
+    eCollisionFlags eCollision = D2Common::Collision::CheckCollision_BlockAll_Width(D2Common::Units::UNITS_GetRoom(pUnit), nX, nY, nCollideWidth, eCollisionFlag);
     if (eCollision != COLLIDE_NONE) {
       return;
     }

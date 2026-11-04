@@ -290,8 +290,8 @@ static uint32_t __stdcall CUNIT_CalculateSpriteBounds(uint32_t nFrame, uint32_t 
       }
 
       nOffset = D2CMP::SRC::CelCmp::GetDC6OffsetX(spriteParams.pDC6Block);
-      iVar1 = D2Common::Units::GetTargetX(pUnit);
-      *pBoundsRect = iVar1 + nOffset - 0xc;
+      nOffset += (int32_t)D2Common::Units::GetTargetX(pUnit);
+      *pBoundsRect = nOffset - 0xc;
       nOffset = D2CMP::SRC::CelCmp::GetDC6Width(spriteParams.pDC6Block);
       pBoundsRect[2] = nOffset + 0x18 + *pBoundsRect;
       nOffset = D2CMP::SRC::CelCmp::GetDC6OffsetY(spriteParams.pDC6Block);
@@ -1424,7 +1424,8 @@ void __fastcall CLIENT_TeleportUnitToPosition(D2UnitStrc * pUnit, int32_t nX, in
           D2Common::DUNGEON::Dungeon::UpdatePops(pRoom, nXSaved, nY, (uint32_t)(pCurrentRoom != pRoom));
           eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
           bVar1 = D2Common::DATATBLS::LvlTbls::LVLTBLS_GetNoPer(eLevelId);
-          D2gfx::D2GFX::D2GFX_SetPerspectiveCapable((uint32_t)!bVar1);
+          BOOL bNotVar1 = !bVar1;
+          D2gfx::D2GFX::D2GFX_SetPerspectiveCapable(bNotVar1);
           if (pCurrentRoom) {
             eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pCurrentRoom);
             ptFreePos.y = (LONG)D2Common::DATATBLS::LvlTbls::TXT_Levels_GetLine(eLevelId);

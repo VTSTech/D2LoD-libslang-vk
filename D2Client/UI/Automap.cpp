@@ -2330,8 +2330,7 @@ void __stdcall AUTOMAP_DrawServerIP() {
       wIpWide[nY] = L'\0';
     }
 
-    char* szLocalIp = Fog::Src::Safesock::NET_GetLocalIp();
-    D2Lang::UTF8_ConvertToWideChar(wIpWide, szLocalIp, nTextWidth);
+    D2Lang::UTF8_ConvertToWideChar(wIpWide, Fog::Src::Safesock::NET_GetLocalIp(), nTextWidth);
     BOOL bMultiLineCenter = 0;
     int32_t dwColor = 4;
     nY = AUTOMAP_TextHeightOffset;
@@ -2562,14 +2561,7 @@ void __stdcall AUTOMAP_Init() {
       pPriorityValue = pCellEntry + 1;
       pCellEntry += 2;
       gnAutoMapCellPriority[nCellIndex] = *pPriorityValue;
-    } while (pCellEntry < gnAutoMapInitialZoomLevel + 98);
-    // The original's bound is `pCellEntry < 0x7113e0`, and 0x7113e0 is where nAutoMapCenters
-    // happens to sit immediately after this 49-pair table - so the compiler spelled "the end of
-    // the table" as the NEXT GLOBAL'S ADDRESS. After relinking the two are nowhere near each
-    // other, the loop ran away, and gnAutoMapCellPriority[garbage] faulted in AUTOMAP_Init the
-    // moment a character entered the game.
-    // Retire-When: the address-literal pass rewrites a loop bound that is another symbol's
-    // address into that symbol's own extent.
+    } while ((int)pCellEntry < (intptr_t)&gnAutoMapInitialZoomLevel + 392);
 
     nRegValue = 0;
     Storm::Source::SReg::SRegLoadValue("Diablo II", "AutoMapFade", 0, &nRegValue);
@@ -2672,9 +2664,8 @@ void __fastcall AUTOMAP_SetMiniMapType(int32_t nMiniMapType) {
 static void __stdcall AUTOMAP_DrawTextCentered(int32_t nCenterX, int32_t nBaseY, uint8_t byColor, char * szText) {
     uint16_t wTextWide[26];
     char cCurChar;
-    char* pStrScan = szText;
-    pStrScan = pStrScan + strlen(pStrScan) + 1;
-    if (pStrScan == szText + 1) {
+    char* pStrScan;
+    if (strlen(szText) == 0) {
       return;
     }
     if (byColor >= 0xd) {

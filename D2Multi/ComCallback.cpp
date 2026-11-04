@@ -14,7 +14,6 @@
 #include "D2Launch/CharSel.h"
 #include "D2Launch/MainMenus.h"
 #include "D2Multi/ChatDlg.h"
-#include "D2Multi/Launcher.h"
 #include "D2Multi/OOGUtilities.h"
 #include "D2Win/DC6.h"
 #include "D2Win/Src/D2Comp.h"
@@ -32,7 +31,6 @@
 #include "D2Game/D2QuestGUIDStrc.h"
 #include "D2Multi/ChatDlg.data.h"
 #include "D2Multi/ComCallback.data.h"
-#include "D2Multi/Launcher.data.h"
 #include "D2Multi/OOG.h"
 #include "D2Multi/OOGUtilities.data.h"
 #include "D2Win/D2WinEditBox.h"
@@ -814,13 +812,7 @@ void __fastcall COMCALLBACK_AddOrUpdateChannelUser(char * szUsername, uint8_t * 
     }
 
     pNewNode = D2_ALLOC_AT(0x48, ".\\Src\\ComCallback.cpp", 0x93a);
-    nCmpResult = (int)pNewNode - (int)szUsername;
-    do {
-      cCopied = *szUsername;
-      szUsername[nCmpResult] = cCopied;
-      szUsername++;
-    } while (cCopied != '\0');
-
+    strcpy((char*)pNewNode, szUsername);
     nCmpResult = 0x32 - (int)pbRawData;
     do {
       byChar = *pbRawData;
@@ -1077,7 +1069,7 @@ BOOL __stdcall COMCALLBACK_ValidateGameJoinability() {
 
 BOOL __stdcall CHATDLG_OpenChatCommandsDialogRestoreFocus2(D2ControlMsg * pControlMsg) {
     OOGUtilities::UIMENU_DialogWindowChatCommands();
-    Launcher::LAUNCHER_RestoreFocusToControl();
+    ChatDlg::LAUNCHER_RestoreFocusToControl();
     return 1;
 }
 
@@ -1447,7 +1439,7 @@ void __stdcall COMCALLBACK_ClearChannelListView() {
       gnCurrentChannelContextId = -1;
     }
 
-    BOOL nLauncherFlag = Launcher::CHATDLG_IsLobbyInitialized();
+    BOOL nLauncherFlag = ChatDlg::CHATDLG_IsLobbyInitialized();
     if (nLauncherFlag) {
       return;
     }
@@ -1541,9 +1533,7 @@ void __fastcall COMCALLBACK_BroadcastChatMessage(char * szMessageBody) {
     }
 
     COMCALLBACK_FormatChatMessage(szUsername, szChatMessageBuffer, szClanTag);
-    pszScan = szClanTag;
-    pszScan = pszScan + strlen(pszScan) + 1;
-    if (pszScan != szClanTag + 1) {
+    if (strlen(szClanTag) != 0) {
       pszNameKey = szChatMessageBuffer;
       pszNameKey = pszNameKey + strlen(pszNameKey) + 1;
       pszScan = szClanTag;
@@ -1603,13 +1593,9 @@ BOOL __fastcall COMCALLBACK_HandleWhisperMessage(uint32_t dwCbArg1, uint32_t dwC
     }
 
     szUsername = pszScan;
-    pszScan = szFormattedSender;
-    pszScan = pszScan + strlen(pszScan) + 1;
-    if (pszScan != szFormattedSender + 1) {
+    if (strlen(szFormattedSender) != 0) {
       char szOutput[256];
-      pszOutput = szClanTag;
-      pszOutput = pszOutput + strlen(pszOutput) + 1;
-      if (pszOutput != szClanTag + 1) {
+      if (strlen(szClanTag) != 0) {
         sprintf(szOutput, "%s%s", szClanTag, szFormattedSender);
         pszOutput = szOutput;
       } else {
@@ -1721,13 +1707,10 @@ BOOL __fastcall COMCALLBACK_ProcessWhisperCommand(uint32_t dwCbArg1, uint32_t dw
       return 1;
     }
 
-    char* pchScan = szWhisperBody;
-    pchScan = pchScan + strlen(pchScan) + 1;
-    if (pchScan != szWhisperBody + 1) {
+    char* pchScan;
+    if (strlen(szWhisperBody) != 0) {
       int i;
-      pchScan = szWhisperTarget;
-      pchScan = pchScan + strlen(pchScan) + 1;
-      if (pchScan != szWhisperTarget + 1) {
+      if (strlen(szWhisperTarget) != 0) {
         sprintf(szFormattedMsg, "%s%s", szWhisperTarget, szWhisperBody);
         COMCALLBACK_ValidateWhisperTarget(szFormattedMsg, szWhisperText);
         return 1;
@@ -1821,9 +1804,7 @@ BOOL __fastcall COMCALLBACK_HandleWhisperReply(uint32_t dwCbArg1, uint32_t dwCbA
     pbScan = pbScan + strlen((char*)pbScan) + 1;
     if (pbScan != szWhisperBody + 1) {
       int i;
-      pchScan = szWhisperTarget;
-      pchScan = pchScan + strlen(pchScan) + 1;
-      if (pchScan != szWhisperTarget + 1) {
+      if (strlen(szWhisperTarget) != 0) {
         sprintf((char*)szFormattedMsg, "%s%s", szWhisperTarget, (char*)szWhisperBody);
       } else {
         i = 0;
@@ -1873,12 +1854,9 @@ BOOL __fastcall COMCALLBACK_ProcessEmoteCommand(uint32_t dwCbArg1, uint32_t dwCb
     char szEmoteBody[256];
     char ch;
     COMCALLBACK_FormatChatMessage(szText, szEmoteTarget, szEmoteBody);
-    char* pchScan = szEmoteBody;
-    pchScan = pchScan + strlen(pchScan) + 1;
-    if (pchScan != szEmoteBody + 1) {
-      pchScan = szEmoteTarget;
-      pchScan = pchScan + strlen(pchScan) + 1;
-      if (pchScan != szEmoteTarget + 1) {
+    char* pchScan;
+    if (strlen(szEmoteBody) != 0) {
+      if (strlen(szEmoteTarget) != 0) {
         sprintf(szFormattedMsg, "%s%s", szEmoteTarget, szEmoteBody);
         COMCALLBACK_ValidateEmoteTarget(szFormattedMsg, szEmoteArg);
         return 1;
@@ -2405,13 +2383,7 @@ BOOL __fastcall COMCALLBACK_HandleJoinedChannel(uint32_t dwCbArg1, uint32_t dwCb
     D2Lang::Unicode::UNISYS::STRING_ConvertCharToWchar(wszChannelMsg, szFormatted, 0x240);
     OOGUtilities::OOGUTIL_AppendChatText(wszChannelMsg);
     ChatDlg::CHATDLG_AppendTextToTextBox_ForComCallback(wszChannelMsg, 5);
-    i = (int)gszCurrentChannelName - (int)szChannelName;
-    do {
-      ch = *szChannelName;
-      szChannelName[i] = ch;
-      szChannelName++;
-    } while (ch != '\0');
-
+    strcpy((char*)gszCurrentChannelName, szChannelName);
     uint8_t* pbLastChannelDst = D2IniData_multiplayer->padding_0x35F + 2;
     char* pszSrc = gszCurrentChannelName;
     do {

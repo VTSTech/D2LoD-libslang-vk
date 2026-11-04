@@ -24,7 +24,7 @@
 #include "D2Client/ClientModeInGame.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Launch/D2Launch.h"
-#include "D2Multi/Launcher.h"
+#include "D2Multi/ChatDlg.h"
 #include "D2gfx/D2GFX.data.h"
 #include "Fog/Engine/Application.data.h"
 
@@ -766,7 +766,7 @@ static uint32_t DEBUG_ParsePEDebugDirectory(uint32_t * pnSize, int * pnRVA, shor
 }
 
 bool __stdcall DEBUG_IsValidDebugDirectorySize(uint32_t nDirSize) {
-    return nDirSize >= 0x1c;
+    return nDirSize >= 0x1c ? true : false;
 }
 
 uint32_t __fastcall DEBUG_ParseDebugInfoFromMemory(uint32_t nDataSize, uint32_t * pDebugData, D2FogDebugModuleEntryStrc * pModuleInfoOut) {
@@ -1533,9 +1533,8 @@ int __fastcall INI_ParseCommandLineArg(uint8_t * pbArgName, char * szCmdLine, ch
     char szArgNameBuf[256];
     char cChar;
     int nDstOffset;
-    char* pCursor = szCmdLine;
-    pCursor = pCursor + strlen(pCursor) + 1;
-    int nCmdLen = (int)pCursor - (int)(szCmdLine + 1);
+    char* pCursor;
+    int nCmdLen = (int)strlen(szCmdLine);
     int nNameLen = 0;
     int32_t nConfigIdx = -1;
     if (nCmdLen >= 0x100) {
@@ -1559,13 +1558,7 @@ int __fastcall INI_ParseCommandLineArg(uint8_t * pbArgName, char * szCmdLine, ch
     pCursor = szArgNameBuf;
     szArgNameBuf[nNameLen] = '\0';
     szArgNameBuf[nNameLen + 1] = '\0';
-    nCmdLen = (int)pbArgName - (int)pCursor;
-    do {
-      cChar = *pCursor;
-      pCursor[nCmdLen] = cChar;
-      pCursor++;
-    } while (cChar != '\0');
-
+    strcpy((char*)pbArgName, pCursor);
     uint8_t* pbScan = pbArgName;
     pbScan = pbScan + strlen((char*)pbScan) + 1;
     nCmdLen = (int)pbScan - (int)(pbArgName + 1);
@@ -1617,9 +1610,8 @@ void __thiscall MISC_ParseCommandLineAndPutIntoD2IniData(char * szText, D2IniCon
     uint8_t szArgName[256];
     char szArgValue[256];
     uint8_t nArgType;
-    char* pCmdEnd = szText;
-    pCmdEnd = pCmdEnd + strlen(pCmdEnd) + 1;
-    int nCmdLineLen = (int)pCmdEnd - (int)(szText + 1);
+    char* pCmdEnd;
+    int nCmdLineLen = (int)strlen(szText);
     for (nPos = 0; nPos < nCmdLineLen; nPos++) {
       if (szText[nPos] == '-') {
         nPos++;
@@ -1676,8 +1668,8 @@ int32_t __stdcall ApplicationRunCurrentMode(D2IniConfigStrc * pD2IniData) {
         /* .pfnShutdown = */ nullptr
     },
     {
-        /* .pfnInit = */ &D2Multi::Launcher::AppModeMultiplayerInit,
-        /* .pfnShutdown = */ &D2Multi::Launcher::AppModeMultiplayerShutdown
+        /* .pfnInit = */ &D2Multi::ChatDlg::AppModeMultiplayerInit,
+        /* .pfnShutdown = */ &D2Multi::ChatDlg::AppModeMultiplayerShutdown
     },
     {
         /* .pfnInit = */ &D2Launch::AppModeLauncherInit,

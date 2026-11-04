@@ -14,7 +14,6 @@
 #include "D2MCPClient/McpConnect.h"
 #include "D2Multi/ChatDlg.h"
 #include "D2Multi/ComCallback.h"
-#include "D2Multi/Launcher.h"
 #include "D2Multi/McpConnect.h"
 #include "D2Sound/Src/D2SoundFast.h"
 #include "D2Win/D2GFX.h"
@@ -42,7 +41,6 @@
 #include "globals/globals.h"
 #include "D2Multi/ChatDlg.data.h"
 #include "D2Multi/ComCallback.data.h"
-#include "D2Multi/Launcher.data.h"
 #include "D2Multi/OOG.h"
 #include "D2Multi/OOGUtilities.data.h"
 #include "D2Win/D2WinEditBox.h"
@@ -176,13 +174,13 @@ int __stdcall OOGUTIL_OpenBrowserWithURL(D2ControlMsg * pControlMsg) {
     /* HWND hWnd for SetForegroundWindow */ SetForegroundWindow(hWnd);
     sprintf(szRegistryKeyPath, "%s\\.html", "SOFTWARE\\Classes");
     uint32_t nRegOk;
-    nRegOk = Launcher::LAUNCHER_ReadRegistryValue(szRegistryKeyPath, (LPCSTR)0x0, (LPBYTE)szFileType, 0x400, (LPDWORD)&dwBytesRead);
+    nRegOk = ChatDlg::LAUNCHER_ReadRegistryValue(szRegistryKeyPath, (LPCSTR)0x0, (LPBYTE)szFileType, 0x400, (LPDWORD)&dwBytesRead);
     if (nRegOk) {
       BOOL bCreated;
       sprintf(szRegistryCommandPath, "%s\\%s\\shell\\open\\command", "SOFTWARE\\Classes", szFileType);
       szCommandLineBuffer[1] = '\0';
       memset(szCommandLineBuffer + 2, 0, 0x3ff);
-      nRegOk = Launcher::LAUNCHER_ReadRegistryValue(szRegistryCommandPath, (LPCSTR)0x0, (LPBYTE)(szCommandLineBuffer + 1), 0x400, (LPDWORD)&dwBytesRead);
+      nRegOk = ChatDlg::LAUNCHER_ReadRegistryValue(szRegistryCommandPath, (LPCSTR)0x0, (LPBYTE)(szCommandLineBuffer + 1), 0x400, (LPDWORD)&dwBytesRead);
       if (nRegOk) {
         pcScan = szCommandLineBuffer;
         do {
@@ -750,7 +748,7 @@ int __fastcall CHATDLG_RunChatLobbyScreen(D2IniConfigStrc * pD2IniConfig) {
       return 1;
     }
 
-    Launcher::IMAGE_LoadPredefinedImagesExEx();
+    ChatDlg::IMAGE_LoadPredefinedImagesExEx();
     D2Win::Src::D2WinMain::D2WINMAIN_SetCursorDC6(gpDC6CursorOpenHand);
     gpChatMessagesTextBox = 0;
     DC6* pBackgroundDC6 = gpDC6WaitingRoomBackground;
@@ -771,8 +769,8 @@ int __fastcall CHATDLG_RunChatLobbyScreen(D2IniConfigStrc * pD2IniConfig) {
 
       BattleNetNews = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x17);
     } else {
-      Launcher::UIMENU_CantTestItBeacuseItCrash();
-      Launcher::LAUNCHER_AllocCharSelectComponent((int32_t)pD2IniConfig);
+      ChatDlg::UIMENU_CantTestItBeacuseItCrash();
+      ChatDlg::LAUNCHER_AllocCharSelectComponent((int32_t)pD2IniConfig);
     }
 
     gpChatMessagesTextBox = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x15);
@@ -938,7 +936,7 @@ int __fastcall CHATDLG_RunChatLobbyScreen(D2IniConfigStrc * pD2IniConfig) {
 
     D2Win::Src::D2WinMain::D2WINMAIN_SetBackgroundDC6(nullptr);
     D2Win::Src::D2WinMain::D2WINMAIN_SetCursorDC6(nullptr);
-    Launcher::LAUNCHER_FreeLauncherImages();
+    ChatDlg::LAUNCHER_FreeLauncherImages();
     D2Lang::StrTable::strtable::STRINGTABLE_FreeStringTables();
     return 1;
 }
@@ -1656,7 +1654,7 @@ void __stdcall OOGUTIL_UpdateGameListFilter() {
     D2Win::Src::D2WinMain::FORMS_DestroyAnyForm(&gUIGameListMaxPlayersInactiveImage);
     D2Win::Src::D2WinMain::FORMS_DestroyAnyForm(&gUIGameListMaxPlayersInactiveArrowButton);
     D2Win::Src::D2WinMain::D2WINMAIN_SetFormFourth(gpLobbyForm0.pCtlLobbyGameModePanel);
-    Launcher::LAUNCHER_RestoreFocusToControl();
+    ChatDlg::LAUNCHER_RestoreFocusToControl();
 }
 
 void __stdcall OOGUTIL_ParseMaxPlayersEditBox() {
@@ -1795,9 +1793,7 @@ void __stdcall OOGUTIL_RefreshGameList() {
     pwszValue = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gpOogGameNameEditControl->sControl);
     if (pwszValue) {
       D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szValue, (uint16_t*)pwszValue, 0x10);
-      pszScan = szValue;
-      pszScan = pszScan + strlen(pszScan) + 1;
-      if (szValue[0] != ' ' && (int)pszScan - (int)(szValue + 1) >= 1 && szValue[(int)pszScan - (int)(szValue + 1) - 1] != ' ') {
+      if (szValue[0] != ' ' && (int)strlen(szValue) >= 1 && szValue[(int)strlen(szValue) - 1] != ' ') {
         bNameValid = true;
       }
     }
@@ -1814,9 +1810,7 @@ void __stdcall OOGUTIL_RefreshGameList() {
     if (pwszValue) {
       long int nGameCount;
       D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szValue, (uint16_t*)pwszValue, 3);
-      pszScan = szValue;
-      pszScan = pszScan + strlen(pszScan) + 1;
-      if (pszScan != szValue + 1) {
+      if (strlen(szValue) != 0) {
         bSelectedValid = 1;
         nGameCount = atoi(szValue);
         nClampedCount = bSelectedValid;
@@ -1842,9 +1836,7 @@ void __stdcall OOGUTIL_RefreshGameList() {
     if (bLevelRestrictionChecked) {
       pwszValue = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUILevelRestrictionEditBox->sControl);
       D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szValue, (uint16_t*)pwszValue, 3);
-      pszScan = szValue;
-      pszScan = pszScan + strlen(pszScan) + 1;
-      if (pszScan == szValue + 1 || (nClampedCount = atoi(szValue) , nClampedCount < 0)) {
+      if (strlen(szValue) == 0 || (nClampedCount = atoi(szValue) , nClampedCount < 0)) {
         goto update_create_button;
       }
     }
@@ -1866,9 +1858,7 @@ void __stdcall OOGUTIL_SetJoinGameError() {
     if (pwszPassword) {
       char* pszScan;
       D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szPassword, (uint16_t*)pwszPassword, 0xff);
-      pszScan = szPassword;
-      pszScan = pszScan + strlen(pszScan) + 1;
-      if (pszScan != szPassword + 1) {
+      if (strlen(szPassword) >= 1) {
         bHasPassword = 1;
       }
     }
@@ -2100,13 +2090,7 @@ BOOL __stdcall OOGUTIL_OnPressDifficultyHell(D2ControlMsg * pControlMsg) {
 // gnProfileUserHardcoreFlag / gnProfileUserExpansionFlag, which OOGUTIL_OnPressProfileLadder (00443ef0) reads to open the matching ladder and request that character's rank.
 static void __stdcall OOGUTIL_SetProfileUser(int nHardcoreFlag, int nExpansionFlag, char * szCharacterName) {
     char cChar;
-    int nDestOffset = (int)gszProfileCharacterName - (int)szCharacterName;
-    do {
-      cChar = *szCharacterName;
-      szCharacterName[nDestOffset] = cChar;
-      szCharacterName++;
-    } while (cChar != '\0');
-
+    strcpy((char*)gszProfileCharacterName, szCharacterName);
     gnProfileUserHardcoreFlag = nHardcoreFlag;
     gnProfileUserExpansionFlag = nExpansionFlag;
 }
@@ -2216,7 +2200,7 @@ void __stdcall OOGUTIL_CloseProfileDialog() {
     }
 
     D2Win::Src::D2WinMain::D2WINMAIN_SetFormFourth(gpLobbyForm0.pCtlLobbyGameModePanel);
-    Launcher::LAUNCHER_RestoreFocusToControl();
+    ChatDlg::LAUNCHER_RestoreFocusToControl();
 }
 
 // OnPress callback of the profile dialog's ladder button (FORMS_PredefinedFormStrc_0070e980, label string 0x14c3).
@@ -2329,7 +2313,7 @@ int __stdcall UIMENU_DialogWindowChatCommands() {
 }; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070ea70, "D2Multi::OOGUtilities::UIMENU_DialogWindowChatCommands::FORMS_PredefinedFormStrc_0070ea70");
 
     ChatDlg::CHATDLG_DestroyAllForms();
-    BOOL bIsExpansion = Launcher::CHATDLG_IsLobbyInitialized();
+    BOOL bIsExpansion = ChatDlg::CHATDLG_IsLobbyInitialized();
     D2Win::Src::D2WinButton::D2WINBUTTON_SetPressed(gpLobbyForm0.pCtlLobbyChannelButton, 0);
     D2Win::Src::D2WinButton::D2WINBUTTON_SetPressed(gpLobbyForm0.pCtlLobbyCreateButton, 0);
     D2Win::Src::D2WinButton::D2WINBUTTON_SetPressed(gpLobbyForm0.pCtlLobbyJoinButton, 0);
@@ -2989,7 +2973,7 @@ void __stdcall UIMENU_WaitInLine() {
     gpCtlCreateGameDlgCancelButton = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(&FORMS_PredefinedFormStrc_0070eb30);
     D2Win::Src::D2WinMain::D2WINMAIN_SetFormFourth(gpCtlCreateGameDlgCancelButton);
     gUIGameListCreateButton = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(&FORMS_PredefinedFormStrc_0070eb60);
-    Launcher::LAUNCHER_SetGameListCacheActive(0);
+    ChatDlg::LAUNCHER_SetGameListCacheActive(0);
 }
 
 // Callback of the FORM_Timer record 0070eb60 (created by UIMENU_WaitInLine): destroys all chat forms (CHATDLG_DestroyAllForms) and rebuilds the wait-in-line dialog (UIMENU_WaitInLine), refreshing the queue position; returns 1.
@@ -3074,9 +3058,8 @@ BOOL __stdcall NET_MCP_CLIENT_PrepareGameCreatePacket(D2ControlStrc * pControl) 
     }
 
     D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szGameNameBuffer, (uint16_t*)pwszGameName, 0xff);
-    char* pcScan = szGameNameBuffer;
-    pcScan = pcScan + strlen(pcScan) + 1;
-    if (pcScan != szGameNameBuffer + 1) {
+    char* pcScan;
+    if (strlen(szGameNameBuffer) >= 1) {
       uint16_t* pwszPassword;
       pwszPassword = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUIGameListGameNameEditBox->sControl);
       pwszDescription = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUIGameListGamePasswordEditBox->sControl);
@@ -3412,13 +3395,13 @@ void __fastcall OOGUTIL_CreateViewProfileDialog(char * szUserName, char * szChar
     }
 
     UIMENU_PlayerProfileLabels();
-    Launcher::LAUNCHER_RestoreFocusToControl();
+    ChatDlg::LAUNCHER_RestoreFocusToControl();
     OOGUTIL_SetProfileUser(nHardcoreFlag, nExpansionFlag, szCharacterName);
 }
 
 void __stdcall UIMENU_JoinGame() {
     uint16_t* pwszLocale;
-    int nServerDownState = Launcher::isServerDown();
+    int nServerDownState = ChatDlg::isServerDown();
     if (nServerDownState == -1) {
       pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x1413);
       ChatDlg::UIMENU_DrawSpecificJoinGameError(pwszLocale, nullptr);
@@ -3474,7 +3457,7 @@ void __stdcall UIMENU_JoinGame() {
 // Provenance: asm 00445ff0; called from CHATDLG_DestroyFormsAndOpenCreateGameDialog, the OnPress of the lobby CREATE button (gaPredefinedForms_b[6], string 0x14c0).
 void __stdcall OOGUTIL_OpenCreateGameDialog() {
     uint16_t* pwszLocale;
-    int bRegReadOk = Launcher::isServerDown();
+    int bRegReadOk = ChatDlg::isServerDown();
     if (bRegReadOk == -1) {
       pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x1413);
       ChatDlg::UIMENU_DrawSpecificJoinGameError(pwszLocale, nullptr);

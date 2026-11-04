@@ -220,7 +220,6 @@ void * __stdcall GFX_FindTextureInCache(void * pTextureCache, char * szPath) {
 // @sourcefile .\ENGINE\Gfx.cpp
 static void * __stdcall GFX_LoadCofFile(void * pTextureCache, char * szPath) {
     char* pcSrcFile;
-    D2PoolManagerStrc* pMPQ;
     uint32_t nHash;
     uint32_t dwUnused;
     char szFilename[260];
@@ -249,8 +248,7 @@ static void * __stdcall GFX_LoadCofFile(void * pTextureCache, char * szPath) {
       nSrcLine = 0xe0;
       pcSrcFile = ".\\ENGINE\\Gfx.cpp";
       pSize = pEntry + 2;
-      pMPQ = D2Win::Src::D2WinArchive::ReturnZero();
-      nAddress = D2Hell::D2FILE_AllocAndLoadD2File(pMPQ, szPath, pSize, pcSrcFile, nSrcLine);
+      nAddress = D2Hell::D2FILE_AllocAndLoadD2File(D2Win::Src::D2WinArchive::ReturnZero(), szPath, pSize, pcSrcFile, nSrcLine);
       pEntry[5] = (uint32_t)(uintptr_t)nAddress;
       if (!nAddress) {
         return nullptr;
@@ -282,8 +280,7 @@ static void __stdcall GFX_LoadAndHashCofArchive(char * szPath, int * pCache) {
     int32_t nSrcLine = 0x10b;
     char* pcSrcFile = ".\\ENGINE\\Gfx.cpp";
     uint32_t* pSize = (uint32_t*)(pCache + 2);
-    D2PoolManagerStrc* pMPQ = D2Win::Src::D2WinArchive::ReturnZero();
-    int* pEntry = (int*)D2Hell::D2FILE_AllocAndLoadD2File(pMPQ, szPath, pSize, pcSrcFile, nSrcLine);
+    int* pEntry = (int*)D2Hell::D2FILE_AllocAndLoadD2File(D2Win::Src::D2WinArchive::ReturnZero(), szPath, pSize, pcSrcFile, nSrcLine);
     pCache[1] = (int)pEntry;
     if (!pEntry) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x10c);
@@ -2407,17 +2404,17 @@ void __fastcall GFX_GetUnitSpriteOffset(D2UnitStrc * pUnit, int byComponent, int
     }
 
     pGfxInfoUnk = pGfxInfo->pGfxInfoUnk;
+    while (pGfxInfoUnk) {
+      if (pGfxInfoUnk->nAnimMode == nErrLine) {
+        break;
+      }
+
+      pGfxInfoUnk = pGfxInfoUnk->pNext;
+    }
+
     if (!pGfxInfoUnk) {
       return;
     }
-
-    while (pGfxInfoUnk->nAnimMode != nErrLine) {
-      pGfxInfoUnk = pGfxInfoUnk->pNext;
-      if (!pGfxInfoUnk) {
-        return;
-      }
-    }
-
     if (!pGfxInfoUnk->pCofDataArray[5]) {
       return;
     }
@@ -2536,17 +2533,17 @@ BOOL __fastcall GFX_IsUnitOnScreen(D2UnitStrc * pUnit, int32_t nOriginX, int32_t
     }
 
     pGfxInfoUnk = pGfxInfo->pGfxInfoUnk;
+    while (pGfxInfoUnk) {
+      if (pGfxInfoUnk->nAnimMode == nWeaponClassOrFlag) {
+        break;
+      }
+
+      pGfxInfoUnk = pGfxInfoUnk->pNext;
+    }
+
     if (!pGfxInfoUnk) {
       return 0;
     }
-
-    while (pGfxInfoUnk->nAnimMode != nWeaponClassOrFlag) {
-      pGfxInfoUnk = pGfxInfoUnk->pNext;
-      if (!pGfxInfoUnk) {
-        return 0;
-      }
-    }
-
     if (!(void*)pGfxInfoUnk->pCofDataArray[5]) {
       return 0;
     }

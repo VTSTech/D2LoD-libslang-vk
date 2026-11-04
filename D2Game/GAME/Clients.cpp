@@ -1413,6 +1413,9 @@ void __fastcall GetGuildName(D2ClientStrc * pClient, char * szGuildName) {
     // a corrupt client struct ever hands us 32+ bytes without a NUL this copy used to run
     // off the end of the 0x5B packet guild area on the sender's stack. Valid guilds are
     // <= 27 chars + NUL and are unaffected.
+    // [sixth sync 2026-11-04] upstream re-spelled this site as retail's plain strcpy
+    // (codegen-shape recognition); NOT taken — the bound is the fix, strcpy would
+    // resurrect the unbounded copy rev35 closed.
     int nCopied = 0;
     do {
       cChar = *pcSrc;

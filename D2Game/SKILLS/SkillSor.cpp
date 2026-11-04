@@ -438,8 +438,7 @@ BOOL __fastcall Skills_SrvDoFunc_017_ChargedBolt(::SGAMEDATA * pGame, D2UnitStrc
 void __fastcall SetFrozenArmorState(D2UnitStrc * pUnit, eD2States eState, int32_t nUnused) {
     int32_t nAuraTargetFlag = 1;
     eD2States pStateArg = eState;
-    ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit);
-    UNIT::SUnitEvent::SUNITEVENT_RemoveEventsByQueueAndOwner(pGame, pUnit, nAuraTargetFlag, pStateArg);
+    UNIT::SUnitEvent::SUNITEVENT_RemoveEventsByQueueAndOwner(UNIT::SUnit::GetGamePointer(pUnit), pUnit, nAuraTargetFlag, pStateArg);
     BOOL bIsModeZeroDead = UNIT::SUnit::CheckForModeZeroDeath(pUnit);
     if (bIsModeZeroDead) {
       uint32_t bIsStateActive;
@@ -735,8 +734,8 @@ BOOL __fastcall Skills_SrvDoFunc_022_Nova_FrostNova(::SGAMEDATA * pGame, D2UnitS
     if ((int)peMissileId >= 0 && (int)peMissileId < sgptDataTable->nTxtMissilesSize) {
       int32_t nVelocity;
       nVelocity = D2Common::DATATBLS::MissileTbls::MISSILETBLS_CalculateVelocity(peMissileId, nSkillLvl);
-      nCalc0 = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxtBase->calc[0], eSkill, nSkillLvl);
-      SkillsServer::SKILLS_CreateMissileRing(pGame, pUnit, pUnit, peMissileId, eSkill, nSkillLvl, nVelocity + nCalc0);
+      nVelocity += (int32_t)D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxtBase->calc[0], eSkill, nSkillLvl);
+      SkillsServer::SKILLS_CreateMissileRing(pGame, pUnit, pUnit, peMissileId, eSkill, nSkillLvl, nVelocity);
       return 1;
     }
 

@@ -569,13 +569,7 @@ uint16_t * __fastcall STRTABLE_GetTranslatedString(uint8_t * pbKey) {
         pcVar1 = pcFormatted + strlen(pcFormatted);
         pcFormatted = pcVar1 + 1;
         pcFormatted = (char*)D2_ALLOC_AT((size_t)(pcVar1 + (int)(pbKeyCopy + (-(int)s__not_xlated_call_ken_w_00730520 - (int)pbSrc)) + 1), ".\\StrTable\\strtable.cpp", 0x26c);
-        nCmp = (int)pcFormatted - (int)pbKey;
-        do {
-          bByte = *pbKey;
-          pbKey[nCmp] = bByte;
-          pbKey++;
-        } while (bByte);
-
+        strcpy(pcFormatted, (char*)pbKey);
         pcSuffixDst = s__not_xlated_call_ken_w_00730520;
         pcSuffixEnd = pcSuffixDst + strlen(pcSuffixDst);
         pcSuffixDst = pcSuffixEnd + 1;
@@ -879,9 +873,8 @@ uint32_t __stdcall STRTABLE_GetRegistryLanguage() {
       return 0;
     }
 
-    char* pcLangStr = gszRegistryLanguage;
-    pcLangStr = pcLangStr + strlen(pcLangStr) + 1;
-    if (pcLangStr == gszRegistryLanguage + 1) {
+    char* pcLangStr;
+    if (strlen(gszRegistryLanguage) == 0) {
       return 0;
     }
 
@@ -996,9 +989,7 @@ void __stdcall STRTABLE_FormatNumber(uint16_t * wszText, uint32_t nValue, int32_
           nDigitCount++;
           pwszOut[nOutPos2] = (short int)szDigits[nDigitIdx];
           if (nDigitCount >= 3) {
-            pcDigit = szDigits;
-            pcDigit = pcDigit + strlen(pcDigit) + 1;
-            if ((uint32_t)((int)pcDigit - (int)(szDigits + 1)) > 3) {
+            if ((uint32_t)(int)strlen(szDigits) > 3) {
               nDigitCount = 0;
               if (nOutPos2 > 0) {
                 nOutPos2 = nOutPos - 2;
@@ -1181,9 +1172,7 @@ static void STRTABLE_LoadAbbreviationSymbols(DWORD dwParam) {
     if (gpStringTableBase) {
       pwsAbbrevStr = STRTABLE_GetStringByIndex(gpStringTableBase, gpStringIndexBase, 0x14d0, dwParam);
       Unicode::UNISYS::UNICODE_WideToMultiByte(szAbbrevBuf, (uint16_t*)pwsAbbrevStr, 5);
-      pszScanPtr = szAbbrevBuf;
-      pszScanPtr = pszScanPtr + strlen(pszScanPtr) + 1;
-      if ((uint32_t)((int)pszScanPtr - (int)(szAbbrevBuf + 1)) > 1) {
+      if ((uint32_t)(int)strlen(szAbbrevBuf) > 1) {
         gcAbbrevKilSymbol = 0x4b;
       } else {
         gcAbbrevKilSymbol = (short int)szAbbrevBuf[0];
@@ -1191,9 +1180,7 @@ static void STRTABLE_LoadAbbreviationSymbols(DWORD dwParam) {
       if (gpStringTableBase) {
         pwsAbbrevStr = STRTABLE_GetStringByIndex(gpStringTableBase, gpStringIndexBase, 0x14d1, dwParam);
         Unicode::UNISYS::UNICODE_WideToMultiByte(szAbbrevBuf, (uint16_t*)pwsAbbrevStr, 5);
-        pszScanPtr = szAbbrevBuf;
-        pszScanPtr = pszScanPtr + strlen(pszScanPtr) + 1;
-        if ((uint32_t)((int)pszScanPtr - (int)(szAbbrevBuf + 1)) > 1) {
+        if ((uint32_t)(int)strlen(szAbbrevBuf) > 1) {
           gcAbbrevMilSymbol = 0x4d;
         } else {
           gcAbbrevMilSymbol = (short int)szAbbrevBuf[0];
@@ -1201,9 +1188,7 @@ static void STRTABLE_LoadAbbreviationSymbols(DWORD dwParam) {
         if (gpStringTableBase) {
           pwsAbbrevStr = STRTABLE_GetStringByIndex(gpStringTableBase, gpStringIndexBase, 0x14d2, dwParam);
           Unicode::UNISYS::UNICODE_WideToMultiByte(szAbbrevBuf, (uint16_t*)pwsAbbrevStr, 5);
-          pszScanPtr = szAbbrevBuf;
-          pszScanPtr = pszScanPtr + strlen(pszScanPtr) + 1;
-          if ((uint32_t)((int)pszScanPtr - (int)(szAbbrevBuf + 1)) > 1) {
+          if ((uint32_t)(int)strlen(szAbbrevBuf) > 1) {
             gcAbbrevBilSymbol = 0x42;
           } else {
             gcAbbrevBilSymbol = (short int)szAbbrevBuf[0];
@@ -1211,9 +1196,7 @@ static void STRTABLE_LoadAbbreviationSymbols(DWORD dwParam) {
           if (gpStringTableBase) {
             pwsAbbrevStr = STRTABLE_GetStringByIndex(gpStringTableBase, gpStringIndexBase, 0x14d3, dwParam);
             Unicode::UNISYS::UNICODE_WideToMultiByte(szAbbrevBuf, (uint16_t*)pwsAbbrevStr, 5);
-            pszScanPtr = szAbbrevBuf;
-            pszScanPtr = pszScanPtr + strlen(pszScanPtr) + 1;
-            if ((uint32_t)((int)pszScanPtr - (int)(szAbbrevBuf + 1)) > 1) {
+            if ((uint32_t)(int)strlen(szAbbrevBuf) > 1) {
               gcAbbrevTrilSymbol = 0x54;
               return;
             }

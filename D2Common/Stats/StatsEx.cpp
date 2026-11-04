@@ -1144,11 +1144,10 @@ int32_t __stdcall GetTxtMaxStamina(D2UnitStrc * pUnit) {
 }
 
 int32_t __stdcall GetTxtMaxDurability(D2UnitStrc * pUnit) {
-    if (!(pUnit && sgptDataTable->nTxtItemStatCostSize > 0x49)) {
-      return 0;
+    D2ItemStatCostTxt* pItemStatCostLine = nullptr;
+    if (pUnit && sgptDataTable->nTxtItemStatCostSize > 0x49) {
+      pItemStatCostLine = sgptDataTable->pTxtItemStatCost + 0x49;
     }
-
-    D2ItemStatCostTxt* pItemStatCostLine = sgptDataTable->pTxtItemStatCost + 0x49;
     if (!pItemStatCostLine) {
       return 0;
     }
@@ -1507,8 +1506,8 @@ int32_t __fastcall STATLIST_CalcCombinedStatValue(D2StatListExStrc * pStatList, 
             n100Percent = 100;
             nBaseStatLookup = ITEMS::ItemMods::ITEMMODS_CalculateRepairCost(uTimeModStat, nRelatedStatVal, nPeriod2, nullptr, nullptr, nullptr);
             nRelatedStatVal = nCombinedValue;
-            nBaseStatLookup = D2Client::Stats::D2ApplyPercent(nCombinedValue, nBaseStatLookup, n100Percent);
-            nCombinedValue = nRelatedStatVal + nBaseStatLookup;
+            nRelatedStatVal += (int32_t)D2Client::Stats::D2ApplyPercent(nCombinedValue, nBaseStatLookup, n100Percent);
+            nCombinedValue = nRelatedStatVal;
           }
         break;
         case 8:

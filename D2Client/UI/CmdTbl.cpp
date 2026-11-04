@@ -697,7 +697,8 @@ void __stdcall CMD_ToggleRunMode() {
 
 void __stdcall CMD_ToggleAlwaysRun() {
     BOOL BVar1 = GAME::Game::GetGlobalAlwaysRun();
-    GAME::Game::SetGlobalAlwaysRun((uint32_t)!BVar1);
+    BOOL bNotBVar1 = !BVar1;
+    GAME::Game::SetGlobalAlwaysRun(bNotBVar1);
 }
 
 void __stdcall CMD_SetClickModifier() {
@@ -2213,7 +2214,7 @@ void __fastcall CMD_InitKeyConfigUI(int32_t nFadeInDuration, int32_t nHoldDurati
 }
 
 void StaticInit_gwKeyNameBuffer() {
-    memset(gwKeyNameBuffer, 0, 4 * sizeof(gwKeyNameBuffer[0]));
+    *(uint32_t*)gwKeyNameBuffer = 0;
 }
 
 } // namespace D2Client::UI::CmdTbl
