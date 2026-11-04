@@ -19,6 +19,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 
 #include "d2_linux_video.h"
 
@@ -37,9 +38,12 @@ struct VideoState {
 
 VideoState g_video;
 
-// Palette: 128-shade gray ramp (0-127) + hue sweep (128-255). This is the
+int g_presentCount = 0;
+
+// The palette: 128-shade gray ramp (0-127) + hue sweep (128-255). This is the
 // carrier the game's light ramps will live in; nothing in the pattern math
-// below depends on the specific colors.
+// below depends on the specific colors. (The game's own palette replaces it
+// through Video_SetPalette once the DirectDraw shim attaches one.)
 void BuildPalette(SDL_Palette* palette) {
     SDL_Color colors[256];
     for (int i = 0; i < 128; ++i) {
@@ -99,6 +103,35 @@ static bool AttachPresentation(SDL_Window* window, int w, int h) {
         return false;
     }
     return true;
+}
+
+// [d2linux M2 round 2] the shared present: staging (INDEX8) → streaming
+// texture (XRGB8888) → renderer. M2 folds the 8→32-bit conversion into the
+// texture lock — one pass over the frame, zero intermediate surfaces (the
+// SDL_ConvertSurface round-trip the M0 path used is gone).
+static void PresentStaging() {
+    void* pixels = nullptr;
+    int pitch = 0;
+    if (!SDL_LockTexture(g_video.texture, nullptr, &pixels, &pitch)) {
+        std::printf("d2linux: SDL_LockTexture failed: %s\n", SDL_GetError());
+        return;
+    }
+    const Uint8* idx = (const Uint8*)g_video.staging->pixels;
+    const int spitch = g_video.staging->pitch;
+    const SDL_Palette* spal = SDL_GetSurfacePalette(g_video.staging);
+    const SDL_Color* pal = spal ? spal->colors : nullptr;
+    for (int y = 0; y < g_video.h; ++y) {
+        const Uint8* row = idx + (size_t)y * spitch;
+        Uint32* dst = (Uint32*)((Uint8*)pixels + (size_t)y * pitch);
+        for (int x = 0; x < g_video.w; ++x) {
+            const SDL_Color& c = pal[row[x]];   // XRGB8888, little-endian
+            dst[x] = 0xFF000000u | ((Uint32)c.r << 16) | ((Uint32)c.g << 8) | (Uint32)c.b;
+        }
+    }
+    SDL_UnlockTexture(g_video.texture);
+    SDL_RenderTexture(g_video.renderer, g_video.texture, nullptr, nullptr);
+    SDL_RenderPresent(g_video.renderer);
+    ++g_presentCount;
 }
 
 }  // namespace
@@ -172,28 +205,69 @@ void Video_Frame(int frame) {
         }
     }
 
-    // Palette lookup + upload + present. (M2: fold the conversion into the
-    // texture lock and drop the per-frame intermediate surface.)
-    SDL_Surface* rgb = SDL_ConvertSurface(g_video.staging, SDL_PIXELFORMAT_XRGB8888);
-    if (!rgb) {
-        std::printf("d2linux: SDL_ConvertSurface failed: %s\n", SDL_GetError());
-        return;
-    }
-    void* pixels = nullptr;
-    int pitch = 0;
-    if (SDL_LockTexture(g_video.texture, nullptr, &pixels, &pitch)) {
-        const Uint8* src = (const Uint8*)rgb->pixels;
-        Uint8* dst = (Uint8*)pixels;
-        const size_t copy = (size_t)g_video.w * 4;
-        for (int y = 0; y < g_video.h; ++y) {
-            SDL_memcpy(dst + (size_t)y * pitch, src + (size_t)y * rgb->pitch, copy);
-        }
-        SDL_UnlockTexture(g_video.texture);
-    }
-    SDL_DestroySurface(rgb);
+    PresentStaging();
+}
 
-    SDL_RenderTexture(g_video.renderer, g_video.texture, nullptr, nullptr);
-    SDL_RenderPresent(g_video.renderer);
+bool Video_SetPalette(const void* entries256) {
+    if (!g_video.staging || !entries256) {
+        return false;
+    }
+    SDL_Palette* palette = SDL_GetSurfacePalette(g_video.staging);
+    if (!palette) {
+        return false;
+    }
+    const Uint8* e = (const Uint8*)entries256;  // PALETTEENTRY: r,g,b,peFlags
+    SDL_Color colors[256];
+    for (int i = 0; i < 256; ++i) {
+        colors[i].r = e[i * 4 + 0];
+        colors[i].g = e[i * 4 + 1];
+        colors[i].b = e[i * 4 + 2];
+        colors[i].a = 0xFF;
+    }
+    return SDL_SetPaletteColors(palette, colors, 0, 256);
+}
+
+bool Video_PresentIndexed(const uint8_t* indices, int pitch, int w, int h) {
+    if (!g_video.staging || !g_video.texture || !indices || pitch <= 0 ||
+        w <= 0 || h <= 0) {
+        return false;
+    }
+    Uint8* dst = (Uint8*)g_video.staging->pixels;
+    const int dpitch = g_video.staging->pitch;
+
+    if (w == g_video.w && h == g_video.h) {
+        // The exact fit: row copy, both pitches honored.
+        const int copy = (w < pitch) ? w : pitch;
+        for (int y = 0; y < h; ++y) {
+            std::memcpy(dst + (size_t)y * dpitch, indices + (size_t)y * pitch,
+                        (size_t)copy);
+        }
+    } else {
+        // Mode smaller than the hosted window (the smoke self-test's shape:
+        // the M0 host owns an 800x600 presentation, the DD mode is 640x480):
+        // center the frame on black — the fullscreen-exclusive analogue, a
+        // centered letterboxed mode. Larger-than-host frames clip.
+        std::memset(dst, 0, (size_t)dpitch * g_video.h);
+        const int ox = (g_video.w - w) / 2;
+        const int oy = (g_video.h - h) / 2;
+        int copy = w;
+        if (ox + w > g_video.w) copy = g_video.w - ox;
+        int rows = h;
+        if (oy + h > g_video.h) rows = g_video.h - oy;
+        if (copy > 0 && rows > 0) {
+            for (int y = 0; y < rows; ++y) {
+                std::memcpy(dst + (size_t)(oy + y) * dpitch + ox,
+                            indices + (size_t)y * pitch, (size_t)copy);
+            }
+        }
+    }
+
+    PresentStaging();
+    return true;
+}
+
+int Video_PresentCount() {
+    return g_presentCount;
 }
 
 void Video_Shutdown() {

@@ -271,6 +271,7 @@ set(D2LINUX_GAME_SOURCES
 set(D2LINUX_SHIM_SOURCES
     platform/linux/d2_linux_shim_win32.cpp
     platform/linux/d2_linux_shim_user32.cpp
+    platform/linux/d2_linux_shim_ddraw.cpp
     platform/linux/d2_linux_shim_registry.cpp
     platform/linux/d2_linux_globals_step1.cpp
     platform/linux/d2_linux_shim_crt.cpp
@@ -329,7 +330,7 @@ endif()
 # unqualified-id before ':'") on every TU (owner round-4 build failure). The
 # guard below turns that into a configure-time FATAL_ERROR instead.
 list(LENGTH D2LINUX_GAME_SOURCES D2LINUX_GAME_TU_COUNT)
-set(D2LINUX_PROJECT_STAGE "project: M2 round 1 - user32 surface real (window/pump/input) / M0 window + M1 i386 slice done / next: DirectDraw onto the INDEX8 surface")
+set(D2LINUX_PROJECT_STAGE "project: M2 round 2 - DirectDraw onto the INDEX8 surface (first game pixels) / M0 window + M1 i386 slice + M2 user32 done / next: Storm/MPQ file routing + boot-chain slice")
 if(D2LINUX_ARCH STREQUAL "i386")
     set(D2LINUX_BINARY_SHAPE "binary: i386 slice - skeleton + shims + game TUs (${D2LINUX_GAME_TU_COUNT})")
 else()

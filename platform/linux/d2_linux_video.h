@@ -28,6 +28,22 @@ bool Video_Attach(SDL_Window* window);
 // for everything else.
 void Video_Detach(SDL_Window* window);
 
+// [d2linux M2 round 2] installs the game's 256-entry palette (PALETTEENTRY
+// layout: peRed, peGreen, peBlue, peFlags — the IDirectDrawPalette object's
+// table) into the staging surface's palette. False when nothing is hosting.
+bool Video_SetPalette(const void* entries256);
+
+// [d2linux M2 round 2] the DirectDraw shim's present: one 8-bit index frame
+// (row-pitched) into the staging surface — centered on black when the frame
+// is smaller than the hosted window (the fullscreen-exclusive analogue: a
+// centered, letterboxed mode) — then converted straight into the streaming
+// texture (no intermediate surface) and presented. False when nothing hosts.
+bool Video_PresentIndexed(const uint8_t* indices, int pitch, int w, int h);
+
+// [d2linux M2 round 2] presents completed so far — the self-test's probe
+// that Flip really drove the presentation chain.
+int Video_PresentCount();
+
 void Video_Shutdown();
 
 }  // namespace d2linux

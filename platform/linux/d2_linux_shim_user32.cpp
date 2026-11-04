@@ -131,6 +131,14 @@ static D2GameWindow* WindowOf(HWND hwnd) {
     return NULL;
 }
 
+// [d2linux M2 round 2] internal cross-shim hook (link-level, NOT game API):
+// the DirectDraw shim validates SetCooperativeLevel's hwnd against this
+// registry — a cooperative level on a window this process never created is
+// refused (FALSE), including the null/desktop sentinels.
+bool d2linux_user32_window_registered(HWND hwnd) {
+    return hwnd && WindowOf(hwnd) != NULL;
+}
+
 static void QueueMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     D2WinMsg m;
     m.hwnd    = hwnd;
