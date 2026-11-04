@@ -32,6 +32,14 @@
 # the sweep is a human-audit instrument (merge-procedure step 4e), the
 # owner's Win11 build remains the final gate.
 #
+# Selection blind spot (accepted, covered elsewhere): a TU byte-identical to
+# ONE parent is never compiled - if the merge took the OTHER parent's
+# move/deletion of a header that TU includes, the dangle is invisible here
+# (the 1894->1908 sync shipped exactly this in D2Client/GAME/Draw.cpp, and a
+# sweep run on the broken tree stays 0-error). That class belongs to
+# scripts/include_path_audit.py (whole-tree quoted-include resolution, no
+# compiler); run both after every merge.
+#
 # Exit: 0 = clean, 1 = real failures, 2 = usage.
 set -u
 

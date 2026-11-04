@@ -727,7 +727,10 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # on the first frame after a runtime 1 -> 0 flip; R97 guards both promote
 # callers and re-arms the probes, see the R97 rows below)
 # refiled R106: D2Client/Engine/Application.cpp -> Game/Main.cpp (upstream 316d537a)
-gate "res: self-id 0.0.7-R105"                Game/Main.cpp                    'Vanilla\+0\.0\.7-R105' 1
+# R106: string bumped R105 -> R106 (the 1894->1908 sync + its compile fix: the
+# seventh sync's broken round never produced an exe, so R106 in d2boot.log
+# unambiguously means the fixed tree)
+gate "res: self-id 0.0.7-R106"                Game/Main.cpp                    'Vanilla\+0\.0\.7-R106' 1
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the

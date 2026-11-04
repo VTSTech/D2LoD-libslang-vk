@@ -8,7 +8,6 @@
 #include "D2CMP/SRC/SubTile.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GameViewStrc.h"
-#include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/Draw/Weather.h"
 #include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Game/Game.h"

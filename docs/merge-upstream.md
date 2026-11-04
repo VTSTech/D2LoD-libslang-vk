@@ -57,6 +57,17 @@ rule in it was learned the hard way (see "War stories" at the bottom).
 
     # 4) one-second feature audit, no toolchain needed:
     tools/check-vanilla-plus.sh           # per-feature grep gates
+    python3 scripts/include_path_audit.py
+    #    INCLUDE-PATH audit (added R106, after the 1894->1908 sync compile
+    #    break): every quoted #include in every tracked .cpp/.h must resolve
+    #    to a tracked file the way the -I chain does (includer's dir, repo
+    #    root, any dir holding a header = CMake's D2_INCLUDE_DIRS). No
+    #    compiler, no shims - the whole tree in seconds, including the
+    #    single-sided files the merge-site sweep never compiles. The
+    #    1894->1908 sync shipped Draw.cpp still naming D2GfxHelperStrc.h's
+    #    OLD D2Client/ path after the merge took upstream's move of that
+    #    header to D2gfx/ - the owner's Win11 build died at [49/485]. Cheap
+    #    enough to always run.
     python3 scripts/rev47_vp_placement_audit.py
     #    VP-marker PLACEMENT audit (added R47, after issue #10): presence
     #    checks pass a marked block that survived at the wrong brace depth;
@@ -345,3 +356,26 @@ PR) so acceptance is frictionless.
   side whole (the splice class hides between hunks); grep the retired symbols'
   names file-wide before staging; and when a gate count changes, diff the new site
   against the owner's own recent commits before treating it as merge damage.
+
+- **The 1894->1908 dangling include (427551b7, seventh sync):** the merge took
+  upstream's whole-file regen of `D2GfxHelperStrc.h` (`D2Client/` -> `D2gfx/`,
+  old copies deleted — the commit message even lists the regen) while
+  `D2Client/GAME/Draw.cpp` resolved byte-identical to the fork parent (the
+  [resolution site-5] VP block means the fork side wins the file whole) and kept
+  `#include "D2Client/D2GfxHelperStrc.h"`. Every instrument the round ran was
+  green and DESERVED to be: presence/placement/branch audits check the LINE, and
+  the line was fine — the FILE it named was gone. The merge-site sweep is
+  structurally blind here too: its selection is "differs from BOTH parents", and
+  a parent-1-identical body never compiles, even though the merge changed the
+  header set around it (negative-tested: the sweep runs 0-error on the broken
+  tree). The owner's Win11 build died at [49/485] on the first TU to reach the
+  include. Fix: the include is not VP-marked, so upstream wins — dropped
+  (`Engine/Gfx.h`, already included, carries the full struct; upstream's own
+  Draw.cpp includes nothing for it). Instruments: `include_path_audit.py`
+  (step 4) resolves every quoted include in all 1183 tracked sources without a
+  compiler, covering the single-sided files the sweep's selection skips; the
+  sweep's header now carries the blind-spot note. Rules: when a merge moves or
+  deletes a header, grep the OLD path across the tree before resolving the
+  round ("the include survives the file"); and a file resolved to one parent
+  wholesale still compiles against the MERGE tree's headers — only a whole-tree
+  include walk sees that.
