@@ -61,11 +61,15 @@ pointer-bearing struct changes layout and the game state corrupts. So:
   registry→file-backed under `~/.config/d2linux/`, the MSVC CRT bits, and the
   inventory pass's full surface (platform/linux/INVENTORY.md). The slice: 44
   game TUs (Fog/Storm foundation + PKWARE). CI builds `-DD2LINUX_ARCH=i386`
-  with multilib. The first CI round failed at the `-m32` probe with attempt 1's
-  evidence discarded; the failure path is self-diagnosing now — build.cmake
-  FATALs with the compiler's own verdict, check-build-linux.sh keeps attempt 1's
-  log and retries on a wiped build dir, and build.yml gates the job on a real
-  `gcc -m32` compile+link before cmake runs.
+  with multilib and configures SDL console-only (runners have no `:i386` X11
+  dev libraries; the smoke uses the dummy drivers anyway). CI rounds 1–2
+  (2026-11-04) died inside `check_cxx_compiler_flag(-m32)` while a plain
+  `gcc -m32` linked fine in the same job: the module passes the flag through
+  the try_compile child's `add_definitions` — compile-only — so the child
+  links a 32-bit object against 64-bit crt and false-fails working multilib.
+  The gate is a raw try_compile probe now (its `COMPILE_DEFINITIONS` route
+  reaches compile AND link), FATALing with the compiler's own verdict when
+  the toolchain genuinely cannot do i386.
 - **M2 — title screen offline**: MPQ loading via the vendored Storm, one
   renderer path onto the M0 presentation surface (the M0 pattern producer is
   replaced by the game's composed 8-bit frame), input shim. Cinematics stubbed.

@@ -29,6 +29,14 @@ jobs:
       # check-build-linux.sh builds the default arch (i386 since M1); CI
       # verifies exactly what ships.
       D2LINUX_ARCH: i386
+      # Under i386 the SDL X11/Wayland checks can never pass on a runner:
+      # the dev libraries are x86-64-only (no libx11-dev:i386 multiarch
+      # here), so the full-configure attempt would deterministically fatal
+      # in sdlchecks.cmake and the console retry would rescue it every run.
+      # Go console-only up front - the smoke forces the SDL dummy drivers
+      # anyway. (Real backend configure stays the default for anyone
+      # building the native arch locally; the script keeps that contract.)
+      D2LINUX_SDL_FLAGS: "-DSDL_UNIX_CONSOLE_BUILD=ON -DSDL_X11=OFF -DSDL_WAYLAND=OFF"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -85,8 +93,12 @@ jobs:
       # check-build-linux.sh builds in a temp clone and deletes it, so build
       # in-tree too and keep the binary as an artifact.
       - name: Build in-tree
+        # Same console-only SDL options as the check job (D2LINUX_SDL_FLAGS
+        # above): under i386 the X11/Wayland checks cannot pass without the
+        # :i386 multiarch dev libraries.
         run: |
-          cmake -S . -B build-linux -G Ninja -DD2LINUX_ARCH=i386
+          cmake -S . -B build-linux -G Ninja -DD2LINUX_ARCH=i386 \
+            -DSDL_UNIX_CONSOLE_BUILD=ON -DSDL_X11=OFF -DSDL_WAYLAND=OFF
           cmake --build build-linux -j "$(getconf _NPROCESSORS_ONLN)" --target d2linux
 
       - name: Upload d2linux-<commit>

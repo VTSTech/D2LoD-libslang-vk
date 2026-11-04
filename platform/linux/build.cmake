@@ -21,27 +21,31 @@ endif()
 message(STATUS "d2linux: arch=${D2LINUX_ARCH}")
 
 if(D2LINUX_ARCH STREQUAL "i386")
-    # The charter gate (PLAN.md §7 R1): one C++ compile+link probe with -m32.
-    # The game TUs are all C++; the SDL C TUs share this toolchain (C is
-    # enabled in project()), and a C-specific 32-bit break would surface there
-    # with gcc's own error text at build time.
-    include(CheckCXXCompilerFlag)
-    check_cxx_compiler_flag("-m32" D2LINUX_HAVE_M32_CXX)
-    if(NOT D2LINUX_HAVE_M32_CXX)
-        # Diagnosis probe (CI round 2026-11-04: the bare flag verdict doesn't
-        # name the missing piece - crt1.o vs 32-bit headers vs libgcc - and
-        # the check_* macros swallow the compiler's output). Re-run the same
-        # compile+link by hand and show gcc's verdict in the FATAL_ERROR.
+    # The charter gate (PLAN.md §7 R1): a real -m32 compile+link probe.
+    # NOT check_cxx_compiler_flag: it routes the flag through the child's
+    # add_definitions() (Internal/CheckCompilerFlag sets
+    # CMAKE_REQUIRED_DEFINITIONS), which reaches the COMPILE step only - the
+    # child then links a 32-bit object against 64-bit crt objects and
+    # false-fails on every working multilib toolchain (observed on
+    # ubuntu-24.04 / cmake 3.28.3 / gcc 13.3, CI rounds 2026-11-04: the gate
+    # failed while a plain `gcc -m32` linked fine in the very same job). The
+    # CMAKE_FLAGS COMPILE_DEFINITIONS route used here seeds the child's
+    # CMAKE_CXX_FLAGS instead, which rides both compile and link - the ground
+    # truth. The game TUs are all C++; the SDL C TUs share this toolchain.
+    if(NOT DEFINED D2LINUX_HAVE_M32)
         file(WRITE "${CMAKE_BINARY_DIR}/d2linux_m32_probe.cpp"
             "int main() { return 0; }\n")
-        # Same mechanism CheckCXXSourceCompiles uses (COMPILE_DEFINITIONS rides
-        # both the compile and the link rule); CMAKE_CXX_FLAGS via CMAKE_FLAGS
-        # does NOT reach the child project.
-        try_compile(D2LINUX_M32_DIAG
+        try_compile(D2LINUX_HAVE_M32
             "${CMAKE_BINARY_DIR}/d2linux_m32_probe_build"
             SOURCES "${CMAKE_BINARY_DIR}/d2linux_m32_probe.cpp"
             CMAKE_FLAGS "-DCOMPILE_DEFINITIONS:STRING=-m32"
             OUTPUT_VARIABLE D2LINUX_M32_LOG)
+        set(D2LINUX_HAVE_M32 "${D2LINUX_HAVE_M32}" CACHE INTERNAL
+            "d2linux: -m32 compile+link probe")
+    endif()
+    if(NOT D2LINUX_HAVE_M32)
+        # Show the compiler's own verdict (crt1.o vs 32-bit headers vs
+        # libgcc), not a bare flag result.
         string(REPLACE "\n" "\n    " _d2l_m32_tail "${D2LINUX_M32_LOG}")
         string(LENGTH "${_d2l_m32_tail}" _d2l_m32_len)
         if(_d2l_m32_len GREATER 2200)
@@ -57,6 +61,7 @@ if(D2LINUX_ARCH STREQUAL "i386")
             "-DD2LINUX_ARCH=native builds the host skeleton on the host arch "
             "only (no game TUs).")
     endif()
+    message(STATUS "d2linux: -m32 compile+link probe OK")
     add_compile_options(-m32)
     add_link_options(-m32)
 elseif(NOT D2LINUX_ARCH STREQUAL "native")
