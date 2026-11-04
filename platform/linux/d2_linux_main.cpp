@@ -178,9 +178,14 @@ bool ParseArgs(int argc, char** argv, HostOptions* out) {
 }
 
 void PrintBanner(const HostOptions& opts) {
-    // Self-ID line, d2boot.log style: the first line names the build.
-    std::printf("d2linux scaffold %s | Vanilla+ native Linux host, milestone 0%s\n",
-                D2LINUX_BUILD_ID, opts.smoke ? " (smoke: dummy drivers)" : "");
+    // Self-ID line, d2boot.log style: the first line names the build AND the
+    // milestone shape (D2LINUX_MILESTONE, baked by build.cmake with the
+    // computed game-slice TU count). M1 is a link-time milestone - the game
+    // TUs join the binary but nothing calls them until M2's boot chain - so
+    // the screen cannot show it; the banner does.
+    std::printf("d2linux scaffold %s | Vanilla+ native Linux host, %s%s\n",
+                D2LINUX_BUILD_ID, D2LINUX_MILESTONE,
+                opts.smoke ? " (smoke: dummy drivers)" : "");
 }
 
 }  // namespace d2linux

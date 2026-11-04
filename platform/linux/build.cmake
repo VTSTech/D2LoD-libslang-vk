@@ -315,6 +315,19 @@ else()
                    "the skeleton + shim layer build and the smoke runs as in M0")
 endif()
 
+# [d2linux] The banner states the milestone shape: a console capture answers
+# "which build is this" without the plan open. M1 is a link-time milestone -
+# the game TUs join the binary but nothing calls them until M2's boot chain -
+# so the screen cannot show it; the banner does. The TU count is computed,
+# not hardcoded: step 2 grows the slice and the banner follows.
+list(LENGTH D2LINUX_GAME_SOURCES D2LINUX_GAME_TU_COUNT)
+if(D2LINUX_ARCH STREQUAL "i386")
+    set(D2LINUX_MILESTONE "milestone 1 (skeleton + shims + game slice: ${D2LINUX_GAME_TU_COUNT} TUs, i386)")
+else()
+    set(D2LINUX_MILESTONE "milestone 0 (skeleton + shims, native arch - no game TUs)")
+endif()
+target_compile_definitions(d2linux PRIVATE D2LINUX_MILESTONE="${D2LINUX_MILESTONE}")
+
 # The shadow dir leads the include path: game headers say #include
 # "d2_platform.h" and must resolve to the SAME file the forced include used
 # (#pragma once dedupes per path; the tree file would double-parse).

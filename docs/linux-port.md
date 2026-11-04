@@ -95,6 +95,12 @@ cmake --build build-linux -j --target d2linux
 cmake -S . -B build-linux -G Ninja     # D2LINUX_ARCH=i386 is the default
 ```
 
+The banner self-IDs the shape: `milestone 0 (skeleton + shims, native arch)`
+vs `milestone 1 (skeleton + shims + game slice: 44 TUs, i386)`. M1 is a
+link-time milestone — the game TUs join the binary but nothing calls them
+until M2's boot chain — so the screen cannot show it; the banner does, with
+the slice TU count computed from the build itself.
+
 SDL3 needs at least one desktop backend's dev packages on Linux (it hard-errors
 otherwise; `SDL_UNIX_CONSOLE_BUILD=ON` skips that for container-only builds):
 `libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev
