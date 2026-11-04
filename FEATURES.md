@@ -1,12 +1,13 @@
 # FEATURES.md — D2R backport slate (vanilla-plus)
 
-*v3, 2026-10-29. Row 9 (`shared_stash`) added from an owner suggestion — side-file design, `.d2s`/`.d2x` untouched. Row 4 (`transparent_hud`) added from an owner suggestion — no D2R parity, engine-native draw modes. Scoped by research: D2R official QoL behavior + prior art from the
+*v4, 2026-11-05. Status sweep: shipped rows marked Shipped with their first release (1, 3, 6, 9, 10, 11); row 9's SMOKE debts cleared (§H items 25/27 in the R83 full-belt pass [#24], the ten-page items in the R104 pass [#28]); §1/§6/§9/§10 as-built notes refreshed, §9's pre-ship draft marked superseded by the shipped in-panel tab. Earlier: v3, 2026-10-29 — row 9 (`shared_stash`) added from an owner suggestion — side-file design, `.d2s`/`.d2x` untouched; row 4 (`transparent_hud`) added from an owner suggestion — no D2R parity, engine-native draw modes. Scoped by research: D2R official QoL behavior + prior art from the
 classic-D2 modding scene (PD2, BH/slashdiablo maphack, Sting's hackmap, d2dx). Ranked
 **low-risk first** per owner call. **Code-only** per charter Principle 4: no MPQ/data
 edits, no new assets — every feature is pure code + a `d2vp.ini` gate. Hook sites below
 are **candidate regions** taken from the known feature-era map (handoff.md rows 28–31);
 each feature gets a Task-C-style tree-verify pass (exact anchors, grep gates) before any
-implementation round. Live tasks: handoff.md §9. Charter: VANILLA-PLUS.md.*
+implementation round. Live tasks: handoff.md §9. Charter: VANILLA-PLUS.md (as-built
+feature docs); this file is the slate + per-row engineering record.*
 
 ## The feature contract (house rules, from shipped rows 28–31)
 
@@ -32,20 +33,24 @@ Every slate row must satisfy all of these before it ships:
 |---|---|---|---|---|---|---|
 | 0a | Z-key camera zoom | Controls | D2R launch feature (Z / wheel) | M | Med | `camera_zoom` |
 | 0b | Shift equipment-compare | Controls | D2R hover-compare | M | Med | `shift_compare` |
-| 1 | Persistent globe text (was: hover values) | HUD | D2R globe hover shows current/max | S | Low | **Repurposed 2026-10-30** — orb-face readout removed (retail already prints cur/max above each orb on hover); `globe_persistent` now pins that text on (ledger row 40; options page row 4) |
+| 1 | Persistent globe text (was: hover values) | HUD | D2R globe hover shows current/max | S | Low | **Shipped 0.0.5** — repurposed 2026-10-30 pre-ship: the orb-face readout duplicated retail's own above-orb hover text, so `globe_persistent` just pins that text on (ledger row 40; options page row 4; see §1) |
 | 2 | Clock / game-timer overlay | HUD | D2R Tab-screen game timer; BH wall-clock | S | Low | `clock_overlay` |
-| 3 | Item ilvl on tooltips | Loot | D2R 2.5 display-item-level toggle | S–M | Low | **Implemented** (R55 standalone line, R56 name-suffix presentation — `item_ilvl`, see item 3 below; handoff Rev 65/66) |
+| 3 | Item ilvl on tooltips | Loot | D2R 2.5 display-item-level toggle | S–M | Low | **Shipped** (R55 standalone line → R56 name-suffix → R57 bare digits → R59 single-space trim — `item_ilvl`, see §3; first shipped in release 0.0.7) |
 | 4 | Transparent bottom bar | HUD | None — owner suggestion; see-through-HUD staple elsewhere | S–M | Low–Med | `transparent_hud` |
 | 5 | Monster HP bar on hover | HUD | D2R enemy health bar (PC) | M | Low–Med | `monster_hp_bar` |
-| 6 | Auto gold pickup | Loot | D2R "Gold Pickup" gameplay option | M | Med | **Implemented** (2026-10-29: ledger row 33; field-verified, coexists with alt_toggle) |
+| 6 | Auto gold pickup | Loot | D2R "Gold Pickup" gameplay option | M | Med | **Shipped 0.0.4** (2026-10-29: ledger row 33; field-verified — "Auto-Gold Pickup works!" — coexists with alt_toggle) |
 | 7 | Automap scale + position | HUD | D2R larger overlay map | M | Med | `automap_scale` |
 | 8 | Quick-cast keys | Controls | D2R-adjacent (PD2 quick cast) | M–L | Med–High | `quick_cast` |
-| 9 | Shared side-file stash | Stash | None — owner suggestion (PlugY-style side file) | L | Med–High | **Round 1 FIELD-PROVEN (R63, Rev 82; build-fix R64, Rev 83; tab-anchor fixes R65+R66, Revs 84-85; owner on R66: "Great job. I see it. It works.")** — 1 retail-shaped page via a stash-panel "Shared" tab (no hotkey), items + gold, own `_d2vp_shared.sss` file, `.d2s` retail-pure (save-flush design); SP-only v1; mechanism field-proven on the R65 build blind (page swap + cross-char item/gold round trip), tab visibility confirmed on R66. First shipped in release **0.0.7** (cut at R66); in-game **Shared Stash** row on the Vanilla+ Options page added R67 (no longer ini-only). **R75 (Rev 97): a SECOND shared page + pager** (owner: "give the current stash tab label an outline" + "add a 2nd page and buttons/arrows to navigate pages") — the label draws with a 1-px black halo on all four sides, `<`/`>` arrows beside the word step personal → Shared 1 → Shared 2, the word itself toggles back to personal, `_d2vp_shared.sss` v2 stores both pages (v1 files load as page 1), the 0x4F/0x7D param word carries the absolute desired page. (The R68–R71 tab polish — Font24, floating row, backdrop pill — was rolled back by owner decision at `59ff645`; R75 builds on the R66 in-panel tab.) **R82 (Rev 105): TEN shared pages** (owner: "increase the shared stash pages to 10") — the planned v2-header widening: same magic + version, `pageCount` 10 (header 28 → 92 bytes), pre-R82 two-page files read back with pages 3-10 empty (next save rewrites ten), labels `Shared 1`…`Shared 10`, arrows still step one page, one gold pool across all ten. Owed: SMOKE §H items 25 (`.d2s` in retail) + 27 (degrade drill) + the ten-page items 33-35; the "Then 100" leg widens the same two constants. Plan: SHARED-STASH-PLAN.md |
-| 10 | Vanilla+ Options menu page | UI | None — owner suggestion 2026-10-29; in-game settings surface for the gated features | M | Med→Low | **Implemented** (field rev C 2026-10-29: Route B label + cursor fix, field round 2 pending; land: ledger row 34); **eight rows since R67** — the slate's five shipped keys + Shared Stash (R67: the row busts the client stash gate cache too, so the tab follows the toggle the same frame) + No Panel World Shift (R101, issue #26 round 9: the write bridge already busts the PANELSHIFT cache, so the flip applies same-frame; the seventh row moved the Previous Menu row down one pitch, 0x124→0x144) + Mana Burn Fix (R108: the R106 combat gate joins the panel — the eighth row moved the Previous Menu row down one pitch again, 0x144→0x164, and grew the box 0x171→0x191; the server gate keeps its 2 s poll by design, so a flip lands on the next drain roll within 2 s while the panel shows it same-frame) |
+| 9 | Shared side-file stash | Stash | None — owner suggestion (PlugY-style side file) | L | Med–High | **Round 1 FIELD-PROVEN (R63, Rev 82; build-fix R64, Rev 83; tab-anchor fixes R65+R66, Revs 84-85; owner on R66: "Great job. I see it. It works.")** — 1 retail-shaped page via a stash-panel "Shared" tab (no hotkey), items + gold, own `_d2vp_shared.sss` file, `.d2s` retail-pure (save-flush design); SP-only v1; mechanism field-proven on the R65 build blind (page swap + cross-char item/gold round trip), tab visibility confirmed on R66. First shipped in release **0.0.7** (cut at R66); in-game **Shared Stash** row on the Vanilla+ Options page added R67 (no longer ini-only). **R75 (Rev 97): a SECOND shared page + pager** (owner: "give the current stash tab label an outline" + "add a 2nd page and buttons/arrows to navigate pages") — the label draws with a 1-px black halo on all four sides, `<`/`>` arrows beside the word step personal → Shared 1 → Shared 2, the word itself toggles back to personal, `_d2vp_shared.sss` v2 stores both pages (v1 files load as page 1), the 0x4F/0x7D param word carries the absolute desired page. (The R68–R71 tab polish — Font24, floating row, backdrop pill — was rolled back by owner decision at `59ff645`; R75 builds on the R66 in-panel tab.) **R82 (Rev 105): TEN shared pages** (owner: "increase the shared stash pages to 10") — the planned v2-header widening: same magic + version, `pageCount` 10 (header 28 → 92 bytes), pre-R82 two-page files read back with pages 3-10 empty (next save rewrites ten), labels `Shared 1`…`Shared 10`, arrows still step one page, one gold pool across all ten. SMOKE debts cleared: §H items 25 (`.d2s` in retail) + 27 (degrade drill) confirmed in the R83 full-belt pass ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24), 2026-11-02), the ten-page items 33-35 rode the R104 full pass ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04); the "Then 100" leg widens the same two constants. Plan: SHARED-STASH-PLAN.md |
+| 10 | Vanilla+ Options menu page | UI | None — owner suggestion 2026-10-29; in-game settings surface for the gated features | M | Med→Low | **Shipped** (landed 2026-10-30, ledger row 34; first release **0.0.6**); **eight rows as of R108** — the slate's five shipped keys + Shared Stash (R67: the row busts the client stash gate cache too, so the tab follows the toggle the same frame) + No Panel World Shift (R101, issue #26 round 9: the write bridge already busts the PANELSHIFT cache, so the flip applies same-frame; the seventh row moved the Previous Menu row down one pitch, 0x124→0x144) + Mana Burn Fix (R108: the R106 combat gate joins the panel — the eighth row moved the Previous Menu row down one pitch again, 0x144→0x164, and grew the box 0x171→0x191; the server gate keeps its 2 s poll by design, so a flip lands on the next drain roll within 2 s while the panel shows it same-frame) |
 | 11 | Mana Burn fix (melee drain 256x bug) | Combat (D2Game) | D2R 2.4 patch notes ("fixed melee hits draining 256 times too much") + Basin wiki Mana Burn | S | Low | **Implemented** (R106 — `mana_burn_fix`; ini-only at ship, in-game **Mana Burn Fix** row on the Vanilla+ Options page since R108; server-side gate TU + VP-marked drain-roll shim in SUnitDmg.cpp; field QA + llvm-mingw gate pending) |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
 the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipped for 0.0.4, and row 1 shipped as the orb-face readout and was repurposed post-release (see §1).
+**Shipped as of R108**: rows 1, 3, 6, 9, 10 and 11 — plus, outside this slate, the
+pre-slate pair `alt_toggle`/`portable_save` (handoff ledger rows 28–31, releases
+0.0.2/0.0.3) and `no_panel_shift` (born from issue #26, R95–R101). As-built docs for
+everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
 
 ---
 
@@ -63,7 +68,14 @@ the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipp
   a stale `globe_values=1` ini line is inert. The as-built notes live in handoff
   Rev 22 / Rev 26.
 - **D2R behavior**: hovering the life/mana globes shows numeric current/max values.
-- **Proposed**: while the cursor is over either bulb, draw `cur / max` text beside it,
+- **Shipped (0.0.5, 2026-10-29)**: exactly the repurposed design — the gate is ||'d
+  into `D2Client/UI/Panel.cpp`'s two above-orb draw conditions, so retail's own
+  cur/max text shows without hovering and nothing else is drawn. Managed from the
+  Vanilla+ Options page (row 4, "Persistent Globe Text") and
+  `[features] globe_persistent`; retail's "Show HP/MP Text" toggle keeps working.
+  The Proposed/Candidate/Exit blocks below are the pre-repurpose draft (the original
+  orb-face readout), kept for record.
+- **Proposed (pre-repurpose draft)**: while the cursor is over either bulb, draw `cur / max` text beside it,
   using the same tooltip/text primitives the alt-toggle label path already uses
   (`D2Client/UI/Text.cpp`, `D2Client/UI/Draw.cpp` draw layer). Values come from the
   player unit's stat list (life/mana current + max stats).
@@ -192,7 +204,7 @@ the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipp
   distance, mirrored together with the server's `0x804` collision test, so a fire
   can NEVER start retail's walk-to-item (the character is never moved) — and
   **combat guard on** — fires only from Neutral/TownNeutral/Walk/Run.
-  **Implemented + field-verified** (uncommitted): `D2Client.cpp` (gate +
+  **Implemented + field-verified, shipped 0.0.4**: `D2Client.cpp` (gate +
   per-frame tick + dedupe ring + ini template block), `D2Client.h` (2 decls),
   `UI/Draw.cpp` (1 call line in `DRAW_UI`, outside the AltShowItems gate).
   Sandbox syntax-verified against the real signatures; llvm-mingw i686 build
@@ -236,6 +248,15 @@ the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipp
 
 ### 9. Shared side-file stash — `[features] shared_stash`
 
+- **SHIPPED — field-proven end to end**: first in release **0.0.7** (cut at R66),
+  grown to **ten** shared pages (R82); the as-built record — the outlined in-panel
+  tab, the `‹`/`›` pager, the `_d2vp_shared.sss` v2 header and the ten-page widening,
+  plus the SMOKE confirmations — lives in slate row 9 above and in
+  [SHARED-STASH-PLAN.md](SHARED-STASH-PLAN.md). The design text below is the
+  pre-implementation draft: its hotkey idea was superseded by the in-panel tab, and
+  the rule-5 contract note was owner-signed off by shipping (`.d2s` stays
+  retail-pure; one server-side move path; deleting the side file deletes its items,
+  documented in the ini template).
 - **Behavior (owner suggestion, 2026-10-29 — not a D2R option)**: an in-game stash
   shared across all single-player characters — deposit/withdraw between saves without
   GoMule/ATMA muling or a second client. **No `.d2s`/`.d2x` layout change**: items only
@@ -243,7 +264,7 @@ the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipp
   char that never touched the stash is just an empty list). The stash contents live in
   their own **mini save** — versioned header + checksum, atomic write + `.bak` — that
   retail ignores. PlugY ships the same idea as save-dir side files.
-- **Proposed**: gate `shared_stash`: `0` = vanilla; `1` = the stash panel gains a
+- **Proposed (draft — superseded by the shipped in-panel tab)**: gate `shared_stash`: `0` = vanilla; `1` = the stash panel gains a
   shared mode toggled by a hotkey while the panel is open (registration via the row-28
   `CmdTbl` path) — same grid UI, different backing container, a small text caption
   marks the mode (row-1 text helpers, no new assets). Deposits/withdrawals are
@@ -260,11 +281,11 @@ the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipp
   `D2Launch/CharSel.cpp`, Fog `SFile`); stash panel + click handling
   `D2Client/UI/Inv.cpp`; hotkey registration `D2Client/UI/CmdTbl.cpp` (row-28
   proven).
-- **Contract note (needs owner sign-off)**: not display- or input-only — items move
+- **Contract note**: not display- or input-only — items move
   between characters, so this is an explicit amendment to rule 5's spirit. It honors
   rule 5's letter (`.d2s`/`.d2x` byte-compatible) and cannot duplicate items (single
   move path, server-side). Deleting the side file deletes its items — document in the
-  ini template comment.
+  ini template comment. *(Owner sign-off: shipped as row 9 above.)*
 - **Risk**: Med–High — item loss/duplication is the worst bug class in the game.
   Mitigations: move semantics only, atomic write + backup, versioned header +
   checksum, and a dedicated §11 mule round-trip test (deposit → save → crash-kill →
@@ -307,7 +328,10 @@ the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipp
   `g++ -fsyntax-only`) + 12 grep gates green. **Field round 1** (rev 2 overlay):
   builds + runs; label invisible (Route A fallback) + cursor lock (0x200
   chain-break) → rev 3 = Route B label + 3-entry input batch + baseline-anchored
-  page text. Field round 2 + real llvm-mingw gate pending (owner).
+  page text. **Shipped in 0.0.6** (2026-10-30, ledger row 34); field-proven since
+  via the R83 and R104 full smoke belts ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24),
+  [#28](https://github.com/VTSTech/D2VP-QoL/issues/28)); the page carries eight rows
+  as of R108 (slate row 10 above).
 - **Risk**: Med→Low. Novel Route A synthesis retired; everything now mirrors
   proven in-tree patterns (ControlConfig text/rows, esc-menu row callbacks, blank
   placeholder = the byte shape field-proven in round 1). Zero D2Game/D2Common
