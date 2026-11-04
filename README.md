@@ -1,7 +1,6 @@
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/dedbe5a2-7079-40d4-af2d-4eb948e975b2" />
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/73c54d57-8baf-44ae-a1ed-c73711978db3" />
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/815fae59-2e1a-4b76-a834-8ba2ea1893ba" />
-
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/0b9b6218-5ca1-4d83-bae2-47e68980c2db" />
 
 # D2VP Vanilla+QoL
 
