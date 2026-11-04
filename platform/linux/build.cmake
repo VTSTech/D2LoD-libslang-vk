@@ -21,17 +21,41 @@ endif()
 message(STATUS "d2linux: arch=${D2LINUX_ARCH}")
 
 if(D2LINUX_ARCH STREQUAL "i386")
+    # The charter gate (PLAN.md §7 R1): one C++ compile+link probe with -m32.
+    # The game TUs are all C++; the SDL C TUs share this toolchain (C is
+    # enabled in project()), and a C-specific 32-bit break would surface there
+    # with gcc's own error text at build time.
     include(CheckCXXCompilerFlag)
-    include(CheckCCompilerFlag)
     check_cxx_compiler_flag("-m32" D2LINUX_HAVE_M32_CXX)
-    check_c_compiler_flag("-m32" D2LINUX_HAVE_M32_C)
-    if(NOT D2LINUX_HAVE_M32_CXX OR NOT D2LINUX_HAVE_M32_C)
+    if(NOT D2LINUX_HAVE_M32_CXX)
+        # Diagnosis probe (CI round 2026-11-04: the bare flag verdict doesn't
+        # name the missing piece - crt1.o vs 32-bit headers vs libgcc - and
+        # the check_* macros swallow the compiler's output). Re-run the same
+        # compile+link by hand and show gcc's verdict in the FATAL_ERROR.
+        file(WRITE "${CMAKE_BINARY_DIR}/d2linux_m32_probe.cpp"
+            "int main() { return 0; }\n")
+        # Same mechanism CheckCXXSourceCompiles uses (COMPILE_DEFINITIONS rides
+        # both the compile and the link rule); CMAKE_CXX_FLAGS via CMAKE_FLAGS
+        # does NOT reach the child project.
+        try_compile(D2LINUX_M32_DIAG
+            "${CMAKE_BINARY_DIR}/d2linux_m32_probe_build"
+            SOURCES "${CMAKE_BINARY_DIR}/d2linux_m32_probe.cpp"
+            CMAKE_FLAGS "-DCOMPILE_DEFINITIONS:STRING=-m32"
+            OUTPUT_VARIABLE D2LINUX_M32_LOG)
+        string(REPLACE "\n" "\n    " _d2l_m32_tail "${D2LINUX_M32_LOG}")
+        string(LENGTH "${_d2l_m32_tail}" _d2l_m32_len)
+        if(_d2l_m32_len GREATER 2200)
+            math(EXPR _d2l_m32_cut "${_d2l_m32_len} - 2200")
+            string(SUBSTRING "${_d2l_m32_tail}" ${_d2l_m32_cut} 2200 _d2l_m32_tail)
+        endif()
         message(FATAL_ERROR
-            "d2linux: this toolchain cannot build -m32. Game code requires i386 "
-            "(32-bit pointers, MSVC x86 ABI model): install the multilib "
-            "toolchain (Debian/Ubuntu: gcc-multilib g++-multilib) or configure "
-            "a 32-bit cross toolchain. -DD2LINUX_ARCH=native builds the host "
-            "skeleton on the host arch only.")
+            "d2linux: this toolchain cannot build/link -m32. Game code requires "
+            "i386 (32-bit pointers, MSVC x86 ABI model, PLAN.md §7 R1). The "
+            "compiler's own verdict:\n\n    ${_d2l_m32_tail}\n\n"
+            "Fix (Debian/Ubuntu): sudo apt-get install gcc-multilib g++-multilib "
+            "libc6-dev-i386, or configure a 32-bit cross toolchain. "
+            "-DD2LINUX_ARCH=native builds the host skeleton on the host arch "
+            "only (no game TUs).")
     endif()
     add_compile_options(-m32)
     add_link_options(-m32)

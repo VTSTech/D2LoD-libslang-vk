@@ -37,11 +37,16 @@ jobs:
       - name: Install the toolchain
         run: |
           sudo apt-get update -qq
-          # gcc-multilib g++-multilib: -m32 codegen + the 32-bit libc (M1's
-          # i386 charter; PLAN.md §7 R5). SDL3 hard-errors at configure time
-          # on Linux without X11 or Wayland dev libraries — the runner can
-          # afford the real backends.
+          # gcc-multilib g++-multilib: -m32 codegen + the 32-bit libgcc/libstdc++
+          # (M1's i386 charter; PLAN.md §7 R5). libc6-dev-i386 is listed
+          # explicitly: it is the actual provider of the 32-bit crt objects and
+          # headers (crt1.o, /usr/include/i386-linux-gnu) - pulled in by the
+          # multilib metapackage, but named here so a partial install can't
+          # masquerade as a working one. SDL3 hard-errors at configure time on
+          # Linux without X11 or Wayland dev libraries - the runner can afford
+          # the real backends.
           sudo apt-get install -y -qq cmake ninja-build gcc-multilib g++-multilib \
+            libc6-dev-i386 \
             libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
             libxfixes-dev libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev \
             libdecor-0-dev libegl1-mesa-dev libasound2-dev
@@ -52,6 +57,24 @@ jobs:
           # configure only WARNs and the binary ships without decoration
           # support: bare windows on GNOME/Weston Wayland at runtime
           # (sdlchecks.cmake CheckWayland; field-proven on the owner's VM).
+
+      - name: Verify the i386 toolchain (fail fast, gcc's own verdict)
+        # CI round 2026-11-04: the first i386 run died in configure with a bare
+        # "cannot build -m32" while the apt step above reported success - and
+        # the script had discarded attempt 1's log. This step gates the job on
+        # a real 32-bit compile+link BEFORE cmake runs; if multilib is broken
+        # or half-installed, gcc's raw error lands here, not inside a probe.
+        run: |
+          set -e
+          printf 'int main() { return 0; }\n' > /tmp/d2l_m32.c
+          echo '--- gcc -m32 (C) ---'
+          gcc -m32 /tmp/d2l_m32.c -o /tmp/d2l_m32_c
+          echo 'i386 C compile+link: OK'
+          echo '--- c++ -m32 (C++) ---'
+          c++ -m32 -x c++ /tmp/d2l_m32.c -o /tmp/d2l_m32_cxx
+          echo 'i386 C++ compile+link: OK'
+          echo '--- multilib packages on the runner ---'
+          dpkg -l gcc-multilib g++-multilib libc6-dev-i386 2>/dev/null | grep '^ii' || true
 
       - name: Build d2linux from a clean clone + headless smoke
         # bash prefix: runs regardless of the git exec bit (the bit cannot be

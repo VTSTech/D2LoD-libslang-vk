@@ -44,8 +44,15 @@ SDL_CONSOLE="-DSDL_UNIX_CONSOLE_BUILD=ON -DSDL_X11=OFF -DSDL_WAYLAND=OFF"
 
 if ! cmake -S "$WORK/src" -B "$WORK/build" -G "$GENERATOR" \
      -DD2LINUX_ARCH="${D2LINUX_ARCH:-native}" ${D2LINUX_SDL_FLAGS:-} \
-     >"$WORK/configure.log" 2>&1; then
-  echo "configure failed; retrying SDL console-only (dummy drivers)"
+     >"$WORK/configure.1.log" 2>&1; then
+  # CI round 2026-11-04 lesson: attempt 1's failure log used to be discarded
+  # here (configure.log got overwritten), destroying the only evidence of WHY.
+  # Keep the tail, then retry on a clean build dir (a failed configure can
+  # leave poisoned cache state).
+  echo "configure attempt 1 failed; tail kept for the record:"
+  tail -30 "$WORK/configure.1.log" | sed 's/^/  | /'
+  echo "retrying SDL console-only (dummy drivers)"
+  rm -rf "$WORK/build"
   cmake -S "$WORK/src" -B "$WORK/build" -G "$GENERATOR" \
     -DD2LINUX_ARCH="${D2LINUX_ARCH:-native}" ${D2LINUX_SDL_FLAGS:-} $SDL_CONSOLE \
     >"$WORK/configure.log" 2>&1 || { cat "$WORK/configure.log"; exit 1; }

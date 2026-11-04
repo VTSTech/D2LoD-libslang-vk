@@ -27,7 +27,9 @@ byte-annotated struct offsets carry embedded 4-byte pointers). On x86-64 every
 pointer-bearing struct changes layout and the game state corrupts. So:
 
 - `D2LINUX_ARCH=i386` (default): `-m32`, what game code requires. Needs a
-  multilib toolchain (Debian/Ubuntu: `gcc-multilib g++-multilib`).
+  multilib toolchain (Debian/Ubuntu: `gcc-multilib g++-multilib
+  libc6-dev-i386` — the last one is the actual provider of the 32-bit crt
+  objects and headers).
 - `D2LINUX_ARCH=native`: host arch, for building/CI-verifying the host skeleton
   without multilib. Milestone M0 uses this; M1 switches to i386.
 
@@ -59,7 +61,11 @@ pointer-bearing struct changes layout and the game state corrupts. So:
   registry→file-backed under `~/.config/d2linux/`, the MSVC CRT bits, and the
   inventory pass's full surface (platform/linux/INVENTORY.md). The slice: 44
   game TUs (Fog/Storm foundation + PKWARE). CI builds `-DD2LINUX_ARCH=i386`
-  with multilib.
+  with multilib. The first CI round failed at the `-m32` probe with attempt 1's
+  evidence discarded; the failure path is self-diagnosing now — build.cmake
+  FATALs with the compiler's own verdict, check-build-linux.sh keeps attempt 1's
+  log and retries on a wiped build dir, and build.yml gates the job on a real
+  `gcc -m32` compile+link before cmake runs.
 - **M2 — title screen offline**: MPQ loading via the vendored Storm, one
   renderer path onto the M0 presentation surface (the M0 pattern producer is
   replaced by the game's composed 8-bit frame), input shim. Cinematics stubbed.
