@@ -67,7 +67,7 @@ whole UI as ONE RIGID UNIT to the horizontal center:
 | D2Client/UI/QuestLog.cpp | wide classifier (draw-position variants + panel-bottom margins) |
 | D2Client/UI/Inv.cpp | wide classifier (`INV_HandleHighResDropClick`) + table-rect shifts + cache key |
 | D2Client/UI/ListBox/ListBoxImplementation.cpp:878 | wide classifier (800 row metrics) |
-| D2Client/UI/Waypoint.cpp (act tabs, row icons, open/close button, row texts, cancel tooltip, header) | wide classifier + Y offset on every top-anchored 800-space Y (input inversely virtualized); the row icons joined at R81 — the site-6 retrofit missed the two `waygateicons` draws and they rode retail Y at 720p ([#21](https://github.com/VTSTech/D2LoD-libslang-vk/issues/21)) |
+| D2Client/UI/Waypoint.cpp (act tabs, row icons, open/close button, row texts, cancel tooltip, header) | wide classifier + Y offset on every top-anchored 800-space Y (input inversely virtualized); the row icons joined at R81 — the site-6 retrofit missed the two `waygateicons` draws and they rode retail Y at 720p ([#21](https://github.com/VTSTech/D2VP-QoL/issues/21)) |
 
 ## Watch-items (in-game verification)
 

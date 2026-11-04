@@ -4,13 +4,14 @@ This branch (repo default, `main`) is the **game-source line**: improvements ove
 Diablo II 1.14d made directly in the recovered source, on top of
 [jaenster/redivivus](https://github.com/jaenster/redivivus) (`Game.exe`
 recovered function-by-function as C++ that builds). It is kept deliberately
-clean of the glide3x→Vulkan wrapper work — that lives on the `Glide3xVK`
-branch of [VTSTech/D2LoD-libslang-vk](https://github.com/VTSTech/D2LoD-libslang-vk)
-and overlays on top of whatever game exe is running (`d2.exe` upstream, `d2vp.exe` in this fork's releases). (Branch history: the
+clean of the glide3x→Vulkan wrapper work — that lives in its own repository,
+[Glide3xVK](https://github.com/VTSTech/Glide3xVK) (formerly the `Glide3xVK`
+branch of this repo, when it was `D2LoD-libslang-vk`) and overlays on top of
+whatever game exe is running (`d2.exe` upstream, `d2vp.exe` in this fork's releases). (Branch history: the
 restructure on 2026-10-28 moved the former `vanilla-plus` branch to `main` and
 renamed `libslang-vk` → `Glide3xVK`.)
 
-**Latest release: [`D2LoD-Vanilla-Plus-0.0.7`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.7)** — one 7z with the client (build self-ID
+**Latest release: [`D2LoD-Vanilla-Plus-0.0.7`](https://github.com/VTSTech/D2VP-QoL/releases/tag/D2LoD-Vanilla-Plus-0.0.7)** — one 7z with the client (build self-ID
 `Vanilla+0.0.7-R66` — the 1-page shared stash, the #19 save-and-re-enter crash fix, upstream sync to Ghidra 1783), the Glide3xVK 0.4.6 wrapper and launcher/debug scripts.
 
 ## The two layers
@@ -21,7 +22,7 @@ renamed `libslang-vk` → `Glide3xVK`.)
 |            fixes/improvements, built with mingw i686)    |
 +----------------------------------------------------------+
 |  glide3x.dll                                             |
-|  (Glide3xVK branch: glide3xvk wrapper — Vulkan render,   |
+|  (Glide3xVK repo: glide3xvk wrapper — Vulkan render,     |
 |   slang shader chain, window presets, controller, ...)   |
 +----------------------------------------------------------+
 |  your own Diablo II: LoD 1.14d install (MPQs + keys)     |
@@ -147,7 +148,7 @@ cmake --build build          # -> build/d2.exe
 ```
 
 Copy `d2.exe` next to the original `Game.exe` in a 1.14d install and run
-`d2.exe -w` (releases ship this exe renamed to `d2vp.exe` — same binary). Works with the `Glide3xVK` overlay: drop that overlay's
+`d2.exe -w` (releases ship this exe renamed to `d2vp.exe` — same binary). Works with the [Glide3xVK](https://github.com/VTSTech/Glide3xVK) overlay: drop that overlay's
 `glide3x.dll` in the same folder as usual.
 
 On Windows the same build runs natively - `tools/win11-build.ps1` sets up
@@ -174,7 +175,7 @@ correctly, collect **both** reports from one repro:
 Decision rule:
 
 - faulting frame in `glide3xvk` / `vk_backend` / slang chain -> wrapper issue,
-  fix on `Glide3xVK`;
+  fix in the [Glide3xVK repo](https://github.com/VTSTech/Glide3xVK);
 - faulting frame in `D2*` / `Storm` / `Fog` source with a d2crash report ->
   game-source issue: minimize the repro, check upstream issues, then either
   report upstream (reconstruction bug) or fix here (vanilla-plus behavior);

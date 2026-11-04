@@ -292,7 +292,8 @@ PR) so acceptance is frictionless.
   root-cause lineage, and the gate rows were re-pinned to the NEW state (never
   deleted — the gates now assert the superseding form). Checked at the same merge
   and NOT superseded: issue #11's `[glide fix 11]` hook (still fork-side; the
-  glide3x.dll wrapper ships from the `Glide3xVK` branch, which upstream does not
+  glide3x.dll wrapper ships from its own [`Glide3xVK`](https://github.com/VTSTech/Glide3xVK)
+  repository — formerly the branch of the same name here — which upstream does not
   carry — "superseded" requires upstream to actually carry the surface). Rules:
   when upstream ships the retail-exact form of a fork fix, take it whole and
   record the supersession in the old site's comment (two spellings of one

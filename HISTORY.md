@@ -4,6 +4,7 @@
 
 *Split point: vanilla-plus tip `4857c30` ("cleanup diag") + this commit. At split time the sound-defect series was closed, upstreamed as jaenster/redivivus PR #10, and publicly released as `D2LoD-Vanilla-Plus-0.0.1`.*
 *Second offload: rev 16 (2026-10-28, repo restructure executed — fork `main` is now the former `vanilla-plus` line, `libslang-vk` branch renamed `Glide3xVK`). handoff revs 8–13 → H20; fix-chain ledger rows 1–27 → H21; the ad964f3 supersession map → H22; the naming-collision table + pr2-drift note → H23. Split point: `main` tip `81a084e` + this commit. At second-split time `D2LoD-Vanilla-Plus-0.0.3` was out (`569fc5c`) and the d2boot.log growth fix had retired the last unbounded probes.*
+*Third restructure: 2026-11-03, the repository is renamed **`D2LoD-libslang-vk` → `D2VP-QoL`** and the wrapper line leaves as its own repository, **[`VTSTech/Glide3xVK`](https://github.com/VTSTech/Glide3xVK)** (formerly the `Glide3xVK` branch, itself the former `libslang-vk`; 0.4.6 latest). The H-records below are verbatim archives and keep the names and URLs they carried at the time — old GitHub URLs redirect to the renamed repo; current-state docs (README, handoff, PLAN, VANILLA-PLUS, CHANGELOG) are updated.*
 
 
 ---

@@ -27,7 +27,7 @@ from pathlib import Path
 SRC = Path("SMOKE-CHECKLIST.md")
 DST = Path(".github/ISSUE_TEMPLATE/smoke-test.md")
 
-REPO = "https://github.com/VTSTech/D2LoD-libslang-vk"
+REPO = "https://github.com/VTSTech/D2VP-QoL"
 
 FRONT_MATTER = """\
 ---

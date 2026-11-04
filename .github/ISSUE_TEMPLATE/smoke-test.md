@@ -6,7 +6,7 @@ title: "Smoke Test — Vanilla+0.0.7-RXX"
 
 **Build under test:** `Vanilla+0.0.7-RXX` — fill in the round (title too); line 1 of `d2boot.log` must say it (item 0). Tick the boxes as you run — they are live in this issue; paste logs and screenshots as comments. A crash gets its own comments with the artifacts from the table at the bottom.
 
-Core path takes ~15 min. Run top to bottom — the fast checks come first. The repo copy ([SMOKE-CHECKLIST.md](https://github.com/VTSTech/D2LoD-libslang-vk/blob/main/SMOKE-CHECKLIST.md)) is the canonical reference: the per-round build stamp and field history live there, and any round that adds or changes a check re-runs `tools/gen-smoke-issue-template.py` and commits both.
+Core path takes ~15 min. Run top to bottom — the fast checks come first. The repo copy ([SMOKE-CHECKLIST.md](https://github.com/VTSTech/D2VP-QoL/blob/main/SMOKE-CHECKLIST.md)) is the canonical reference: the per-round build stamp and field history live there, and any round that adds or changes a check re-runs `tools/gen-smoke-issue-template.py` and commits both.
 
 **Verdict:** fill in the Verdict section at the bottom when the pass is done.
 
@@ -43,13 +43,13 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first. The r
 ## D. 720p alignment regressions (R47/R48 territory)
 
 - [ ] **13.** At 1280x720: inventory + skill flyouts align; open stash → **deposit/withdraw gold dialogs** centered properly (the R48 casualty — easy to regress).
-- [ ] **13b. Belt hover — CONFIRMED on R52, [issue #14](https://github.com/VTSTech/D2LoD-libslang-vk/issues/14) CLOSED:** hover the belt HUD → expanded belt popup opens **and stays open** while the cursor is inside it; clicking a slot in the popup uses/drops that potion; hovering a filled slot shows the item-name tooltip anchored to the slot (not 60px too high). Keep as a per-build regression check.
+- [ ] **13b. Belt hover — CONFIRMED on R52, [issue #14](https://github.com/VTSTech/D2VP-QoL/issues/14) CLOSED:** hover the belt HUD → expanded belt popup opens **and stays open** while the cursor is inside it; clicking a slot in the popup uses/drops that potion; hovering a filled slot shows the item-name tooltip anchored to the slot (not 60px too high). Keep as a per-build regression check.
 
 ## E. Wrapper route (optional, if testing `-3dfx`)
 
 - [ ] **14.** Launch with `-3dfx` → glide3xvk renders, `glide3x.log` gets written, presets/chain load.
 
-## F. Quest trace — A1Q1 Den of Evil ([issue #13](https://github.com/VTSTech/D2LoD-libslang-vk/issues/13), R53/R54 boot marks)
+## F. Quest trace — A1Q1 Den of Evil ([issue #13](https://github.com/VTSTech/D2VP-QoL/issues/13), R53/R54 boot marks)
 
 Every step writes to `d2boot.log`. One char that clears the Den and rejoins covers both scenarios.
 
@@ -59,7 +59,7 @@ Every step writes to `d2boot.log`. One char that clears the Den and rejoins cove
 
 ---
 
-## G. Save → re-enter regression ([issue #19](https://github.com/VTSTech/D2LoD-libslang-vk/issues/19), R61 ROOT-CAUGHT + FIXED — FIELD-CONFIRMED 2026-11-01, issue CLOSED)
+## G. Save → re-enter regression ([issue #19](https://github.com/VTSTech/D2VP-QoL/issues/19), R61 ROOT-CAUGHT + FIXED — FIELD-CONFIRMED 2026-11-01, issue CLOSED)
 
 "Saving a game and then trying to enter a game again crashes the game." **ROOT-CAUGHT R61** (field log 2026-10-31, crash report + d2exe.map): the VP Resolution row's runtime blank-attach mutates the static esc-menu table (`nSubImageCount` 2→3, `szSubImage3Path` stays empty); every game entry re-runs `ESCMENU_Initialize` (0x01 → `InitializeUI`), so init #2 walked the empty third stop and hit the retail fatal `HaltTail(0x501)` = `HALT line=1281` in the field report. The save is irrelevant — ANY second game entry in one process died. R61 degrades both data guards in the loader to marks (empty stop → keep the prior DC6; count out of range → clamp) and guards the type-1 draw site (NULL slot skip + index clamp). One char, two game entries in one process — the fix is proven by NOT crashing:
 
@@ -105,7 +105,7 @@ The Ghidra 1784–1792 regen re-spliced three pure-decompiled regions (zero VP m
 
 Boot gate: the first `d2boot.log` line must print the round under test's self-ID (item 0 — R73 never booted, its overlay was compile-broken; R74 was the first post-1792 build).
 
-## J. Item tooltip — elemental/poison zero fix ([issue #16](https://github.com/VTSTech/D2LoD-libslang-vk/issues/16), R84)
+## J. Item tooltip — elemental/poison zero fix ([issue #16](https://github.com/VTSTech/D2VP-QoL/issues/16), R84)
 
 Items could drop with a mod line reading **"0 poison damage over 0 seconds"** or **"+0 Cold Damage"** on 'of Frost' gear. Root cause (display side, one function): the single-value branches of the item-stat tooltip formatter (fire/lightning/magic/cold/poison) called the wide-string formatter **without the numeric varargs**, so any roll whose range collapses to min==max printed stack residue (zeros in our builds) instead of the value. 'of Frost' (weapons) rolls `cold-max 1..2` with `cold-min` fixed at 1 — every drop that rolls a 1 collapsed; poison ranges collapse through the length rounding (and zero-length poison content lands in the same branch). Fix passes the same values the range branches pass; the item's stats were never wrong — this was tooltip-only.
 

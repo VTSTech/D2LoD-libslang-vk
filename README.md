@@ -10,7 +10,7 @@
        width="88" height="31" alt="Made Openly: Mostly AI">
 </a>
 
-[![Release](https://img.shields.io/badge/release-0.0.7--R104-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
+[![Release](https://img.shields.io/badge/release-0.0.7--R101-8f2b2b)](https://github.com/VTSTech/D2VP-QoL/releases/latest)
 [![Gates](https://img.shields.io/badge/vanilla%2B%20gates-380%2F380-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 [![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/xQXpH5Nj5)
@@ -18,7 +18,9 @@
 Diablo II: Lord of Destruction 1.14d, reverse-engineered into C++ that builds and runs —
 with **Vanilla+** on top: a fix-and-QoL layer maintained by VTSTech directly in the
 recovered source, plus a `glide3x.dll` that renders the game through Vulkan with a
-libSlang shader chain.
+libSlang shader chain. The wrapper is its own project and repository:
+[Glide3xVK](https://github.com/VTSTech/Glide3xVK) (formerly a branch of this repo,
+which was itself formerly `D2LoD-libslang-vk`).
 
 The recovered game source comes from
 [Redivivus](https://github.com/jaenster/redivivus) (`Game.exe` recovered
@@ -63,22 +65,22 @@ The short form — per-area records: [`handoff.md`](handoff.md) §2 (field-statu
 per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
 [`handoff.md`](handoff.md) (live) and [`HISTORY.md`](HISTORY.md) (verbatim archive).
 
-- **Shipped: [`R98`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R98)
+- **Shipped: [`R98`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R98)
   ("Vanilla+ 0.0.7-R98")** — issue #26 round 7: the D3D perspective-toggle crash
   rooted to the flat-wall builder's `uint8_t` subtile iterator (wraps after 12 subtiles
   and reads +4-shifted pseudo-records — latent since the original decompilation),
   iterator widened to `int`. Earlier 0.0.7-line tags:
-  [`R91`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R91) — docs +
+  [`R91`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R91) — docs +
   field-verify round: the third upstream sync field-run green and the necro-minion
   skeleton fix confirmed in the field ("Skeletons are finally white again");
-  [`R88`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R88) — the second
+  [`R88`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R88) — the second
   upstream sync (Ghidra DB 1839 → 1851; gossip-table and SFX float supersessions);
-  [`R87`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R87) — the first
+  [`R87`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R87) — the first
   upstream sync of the line (1806 → 1839, field-run green);
-  [`R86`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R86) — the
+  [`R86`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R86) — the
   `-nointro` boot switch ("R86 verified, -nointro works");
-  [`R85`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R85) — the A1Q2
-  Bloodraven turn-in fix ([#22](https://github.com/VTSTech/D2LoD-libslang-vk/issues/22),
+  [`R85`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R85) — the A1Q2
+  Bloodraven turn-in fix ([#22](https://github.com/VTSTech/D2VP-QoL/issues/22),
   closed by the owner 2026-11-02).
 - **In the tree (R99–R101, tags pending the next field pass)**: the fourth upstream
   sync (R99 — the Ghidra 1864–1877 library rounds, 209 files; the byte-match table
@@ -88,23 +90,23 @@ per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
   "no_panel_shift is working as intended now"), R101 added the **No Panel World Shift**
   row to the Vanilla+ Options panel (the toggle is no longer ini-only). Release
   notes live under the tagged
-  [GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases).
+  [GitHub releases](https://github.com/VTSTech/D2VP-QoL/releases).
 - **Field-verified**: boot → intro → title → character select → in game; Direct3D and
   Glide (`-3dfx`) rendering, incl. the native 1280x720 widescreen mode; sound end to
   end; the full SMOKE belt passed on the R83 build
-  ([#24](https://github.com/VTSTech/D2LoD-libslang-vk/issues/24)); the `-nointro`
+  ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24)); the `-nointro`
   boot switch (R86) verified in-game 2026-11-02 — "R86 verified, -nointro works"; the
   `no_panel_shift` feature (R95 Glide pass: "All blackness appears fixed in Glide as
   well"; R100 unit lock: "working as intended now").
 - **Open issues (4)**, triaged in [handoff.md](handoff.md) §9: Necro minion skeleton
-  colors ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)) — fixed (R51),
+  colors ([#8](https://github.com/VTSTech/D2VP-QoL/issues/8)) — fixed (R51),
   field-verified R91, owner close pending; intermittent
-  attribute-point crash ([#18](https://github.com/VTSTech/D2LoD-libslang-vk/issues/18));
-  Refilling Shrine XP buff ([#25](https://github.com/VTSTech/D2LoD-libslang-vk/issues/25));
-  720p panel margins ([#26](https://github.com/VTSTech/D2LoD-libslang-vk/issues/26)) —
+  attribute-point crash ([#18](https://github.com/VTSTech/D2VP-QoL/issues/18));
+  Refilling Shrine XP buff ([#25](https://github.com/VTSTech/D2VP-QoL/issues/25));
+  720p panel margins ([#26](https://github.com/VTSTech/D2VP-QoL/issues/26)) —
   the render fixes and `no_panel_shift` are field-proven (R92–R101); still owed: the
   D3D perspective-toggle re-check on R98+ (SMOKE §L item 48) and the explicit
-  both-panels pass. A1Q2 Bloodraven turn-in ([#22](https://github.com/VTSTech/D2LoD-libslang-vk/issues/22))
+  both-panels pass. A1Q2 Bloodraven turn-in ([#22](https://github.com/VTSTech/D2VP-QoL/issues/22))
   CLOSED 2026-11-02 — the R85 fix field-proven.
 - A crash writes a symbolised report (`d2crash-<date>-<time>.txt`) next to the
   executable; a 12 s hangwatch dumps one if the main loop ever stops beating. See
@@ -113,7 +115,7 @@ per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
 ## Install
 
 1. Grab the latest release 7z from the
-   [releases page](https://github.com/VTSTech/D2LoD-libslang-vk/releases) and extract it
+   [releases page](https://github.com/VTSTech/D2VP-QoL/releases) and extract it
    into your Diablo II: LoD 1.14d folder (next to `Game.exe`).
 2. Run `d2vp.exe -w`. That's the Vanilla+ client; `glide3x.dll` sits beside it for the
    wrapper route (`-3dfx`), launcher/debug scripts included.
@@ -158,7 +160,7 @@ only the DWARF. Linking is fully static — no runtime DLLs needed beside it.
 
 Every shipped release with its change list: [`CHANGELOG.md`](CHANGELOG.md). Tag
 downloads: the
-[releases page](https://github.com/VTSTech/D2LoD-libslang-vk/releases). Round journals:
+[releases page](https://github.com/VTSTech/D2VP-QoL/releases). Round journals:
 [`handoff.md`](handoff.md) (live) and [`HISTORY.md`](HISTORY.md) (verbatim archive).
 
 ## Verification
@@ -206,7 +208,7 @@ hasn't hit yet. To attribute a crash correctly, collect **both** artifacts from 
 | `glide3x.log` | the glide3xvk wrapper | what the wrapper was doing (frame, preset, chain) and whether the faulting thread was in wrapper code |
 
 Rule of thumb: faulting frame in `glide3xvk`/`vk_backend`/slang → wrapper issue (the
-`Glide3xVK` branch); faulting frame in `D2*`/`Storm`/`Fog` with a d2crash report →
+[Glide3xVK repo](https://github.com/VTSTech/Glide3xVK)); faulting frame in `D2*`/`Storm`/`Fog` with a d2crash report →
 game-source issue, report upstream if it's a reconstruction bug. No d2crash file and a
 silent death → suspect the boundary (exports, calling conventions, the driver swap).
 Attach both files to an issue — a crash without both artifacts cannot be attributed.
