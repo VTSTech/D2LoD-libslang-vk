@@ -10,7 +10,7 @@
        width="88" height="31" alt="Made Openly: Mostly AI">
 </a>
 
-[![Release](https://img.shields.io/badge/release-0.0.7--R101-8f2b2b)](https://github.com/VTSTech/D2VP-QoL/releases/latest)
+[![Release](https://img.shields.io/badge/release-0.0.7--R104-8f2b2b)](https://github.com/VTSTech/D2VP-QoL/releases/latest)
 [![Gates](https://img.shields.io/badge/vanilla%2B%20gates-380%2F380-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 [![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/xQXpH5Nj5)
@@ -82,19 +82,25 @@ per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
   [`R85`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R85) — the A1Q2
   Bloodraven turn-in fix ([#22](https://github.com/VTSTech/D2VP-QoL/issues/22),
   closed by the owner 2026-11-02).
-- **In the tree (R99–R101, tags pending the next field pass)**: the fourth upstream
-  sync (R99 — the Ghidra 1864–1877 library rounds, 209 files; the byte-match table
-  below is current at 6,478/14,642 fns) and the two rounds that closed the loop it
-  opened — R100 fixed the unit-sprite pan the new retail bodies re-armed under
-  `no_panel_shift=1` (14 call sites routed through the border neutralizer; owner:
-  "no_panel_shift is working as intended now"), R101 added the **No Panel World Shift**
-  row to the Vanilla+ Options panel (the toggle is no longer ini-only). Release
+- **In the tree (R99–R104; the R104 build carried the full SMOKE belt green —
+  [#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04 — tags pending)**:
+  the fourth upstream sync (R99 — the Ghidra 1864–1877 library rounds, 209 files) and
+  the rounds that closed the loop it opened — R100 fixed the unit-sprite pan the new
+  retail bodies re-armed under `no_panel_shift=1` (14 call sites routed through the
+  border neutralizer; owner: "no_panel_shift is working as intended now"), R101 added
+  the **No Panel World Shift** row to the Vanilla+ Options panel (the toggle is no
+  longer ini-only), R102 took the fifth upstream sync (`94ec239d..cc23648d`, 459
+  files, Ghidra DB → 1892; the byte-match table below is current at 6,493/14,642
+  fns), R103 retired the `d2light-diag`/`d2drop-diag` probes and R104 swept the
+  per-TU restructure fallout (R103/R104 zero owner-visible behavior change). Release
   notes live under the tagged
   [GitHub releases](https://github.com/VTSTech/D2VP-QoL/releases).
 - **Field-verified**: boot → intro → title → character select → in game; Direct3D and
   Glide (`-3dfx`) rendering, incl. the native 1280x720 widescreen mode; sound end to
   end; the full SMOKE belt passed on the R83 build
-  ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24)); the `-nointro`
+  ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24)) and again fully on the R104
+  build ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04 — incl. the
+  D3D perspective-toggle re-check and the `no_panel_shift` §L matrix); the `-nointro`
   boot switch (R86) verified in-game 2026-11-02 — "R86 verified, -nointro works"; the
   `no_panel_shift` feature (R95 Glide pass: "All blackness appears fixed in Glide as
   well"; R100 unit lock: "working as intended now").
@@ -104,9 +110,11 @@ per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
   attribute-point crash ([#18](https://github.com/VTSTech/D2VP-QoL/issues/18));
   Refilling Shrine XP buff ([#25](https://github.com/VTSTech/D2VP-QoL/issues/25));
   720p panel margins ([#26](https://github.com/VTSTech/D2VP-QoL/issues/26)) —
-  the render fixes and `no_panel_shift` are field-proven (R92–R101); still owed: the
-  D3D perspective-toggle re-check on R98+ (SMOKE §L item 48) and the explicit
-  both-panels pass. A1Q2 Bloodraven turn-in ([#22](https://github.com/VTSTech/D2VP-QoL/issues/22))
+  the render fixes and `no_panel_shift` are field-proven (R92–R101), and the remaining
+  asks (the D3D perspective-toggle re-check, the explicit both-panels pass, the R100
+  unit-lock re-checks) rode the R104 full smoke belt green
+  ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04) — owner close
+  pending. A1Q2 Bloodraven turn-in ([#22](https://github.com/VTSTech/D2VP-QoL/issues/22))
   CLOSED 2026-11-02 — the R85 fix field-proven.
 - A crash writes a symbolised report (`d2crash-<date>-<time>.txt`) next to the
   executable; a 12 s hangwatch dumps one if the main loop ever stops beating. See
