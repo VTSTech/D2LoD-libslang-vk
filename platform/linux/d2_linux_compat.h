@@ -116,10 +116,113 @@ typedef struct _FLOATING_SAVE_AREA {
     uint32_t Cr0NpxState;       /* 0x6C */
 } FLOATING_SAVE_AREA;           /* 0x70 = 112 */
 
-// Opaque stand-ins (see the fidelity note): D2GFX.h only typedefs and
-// pointer-passes these.
-struct _devicemodeA { uint32_t dmBitsPerPel; };
-struct tagWNDCLASSA { uint32_t style; };
+// Opaque stand-ins (see the fidelity note): pointer-passed-only types.
+// HGDIOBJ family returns (SelectObject) — never dereferenced.
+typedef void* HGDIOBJ;
+
+// [d2linux M2] POINT/RECT: owned here now that the M2 structs embed them by
+// value (tagMSG.pt, WINDOWPLACEMENT.rcNormalPosition, MONITORINFO.rcWork) —
+// compat.h is force-included BEFORE d2_platform.h, so the shadow's stubs
+// would arrive too late and collide; the shadow drops them instead
+// (mk-platform-shadow.sh 13/14). Spelling identical to what it replaces:
+// long is 4 bytes on the i386 line this ABI models (the x86-64 skeleton,
+// which never indexes these by offset — charter R1 — sees the same shapes
+// the tree file always gave it).
+struct POINT { long x; long y; };
+struct RECT { long left; long top; long right; long bottom; };
+
+// [d2linux M2] tagWNDCLASSA: REAL x86 layout (winuser.h). D2GFX_Initialize
+// fills lpfnWndProc/hInstance/hIcon/hCursor/hbrBackground/lpszClassName field
+// by field before RegisterClassA, so a 4-byte stand-in would corrupt the stack
+// object it fills (D2gfx/D2GFX.cpp's class setup is the named call site).
+struct tagWNDCLASSA {
+    uint32_t style;             /* 0x00 UINT */
+    intptr_t (__stdcall *lpfnWndProc)(void*, unsigned int, uintptr_t, intptr_t); /* 0x04 WNDPROC — LRESULT(__stdcall*)(HWND,UINT,WPARAM,LPARAM) spelled raw (compat.h precedes d2_platform.h's typedefs); the void-returning stub in the tree file is patched out (shadow 16). The shim invokes through its own __stdcall typedef — identical type. The stdcall is load-bearing on i386: the game's procs are callee-clean. */
+    int32_t  cbClsExtra;        /* 0x08 */
+    int32_t  cbWndExtra;        /* 0x0C */
+    void*    hInstance;         /* 0x10 HINSTANCE */
+    void*    hIcon;             /* 0x14 HICON */
+    void*    hCursor;           /* 0x18 HCURSOR */
+    void*    hbrBackground;     /* 0x1C HBRUSH */
+    const char* lpszMenuName;   /* 0x20 LPCSTR */
+    const char* lpszClassName;  /* 0x24 LPCSTR */
+};                              /* 0x28 */
+typedef struct tagWNDCLASSA WNDCLASSA, *LPWNDCLASSA;
+
+// [d2linux M2] tagMSG: NOT defined here. D2Client/Message.h (auto-generated)
+// owns it on the non-Windows line exactly as windows.h owns it on the PE line
+// — both pump TUs (D2WinMain.cpp, MainMenus.cpp) include that header, and a
+// compat definition would collide inside the D2Client TUs. The shim's pump
+// works on a layout-identical PRIVATE struct (D2WinMsg in
+// d2_linux_shim_user32.cpp) and crosses the boundary through the void*
+// parameters the api.h pump declarations already spell.
+
+// [d2linux M2] TRACKMOUSEEVENT: REAL layout — D2WinMain.cpp fills cbSize/
+// dwFlags/hwndTrack per WM_MOUSEMOVE (TME_LEAVE re-arm).
+struct tagTRACKMOUSEEVENT {
+    uint32_t cbSize;            /* 0x00 DWORD */
+    uint32_t dwFlags;           /* 0x04 DWORD */
+    void*    hwndTrack;         /* 0x08 HWND */
+    uint32_t dwHoverTime;       /* 0x0C DWORD */
+};                              /* 0x10 */
+typedef struct tagTRACKMOUSEEVENT TRACKMOUSEEVENT, *LPTRACKMOUSEEVENT;
+
+// [d2linux M2] WINDOWPLACEMENT: REAL layout (winuser.h) — D2WinMain/D2GFX read
+// showCmd + rcNormalPosition for the fullscreen-restore math.
+struct tagWINDOWPLACEMENT {
+    uint32_t length;            /* 0x00 UINT */
+    uint32_t flags;             /* 0x04 UINT */
+    uint32_t showCmd;           /* 0x08 UINT */
+    struct POINT ptMinPosition; /* 0x0C */
+    struct POINT ptMaxPosition; /* 0x14 */
+    struct RECT  rcNormalPosition; /* 0x1C (d2_platform.h: 4 longs) */
+};                              /* 0x2C */
+typedef struct tagWINDOWPLACEMENT WINDOWPLACEMENT, *LPWINDOWPLACEMENT;
+
+// [d2linux M2] MONITORINFO: REAL layout — D2WinMain sets cbSize=0x28 and reads
+// rcWork for the SC_MAXIMIZE clamp (MonitorFromWindow/GetMonitorInfoA).
+typedef struct tagMONITORINFO {
+    uint32_t cbSize;            /* 0x00 DWORD */
+    struct RECT rcMonitor;      /* 0x04 */
+    struct RECT rcWork;         /* 0x14 */
+    uint32_t dwFlags;           /* 0x24 DWORD */
+} MONITORINFO, *LPMONITORINFO;  /* 0x28 */
+
+// [d2linux M2] _devicemodeA: REAL x86 layout (winuser.h DEVMODEA, 148 bytes).
+// D2GFX's small-screen fallback fills dmSize/dmFields/dmBitsPerPel/dmPelsWidth/
+// dmPelsHeight and calls ChangeDisplaySettingsA; the previous 4-byte stand-in
+// would have turned that fill into a stack smash. Offsets in winuser.h order.
+struct _devicemodeA {
+    uint8_t  dmDeviceName[32];  /* 0x00 CHAR[32] */
+    uint16_t dmSpecVersion;     /* 0x20 WORD */
+    uint16_t dmDriverVersion;   /* 0x22 WORD */
+    uint16_t dmSize;            /* 0x24 WORD */
+    uint16_t dmDriverExtra;     /* 0x26 WORD */
+    uint32_t dmFields;          /* 0x28 DWORD */
+    uint32_t dmPositionX;       /* 0x2C union POINTL.x / dmDisplayOrientation */
+    uint32_t dmPositionY;       /* 0x30 union POINTL.y / dmDisplayFixedOutput */
+    uint16_t dmColor;           /* 0x34 SHORT */
+    uint16_t dmDuplex;          /* 0x36 SHORT */
+    uint16_t dmYResolution;     /* 0x38 SHORT */
+    uint16_t dmTTOption;        /* 0x3A SHORT */
+    uint16_t dmCollate;         /* 0x3C SHORT */
+    uint8_t  dmFormName[32];    /* 0x3E BYTE[32] */
+    uint16_t dmLogPixels;       /* 0x5E WORD */
+    uint32_t dmBitsPerPel;      /* 0x60 DWORD */
+    uint32_t dmPelsWidth;       /* 0x64 DWORD */
+    uint32_t dmPelsHeight;      /* 0x68 DWORD */
+    uint32_t dmDisplayFlags;    /* 0x6C DWORD */
+    uint32_t dmDisplayFrequency;/* 0x70 DWORD */
+    uint32_t dmICMMethod;       /* 0x74 DWORD */
+    uint32_t dmICMIntent;       /* 0x78 DWORD */
+    uint32_t dmMediaType;       /* 0x7C DWORD */
+    uint32_t dmDitherType;      /* 0x80 DWORD */
+    uint32_t dmReserved1;       /* 0x84 DWORD */
+    uint32_t dmReserved2;       /* 0x88 DWORD */
+    uint32_t dmPanningWidth;    /* 0x8C DWORD */
+    uint32_t dmPanningHeight;   /* 0x90 DWORD */
+};                              /* 0x94 = 148 */
+typedef struct _devicemodeA DEVMODEA, *LPDEVMODEA;
 
 // The decompiled headers import these from windows.h under _WIN32; Fog/Debug.h
 // defines the full _EXCEPTION_RECORD/_CONTEXT struct bodies itself (its own

@@ -25,6 +25,8 @@
 #include "d2_linux.h"
 #include "d2_linux_video.h"
 #include "d2_linux_audio.h"
+#include "D2Client/Message.h"   // [d2linux M2] the GAME's tagMSG — the self-test
+                                // fills the exact type the boot-chain pumps use
 
 namespace d2linux {
 namespace {
@@ -188,6 +190,112 @@ void PrintBanner(const HostOptions& opts) {
                 opts.smoke ? " (smoke: dummy drivers)" : "");
 }
 
+// ---------------------------------------------------------------------------
+// [d2linux M2] user32 shim self-test — the Win32 contract the game's three
+// pump shapes depend on, exercised headlessly before the boot chain needs it.
+// Every check here is one the M1 fail-soft stubs would have FAILED: a class
+// proc that actually fires, a queue that preserves order and payloads, the
+// cursor-count loop that terminates, the WM_DESTROY/WM_QUIT verdicts.
+// ---------------------------------------------------------------------------
+namespace {
+
+int g_user32TestCalls = 0;
+
+LRESULT __stdcall User32TestWndProc(HWND, UINT msg, WPARAM wp, LPARAM) {
+    ++g_user32TestCalls;
+    return (msg == 0x0401u /*WM_USER+1*/) ? (LRESULT)wp : 0;
+}
+
+const char* RunUser32SelfTest() {
+    // 1. Class registration carries the proc through to CreateWindowExA.
+    WNDCLASSA wc;
+    SDL_zero(wc);
+    wc.lpfnWndProc   = User32TestWndProc;
+    wc.lpszClassName = "d2test";
+    if (!RegisterClassA(&wc)) {
+        return "RegisterClassA failed";
+    }
+    // 2. The single-instance probe acquires the flock claim (no phantom).
+    if (FindWindowA("Diablo II", nullptr) != nullptr) {
+        return "FindWindowA probe found a phantom instance";
+    }
+    // 3. The game's creation shape: WS_POPUP, client size handed in directly.
+    HWND hwnd = CreateWindowExA(0, "d2test", "d2linux m2 self-test",
+                                0x80000000u /*WS_POPUP*/, 0, 0, 320, 240,
+                                nullptr, nullptr, nullptr, nullptr);
+    if (!hwnd) {
+        return "CreateWindowExA failed";
+    }
+    if (!IsWindow(hwnd)) {
+        return "IsWindow false after CreateWindowExA";
+    }
+    // 4. GetClientRect carries the requested client size.
+    RECT rc;
+    if (!GetClientRect(hwnd, &rc) || rc.right - rc.left != 320 ||
+        rc.bottom - rc.top != 240) {
+        return "GetClientRect wrong after create";
+    }
+    // 5. PM_NOREMOVE peeks without popping; PM_REMOVE pops exactly once.
+    tagMSG m;
+    if (!PostMessageA(hwnd, 0x0401u, 42, 0)) {
+        return "PostMessageA failed";
+    }
+    if (!PeekMessageA(&m, nullptr, 0, 0, 0 /*PM_NOREMOVE*/)) {
+        return "PeekMessageA PM_NOREMOVE missed the post";
+    }
+    if (m.message != 0x0401u || m.wParam != 42) {
+        return "PM_NOREMOVE payload wrong";
+    }
+    if (!PeekMessageA(&m, nullptr, 0, 0, 1 /*PM_REMOVE*/)) {
+        return "PM_REMOVE missed the same post";
+    }
+    if (PeekMessageA(&m, nullptr, 0, 0, 1)) {
+        return "queue not empty after PM_REMOVE";
+    }
+    // 6. DispatchMessageA routes into the registered class proc.
+    PostMessageA(hwnd, 0x0401u, 7, 0);
+    PeekMessageA(&m, nullptr, 0, 0, 1);
+    const int calls_before = g_user32TestCalls;
+    if (DispatchMessageA(&m) != 7) {
+        return "DispatchMessageA lost the WndProc echo";
+    }
+    if (g_user32TestCalls != calls_before + 1) {
+        return "WndProc not invoked";
+    }
+    // 7. SendMessageA is synchronous — a direct proc call, no queue hop.
+    if (SendMessageA(hwnd, 0x0401u, 5, 0) != 5) {
+        return "SendMessageA echo wrong";
+    }
+    if (PeekMessageA(&m, nullptr, 0, 0, 1)) {
+        return "SendMessageA leaked into the queue";
+    }
+    // 8. The game's HideOSCursor loop terminates on the display count.
+    while (ShowCursor(FALSE) > -1) {
+    }
+    if (ShowCursor(TRUE) != 0) {
+        return "ShowCursor count broken after the hide loop";
+    }
+    // 9. DestroyWindow: the IsWindow verdict flips and WM_DESTROY is queued.
+    if (!DestroyWindow(hwnd)) {
+        return "DestroyWindow failed";
+    }
+    if (IsWindow(hwnd)) {
+        return "IsWindow true after DestroyWindow";
+    }
+    if (!PeekMessageA(&m, nullptr, 0, 0, 1) || m.message != 0x0002u /*WM_DESTROY*/) {
+        return "WM_DESTROY not delivered";
+    }
+    // 10. The GetMessage verdict: WM_QUIT carries the exit code, returns 0.
+    PostQuitMessage(42);
+    if (GetMessageA(&m, nullptr, 0, 0) != 0 || m.message != 0x0012u /*WM_QUIT*/ ||
+        m.wParam != 42) {
+        return "GetMessageA WM_QUIT verdict wrong";
+    }
+    return nullptr;
+}
+
+}  // namespace
+
 }  // namespace d2linux
 
 int main(int argc, char** argv) {
@@ -258,6 +366,18 @@ int main(int argc, char** argv) {
     }
 
     if (opts.smoke) {
+        // [d2linux M2] the user32 contract rides the same headless run —
+        // the pump the boot chain will drive is verified HERE, in CI, on
+        // dummy drivers, before any game TU exists to drive it.
+        const char* user32_fail = d2linux::RunUser32SelfTest();
+        if (user32_fail) {
+            std::printf("d2linux user32 self-test FAILED: %s\n", user32_fail);
+            d2linux::Audio_Shutdown();
+            d2linux::Video_Shutdown();
+            SDL_Quit();
+            return 1;
+        }
+        std::printf("d2linux user32 self-test OK (class/window/pump/cursor/destroy/quit)\n");
         // The CI-verdict line: tools/check-build-linux.sh greps for this.
         std::printf("d2linux smoke OK (%d frames, dummy video/audio)\n", frame);
     }

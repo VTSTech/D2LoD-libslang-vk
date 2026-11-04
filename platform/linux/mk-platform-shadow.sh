@@ -60,6 +60,20 @@
 #      ULONG_PTR* parameters (crashy.cpp's RaiseException thread-name raise),
 #      which unifies on MSVC and must unify here. i386: unsigned long (4
 #      bytes, same type as DWORD); x86-64 skeleton: uintptr_t as before.
+#  13/14. `struct POINT/RECT` — dropped. [d2linux M2] the compat header now
+#      owns both (identical spelling): the M2 structs (tagMSG/WINDOWPLACEMENT/
+#      MONITORINFO) embed them BY VALUE and compat.h is force-included before
+#      this file, so the stubs here would arrive too late and collide. The
+#      LPPOINT/LPRECT typedefs STAY (they alias whatever POINT/RECT is).
+#  15. `struct tagWINDOWPLACEMENT` — dropped. Same story: compat.h owns the
+#      REAL layout (D2WinMain/D2GFX read showCmd + rcNormalPosition for the
+#      fullscreen-restore math); the stub here would be a second definition.
+#  16. `typedef void (*WNDPROC)(...)` — retargeted. [d2linux M2] the game's
+#      class procs return LRESULT (D2Launch hands &WndProc to D2GFX_Initialize;
+#      D2Win.cpp's gaUIWindowHandlers is a table of them) — a void-returning
+#      WNDPROC fails every one of those assignments. winuser.h spells
+#      LRESULT (__stdcall *)(HWND, UINT, WPARAM, LPARAM); the stdcall matters
+#      on the i386 line (callee-clean) and is empty on the x86-64 skeleton.
 set -eu
 
 SRC="$1/d2_platform.h"
@@ -142,6 +156,18 @@ apply "BOOL WriteFile(HANDLE hFile" \
       's|^BOOL WriteFile(HANDLE hFile|extern "C" {\nBOOL WriteFile(HANDLE hFile|' 1
 apply "DWORD timeGetTime(void);" \
       's|DWORD timeGetTime(void);|DWORD timeGetTime(void);\n}  // extern "C"|' 1
+# 13/14. POINT/RECT structs — see above. (Their LPPOINT/LPRECT typedefs and
+#        every later use fall through to the compat header's shapes.)
+apply "struct POINT { long x; long y; };" \
+      "/^struct POINT { long x; long y; };$/d" 1
+apply "struct RECT { long left; long top; long right; long bottom; };" \
+      "/^struct RECT { long left; long top; long right; long bottom; };$/d" 1
+# 15. tagWINDOWPLACEMENT — see above. (Struct + typedef, consecutive lines.)
+apply "struct tagWINDOWPLACEMENT { UINT length;" \
+      "/^struct tagWINDOWPLACEMENT { UINT length;/,+1d" 1
+# 16. WNDPROC retarget — see above.
+apply "typedef void (*WNDPROC)(HWND, UINT, WPARAM, LPARAM);" \
+      "s|typedef void (\*WNDPROC)(HWND, UINT, WPARAM, LPARAM);|typedef LRESULT (__stdcall *WNDPROC)(HWND, UINT, WPARAM, LPARAM);|" 1
 # 12. The IsBad*/CreateEventA/window-function block (the bare declarations
 #     after the first extern "C" close, before the #ifndef _WIN32 end).
 apply "BOOL IsBadCodePtr(FARPROC lpfn);" \
@@ -153,4 +179,4 @@ apply "int ReleaseDC(HWND hWnd, HDC hDC);" \
 sed -i "1i // GENERATED at configure time by platform/linux/mk-platform-shadow.sh — do not edit." "$TMP"
 sed -i "2i // Patch list and rationale in that script; source of truth: d2_platform.h." "$TMP"
 mv "$TMP" "$OUT/d2_platform.h"
-echo "d2linux: platform shadow -> $OUT/d2_platform.h (12 patches applied)"
+echo "d2linux: platform shadow -> $OUT/d2_platform.h (16 patches applied)"

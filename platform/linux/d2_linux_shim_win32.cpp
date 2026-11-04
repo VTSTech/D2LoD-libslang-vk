@@ -1502,22 +1502,13 @@ HANDLE FindFirstFileW(LPCWSTR, void*) { tls_lastError = 2; return INVALID_HANDLE
 BOOL FindNextFileA(HANDLE, LPWIN32_FIND_DATAA) { return FALSE; }
 BOOL FindNextFileW(HANDLE, void*) { return FALSE; }
 int LoadStringA(HINSTANCE, UINT, LPSTR, int) { return 0; }
-BOOL IsWindow(HWND) { return FALSE; }
-BOOL IsWindowVisible(HWND) { return FALSE; }
-LRESULT DefWindowProcA(HWND, UINT, WPARAM, LPARAM) { return 0; }
-LRESULT DispatchMessageA(const void*) { return 0; }
-BOOL PeekMessageA(void*, HWND, UINT, UINT, UINT) { return FALSE; }
-BOOL GetMessageA(void*, HWND, UINT, UINT) { return FALSE; }
-BOOL TranslateMessage(const void*) { return FALSE; }
-void PostQuitMessage(int) {}
-BOOL PostMessageA(HWND, UINT, WPARAM, LPARAM) { return FALSE; }
-int MessageBoxA(HWND, LPCSTR lpText, LPCSTR lpCaption, UINT) {
-    // The PE is modal here; the linux twin logs and continues (fail-soft).
-    fprintf(stderr, "d2linux: %s: %s\n", lpCaption ? lpCaption : "message", lpText ? lpText : "");
-    return 1 /* IDOK */;
-}
-SHORT GetAsyncKeyState(int) { return 0; }
-SHORT GetKeyState(int) { return 0; }
+// [d2linux M2] the user32 family that used to fail-soft here (IsWindow/
+// IsWindowVisible/DefWindowProcA/DispatchMessageA/PeekMessageA/GetMessageA/
+// TranslateMessage/PostQuitMessage/PostMessageA/MessageBoxA/GetAsyncKeyState/
+// GetKeyState/SetWindowPos/ShowWindow/DestroyWindow/GetClientRect/GetDC/
+// ReleaseDC/CreateWindowExA/GetSystemMetrics/RegisterClassA) moved to
+// platform/linux/d2_linux_shim_user32.cpp — the SDL-backed window manager and
+// message pump. Nothing else in this file touches windowing.
 int wsprintfA(LPSTR lpOut, LPCSTR lpFmt, ...) {
     va_list ap;
     va_start(ap, lpFmt);
@@ -1528,17 +1519,6 @@ int wsprintfA(LPSTR lpOut, LPCSTR lpFmt, ...) {
 int wsprintfW(LPWSTR lpOut, LPCWSTR lpFmt, ...) { (void)lpOut; (void)lpFmt; return 0; }
 void OutputDebugStringA(LPCSTR lpOutputString) { fprintf(stderr, "%s", lpOutputString ? lpOutputString : ""); }
 void Sleep(DWORD);  // (declared above; kept for the family listing)
-
-// --- user32 surface with PE-shaped bodies the M0 window already owns natively.
-BOOL SetWindowPos(HWND, HWND, int, int, int, int, UINT) { return TRUE; }
-BOOL ShowWindow(HWND, int) { return TRUE; }
-BOOL DestroyWindow(HWND) { return TRUE; }
-BOOL GetClientRect(HWND, LPRECT lpRect) { if (lpRect) { lpRect->left = lpRect->top = 0; lpRect->right = 800; lpRect->bottom = 600; } return TRUE; }
-HDC GetDC(HWND) { return NULL; }
-int ReleaseDC(HWND, HDC) { return 1; }
-HWND CreateWindowExA(DWORD, LPCSTR, LPCSTR, DWORD, int, int, int, int, HWND, HMENU, HINSTANCE, LPVOID) { return NULL; }
-int GetSystemMetrics(int nIndex) { return nIndex == 16 /* SM_CYMENU */ ? 0 : 0; }
-ATOM RegisterClassA(const void*) { return 0; }
 
 // --- kernel events (the OpenEvent family the boot probe uses) close here.
 // --- admin check (advapi32): ErrorManager's reporter context. The honest

@@ -92,4 +92,6 @@ fi
 head -2 "$WORK/smoke.log" | sed 's/^/smoke: /'
 grep -q 'd2linux smoke OK' "$WORK/smoke.log" \
   || { echo "FAIL: no smoke verdict line" >&2; exit 1; }
+grep -q 'd2linux user32 self-test OK' "$WORK/smoke.log" \
+  || { echo "FAIL: no user32 self-test verdict line" >&2; exit 1; }
 echo "OK: d2linux built and smoke passed"

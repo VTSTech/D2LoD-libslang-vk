@@ -15,6 +15,19 @@ bool Video_Init(int w, int h, SDL_Window** out_window);
 // carrier), uploads it through the streaming texture, presents.
 void Video_Frame(int frame);
 
+// [d2linux M2] attaches the presentation plumbing (renderer + INDEX8 staging
+// + palette + streaming texture) to an EXISTING window — the user32 shim's
+// CreateWindowExA calls this for the game window the boot chain creates.
+// Fails if something is already hosting (the M0 window, or a double-create).
+bool Video_Attach(SDL_Window* window);
+
+// [d2linux M2] tears the presentation plumbing down (window excluded — the
+// user32 shim's DestroyWindow owns that lifecycle). The window argument pairs
+// detach with attach: only the window THIS layer is hosting gets torn down,
+// so DestroyWindow of an unattached window (or a NULL — shutdown) is a no-op
+// for everything else.
+void Video_Detach(SDL_Window* window);
+
 void Video_Shutdown();
 
 }  // namespace d2linux

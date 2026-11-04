@@ -581,6 +581,147 @@ char* _ultoa(unsigned long value, char* buffer, int radix);
 char* _i64toa(long long value, char* buffer, int radix);
 char* _ui64toa(unsigned long long value, char* buffer, int radix);
 
+// ===========================================================================
+// [d2linux M2] the user32/GDI surface the boot chain (D2Win window manager,
+// D2gfx window creation, D2DDraw renderer) actually calls. Every family below
+// has named call sites in the step-2 slice (the M2 inventory pass — the same
+// empirical method as M1). Implemented in d2_linux_shim_user32.cpp over SDL3;
+// the COM surfaces (DirectDraw/DirectSound/Smack/Bink/IJL) live in
+// d2_linux_shim_ddraw.cpp. Types ride d2_linux_compat.h (WNDCLASSA/MSG/
+// WINDOWPLACEMENT/MONITORINFO/DEVMODEA/TRACKMOUSEEVENT) and d2_platform.h
+// (HWND/HDC/RECT/POINT/ATUM-family aliases).
+// ===========================================================================
+
+// --- window class + creation (winuser.h) — D2gfx/D2GFX.cpp registers the
+// --- "Diablo II" class with the game's WndProc and creates the window;
+// --- FindWindowA is the game's single-instance check (the mutex).
+// (CreateWindowExA/DestroyWindow/SetWindowPos/ShowWindow/GetClientRect/
+// GetSystemMetrics/GetDC/ReleaseDC/PostMessageA/SendMessageA/PostQuitMessage/
+// GetKeyState/SetRect are already declared by d2_platform.h's non-Windows
+// branch — the shim defines those at their EXISTING plain spellings; the M1
+// fail-soft stubs for the pump family (PeekMessageA/GetMessageA/... in
+// d2_linux_shim_win32.cpp) MOVE to d2_linux_shim_user32.cpp this round.)
+ATOM __stdcall RegisterClassA(const WNDCLASSA* lpWndClass);
+BOOL __stdcall UnregisterClassA(LPCSTR lpClassName, HINSTANCE hInstance);
+BOOL __stdcall UpdateWindow(HWND hWnd);
+BOOL __stdcall GetWindowRect(HWND hWnd, LPRECT lpRect);
+BOOL __stdcall GetWindowPlacement(HWND hWnd, WINDOWPLACEMENT* lpwndpl);
+BOOL __stdcall AdjustWindowRectEx(LPRECT lpRect, DWORD dwStyle, BOOL bMenu, DWORD dwExStyle);
+HWND __stdcall GetDesktopWindow(void);
+BOOL __stdcall SystemParametersInfoA(UINT uiAction, UINT uiParam, void* pvParam, UINT fWinIni);
+LONG __stdcall ChangeDisplaySettingsA(DEVMODEA* lpDevMode, DWORD dwFlags);
+void* __stdcall MonitorFromWindow(HWND hWnd, DWORD dwFlags);   // HMONITOR (opaque)
+BOOL __stdcall GetMonitorInfoA(void* hMonitor, MONITORINFO* lpmi);
+HWND __stdcall FindWindowA(LPCSTR lpClassName, LPCSTR lpWindowName);
+HWND __stdcall SetFocus(HWND hWnd);
+BOOL __stdcall IsIconic(HWND hWnd);
+BOOL __stdcall SetWindowTextA(HWND hWnd, LPCSTR lpString);
+
+// --- message pump (winuser.h) — D2WinMain's MessagePump, MainMenus' cutscene
+// --- drain, D2Client's Bink pump, Storm/WindowHandle's generic pump. The
+// --- Peek/Get/Translate/Dispatch/PostQuit/DefWindowProc family keeps its M1
+// --- declarations (above); M2 is where they become the real SDL-backed pump.
+BOOL __stdcall TrackMouseEvent(const TRACKMOUSEEVENT* lpEventTrack);
+
+// --- cursor (winuser.h) — the game hides the OS cursor and draws its own
+// --- (ShowCursor's display-count semantics are load-bearing: HideOSCursor
+// --- loops on the RETURN value until the sign flips).
+int __stdcall ShowCursor(BOOL bShow);
+void* __stdcall LoadCursorA(HINSTANCE hInstance, LPCSTR lpCursorName);  // HCURSOR
+void* __stdcall SetCursor(void* hCursor);                               // HCURSOR
+BOOL __stdcall SetCursorPos(int X, int Y);
+BOOL __stdcall GetCursorPos(struct POINT* lpPoint);
+BOOL __stdcall ClipCursor(const RECT* lpRect);
+
+// --- GDI (wingdi.h) — D2DDraw's debug-font rasterizer ONLY (the game's real
+// --- fonts are DC6-based). A NULL HDC makes the mask fill blank, which is the
+// --- honest "no debug text" answer; nothing else in the slice touches GDI.
+typedef uint32_t COLORREF;   // 0x00bbggrr
+HDC __stdcall CreateDCA(LPCSTR lpszDriver, LPCSTR lpszDevice, LPCSTR lpszOutput, const void* lpInitData);
+HFONT __stdcall CreateFontA(int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight,
+                  DWORD bItalic, DWORD bUnderline, DWORD bStrikeOut, DWORD iCharSet,
+                  DWORD iOutPrecision, DWORD iClipPrecision, DWORD iQuality, DWORD iPitchAndFamily,
+                  LPCSTR pszFaceName);
+HBITMAP __stdcall CreateBitmap(int width, int height, UINT planes, UINT bitsPerPixel, const void* lpBits);
+HGDIOBJ __stdcall SelectObject(HDC hdc, HGDIOBJ h);
+COLORREF __stdcall SetTextColor(HDC hdc, COLORREF color);
+COLORREF __stdcall SetBkColor(HDC hdc, COLORREF color);
+int __stdcall SetBkMode(HDC hdc, int mode);
+int __stdcall DrawTextA(HDC hdc, LPCSTR lpchText, int cchText, LPRECT lprc, UINT format);
+COLORREF __stdcall GetPixel(HDC hdc, int x, int y);
+BOOL __stdcall GetCharWidthA(HDC hdc, UINT iFirst, UINT iLast, int* lpBuffer);
+BOOL __stdcall DeleteObject(HGDIOBJ hObject);
+BOOL __stdcall DeleteDC(HDC hdc);
+HGDIOBJ __stdcall GetStockObject(int i);
+int __stdcall GdiSetBatchLimit(DWORD dwLimit);
+HICON __stdcall LoadImageA(HINSTANCE hInst, LPCSTR name, UINT type, int cx, int cy, UINT fuLoad);
+
+// --- clipboard (winuser.h) — D2Win/Src/D2WinEditBox.cpp's copy/paste. The
+// --- moveable-memory family backs SetClipboardData's HGLOBAL hand-off.
+#define GMEM_MOVEABLE_W 0x0002u
+#define GMEM_DDESHARE_W 0x2000u
+#define CF_TEXT_W 1
+HGLOBAL __stdcall GlobalAlloc(UINT uFlags, SIZE_T dwBytes);
+LPVOID __stdcall GlobalLock(HGLOBAL hMem);
+BOOL __stdcall GlobalUnlock(HGLOBAL hMem);
+HGLOBAL __stdcall GlobalFree(HGLOBAL hMem);
+BOOL __stdcall OpenClipboard(HWND hWndNewOwner);
+BOOL __stdcall CloseClipboard(void);
+BOOL __stdcall EmptyClipboard(void);
+HANDLE __stdcall SetClipboardData(UINT uFormat, HANDLE hMem);
+HANDLE __stdcall GetClipboardData(UINT uFormat);
+
+// --- RECT helpers (winuser.h) — the control/layout math. SetRect is already
+// --- declared by d2_platform.h's block B.
+BOOL __stdcall PtInRect(const RECT* lprc, struct POINT pt);
+BOOL __stdcall CopyRect(LPRECT lprcDst, const RECT* lprcSrc);
+BOOL __stdcall OffsetRect(LPRECT lprc, int dx, int dy);
+BOOL __stdcall InflateRect(LPRECT lprc, int dx, int dy);
+BOOL __stdcall IntersectRect(LPRECT lprcDst, const RECT* lprcSrc1, const RECT* lprcSrc2);
+BOOL __stdcall UnionRect(LPRECT lprcDst, const RECT* lprcSrc1, const RECT* lprcSrc2);
+
+// --- misc (winuser.h / kernel32) — named sites in the slice:
+// --- D2Sound/D2SoundUntil.cpp (legacy VxD driver probe — fail-soft), the
+// --- GetKeyState(VK_SHIFT) edit-box path (GetKeyState: d2_platform.h decl,
+// --- M2 gives it real modifier state), D2GFX's version probe.
+BOOL __stdcall GetWindowsDirectoryA(LPSTR lpBuffer, UINT uSize);
+
+// --- constants (winuser.h) the slice's call sites pass — spell the canonical
+// --- values so the shim's switch arms and the game's arguments agree.
+#ifndef WM_CLOSE
+#define WM_CLOSE 0x0010
+#endif
+#define WM_CHAR_W2 0x0102          // (WM_CHAR proper; the _W2 suffix avoids any tree redefinition)
+#define WM_KEYDOWN_W2 0x0100
+#define WM_KEYUP_W2 0x0101
+#define WM_MOUSEMOVE_W2 0x0200
+#define WM_LBUTTONDOWN_W2 0x0201
+#define WM_LBUTTONUP_W2 0x0202
+#define WM_RBUTTONDOWN_W2 0x0204
+#define WM_RBUTTONUP_W2 0x0205
+#define WM_XBUTTONDOWN_W2 0x0207
+#define WM_XBUTTONUP_W2 0x0208
+#define WM_MOUSEWHEEL_W2 0x020A
+#define WM_NCMOUSEMOVE_W2 0x00A0
+#define WM_MOUSELEAVE_W2 0x02A3
+#define WM_ACTIVATEAPP_W2 0x001C
+#define WM_SYSCOMMAND_W2 0x0112
+#define WM_COMMAND_W2 0x0111
+#define VK_SHIFT_W2 0x10
+#define VK_CONTROL_W2 0x11
+#define VK_MENU_W2 0x12
+#define VK_SNAPSHOT_W2 0x2C
+#define SM_CXSCREEN_W2 0
+#define SM_CYSCREEN_W2 1
+#define SPI_GETWORKAREA_W2 0x0030
+#define TME_LEAVE_W2 0x0002
+#define MONITOR_DEFAULTTONEAREST_W2 2
+#define IMAGE_ICON_W2 1
+#define IDC_ARROW_W2 ((LPCSTR)0x7F00)   // (LPCSTR)MAKEINTRESOURCE — the D2GFX call site's exact spelling
+#define NULL_BRUSH_W2 5
+#define SW_HIDE_W2 0
+#define SW_SHOWNORMAL_W2 1
+
 }  // extern "C"
 
 #endif // _WIN32

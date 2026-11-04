@@ -61,20 +61,16 @@ void BuildPalette(SDL_Palette* palette) {
     }
 }
 
-}  // namespace
+// [d2linux M2] AttachPresentation: the presentation plumbing (renderer +
+// INDEX8 staging + palette + streaming texture) for ONE window. Video_Init
+// uses it for the M0 skeleton window; Video_Attach uses it for the game's
+// window the user32 shim created (D2GFX_CreateWindow's CreateWindowExA).
+static bool AttachPresentation(SDL_Window* window, int w, int h) {
+    g_video.window   = window;
+    g_video.w        = w;
+    g_video.h        = h;
 
-bool Video_Init(int w, int h, SDL_Window** out_window) {
-    g_video.w = w;
-    g_video.h = h;
-
-    g_video.window = SDL_CreateWindow("d2linux (Vanilla+ native Linux host)", w, h,
-                                      SDL_WINDOW_RESIZABLE);
-    if (!g_video.window) {
-        std::printf("d2linux: SDL_CreateWindow failed: %s\n", SDL_GetError());
-        return false;
-    }
-
-    g_video.renderer = SDL_CreateRenderer(g_video.window, nullptr);
+    g_video.renderer = SDL_CreateRenderer(window, nullptr);
     if (!g_video.renderer) {
         std::printf("d2linux: SDL_CreateRenderer failed: %s\n", SDL_GetError());
         return false;
@@ -102,9 +98,62 @@ bool Video_Init(int w, int h, SDL_Window** out_window) {
         std::printf("d2linux: SDL_CreateTexture failed: %s\n", SDL_GetError());
         return false;
     }
-
-    *out_window = g_video.window;
     return true;
+}
+
+}  // namespace
+
+bool Video_Init(int w, int h, SDL_Window** out_window) {
+    SDL_Window* window = SDL_CreateWindow("d2linux (Vanilla+ native Linux host)", w, h,
+                                          SDL_WINDOW_RESIZABLE);
+    if (!window) {
+        std::printf("d2linux: SDL_CreateWindow failed: %s\n", SDL_GetError());
+        return false;
+    }
+
+    if (!AttachPresentation(window, w, h)) {
+        return false;
+    }
+
+    *out_window = window;
+    return true;
+}
+
+// [d2linux M2] the game's window (user32 shim CreateWindowExA) becomes the
+// presentation host. The DirectDraw shim's Flip drives Video_Frame from here
+// on; until that shim exists nothing attaches, so the M0 window stays the
+// only presenter.
+bool Video_Attach(SDL_Window* window) {
+    if (!window || g_video.renderer) {
+        return false;   // already hosting (the M0 window, or double-create)
+    }
+    int wf = 0, hf = 0;
+    SDL_GetWindowSizeInPixels(window, &wf, &hf);
+    return AttachPresentation(window, wf, hf);
+}
+
+// [d2linux M2] tears the presentation plumbing down on DestroyWindow. The
+// window itself is NOT destroyed here — the user32 shim owns its lifecycle.
+// Paired with Video_Attach: only the hosting window's plumbing goes; a
+// DestroyWindow of an unattached window changes nothing, and NULL tears
+// down whatever is hosted (Video_Shutdown's path).
+void Video_Detach(SDL_Window* window) {
+    if (window && g_video.window != window) {
+        return;   // not mine — the M0 window keeps its plumbing
+    }
+    if (g_video.texture) {
+        SDL_DestroyTexture(g_video.texture);
+        g_video.texture = nullptr;
+    }
+    if (g_video.staging) {
+        SDL_DestroySurface(g_video.staging);
+        g_video.staging = nullptr;
+    }
+    if (g_video.renderer) {
+        SDL_DestroyRenderer(g_video.renderer);
+        g_video.renderer = nullptr;
+    }
+    g_video.window = nullptr;
 }
 
 void Video_Frame(int frame) {
@@ -148,18 +197,7 @@ void Video_Frame(int frame) {
 }
 
 void Video_Shutdown() {
-    if (g_video.texture) {
-        SDL_DestroyTexture(g_video.texture);
-        g_video.texture = nullptr;
-    }
-    if (g_video.staging) {
-        SDL_DestroySurface(g_video.staging);
-        g_video.staging = nullptr;
-    }
-    if (g_video.renderer) {
-        SDL_DestroyRenderer(g_video.renderer);
-        g_video.renderer = nullptr;
-    }
+    Video_Detach(nullptr);
     if (g_video.window) {
         SDL_DestroyWindow(g_video.window);
         g_video.window = nullptr;

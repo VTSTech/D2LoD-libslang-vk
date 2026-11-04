@@ -270,6 +270,7 @@ set(D2LINUX_GAME_SOURCES
 # The shim layer (this track's code) and the crash twin.
 set(D2LINUX_SHIM_SOURCES
     platform/linux/d2_linux_shim_win32.cpp
+    platform/linux/d2_linux_shim_user32.cpp
     platform/linux/d2_linux_shim_registry.cpp
     platform/linux/d2_linux_globals_step1.cpp
     platform/linux/d2_linux_shim_crt.cpp
