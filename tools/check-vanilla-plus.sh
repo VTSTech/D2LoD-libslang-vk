@@ -426,6 +426,24 @@ gate "stretch: d3d arm + release-clear"    D2Direct3D/Renderer/Direct3D.cpp 'D2G
 gate "stretch: endscene2 guard"            D2Client/Renderer/Direct3D.cpp   'VPRES3D_PresentHostedFrame' 2
 gate "stretch: cursor host->logical"       D2Win/Src/D2WinMain.cpp          'D2GFX_GetPresentationStretch' 1
 
+# ---- R116: GDI windowed 1366x768 diagonal shear ----------------------------
+# Owner: "in D3D windowed mode 1366x768 everything is distorted and slanted".
+# Root cause: -w ALWAYS lands in this GDI renderer (Game/Main.cpp maps
+# bWINDOW -> RENDERER_Windowed regardless of bD3D), and the renderer's
+# CreateDIBSection 8bpp DIB has a DWORD-aligned scanline stride of
+# (width + 3) & ~3 - 1368 at the 1366-wide stop, == width everywhere else.
+# Handing nfpFillYBufferTable the logical width (the DirectDraw windowed
+# renderer passes its real lPitch) made the Y-buffer row table, the D2CMP
+# nDstPitch slots and every raw memset/pixel address drift 2px per row ->
+# the whole frame sheared diagonally. R112 shipped mode 5; windowed was
+# only ever field-tested fullscreen, so this surfaced three rounds later.
+# Pins: the stride computation, the FillY call riding it, the four CELCMP
+# nDstPitch slots, and the global's total wiring count (26 incl. decl/comment).
+gate "r116: gdi dib pitch computed"        D2Gdi/Renderer/Windowed.cpp      'RENDERER_WINDOWED_nDIBPitch = \(uint32_t\)\(\(RENDERER_nWindowWidth \+ 3\) & ~3\)' 1
+gate "r116: fillY rides real stride"       D2Gdi/Renderer/Windowed.cpp      'nfpFillYBufferTable\(gpRenderBackBufferBits, RENDERER_WINDOWED_nDIBPitch' 1
+gate "r116: cel nDstPitch slots"           D2Gdi/Renderer/Windowed.cpp      'RENDERER_nWindowHeight, RENDERER_WINDOWED_nDIBPitch' 4
+gate "r116: dib pitch global wired"        D2Gdi/Renderer/Windowed.cpp      'RENDERER_WINDOWED_nDIBPitch' 26
+
 # ---- resolution site-5: wide-layout classification + centered 800-px UI ----
 # Wide modes (3=1344x700 dormant, 4=1280x720, 5=1366x768 [R112]) join the
 # retail 800x600 UI class via VPRES_IsWideLayoutMode and re-center the
@@ -876,7 +894,11 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # pDC6SubImages[5] growth left the two raw 0x550-byte walks stale - mouse
 # hit-test dead + sub-image slot spill - and the FreeLoadedImages retail
 # halt armed on the new count-5 row)
-gate "res: self-id 0.0.7-R115"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R115' 1
+gate "res: self-id 0.0.7-R116"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R116' 1
+# R115: string bumped R113 -> R115 (the 1080p sixth-stop round; owner:
+# "Great job. works. Published Glide3xVK 0.4.7. Now lets do 1080p")
+# R116: string bumped R115 -> R116 (the GDI windowed 1366x768 shear fix;
+# owner: "in D3D windowed mode 1366x768 everything is distorted and slanted")
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the

@@ -50,6 +50,14 @@ static HPALETTE RENDERER_WINDOWED_hPalette = 0; D2_STATIC_GUARD(RENDERER_WINDOWE
 static HBITMAP RENDERER_WINDOWED_hDIBitmap = 0; D2_STATIC_GUARD(RENDERER_WINDOWED_hDIBitmap, "RENDERER_WINDOWED_hDIBitmap");
 static uint32_t RENDERER_WINDOWED_nScaleOffsetY = 0; D2_STATIC_GUARD(RENDERER_WINDOWED_nScaleOffsetY, "RENDERER_WINDOWED_nScaleOffsetY");
 static uint32_t RENDERER_WINDOWED_nScaleWidth = 0; D2_STATIC_GUARD(RENDERER_WINDOWED_nScaleWidth, "RENDERER_WINDOWED_nScaleWidth");
+// Vanilla Plus [R116]: the GDI DIB's real scanline stride. CreateDIBSection
+// DWORD-aligns every 8bpp row, so the true pitch is (width + 3) & ~3 - that is
+// 1368 at the 1366x768 stop and exactly width at every other stop (640/800/
+// 1280/1344/1920 are all 4-aligned, which is why only 1366x768 windowed ever
+// sheared). Every raw-buffer address and row step in this file must use this,
+// not RENDERER_nWindowWidth; the DirectDraw windowed renderer already works
+// this way (it passes its real surface lPitch to nfpFillYBufferTable).
+static uint32_t RENDERER_WINDOWED_nDIBPitch = 0; D2_STATIC_GUARD(RENDERER_WINDOWED_nDIBPitch, "RENDERER_WINDOWED_nDIBPitch");
 static HFONT RENDERER_WINDOWED_hDebugFont = 0; D2_STATIC_GUARD(RENDERER_WINDOWED_hDebugFont, "RENDERER_WINDOWED_hDebugFont");
 static D2SmackerGlideBufferStrc gnSmackerGlideYOffset = {}; D2_STATIC_GUARD(gnSmackerGlideYOffset, "gnSmackerGlideYOffset");
 static uint32_t gnSmackerDecodeState = 0; D2_STATIC_GUARD(gnSmackerDecodeState, "gnSmackerDecodeState");
@@ -132,7 +140,17 @@ static void __stdcall RENDERER_WINDOWED_AllocateDIBSection(int nResolutionMode) 
     HDC hdc = GetDC((HWND)0x0);
     /* DWORD offset for CreateDIBSection */ /* HANDLE hSection for CreateDIBSection */ /* void * * ppvBits for CreateDIBSection */ /* UINT usage for CreateDIBSection */ /* BITMAPINFO * lpbmi for CreateDIBSection */ /* HDC hdc for CreateDIBSection */ RENDERER_WINDOWED_hDIBitmap = CreateDIBSection(hdc, (BITMAPINFO*)&sBitmapInfo, 0, (void**)&gpRenderBackBufferBits, (HANDLE)0x0, 0);
     /* HDC hDC for ReleaseDC */ /* HWND hWnd for ReleaseDC */ ReleaseDC((HWND)0x0, hdc);
-    D2GfxRendereInitFunctionsStrc->nfpFillYBufferTable(gpRenderBackBufferBits, RENDERER_nWindowWidth, RENDERER_nWindowHeight, 0);
+    // Vanilla Plus [R116]: pass the DIB's real stride, not the logical width.
+    // GDI pads each 8bpp scanline to a 4-byte boundary (1366 -> 1368); handing
+    // nfpFillYBufferTable the width made the Y-buffer row table - and every
+    // D2CMP nDstPitch / tile-draw gRenderBufferPitch downstream - drift 2px
+    // per row at the 1366x768 stop. That is the field-reported "D3D windowed
+    // 1366x768: everything is distorted and slanted" (R112 shipped mode 5,
+    // but windowed -w always lands in this GDI renderer per Game/Main.cpp,
+    // and the stop was only ever field-tested fullscreen). Byte-identical at
+    // every other stop, where the aligned pitch equals the width.
+    RENDERER_WINDOWED_nDIBPitch = (uint32_t)((RENDERER_nWindowWidth + 3) & ~3);
+    D2GfxRendereInitFunctionsStrc->nfpFillYBufferTable(gpRenderBackBufferBits, RENDERER_WINDOWED_nDIBPitch, RENDERER_nWindowHeight, 0);
 }
 
 BOOL __fastcall CreateWindow(HWND hWnd, int nResolutionMode) {
@@ -254,9 +272,9 @@ BOOL __fastcall GetBackBuffer(BYTE * pBuffer) {
         } while (nCol < RENDERER_nWindowWidth);
       }
 
-      pBuffer += nWindowWidth * 3;
+      pBuffer += nWindowWidth * 3; // [R116] dest stays packed 24bpp (width*3); only the 8bpp DIB source rides the aligned pitch
       nRow++;
-      ppvSrcCol += nWindowWidth;
+      ppvSrcCol += RENDERER_WINDOWED_nDIBPitch; // [R116]: was nWindowWidth - GDI rows sit at the aligned stride
     } while (nRow < RENDERER_nWindowHeight);
 
     return 1;
@@ -597,7 +615,7 @@ BOOL __fastcall DrawImage(D2GfxDataStrc * pData, int nPosX, int nPosY, DWORD dwG
       pRenderArg1 = gpPaletteTable[0x46];
     }
 
-    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pData, nPosX, nPosY, RENDERER_WINDOWED_nScaleOffsetY, RENDERER_WINDOWED_nScaleWidth, gpRenderBackBufferBits, RENDERER_nWindowHeight, RENDERER_nWindowWidth, pRenderArg1, pRenderArg2, pPalette);
+    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pData, nPosX, nPosY, RENDERER_WINDOWED_nScaleOffsetY, RENDERER_WINDOWED_nScaleWidth, gpRenderBackBufferBits, RENDERER_nWindowHeight, RENDERER_WINDOWED_nDIBPitch, pRenderArg1, pRenderArg2, pPalette); // [R116] nDstPitch slot: real DIB stride
     return 1;
 }
 
@@ -633,7 +651,7 @@ void __fastcall DrawShiftedImage(D2GfxDataStrc * pData, int nPosX, int nPosY, DW
       pPalette = gpPaletteTable[nGlobalPaletteShift + 0x34];
     }
 
-    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pData, nPosX, nPosY, RENDERER_WINDOWED_nScaleOffsetY, RENDERER_WINDOWED_nScaleWidth, gpRenderBackBufferBits, RENDERER_nWindowHeight, RENDERER_nWindowWidth, pRenderArg1, pRenderArg2, pPalette);
+    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pData, nPosX, nPosY, RENDERER_WINDOWED_nScaleOffsetY, RENDERER_WINDOWED_nScaleWidth, gpRenderBackBufferBits, RENDERER_nWindowHeight, RENDERER_WINDOWED_nDIBPitch, pRenderArg1, pRenderArg2, pPalette); // [R116] nDstPitch slot: real DIB stride
 }
 
 void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int nPosX, int nPosY, int nSkipLines, int nDrawLines, int nDrawMode) {
@@ -659,7 +677,7 @@ void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int nPosX, int nPos
     uint32_t pLookupTable2 = 0;
     int nClipBottom = nDrawLines;
     uint8_t* pBlendTable = RENDERER_WINDOWED_GetPalettePointer(nDrawMode, (uint32_t*)&nDrawLines);
-    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, RENDERER_WINDOWED_nScaleOffsetY, RENDERER_WINDOWED_nScaleWidth, gpRenderBackBufferBits, nViewportHeight, RENDERER_nWindowWidth, 0, (int32_t)pBlendTable, nSkipLines, nClipBottom, pLookupTable2);
+    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, RENDERER_WINDOWED_nScaleOffsetY, RENDERER_WINDOWED_nScaleWidth, gpRenderBackBufferBits, nViewportHeight, RENDERER_WINDOWED_nDIBPitch, 0, (int32_t)pBlendTable, nSkipLines, nClipBottom, pLookupTable2); // [R116] nDstPitch slot: real DIB stride
 }
 
 void __fastcall DrawClippedImage(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, void * pCropRect, int32_t nDrawMode) {
@@ -690,7 +708,7 @@ void __fastcall DrawClippedImage(D2GfxDataStrc * pData, int32_t nPosX, int32_t n
     int32_t nClipTop_00 = __frame0.nClipTop;
     int32_t nClipBottom_00 = __frame0.nClipBottom;
     uint8_t* pPalettePtr = RENDERER_WINDOWED_GetPalettePointer(nDrawMode, (uint32_t*)&pCropRect);
-    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, __frame0.nCropLeft, __frame0.nCropRight, gpRenderBackBufferBits, RENDERER_nWindowHeight, RENDERER_nWindowWidth, 0, (int32_t)pPalettePtr, nClipTop_00, nClipBottom_00, bOutOfBounds);
+    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, __frame0.nCropLeft, __frame0.nCropRight, gpRenderBackBufferBits, RENDERER_nWindowHeight, RENDERER_WINDOWED_nDIBPitch, 0, (int32_t)pPalettePtr, nClipTop_00, nClipBottom_00, bOutOfBounds); // [R116] nDstPitch slot: real DIB stride
 }
 
 void __fastcall DrawShadow(D2GfxDataStrc * pData, int nPosX, int nPosY) {
@@ -719,7 +737,7 @@ void __fastcall DrawShadow(D2GfxDataStrc * pData, int nPosX, int nPosY) {
       pBlendTable = *gpPaletteTable;
     }
 
-    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameCentered(pData, nPosX, nPosY, RENDERER_WINDOWED_nScaleOffsetY, RENDERER_WINDOWED_nScaleWidth, gpRenderBackBufferBits, RENDERER_nWindowHeight, RENDERER_nWindowWidth, pBlendTable, 0);
+    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameCentered(pData, nPosX, nPosY, RENDERER_WINDOWED_nScaleOffsetY, RENDERER_WINDOWED_nScaleWidth, gpRenderBackBufferBits, RENDERER_nWindowHeight, RENDERER_WINDOWED_nDIBPitch, pBlendTable, 0); // [R116] nDstPitch slot: real DIB stride
 }
 
 void __fastcall DrawImageFast(D2GfxDataStrc * pData, int nPosX, int nPosY, BYTE nPaletteIndex) {
@@ -736,7 +754,7 @@ void __fastcall DebugFillBackBuffer(int nPosX, int nPosY) {
       exit(-1);
     }
 
-    D2CMP::SRC::FastCmp::DRAW_DebugFillRect((int32_t)(gpRenderBackBufferBits + nPosX + RENDERER_nWindowWidth * nPosY), RENDERER_nWindowWidth);
+    D2CMP::SRC::FastCmp::DRAW_DebugFillRect((int32_t)(gpRenderBackBufferBits + nPosX + RENDERER_WINDOWED_nDIBPitch * nPosY), RENDERER_WINDOWED_nDIBPitch); // [R116] row addr + nRowStride: real DIB stride
     return;
 }
 
@@ -823,7 +841,7 @@ void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, 
     }
 
     int nWidth = uMaxY - uClampedXStart;
-    uint8_t* pbScanline = gpRenderBackBufferBits + uClampedYStart + RENDERER_nWindowWidth * uClampedXStart;
+    uint8_t* pbScanline = gpRenderBackBufferBits + uClampedYStart + RENDERER_WINDOWED_nDIBPitch * uClampedXStart; // [R116] real DIB stride
     switch (nBlendMode) {
       case 1:
         {
@@ -835,7 +853,7 @@ void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, 
               pbPixel++;
             }
 
-            pbScanline += RENDERER_nWindowWidth;
+            pbScanline += RENDERER_WINDOWED_nDIBPitch; // [R116] real DIB stride
           }
 
           break;
@@ -855,7 +873,7 @@ void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, 
                 } while (nRowsLeft);
               }
 
-              pbScanline += RENDERER_nWindowWidth;
+              pbScanline += RENDERER_WINDOWED_nDIBPitch; // [R116] real DIB stride
             } while (nWidth);
 
             return;
@@ -869,7 +887,7 @@ void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, 
             do {
               nWidth--;
               memset(pbScanline, dwColor & 0xff, uMaxX - uClampedYStart); // VP: mask after the DWORD widening
-              pbScanline += RENDERER_nWindowWidth;
+              pbScanline += RENDERER_WINDOWED_nDIBPitch; // [R116] real DIB stride
             } while (nWidth);
 
             return;
@@ -907,7 +925,7 @@ void __fastcall RENDERER_WINDOWED_DrawPixel(int nPosX, int nPosY, BYTE byColor) 
       return;
     }
 
-    gpRenderBackBufferBits[nPosX + RENDERER_nWindowWidth * nPosY] = byColor;
+    gpRenderBackBufferBits[nPosX + RENDERER_WINDOWED_nDIBPitch * nPosY] = byColor; // [R116] real DIB stride
 }
 
 void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dwColor, BYTE nAlpha) {
@@ -927,7 +945,7 @@ void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dw
       nYEnd = 1;
     }
     if (nXStart >= 0 && nXStart < RENDERER_nWindowWidth && nYStart >= 0 && nYStart < RENDERER_nWindowHeight) {
-      gpRenderBackBufferBits[nXStart + RENDERER_nWindowWidth * nYStart] = dwColor;
+      gpRenderBackBufferBits[nXStart + RENDERER_WINDOWED_nDIBPitch * nYStart] = dwColor; // [R116] real DIB stride
     }
 
     int nDx = 0;
@@ -942,7 +960,7 @@ void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dw
             nDx -= nError;
           }
           if (nXStart >= 0 && nXStart < RENDERER_nWindowWidth && nYStart >= 0 && nYStart < RENDERER_nWindowHeight) {
-            gpRenderBackBufferBits[nXStart + RENDERER_nWindowWidth * nYStart] = dwColor;
+            gpRenderBackBufferBits[nXStart + RENDERER_WINDOWED_nDIBPitch * nYStart] = dwColor; // [R116] real DIB stride
           }
 
           nSteps--;
@@ -961,7 +979,7 @@ void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dw
             nDx -= nDy;
           }
           if (nXStart >= 0 && nXStart < RENDERER_nWindowWidth && nYStart >= 0 && nYStart < RENDERER_nWindowHeight) {
-            gpRenderBackBufferBits[nXStart + RENDERER_nWindowWidth * nYStart] = dwColor;
+            gpRenderBackBufferBits[nXStart + RENDERER_WINDOWED_nDIBPitch * nYStart] = dwColor; // [R116] real DIB stride
           }
 
           nSteps--;
@@ -1020,7 +1038,7 @@ void __fastcall RENDERER_WINDOWED_DrawLineBresenham(POINT * pnEndPoint, POINT * 
       nStepCount++;
     }
 
-    uint8_t* pbCurrent = gpRenderBackBufferBits + nX + RENDERER_nWindowWidth * nStartY;
+    uint8_t* pbCurrent = gpRenderBackBufferBits + nX + RENDERER_WINDOWED_nDIBPitch * nStartY; // [R116] real DIB stride
     *pbCurrent = byColorParam;
     nStepCount++;
     if (nStepCount >= nDistance) {
@@ -1046,7 +1064,7 @@ void __fastcall RENDERER_WINDOWED_DrawLineBresenham(POINT * pnEndPoint, POINT * 
       if (nAccumX >= 0x10000 || nAccumX <= -0x10000) {
         nStartY = nAccumX / 65536;
         nY += nStartY;
-        pbCurrent += RENDERER_nWindowWidth * nStartY;
+        pbCurrent += RENDERER_WINDOWED_nDIBPitch * nStartY; // [R116] real DIB stride
         nAccumX += nStartY * -0x10000;
       }
       if (nY < 0) {
@@ -1176,14 +1194,14 @@ void __fastcall DrawSolidRect(tagRECT * pRect, uint8_t nPaletteIndex) {
       return;
     }
 
-    _Dst = gpRenderBackBufferBits + pRect->top * RENDERER_nWindowWidth + pRect->left;
+    _Dst = gpRenderBackBufferBits + pRect->top * RENDERER_WINDOWED_nDIBPitch + pRect->left; // [R116] real DIB stride
     do {
       nRight--;
       if (_Size > 0) {
         memset(_Dst, nPaletteIndex, _Size);
       }
 
-      _Dst += RENDERER_nWindowWidth;
+      _Dst += RENDERER_WINDOWED_nDIBPitch; // [R116] real DIB stride
     } while (nRight);
 
     return;
@@ -1208,11 +1226,13 @@ void __fastcall DrawSolidSquare(POINT * pPoint, BYTE nSize, BYTE nPaletteIndex) 
 // Windowed GDI renderer helper functions - DIB section allocation, palette conversion, line drawing (Bresenham), crop rect calculation, Smacker video blitting
 void __stdcall RENDERER_WINDOWED_ClearFramebuffer(int bPartial) {
     if (bPartial) {
-      memset(gpRenderBackBufferBits, 0, (RENDERER_nWindowHeight - 0x2f) * RENDERER_nWindowWidth);
+      // [R116] row count stays logical (keep the bottom 0x2f rows), but each
+      // cleared row is the aligned DIB stride wide - GDI's real scanline.
+      memset(gpRenderBackBufferBits, 0, (RENDERER_nWindowHeight - 0x2f) * RENDERER_WINDOWED_nDIBPitch);
       return;
     }
 
-    memset(gpRenderBackBufferBits, 0, RENDERER_nWindowHeight * RENDERER_nWindowWidth);
+    memset(gpRenderBackBufferBits, 0, RENDERER_nWindowHeight * RENDERER_WINDOWED_nDIBPitch); // [R116] full DIB incl. stride padding
 }
 
 void __fastcall ClearScreen(BOOL bPartial) {
@@ -1452,7 +1472,7 @@ void __fastcall CloseSmacker(D2SmackerContextStrc * pContext) {
 static void __thiscall RENDERER_WINDOWED_BlitSmackerFrame(D2SmackerContextStrc * pSmacker, int nHeight, int nWidth) {
     uint8_t* pbSrcPixel;
     int nColsLeft;
-    uint8_t* iDestRowAddr = gpRenderBackBufferBits + (pSmacker->nY - nHeight) * RENDERER_nWindowWidth + pSmacker->nX;
+    uint8_t* iDestRowAddr = gpRenderBackBufferBits + (pSmacker->nY - nHeight) * RENDERER_WINDOWED_nDIBPitch + pSmacker->nX; // [R116] real DIB stride
     uint8_t* pbSrcRow = (uint8_t*)gnSmackerGlideYOffset.pFrameBuffer;
     while (nHeight) {
       nHeight--;
@@ -1466,7 +1486,7 @@ static void __thiscall RENDERER_WINDOWED_BlitSmackerFrame(D2SmackerContextStrc *
         } while (nColsLeft);
       }
 
-      iDestRowAddr += RENDERER_nWindowWidth;
+      iDestRowAddr += RENDERER_WINDOWED_nDIBPitch; // [R116] real DIB stride
       pbSrcRow += nWidth;
     }
 }

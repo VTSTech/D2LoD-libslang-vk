@@ -699,6 +699,19 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
   Glide3xVK **0.4.8** `g3x_resolution_size` entry 19 = `{0x780, 0x438}` + guard `> 19`
   (patch verified to apply on the published 0.4.7; host check 16-19 exact, 20/255
   soft-fail). Gates: +21 `res6:` rows + re-pins, self-ID `Vanilla+0.0.7-R115` → **454/454**.
+- **R116 field catch (windowed 1366x768 shear, fixed in-round)**: owner on the R114-era
+  build — "in D3D windowed mode 1366x768 everything is distorted and slanted". `-w` never
+  reaches the D3D renderer (`Game/Main.cpp` maps `bWINDOW → RENDERER_Windowed` ahead of
+  any `bD3D` check), so windowed has always been the GDI DIB path — and that renderer had
+  been riding the logical width as scanline pitch since retail: GDI DWORD-aligns every
+  8bpp row, so the real stride is `(width + 3) & ~3` — 1368 at the 1366-wide stop, ==
+  width at every other stop, which is why the defect hid through R112–R115 (windowed was
+  only field-tested fullscreen). The width-as-pitch slip drifted the Y-buffer row table,
+  the D2CMP `nDstPitch` slots and every raw address 2px/row (bottom row 1,534px off).
+  Fix: `RENDERER_WINDOWED_nDIBPitch` (one global, computed at DIB alloc, used at all 24
+  raw-buffer sites in `D2Gdi/Renderer/Windowed.cpp`) — byte-identical at every %4 stop.
+  The DirectDraw windowed renderer already passed its real `lPitch`; this catches the GDI
+  path up to the same contract. Gates +4 `r116:` pins → **458/458**.
 - **Deferred to its own round (kept from the plan)**: consolidating the copy-pasted
   dims-pair tests (`(1280,720) || (1344,700) || (1366,768) || (1920,1080)` across Glide.cpp
   ×2, Direct3D.cpp ×2, DirectDraw.cpp ×1, Windowed.cpp ×1, VanillaPlusCore.cpp ×1 — now
