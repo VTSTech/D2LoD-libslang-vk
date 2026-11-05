@@ -596,8 +596,9 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
   a CEA-standard timing most panels list natively — D3D usually enters it TRUE-exclusive
   (retail Flip, 1:1 cursor); the stretch ladder only fires on drivers that omit it.
   Glide note: the paired [Glide3xVK](https://github.com/VTSTech/Glide3xVK) wrapper needs
-  `g3x_resolution_size` entry 18 = `{0x556, 0x300}` — older wrappers fail soft (640x480
-  surface + "unknown resolution" log line), same contract as entries 16/17. Gates: 21
+  `g3x_resolution_size` entry 18 = `{0x556, 0x300}` — wrappers older than 0.4.7 fail soft
+  (640x480 surface + "unknown resolution" log line), same contract as entries 16/17; the
+  entry shipped in wrapper 0.4.7 (the R114 round, below). Gates: 21
   `res5:` + 6 `stretch:` rows, `init attach` re-counted (4), minipanel gate re-pinned
   (`> 4` + mode-5 arm), self-ID `Vanilla+0.0.7-R112` → **432/432**; syntax-check: zero
   errors in the twelve touched TU bodies (the pre-existing `__time32_t`/D2Hell.h
@@ -624,6 +625,25 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
   `r113:` stride pins, self-ID `Vanilla+0.0.7-R113` → **434/434**; syntax-check error
   digest identical pre/post on the two touched TUs (pre-existing D2Hell.h host-shim
   noise only). llvm-mingw build gate + menu re-test owed (owner).
+- **R114 field round 5 (Glide 1366x768 — wrapper-side, no game change)**: owner field
+  matrix on the R113 build — D3D held ("ok, working good in D3D now"), but in Glide
+  "when the Resolution lands on 1366x768 it only displays the top left 1/4 of the screen
+  and its very zoomed in". Root cause sat in the WRAPPER, exactly the dependency R112
+  flagged: the game's fifth stop sends `grSstWinOpen` enum 18, but Glide3xVK 0.4.6's
+  `g3x_resolution_size` only knew 0-17 — the stop took the documented soft-fail (640x480
+  surface + `unknown resolution 18` in glide3x.log) while the game laid out for
+  1366x768, and the wrapper presented that surface — holding only the top-left 640x480
+  of the 1366x768 layout — stretched over the full host: top-left quarter, ~2x zoom.
+  D3D unaffected (mode table lives in d2vp.exe), Glide stops 3/4 fine (wrapper entries
+  17/16 shipped in 0.4.6). Fix — [Glide3xVK 0.4.7](https://github.com/VTSTech/Glide3xVK)
+  (patch [`patch/glide3xvk-0.4.7-entry18.patch`](patch/glide3xvk-0.4.7-entry18.patch)):
+  `g3x_resolution_size` entry 18 = `{0x556, 0x300}` + unknown-resolution guard
+  `> 17` → `> 18`; no other wrapper code is resolution-sensitive. Host check
+  (`Glide3xVK/scripts/test_res18.cpp`): enums 7/8/16/17/18 map exact, 19/255 keep the
+  soft-fail. d2vp.exe UNCHANGED — the R113 build stays current (self-ID
+  `Vanilla+0.0.7-R113`, gates 434/434 untouched). Field re-test owed (owner,
+  glide3x.dll 0.4.7): Glide 1366x768 = native fullscreen, full frame; then the R112
+  field matrix.
 - **The dormant mode**: retail 1.14d ships mode-3 plumbing end to end but no UI stop — the
   size table maps 3 → 1344x700 (`D2gfx/D2GFX.cpp` `D2GFX_GetWindowSizeByResolutionMode`,
   case 3 = `0x540` x 700), GDI windowed has native `0x540`-wide branches (DIB alloc +
