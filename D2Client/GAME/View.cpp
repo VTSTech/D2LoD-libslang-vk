@@ -106,6 +106,17 @@ static DC6 * gnDrawBackgroundRenderOffset = 0; D2_STATIC_GUARD(gnDrawBackgroundR
 namespace D2Client::GAME::View {
 
 void __fastcall DRAW_CoordIsInCoord(int32_t nWorldX, int32_t nWorldY, uint8_t * pOutIntensity, uint8_t * pOutRed, uint8_t * pOutGreen, uint8_t * pOutBlue) {
+    // VP-BEGIN [R120]: lightmap-reach counters. Samples outside the 48x48
+    // ambient grid clamp to the border row/col below; the vpdiag dump prints
+    // miss/samples so a field session shows whether the drawn-but-dark or
+    // mislit edge class is in play.
+    D2Client::GAME::Draw::g_VPDIAG_LightClampSamples++;
+    int nCellRawX = (nWorldX >> 3) - gnLightmapWorldRefreshFlag;
+    int nCellRawY = (nWorldY >> 3) - gnLightmapBufferState;
+    if (nCellRawX < 0 || nCellRawX > 0x2f || nCellRawY < 0 || nCellRawY > 0x2f) {
+      D2Client::GAME::Draw::g_VPDIAG_LightClampMisses++;
+    }
+    // VP-END [R120]
     int nCellX = (nWorldX >> 3) - gnLightmapWorldRefreshFlag;
     int nCellY = (nWorldY >> 3) - gnLightmapBufferState;
     if (nCellX < 0) {
@@ -376,6 +387,25 @@ void __fastcall SetViewRectangleSize(D2GameViewStrc * pGameView, int32_t xLeft, 
       lprc->left += -0x2d;
       pGameView->rcExtendedView.right += 0x1e;
     }
+    // VP-BEGIN [R122]: re-fit the fixed-pixel cull rect to the live
+    // backbuffer at the wide stops. The R121 field log pinned the last
+    // bottom band on this rect: with the walk at hop 4 and the fill
+    // firing all four sides (fire=1248, st=12432 stamps/frame), the
+    // drawn-floor px AABB still hugs the rect on every edge and stops
+    // 51-82px short of the 1080p bottom - retail builds the rect as
+    // ScreenSizeY - 0x2f (the 800x600 panel-era wedge: both modes logged
+    // rcv bottom 1033 < 1080), and DrawFloorTile + the wall2 scene cull
+    // kill every tile anchored past it, fill stamps included. A uniform
+    // +-0xc0 base covers retail's widest per-edge margin (persp left
+    // -0x2d-0x50 = -0x7d) with slack for the perspective warp's far
+    // edges. 640x480/800x600 keep the retail rect byte-identical.
+    if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+      lprc->left = -0xc0;
+      lprc->top = -0xc0;
+      lprc->right = ScreenSizeX + 0xc0;
+      lprc->bottom = ScreenSizeY + 0xc0;
+    }
+    // VP-END [R122]
 
     pGameView->nFlags |= 1;
 }

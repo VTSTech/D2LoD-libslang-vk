@@ -116,4 +116,28 @@ void __fastcall DRAW_WORLD_UnderFloor(struct D2GameViewStrc * pGameView);
 void __fastcall dShadowPass(struct D2GameViewStrc * pGameView);
 // 4 internal functions (defined in .cpp)
 
+// VP-BEGIN [R120]: wide-view diagnostics. Zero-behavior counters shared by
+// Draw.cpp / View.cpp / Wall2.cpp and dumped (throttled) to d2boot.log from
+// the floor pass, so one field session names the edge that is short and why:
+// the BFS walk's real coverage vs drops, the drawn-floor screen rectangle vs
+// the backbuffer, the retail fixed-pixel cull rect, and the ambient-lightmap
+// clamp rate. Write-only outside Draw.cpp's dumper.
+struct VPDIAG_WalkStats {
+    /* 0x00 */ int nEmitted;                       // rooms handed to the caller
+    /* 0x04 */ int nHop2;                          // emitted at hop 2
+    /* 0x08 */ int nHop3;                          // emitted at hop 3
+    /* 0x0C */ int nQueueFull;                     // BFS entries dropped: 512-slot queue full
+    /* 0x10 */ int nOutFull;                       // in-square rooms dropped: out cap full
+    /* 0x14 */ int nMinX;                          // emitted-room union, game coords
+    /* 0x18 */ int nMinY;
+    /* 0x1C */ int nMaxX;
+    /* 0x20 */ int nMaxY;
+};
+extern VPDIAG_WalkStats g_VPDIAG_WalkLast;   // collector output channel (per call)
+extern VPDIAG_WalkStats g_VPDIAG_WalkFloor;  // floor pass snapshot
+extern VPDIAG_WalkStats g_VPDIAG_WalkScene;  // wall2 scene pass snapshot
+extern int g_VPDIAG_LightClampSamples;       // ambient-lightmap samples this frame
+extern int g_VPDIAG_LightClampMisses;        // ... that fell outside the 48x48 grid
+// VP-END [R120]
+
 } // namespace D2Client::GAME::Draw

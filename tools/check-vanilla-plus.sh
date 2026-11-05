@@ -457,7 +457,10 @@ gate "r116: dib pitch global wired"        D2Gdi/Renderer/Windowed.cpp      'REN
 # the strip with a band fill scaled from the live backbuffer (reach
 # W/32+H/16+10 subtiles, depth reach/5+1 tiles, span reach*2/5+1 each way),
 # off-screen stamps die on DrawFloorTile's rcExtendedView cull. Runs at
-# every VPRES wide stop, ortho + perspective, DrawEdges levels only.
+# every VPRES wide stop, ortho + perspective - [R121] ALSO at DrawEdges=0
+# levels (field R120: A1 outdoor logs edge=0 in both modes, so the retail
+# flag gated the whole fill off; the fill now keys on the wide classifier
+# only). Retail modes keep the retail exit byte-identical.
 # Pins: the reach/depth/span formulas and the 4 band call sites
 # (a future edit that drops one open-side band fails the gate).
 gate "r117: fill reach formula"            D2Client/GAME/Draw.cpp           'int nFillReach = ScreenSizeX / 32 \+ ScreenSizeY / 16 \+ 10' 1
@@ -477,9 +480,12 @@ gate "r117: band fill call sites"          D2Client/GAME/Draw.cpp           'nFi
 # wide stops reach 85 (720p) to ~127 (1080p) subtiles, so the world past
 # the block never rendered and the cleared backbuffer showed as the black
 # rim at the screen edges, in every mode, worse the wider the view. The
-# rooms already exist: InitNearRooms materializes the RoomEx graph three
-# hops out (hop-2 rooms get DRLGROOMEX_ActivateRoomEx). R118 BFSes that
-# neighborhood (WALL2_CollectRoomsBeyondAdjacency, depth 3, hop<=1 skipped,
+# rooms already exist: InitNearRooms materializes the RoomEx graph outward
+# ([R121] depth 3->4: field R120 shows the 1080p bottom-corner room is the
+# hop-4 diagonal - the depth-3 union stopped 30-70 coords short of the
+# screen corner; unmaterialized hop-4 rooms simply yield nothing).
+# R118 BFSes that
+# neighborhood (WALL2_CollectRoomsBeyondAdjacency, depth 4, hop<=1 skipped,
 # world-square culled at reach W/32+H/16+90 subtiles) and feeds hop-2/3
 # rooms to both passes: floors through the retail two-pass shape
 # (DRAW_DrawWideViewRoomFloors), walls/roofs/units/shadows through
@@ -489,12 +495,35 @@ gate "r117: band fill call sites"          D2Client/GAME/Draw.cpp           'nFi
 # reach the new code. Pins: collector symbol, both call sites, both wide
 # gates, the two-pass helper, and the self-id roll.
 gate "r118: room-walk collector defined"   D2Client/GAME/Wall2.cpp          '__stdcall WALL2_CollectRoomsBeyondAdjacency' 1
-gate "r118: scene pass wide walk"          D2Client/GAME/Wall2.cpp          'WALL2_CollectRoomsBeyondAdjacency\(pGameViewLocal.pRoom, 3,' 1
+gate "r118: scene pass wide walk"          D2Client/GAME/Wall2.cpp          'WALL2_CollectRoomsBeyondAdjacency\(pGameViewLocal.pRoom, 4,' 1
 gate "r118: scene walk wide gate"          D2Client/GAME/Wall2.cpp          'VPRES_IsWideLayoutMode' 1
 gate "r118: wall2 includes vpres header"   D2Client/GAME/Wall2.cpp          'UI/VanillaPlusCore\.h' 1
-gate "r118: floor pass wide walk"          D2Client/GAME/Draw.cpp           'Wall2::WALL2_CollectRoomsBeyondAdjacency\(pRoom, 3,' 1
+gate "r118: floor pass wide walk"          D2Client/GAME/Draw.cpp           'Wall2::WALL2_CollectRoomsBeyondAdjacency\(pRoom, 4,' 1
 gate "r118: floor two-pass helper"         D2Client/GAME/Draw.cpp           'DRAW_DrawWideViewRoomFloors' 3
-gate "r118: floor pass wide gate"          D2Client/GAME/Draw.cpp           'VPRES_IsWideLayoutMode' 2
+gate "r118: floor pass wide gate"          D2Client/GAME/Draw.cpp           'VPRES_IsWideLayoutMode' 4
+
+# ---- r121: the R120 field log verdicts -> fill un-gated + hop-4 walk -------
+# Owner's R120 vpdiag capture (1080p, both modes) named the mechanisms:
+# edge=0 in BOTH modes with persp=1 (A1 outdoor's DrawEdges=0) -> the R117
+# fill + bounds block was dead code in the exact test area (all dumps phase
+# 0, fire=0000 st=0 anch=(0,0) wb sentinels); gaps=0/52..86/0/0 -> the ortho
+# bottom void is real and 52-86px; walk union stopped 30-70 coords short of
+# the bottom screen corner -> the corner room is the hop-4 diagonal; lm
+# misses are benign (LIGHTMAP_InitFromPlayerAndRooms pre-fills the grid
+# with the player room's ambient - out-of-window samples get ambient, not
+# black - same as retail). Fixes: bounds grow + fill runs on the wide
+# classifier alone (DrawEdges only kept retail-shaped at retail modes);
+# all four trigger conditions read bounds snapshotted BEFORE the first
+# stamp (each band's span walks both axes - live reads let an earlier
+# band's growth push a later bound past the reach and skip it); both walk
+# call sites depth 3->4. Pins: the two wide-classifier arms, the snapshot
+# locals, both depth-4 call sites.
+gate "r121: bounds grow at wide stops"     D2Client/GAME/Draw.cpp           'wide stops grow the same bounds' 1
+gate "r121: fill runs despite DrawEdges0"  D2Client/GAME/Draw.cpp           'band fill was dead code' 1
+gate "r121: trigger bounds snapshot"       D2Client/GAME/Draw.cpp           'int nTrigMinX = pDrawFloor->nMinTileX' 1
+gate "r121: four snapshot locals"          D2Client/GAME/Draw.cpp           'int nTrigM' 4
+gate "r121: walk depth four (floor)"       D2Client/GAME/Draw.cpp           'WALL2_CollectRoomsBeyondAdjacency\(pRoom, 4,' 1
+gate "r121: walk depth four (scene)"       D2Client/GAME/Wall2.cpp          'WALL2_CollectRoomsBeyondAdjacency\(pGameViewLocal\.pRoom, 4,' 1
 
 # ---- r119: the R118 reach was subtile-scaled against room-coord (game-coord)
 # bounds - 5x short (217 coords = 43 subtiles vs the 127-subtile 1080p half-
@@ -509,6 +538,58 @@ gate "r119: fill triggers in coords"       D2Client/GAME/Draw.cpp           'nFi
 gate "r119: walk queue widened"            D2Client/GAME/Wall2.cpp          'apQueue\[512\]' 1
 gate "r119: scene out cap 256"             D2Client/GAME/Wall2.cpp          'apWideRooms\[256\]' 1
 gate "r119: floor out cap 256"             D2Client/GAME/Draw.cpp           'apWideRooms\[256\]' 1
+
+# ---- r120: wide-view diagnostics (vpdiag -> d2boot.log) ---------------------
+# Owner after R119: "same behavior, blackness on top with perspective,
+# blackness on bottom without. Is there anything we could add to d2boot.log
+# to help diagnose the issue?" R120 is diagnostics-only, zero behavior
+# change: the floor pass dumps three vpdiag lines ~2x/second (plus one
+# forced dump per perspective flip) covering (1) mode/backbuffer/the retail
+# fixed-pixel rcExtendedView cull rect/lightmap origin, (2) the floor
+# bounds the fill triggers compare + the BFS walk's real coverage (emitted
+# rooms, hop mix, union AABB, both silent-drop counters) for the floor and
+# scene passes, (3) tile seen/drawn/rect-culled counts with the culled
+# anchors' screen extremes, the drawn-floor px AABB vs the backbuffer
+# (per-edge gaps), fill stamps/fired sides/fill anchor, and the ambient-
+# lightmap clamp rate (samples that fell outside the 48x48 grid). Pins:
+# the shared stats struct + externs, the collector's drop counters, both
+# snapshot copies, the dump definition + both exit-path call sites, the
+# clamp counters in the lightmap sampler, and the boot-log include.
+gate "r120: diag struct + externs"         D2Client/GAME/Draw.h             'g_VPDIAG_WalkLast' 1
+gate "r120: diag externs defined"          D2Client/GAME/Draw.cpp           'VPDIAG_WalkStats g_VPDIAG_WalkLast;' 1
+gate "r120: walk drop counter (queue)"     D2Client/GAME/Wall2.cpp          'sWalk\.nQueueFull\+\+' 1
+gate "r120: walk drop counter (out cap)"   D2Client/GAME/Wall2.cpp          'sWalk\.nOutFull\+\+' 1
+gate "r120: floor walk snapshot"           D2Client/GAME/Draw.cpp           'g_VPDIAG_WalkFloor = g_VPDIAG_WalkLast' 1
+gate "r120: scene walk snapshot"           D2Client/GAME/Wall2.cpp          'g_VPDIAG_WalkScene = D2Client::GAME::Draw::g_VPDIAG_WalkLast' 1
+gate "r120: vpdiag dump defined"           D2Client/GAME/Draw.cpp           'static void VPDIAG_DumpFloorFrame' 1
+gate "r120: vpdiag dump call sites"        D2Client/GAME/Draw.cpp           'VPDIAG_DumpFloorFrame\(pDrawFloor, [01]\)' 2
+gate "r120: vpdiag line-1 format"          D2Client/GAME/Draw.cpp           'vpdiag\[%d\]: persp=%d edge=%d scr=%dx%d rcv=' 1
+gate "r120: vpdiag line-3 format"          D2Client/GAME/Draw.cpp           'gaps=%d/%d/%d/%d \[R120\]' 1
+gate "r120: frame scratch reset"           D2Client/GAME/Draw.cpp           'VPDIAG_ResetFrame\(\); // \[R120\]' 1
+gate "r120: lightmap clamp counters"       D2Client/GAME/View.cpp           'g_VPDIAG_LightClamp(Misses|Samples)\+\+' 2
+gate "r120: boot diag include (GAME Draw)" D2Client/GAME/Draw.cpp           'include "support/d2_boot\.h"' 1
+gate "r120: wall2 includes diag header"    D2Client/GAME/Wall2.cpp          'include "D2Client/GAME/Draw\.h"' 1
+
+# ---- r122: the R121-WIP field log verdict -> cull rect re-fit ---------------
+# Owner's R121-build vpdiag capture (1080p, both modes, one flip) proved the
+# R121 fixes landed AND named the last culprit: vpdiag[1] with edge=0 (the
+# un-gate works), fire=1248 st=12432 (all four fill bands firing ~12k
+# stamps/frame), f:n=22-29 qf=0 of=0 (hop-4 walk emitting, no drops), wb real
+# in both modes - and STILL gaps=0/51..82/0/0. The drawn-floor px AABB hugs
+# the rect on every edge (persp px=[-119 2024 -109 1024] vs
+# rcv=[-125 -110 2030 1033]; ortho px=[-64 1981 -80 1000] vs
+# rcv=[-80 -80 2000 1033]) - the retail rect, not the walk, is the binding
+# cull: SetViewRectangleSize builds it as ScreenSizeY - 0x2f (bottom 47px
+# above the backbuffer - the 800x600 panel-era wedge) and DrawFloorTile
+# line-725 + the wall2 scene line-1258 culls kill every tile anchored past
+# it, fill stamps included. Fix: at the wide classifier the rect is re-fit
+# to the live backbuffer +-0xc0 (covers retail's widest margin, persp left
+# -0x7d, with warp slack). Retail modes byte-identical. The 74% lm misses
+# were already ruled benign (ambient pre-fill) in R121.
+gate "r122: rect re-fit wide arm"          D2Client/GAME/View.cpp           're-fit the fixed-pixel cull rect' 1
+gate "r122: rect left/top base"            D2Client/GAME/View.cpp           'lprc->(left|top) = -0xc0' 2
+gate "r122: rect right covers backbuffer"  D2Client/GAME/View.cpp           'lprc->right = ScreenSizeX \+ 0xc0' 1
+gate "r122: rect bottom covers backbuffer" D2Client/GAME/View.cpp           'lprc->bottom = ScreenSizeY \+ 0xc0' 1
 
 # ---- resolution site-5: wide-layout classification + centered 800-px UI ----
 # Wide modes (3=1344x700 dormant, 4=1280x720, 5=1366x768 [R112]) join the
@@ -568,10 +649,10 @@ gate "site-5: spell swap-grid icons ride panel (R45)" D2Client/UI/SpellSel.cpp '
 gate "site-5: spell icons not vanilla-anchored (R45)" D2Client/UI/SpellSel.cpp 'DrawSkillGrid\(UNIT::Player::GetPlayerUnit_UI\(\), 0x50,' 0
 # R93: 1 -> 2 (the issue #26 border-3 scene-build guard adds a second
 # VPRES_IsWideLayoutMode call in GAMEVIEW_PrepareScene)
-gate "site-5: summit clouds gate"          D2Client/GAME/View.cpp          'VPRES_IsWideLayoutMode' 2
+gate "site-5: summit clouds gate"          D2Client/GAME/View.cpp          'VPRES_IsWideLayoutMode' 3
 # R118: 1 -> 2 (the wide-view room-walk floor gate adds a second classifier
 # call in DrawFloorByViewAndFloor; the first is R117's fill gate)
-gate "site-5: level edges gate (GAME)"     D2Client/GAME/Draw.cpp          'VPRES_IsWideLayoutMode' 2
+gate "site-5: level edges gate (GAME)"     D2Client/GAME/Draw.cpp          'VPRES_IsWideLayoutMode' 4
 # R92: 1 -> 2 (the issue #26 warp-fade wide guard adds a second classifier call)
 gate "site-5: level edges gate (client)"   D2Client/D2Client.cpp           'VPRES_IsWideLayoutMode' 2
 gate "site-5: listbox metrics gate"        D2Client/UI/ListBox/ListBoxImplementation.cpp 'VPRES_IsWideLayoutMode' 1
@@ -962,7 +1043,7 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # pDC6SubImages[5] growth left the two raw 0x550-byte walks stale - mouse
 # hit-test dead + sub-image slot spill - and the FreeLoadedImages retail
 # halt armed on the new count-5 row)
-gate "res: self-id 0.0.7-R119"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R119' 1
+gate "res: self-id 0.0.7-R122"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R122' 1
 # R115: string bumped R113 -> R115 (the 1080p sixth-stop round; owner:
 # "Great job. works. Published Glide3xVK 0.4.7. Now lets do 1080p")
 # R116: string bumped R115 -> R116 (the GDI windowed 1366x768 shear fix;
@@ -970,6 +1051,10 @@ gate "res: self-id 0.0.7-R119"              Game/Main.cpp                    'Va
 # R118: string bumped R117 -> R118 (the wide-view room-walk round; owner:
 # "The blackness at the edges is still there. and is present in all video
 # modes 720p and up")
+# R120: string bumped R119 -> R120 (the wide-view diagnostics round; owner
+# after R119: "same behavior, blackness on top with perspective, blackness
+# on bottom without. Is there anything we could add to d2boot.log to help
+# diagnose the issue?")
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the

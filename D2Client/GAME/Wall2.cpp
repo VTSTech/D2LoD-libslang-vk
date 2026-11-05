@@ -15,6 +15,7 @@
 #include "D2Client/Sound/SoundHdr.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/VanillaPlusCore.h" // [R118] wide-layout classifier decl
+#include "D2Client/GAME/Draw.h" // [R120] walk-stats diag externs
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
@@ -1281,8 +1282,11 @@ BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, D2Wall2DrawCon
 // the block stayed undrawn and the cleared backbuffer showed through as the
 // black rim at the screen edges (owner: "blackness at the edges ... present
 // in all video modes 720p and up"). The rooms exist: InitNearRooms
-// materializes the RoomEx graph three hops out (hop-2 rooms get
-// DRLGROOMEX_ActivateRoomEx with tile data), so the draw walks were the only
+// materializes the RoomEx graph outward ([R121] the walk now asks FOUR hops
+// out - field R120: the 1080p bottom-corner room is the hop-4 diagonal; the
+// depth-3 union stopped 30-70 coords short of the screen corner; hop-4
+// rooms that are not materialized simply yield nothing), so the draw walks
+// were the only
 // limit. This BFS enumerates those rooms: hop<=1 entries (the retail set) are
 // walked for their own neighbors but never emitted; deeper rooms are kept
 // only when their rect intersects the world-space view square
@@ -1290,8 +1294,9 @@ BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, D2Wall2DrawCon
 // - [R119] renamed from nCenterSubtileX/nReachSubtiles: the values were
 // always room coords, the old names invited the subtile-vs-coords mixup
 // that shrank the call sites' reach 5x). Dedupe is a linear scan over the
-// enqueued set - hop<=3 neighborhoods stay well under the 512-slot queue
-// ([R119] was 128; the corrected coord-space reach passes far more rooms).
+// enqueued set - hop<=4 neighborhoods stay well under the 512-slot queue
+// ([R119] was 128; the corrected coord-space reach passes far more rooms;
+// [R121] depth 3->4 adds the diagonal ring).
 int __stdcall WALL2_CollectRoomsBeyondAdjacency(D2RoomStrc * pCenterRoom, int nDepth,
     int nCenterX, int nCenterY, int nReach,
     D2RoomStrc ** apOut, int nMaxOut) {
@@ -1306,6 +1311,20 @@ int __stdcall WALL2_CollectRoomsBeyondAdjacency(D2RoomStrc * pCenterRoom, int nD
     if (!pCenterRoom || !apOut || nMaxOut <= 0 || nDepth < 2) {
       return 0;
     }
+
+    // VP-BEGIN [R120]: per-call walk statistics for the vpdiag boot-log dump
+    // (coverage AABB, hop mix, and both silent-drop classes).
+    D2Client::GAME::Draw::VPDIAG_WalkStats& sWalk = D2Client::GAME::Draw::g_VPDIAG_WalkLast;
+    sWalk.nEmitted = 0;
+    sWalk.nHop2 = 0;
+    sWalk.nHop3 = 0;
+    sWalk.nQueueFull = 0;
+    sWalk.nOutFull = 0;
+    sWalk.nMinX = 0x7fffffff;
+    sWalk.nMinY = 0x7fffffff;
+    sWalk.nMaxX = -0x80000000;
+    sWalk.nMaxY = -0x80000000;
+    // VP-END [R120]
 
     apQueue[0] = pCenterRoom;
     anHopQueue[0] = 0;
@@ -1339,6 +1358,8 @@ int __stdcall WALL2_CollectRoomsBeyondAdjacency(D2RoomStrc * pCenterRoom, int nD
           apQueue[nTail] = pNearRoom;
           anHopQueue[nTail] = (uint8_t)nNextHop;
           nTail++;
+        } else {
+          sWalk.nQueueFull++; // [R120] silent drop: queue saturated
         }
         if (nNextHop <= 1) {
           continue; // hop<=1 = retail's set, walked only for its own neighbors
@@ -1353,6 +1374,29 @@ int __stdcall WALL2_CollectRoomsBeyondAdjacency(D2RoomStrc * pCenterRoom, int nD
         if (nOut < nMaxOut) {
           apOut[nOut] = pNearRoom;
           nOut++;
+          // VP-BEGIN [R120]: emit bookkeeping (count, hop mix, union AABB).
+          sWalk.nEmitted++;
+          if (nNextHop == 2) {
+            sWalk.nHop2++;
+          }
+          if (nNextHop == 3) {
+            sWalk.nHop3++;
+          }
+          if ((int)sNearCoords.dwXStart < sWalk.nMinX) {
+            sWalk.nMinX = (int)sNearCoords.dwXStart;
+          }
+          if (nRoomXEnd > sWalk.nMaxX) {
+            sWalk.nMaxX = nRoomXEnd;
+          }
+          if ((int)sNearCoords.dwYStart < sWalk.nMinY) {
+            sWalk.nMinY = (int)sNearCoords.dwYStart;
+          }
+          if (nRoomYEnd > sWalk.nMaxY) {
+            sWalk.nMaxY = nRoomYEnd;
+          }
+          // VP-END [R120]
+        } else {
+          sWalk.nOutFull++; // [R120] silent drop: out cap saturated
         }
       }
     }
@@ -1488,7 +1532,7 @@ void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nT
       // only - 640x480/800x600 keep the retail one-hop walk byte-identical.
       if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
         D2RoomStrc* apWideRooms[256];
-        int nWideRooms = WALL2_CollectRoomsBeyondAdjacency(pGameViewLocal.pRoom, 3,
+        int nWideRooms = WALL2_CollectRoomsBeyondAdjacency(pGameViewLocal.pRoom, 4, // [R121] 3->4: the hop-4 diagonal room
             UNIT_CenterXCoordsDiv5 * 5, UNIT_CenterYCoordsDiv5 * 5,
             ScreenSizeX * 5 / 32 + ScreenSizeY * 5 / 16 + 450, // [R119] game coords - was 5x-short subtile scaling
             apWideRooms, 256);
@@ -1497,6 +1541,7 @@ void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nT
           WALL2_CollectRoomTilesAndUnits(apWideRooms[nWideIdx], &pGameViewLocal);
           nWideIdx++;
         }
+        D2Client::GAME::Draw::g_VPDIAG_WalkScene = D2Client::GAME::Draw::g_VPDIAG_WalkLast; // [R120] snapshot this frame's scene walk
       }
       // VP-END [R118]
       return;
