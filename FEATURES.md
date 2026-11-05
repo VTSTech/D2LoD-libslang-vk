@@ -712,6 +712,34 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
   raw-buffer sites in `D2Gdi/Renderer/Windowed.cpp`) — byte-identical at every %4 stop.
   The DirectDraw windowed renderer already passed its real `lPitch`; this catches the GDI
   path up to the same contract. Gates +4 `r116:` pins → **458/458**.
+- **R117 field catch (edge-void fill, fixed in-round)**: owner at the new 1920x1080 stop
+  (PERSPECTIVE on) — "there's some blackness at the very edge. Is there any way to fix
+  that?". Pixel-measured the field screenshot first: **0px solid-black band on every
+  screen edge** — not a present/letterbox artifact. It is the D2 **level-boundary void**:
+  `DrawFloorByViewAndFloor` (D2Client/GAME/Draw.cpp) draws only the current room +
+  adjacent rooms, and retail's void skirt (`DrawSubTile` → `DRAW_DrawEdgeFloorTile`
+  stamping the act edge tile `&pDrlgAct->sTileCache` past the drawn bounds) is ONE
+  3-tile strip per open side on the player row, behind 30/33 + 25/23 subtile triggers —
+  sized for 800x600 (~25-subtile reach) while a 1080p view reaches
+  (1920/16 + 1080/8)/2 ≈ **127 subtiles** into the void. (Decompile trap worth the
+  record: the `bIsPerspective` term in the skirt's enable gate is the **PANEL border
+  type** — the var is reassigned to `PANELSHIFT_BorderForWorld` at line 728 — so the
+  skirt already ran in perspective; it was simply far too small.) R117 replaces the
+  strip with a **band fill scaled from the live backbuffer**: reach =
+  `W/32 + H/16 + 10` subtiles (screen half-reach in world coords + parity margin),
+  depth = `reach/5 + 1` tiles stamped beyond the open bound, span = `reach*2/5 + 1`
+  tiles each way along it; four open-side bands (left/right ride anchorY, top/bottom
+  ride anchorX); bounds/anchors captured to locals BEFORE the first stamp
+  (`DrawFloorTile` → `DRAW_UpdateTileVisibilityBounds` grows the bounds mid-loop with
+  the fill's own tiles); off-screen stamps cost one `CoordsMapToScreen` + the
+  `rcExtendedView` cull and nothing else, so per-frame cost is bounded by the visible
+  fill area (worst host-measured case: 12,432 stamps at 1080p on a all-sides-open
+  sliver, zero visible-tile waste). Gates unchanged: `DrawEdges` levels only, VPRES
+  wide stops only (800x600 keeps retail byte-identical), border-0 world view, ortho +
+  perspective. Host geometric proof (`scripts/test_r117_fill.cpp`, g++ -Wall -Wextra
+  clean): **100% of the on-screen void diamond covered at every wide stop at any
+  camera parity; interior frames stamp 0**. Gates +4 `r117:` pins + self-id roll →
+  **462/462**, self-ID `Vanilla+0.0.7-R116` → `-R117`.
 - **Deferred to its own round (kept from the plan)**: consolidating the copy-pasted
   dims-pair tests (`(1280,720) || (1344,700) || (1366,768) || (1920,1080)` across Glide.cpp
   ×2, Direct3D.cpp ×2, DirectDraw.cpp ×1, Windowed.cpp ×1, VanillaPlusCore.cpp ×1 — now

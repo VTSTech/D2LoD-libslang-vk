@@ -816,8 +816,6 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
       return;
     }
 
-    bDrawEdges = 0x1e + (pDrawFloor->bIsPerspective ? 3 : 0);
-    nRoomIdx = (uint32_t)!pDrawFloor->bIsPerspective * 2 + 0x17;
     pPlayer = UNIT::Player::GetPlayerUnit_Net();
     if (!pPlayer) {
       return;
@@ -840,20 +838,82 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
     } else {
       nPlayerY = 0;
     }
-    if ((int)pGameView - pDrawFloor->nMinTileX < bDrawEdges) {
-      DrawSubTile(pDrawFloor, pDrawFloor->nMinTileX - 5, nPlayerY, 0, -5);
-    }
-    if (pDrawFloor->nMaxTileX - (int)pGameView < nRoomIdx) {
-      DrawSubTile(pDrawFloor, pDrawFloor->nMaxTileX + 5, nPlayerY, 0, 5);
-    }
-    if (nPlayerY - pDrawFloor->nMinTileY < bDrawEdges) {
-      DrawSubTile(pDrawFloor, (int32_t)pGameView, pDrawFloor->nMinTileY - 5, -5, 0);
-    }
-    if (!(pDrawFloor->nMaxTileY - nPlayerY < nRoomIdx)) {
-      return;
+    // Vanilla Plus [R117]: resolution-scaled edge-void fill. Retail stamps
+    // ONE 3-tile strip per open side (DrawSubTile above) anchored on the
+    // player row, gated by the 30/33 and 25/23 subtile thresholds it fed
+    // these triggers - sized for 800x600, whose view reaches ~25 subtiles
+    // past the drawn bounds. A 1920x1080 view reaches (1920/16 + 1080/8)
+    // / 2 = ~127 subtiles into the void, so at the wide stops the strip
+    // covers only a fraction of the visible void and the level boundary
+    // shows as black wedges at the screen edges (owner report at the new
+    // 1920x1080 stop, PERSPECTIVE on: "some blackness at the very edge").
+    // Replace the strip with a band fill scaled from the live backbuffer:
+    //   reach = W/32 + H/16 + 10 subtiles - the screen half-reach in world
+    //           coordinates ((W/16 + H/8)/2) plus a parity margin;
+    //   depth = reach/5 + 1 tiles stamped beyond the open bound;
+    //   span  = reach*2/5 + 1 tiles stamped each way along it, so the
+    //           world-axis band rectangle covers the full on-screen
+    //           diamond past the bound at any camera parity. Reach assumes
+    //           the border-0 world view: the gate above only runs this
+    //           block at PANELSHIFT-neutralized border 0 on the wide
+    //           stops, where R95/R106 keep the camera unpanned on the
+    //           player.
+    // Off-screen stamps cost one CoordsMapToScreen plus the rcExtendedView
+    // cull inside DrawFloorTile and nothing else, so the per-frame cost is
+    // bounded by the visible fill area. Bounds and anchors are captured in
+    // locals BEFORE the first stamp: DrawFloorTile ->
+    // DRAW_UpdateTileVisibilityBounds grows the bounds mid-loop with the
+    // fill's own tiles (per-frame scratch - the room loop repopulates them
+    // every frame; only these triggers consumed them).
+    int nFillReach = ScreenSizeX / 32 + ScreenSizeY / 16 + 10; // subtiles
+    int nFillDepth = nFillReach / 5 + 1;                       // tiles past an open bound
+    int nFillSpan = nFillReach * 2 / 5 + 1;                    // tiles each way along it
+    int nAnchorXRaw = (int)pGameView;
+    int nAnchorYRaw = nPlayerY;
+    int nAnchorX = nAnchorXRaw / 5 * 5;
+    int nAnchorY = nAnchorYRaw / 5 * 5;
+    int nBoundMinX = pDrawFloor->nMinTileX / 5 * 5;
+    int nBoundMaxX = pDrawFloor->nMaxTileX / 5 * 5;
+    int nBoundMinY = pDrawFloor->nMinTileY / 5 * 5;
+    int nBoundMaxY = pDrawFloor->nMaxTileY / 5 * 5;
+    int nFillI;
+    int nFillJ;
+
+    // open LEFT bound: [minX - depth*5, minX) x (anchorY +- span)
+    if (nAnchorXRaw - pDrawFloor->nMinTileX < nFillReach) {
+      for (nFillI = 1; nFillI <= nFillDepth; nFillI++) {
+        for (nFillJ = -nFillSpan; nFillJ <= nFillSpan; nFillJ++) {
+          DRAW_DrawEdgeFloorTile(pDrawFloor, nBoundMinX - nFillI * 5, nAnchorY + nFillJ * 5);
+        }
+      }
     }
 
-    DrawSubTile(pDrawFloor, (int32_t)pGameView, pDrawFloor->nMaxTileY + 5, 5, 0);
+    // open RIGHT bound: (maxX, maxX + depth*5] x (anchorY +- span)
+    if (pDrawFloor->nMaxTileX - nAnchorXRaw < nFillReach) {
+      for (nFillI = 1; nFillI <= nFillDepth; nFillI++) {
+        for (nFillJ = -nFillSpan; nFillJ <= nFillSpan; nFillJ++) {
+          DRAW_DrawEdgeFloorTile(pDrawFloor, nBoundMaxX + nFillI * 5, nAnchorY + nFillJ * 5);
+        }
+      }
+    }
+
+    // open TOP bound: (anchorX +- span) x [minY - depth*5, minY)
+    if (nAnchorYRaw - pDrawFloor->nMinTileY < nFillReach) {
+      for (nFillJ = 1; nFillJ <= nFillDepth; nFillJ++) {
+        for (nFillI = -nFillSpan; nFillI <= nFillSpan; nFillI++) {
+          DRAW_DrawEdgeFloorTile(pDrawFloor, nAnchorX + nFillI * 5, nBoundMinY - nFillJ * 5);
+        }
+      }
+    }
+
+    // open BOTTOM bound: (anchorX +- span) x (maxY, maxY + depth*5]
+    if (pDrawFloor->nMaxTileY - nAnchorYRaw < nFillReach) {
+      for (nFillJ = 1; nFillJ <= nFillDepth; nFillJ++) {
+        for (nFillI = -nFillSpan; nFillI <= nFillSpan; nFillI++) {
+          DRAW_DrawEdgeFloorTile(pDrawFloor, nAnchorX + nFillI * 5, nBoundMaxY + nFillJ * 5);
+        }
+      }
+    }
 }
 
 // Renders roof tiles for current game view with lighting intensity flags and alpha blending

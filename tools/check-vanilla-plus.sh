@@ -444,6 +444,27 @@ gate "r116: fillY rides real stride"       D2Gdi/Renderer/Windowed.cpp      'nfp
 gate "r116: cel nDstPitch slots"           D2Gdi/Renderer/Windowed.cpp      'RENDERER_nWindowHeight, RENDERER_WINDOWED_nDIBPitch' 4
 gate "r116: dib pitch global wired"        D2Gdi/Renderer/Windowed.cpp      'RENDERER_WINDOWED_nDIBPitch' 26
 
+# ---- r117: resolution-scaled edge-void fill (D2Client/GAME/Draw.cpp) ----
+# Owner at the new 1920x1080 stop (PERSPECTIVE on): "some blackness at the
+# very edge". Not a present/letterbox artifact - measured 0px solid black on
+# every screen edge of the field screenshot. It is the D2 level-boundary
+# void: DrawFloorByViewAndFloor draws only the current room + adjacent
+# rooms, and retail's edge skirt (DrawSubTile -> DRAW_DrawEdgeFloorTile
+# stamping the act edge tile past the drawn bounds) is a 3-tile strip with
+# 30/33 + 25/23 subtile triggers - sized for 800x600 (~25-subtile reach).
+# A 1080p view reaches ~127 subtiles ((W/16 + H/8)/2), so the void shows as
+# black wedges at the screen edges near any level boundary. R117 replaces
+# the strip with a band fill scaled from the live backbuffer (reach
+# W/32+H/16+10 subtiles, depth reach/5+1 tiles, span reach*2/5+1 each way),
+# off-screen stamps die on DrawFloorTile's rcExtendedView cull. Runs at
+# every VPRES wide stop, ortho + perspective, DrawEdges levels only.
+# Pins: the reach/depth/span formulas and the 4 band call sites
+# (a future edit that drops one open-side band fails the gate).
+gate "r117: fill reach formula"            D2Client/GAME/Draw.cpp           'int nFillReach = ScreenSizeX / 32 \+ ScreenSizeY / 16 \+ 10' 1
+gate "r117: fill depth formula"            D2Client/GAME/Draw.cpp           'int nFillDepth = nFillReach / 5 \+ 1' 1
+gate "r117: fill span formula"             D2Client/GAME/Draw.cpp           'int nFillSpan = nFillReach \* 2 / 5 \+ 1' 1
+gate "r117: band fill call sites"          D2Client/GAME/Draw.cpp           'nFillI \* 5' 4
+
 # ---- resolution site-5: wide-layout classification + centered 800-px UI ----
 # Wide modes (3=1344x700 dormant, 4=1280x720, 5=1366x768 [R112]) join the
 # retail 800x600 UI class via VPRES_IsWideLayoutMode and re-center the
@@ -894,7 +915,7 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # pDC6SubImages[5] growth left the two raw 0x550-byte walks stale - mouse
 # hit-test dead + sub-image slot spill - and the FreeLoadedImages retail
 # halt armed on the new count-5 row)
-gate "res: self-id 0.0.7-R116"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R116' 1
+gate "res: self-id 0.0.7-R117"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R117' 1
 # R115: string bumped R113 -> R115 (the 1080p sixth-stop round; owner:
 # "Great job. works. Published Glide3xVK 0.4.7. Now lets do 1080p")
 # R116: string bumped R115 -> R116 (the GDI windowed 1366x768 shear fix;
