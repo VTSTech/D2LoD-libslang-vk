@@ -671,30 +671,45 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
   switch 800↔1344↔720 clean; cutscene round-trip returns; save → relaunch keeps the stop;
   old registry values behave exactly as before.
 
-### 15. 1920x1080 resolution (PLANNED — owner ask 2026-11-05, not implemented)
+### 15. 1920x1080 resolution (Implemented — R115, owner ask 2026-11-05 "Now lets do 1080p")
 
 - **No retail parity**: 640x480/800x600 are retail's stops and 1344x700 is retail's dormant
   one — 1080p is pure owner scope, in the SGD2FreeRes/D2DX class of arbitrary-resolution
   play.
-- **Why it rides the 720p playbook**: the same site-1..6 checklist per new mode —
+- **Why it rode the 720p playbook**: the same site-1..6 checklist per new mode —
   `CLIENT_SetScreenResolution` + D2GFX table cases, D3D size case + wide-set + dims guards,
   DDraw display tables + horizontal bounds, GDI windowed branches, Glide wrapper
   `g3x_resolution_size` entry + client mapping, `VPRES_IsWideLayoutMode`, slider stop.
-  **Slot bookkeeping after R112**: 1366x768 consumed mode 5 / slider stop 5 / wrapper
-  entry 18 / the `[5]` sub-image slot — 1080p rides **mode 6 / slider stop 6 / wrapper
-  entry 19 / `pDC6SubImages[6]`** (array grows again) / DDraw `[7]` tables. The wide-UI
-  offsets are formulas (X 560 / Y 480). The R112 stretch ladder also gives 1080p the same
-  D3D safety net: an unlistable stop stretches over the best host instead of crashing.
-- **Order**: schedule AFTER row 14 — 1344x700 exercises the wide class at a non-1280 width
-  first, cheap insurance; and the round should start by consolidating the copy-pasted
-  dims-pair tests (`(1280,720) || (1344,700)` across Glide.cpp ×2, Direct3D.cpp ×2,
-  DirectDraw.cpp ×1, Windowed.cpp ×1, VanillaPlusCore.cpp ×1 — seven copies) into one
-  predicate, so per-mode cost stops growing.
-- **Open verify items (tree-verify pass)**: D3D texture-cache sizing
+  **Slot bookkeeping (as consumed)**: 1366x768 took mode 5 / slider stop 5 / wrapper
+  entry 18 / the `[5]` sub-image slot (R112); 1080p took **mode 6 / slider stop 6 / wrapper
+  entry 19 / `pDC6SubImages[6]`** / DDraw `[7]` tables. The wide-UI offsets are formulas
+  (X 560 / Y 480). The R112 stretch ladder gives 1080p the same D3D safety net: an
+  unlistable stop hosts (and downscales) over the 1366x768/1360x768 hosts instead of
+  crashing.
+- **R115 as-built (the sixth stop)**: `D2GFX` case 6 + D3D mirror (`0x780 x 0x438`),
+  `CLIENT_SetScreenResolution` case 6 + probe stop-6 dims + refusal snap-back mode 6 →
+  position 5, slider position 5 → mode 6 in both EscMenu mappings + `L"1920x1080"` label +
+  FOURTH runtime blank (count 6), mini-panel `== 5 → mode 6` + clamp `> 5`, D3D
+  perspective-class gate `!= 6`, DDraw `[7]` tables + horizontal bound `0x780`, GDI DIB +
+  scale width, Glide enum **19** + perspective path, wide class in all eight dims pairs +
+  both client classifiers. The struct growth repeated R112's — `pDC6SubImages [5] → [6]`
+  (0x554 → 0x558 bytes) — with the R113 lesson applied IN THE SAME COMMIT: both raw
+  strides `0x155 → 0x156`, loader count clamp `> 6` (walk cap stays 4 real path fields),
+  free-path halt clamp `> 6`, draw-site clamp `> 5`. Wrapper side shipped in-round:
+  Glide3xVK **0.4.8** `g3x_resolution_size` entry 19 = `{0x780, 0x438}` + guard `> 19`
+  (patch verified to apply on the published 0.4.7; host check 16-19 exact, 20/255
+  soft-fail). Gates: +21 `res6:` rows + re-pins, self-ID `Vanilla+0.0.7-R115` → **454/454**.
+- **Deferred to its own round (kept from the plan)**: consolidating the copy-pasted
+  dims-pair tests (`(1280,720) || (1344,700) || (1366,768) || (1920,1080)` across Glide.cpp
+  ×2, Direct3D.cpp ×2, DirectDraw.cpp ×1, Windowed.cpp ×1, VanillaPlusCore.cpp ×1 — now
+  EIGHT copies) into one predicate, so per-mode cost stops growing. R115 followed the
+  copy-paste shape one more time for a surgical diff; the consolidation round is now
+  genuinely owed.
+- **Open verify items (field matrix owed)**: D3D texture-cache sizing
   (`gnD3DTextureCacheBlockSize/Count`, floor/subtile caches — field-proven at 720p, unknown
   whether they scale from screen dims at 1080p); DDraw 8-bit fullscreen 1920x1080 (expect
-  N/A by hardware); front-end menus; CPU-side tile dispatch at ~2.25× the 720p pixel
-  count.
+  N/A by hardware — the probe refuses gracefully); front-end menus; CPU-side tile dispatch
+  at ~2.25× the 720p pixel count.
 - **Risk**: Med. **Exit**: row 14's loop at 1920x1080 — UI centered (560/480), switch
   matrix clean, caches sane (no tile artifacts), save → relaunch keeps the stop.
 

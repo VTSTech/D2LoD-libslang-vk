@@ -80,7 +80,7 @@ void __fastcall ClearCaches() {
 
 }
 
-// Allocates the GDI DIB section for windowed software rendering. Maps resolution mode (0=640×480, 1/2=800×600, 3=1344×700, 4=1280x720, 5=1366x768 [R112]) to window dimensions, creates BITMAPINFO header with 8-bit indexed color, calls CreateDIBSection to allocate shared bitmap memory. Stores HBITMAP handle in RENDERER_WINDOWED_hDIBitmap global and pixel buffer pointer in ppvBits_007c9154. Initializes Y-buffer table via fpFillYBufferTable callback.
+// Allocates the GDI DIB section for windowed software rendering. Maps resolution mode (0=640×480, 1/2=800×600, 3=1344×700, 4=1280x720, 5=1366x768 [R112], 6=1920x1080 [R115]) to window dimensions, creates BITMAPINFO header with 8-bit indexed color, calls CreateDIBSection to allocate shared bitmap memory. Stores HBITMAP handle in RENDERER_WINDOWED_hDIBitmap global and pixel buffer pointer in ppvBits_007c9154. Initializes Y-buffer table via fpFillYBufferTable callback.
 static void __stdcall RENDERER_WINDOWED_AllocateDIBSection(int nResolutionMode) {
     int nHeight;
     int nWidth;
@@ -101,6 +101,12 @@ static void __stdcall RENDERER_WINDOWED_AllocateDIBSection(int nResolutionMode) 
           // Vanilla Plus [R112]: 1366x768
           nWidth = 0x556;
           nHeight = 0x300;
+        } else if (nResolutionMode == 6) {
+          // Vanilla Plus [R115]: 1920x1080 - without this the DIB stays
+          // 800x600 inside the 1920x1080 -w window (same shape the 720p
+          // field test caught on 2026-10-30).
+          nWidth = 0x780;
+          nHeight = 0x438;
         } else {
           nWidth = 800;
           nHeight = 600;
@@ -466,6 +472,12 @@ void __fastcall RENDERER_WINDOWED_UpdateScaleFactor(int nParam) {
       if (nParam == 5) {
         // Vanilla Plus [R112]: render the full 1366-wide playfield.
         RENDERER_WINDOWED_nScaleWidth = 0x556;
+        return;
+      }
+
+      if (nParam == 6) {
+        // Vanilla Plus [R115]: render the full 1920-wide playfield.
+        RENDERER_WINDOWED_nScaleWidth = 0x780;
         return;
       }
 
@@ -1213,12 +1225,13 @@ void __thiscall RENDERER_WINDOWED_ClearScreen(int nParam, BYTE dwParam2, BYTE dw
 }
 
 // VP: [issue #26 / R93] TRUE on the Vanilla Plus wide-UI backbuffer sizes
-// (1280x720 / dormant 1344x700 / 1366x768 [R112]). Same dims test as the R92 renderer guards -
+// (1280x720 / dormant 1344x700 / 1366x768 [R112] / 1920x1080 [R115]). Same dims test as the R92 renderer guards -
 // the renderer only knows its own backbuffer dims, no D2Client imports.
 static BOOL RENDERER_GDI_IsWideUiLayout(void) {
     return (RENDERER_nWindowWidth == 1280 && RENDERER_nWindowHeight == 720)
         || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700)
-        || (RENDERER_nWindowWidth == 1366 && RENDERER_nWindowHeight == 768); // VP [R112]: 1366x768 joins the wide class
+        || (RENDERER_nWindowWidth == 1366 && RENDERER_nWindowHeight == 768) // VP [R112]: 1366x768 joins the wide class
+        || (RENDERER_nWindowWidth == 1920 && RENDERER_nWindowHeight == 1080); // VP [R115]: 1920x1080 joins the wide class
 }
 
 BOOL __fastcall DrawShadowTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, int32_t nDrawMode, int32_t nScreenPanels) {

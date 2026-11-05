@@ -2290,6 +2290,12 @@ static void RENDERER_D3D_GetWindowSizeByResolutionMode(int nResolutionMode, int*
         *nWidth = 0x556;
         *nHeight = 0x300;
         return;
+      case 6:
+        // Vanilla Plus [R115]: 1920x1080 (0x780 x 0x438) - the panel-
+        // standard big 16:9 stop, see D2GFX case 6.
+        *nWidth = 0x780;
+        *nHeight = 0x438;
+        return;
       default:
         *nWidth = 800;
         *nHeight = 600;
@@ -2662,7 +2668,7 @@ static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWn
       RENDERER_nWindowWidth = nModeWidth;
       RENDERER_nWindowHeight = nModeHeight;
       g_bPerspectiveMode = 0;
-      // VP: modes 2/3/4/5 are the 800x600-class UI and must take the SAME
+      // VP: modes 2/3/4/5/6 are the 800x600-class UI and must take the SAME
       // fully-initialized device path as retail 800x600 (the fallthrough
       // sets g_bPerspectiveMode = 1, which selects the floor/subtile/font
       // texture caches in RENDERER_D3D_AllocateTextureCaches). The goto path
@@ -2673,7 +2679,8 @@ static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWn
       // via the dormant registry modes 1/3, which its own else-branch
       // clamped to 800x600 anyway - the path was never actually exercised.
       // [R112] mode 5 = 1366x768 joins the same 800x600-class UI class.
-      if (nResolutionMode != 2 && nResolutionMode != 3 && nResolutionMode != 4 && nResolutionMode != 5) {
+      // [R115] mode 6 = 1920x1080 joins it too.
+      if (nResolutionMode != 2 && nResolutionMode != 3 && nResolutionMode != 4 && nResolutionMode != 5 && nResolutionMode != 6) {
         goto setup_device;
       }
     }
@@ -2708,8 +2715,9 @@ static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWn
     // it auto-sizes to the host display mode, while the viewport and every
     // render coordinate stay logical RENDERER_nWindowWidth x
     // RENDERER_nWindowHeight. Dims-agnostic: a hypothetical unlistable
-    // 1280x720 is hosted by the same two modes. Candidate set is agreed
-    // with the client-side probe
+    // 1280x720 is hosted by the same two modes, and [R115] an unlistable
+    // 1920x1080 is hosted (and downscaled) by them too. Candidate set is
+    // agreed with the client-side probe
     // (D2Client::ClientModeInGame::VPRES_ExclusiveRendererCanEnterStop), so
     // a stop that survives that probe always finds its presentation here.
     // Vanilla Plus [vpres stretch / R112, field round 3]: R111 showed the
@@ -4839,7 +4847,7 @@ static void __thiscall RENDERER_D3D_CalculateViewportRect(RECT * pRect, int nScr
 
       nQuarterWidth = (int)(RENDERER_nWindowWidth + (RENDERER_nWindowWidth >> 0x1f & 3U)) >> 2;
       // VP-BEGIN [issue #26 / R92]: wide-UI layouts (Vanilla Plus 1280x720 /
-      // dormant 1344x700 / 1366x768 [R112]) keep the margin side of the
+      // dormant 1344x700 / 1366x768 [R112] / 1920x1080 [R115]) keep the margin side of the
       // perspective cull open.
       // Retail cuts both sides by a quarter window because the open panel
       // reaches the screen edge at 640x480/800x600; the 800-class panel
@@ -4850,7 +4858,8 @@ static void __thiscall RENDERER_D3D_CalculateViewportRect(RECT * pRect, int nScr
       // explicit size test (no D2Client imports across the module boundary).
       BOOL bWideUiLayout = (RENDERER_nWindowWidth == 1280 && RENDERER_nWindowHeight == 720)
                         || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700)
-                        || (RENDERER_nWindowWidth == 1366 && RENDERER_nWindowHeight == 768); // VP [R112]: 1366x768 joins the wide class
+                        || (RENDERER_nWindowWidth == 1366 && RENDERER_nWindowHeight == 768) // VP [R112]: 1366x768 joins the wide class
+                        || (RENDERER_nWindowWidth == 1920 && RENDERER_nWindowHeight == 1080); // VP [R115]: 1920x1080 joins the wide class
       // VP: [issue #26 / R94] wide-UI layouts open the bottom band of the
       // perspective cull too. Retail reserves the bottom 0x2f px for the
       // full-width bottom HUD; at 1280x720 the 800-class HUD floats 240 px
@@ -4950,13 +4959,14 @@ void __stdcall RENDERER_D3D_InitPerspectiveVertexBuffer() {
 
 // NOTE: Register params: pTileLibraryEntryStrc (ECX): D2TileLibraryEntryStrc *, nTilePosX (EDX): int
 // VP: [issue #26 / R93] TRUE on the Vanilla Plus wide-UI backbuffer sizes
-// (1280x720 / dormant 1344x700 / 1366x768 [R112]). Same dims test as the R92 perspective-rect
+// (1280x720 / dormant 1344x700 / 1366x768 [R112] / 1920x1080 [R115]). Same dims test as the R92 perspective-rect
 // guard in RENDERER_D3D_CalculateViewportRect - the renderer only knows its
 // own backbuffer dims, no D2Client imports across the module boundary.
 static BOOL RENDERER_D3D_IsWideUiLayout(void) {
     return (RENDERER_nWindowWidth == 1280 && RENDERER_nWindowHeight == 720)
         || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700)
-        || (RENDERER_nWindowWidth == 1366 && RENDERER_nWindowHeight == 768); // VP [R112]: 1366x768 joins the wide class
+        || (RENDERER_nWindowWidth == 1366 && RENDERER_nWindowHeight == 768) // VP [R112]: 1366x768 joins the wide class
+        || (RENDERER_nWindowWidth == 1920 && RENDERER_nWindowHeight == 1080); // VP [R115]: 1920x1080 joins the wide class
 }
 
 int32_t __fastcall RENDERER_D3D_BuildShadowTileVertices(D2TileLibraryEntryStrc * pTileLibraryEntryStrc, int nTilePosX, int32_t nTilePosY, uint8_t byLightRow, uint32_t dwAlpha, int32_t nScreenSplitIndex) {

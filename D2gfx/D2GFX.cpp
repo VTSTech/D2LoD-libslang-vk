@@ -370,6 +370,17 @@ void __stdcall D2GFX_GetWindowSizeByResolutionMode(int32_t nResolutionMode, int 
         *nWidth = 0x556;
       *nHeight = 0x300;
       return;
+      case 6:
+        // Vanilla Plus [R115]: 1920x1080 - the panel-standard big 16:9 stop
+        // (0x780 x 0x438). The most universally listed CEA timing there is,
+        // so D3D almost always enters it true-exclusive; drivers that omit
+        // it fall back to the R112 stretch host ladder (1920x1080 hosted -
+        // and downscaled - by the 1366x768/1360x768 hosts) like modes 3/5.
+        // The 800-class UI re-centers as one rigid unit (wide-UI offsets
+        // X 560 / Y 480 - both formulas, see VanillaPlusCore.cpp).
+        *nWidth = 0x780;
+      *nHeight = 0x438;
+      return;
       default:
         *nWidth = 0;
       nLine = 0x6d;

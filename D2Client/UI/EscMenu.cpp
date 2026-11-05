@@ -58811,8 +58811,9 @@ void __fastcall UI_SLIDER_InitBlendedShadows(D2EscMenuItemStrc * pItem, D2UIMous
 }
 
 // VP: the registry value is the slider POSITION (0 = 640x480, 1 = 800x600,
-// 2 = 1280x720, 3 = 1344x700, 4 = 1366x768 [R112] - the third/fourth/fifth
-// stops are attached at runtime by the row's init callback); position ->
+// 2 = 1280x720, 3 = 1344x700, 4 = 1366x768 [R112], 5 = 1920x1080 [R115] -
+// the third through sixth stops are attached at runtime by the row's init
+// callback); position ->
 // screen mode mapping mirrors CLIENT_SetScreenResolution (ClientModeInGame.cpp).
 void __fastcall UI_SLIDER_ApplyResolution(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     Storm::Source::SReg::SRegSaveValue("Diablo II", "Resolution", 0, pItem->nImageIndex);
@@ -58827,6 +58828,10 @@ void __fastcall UI_SLIDER_ApplyResolution(D2EscMenuItemStrc * pItem, D2UIMouseMs
       // Vanilla Plus [R112]: 1366x768 (screen mode 5) - test before the
       // >= 2 arm for the same reason
       RequestedScreenModeMaybe = 5;
+    } else if (pItem->nImageIndex == 5) {
+      // Vanilla Plus [R115]: 1920x1080 (screen mode 6) - same
+      // ahead-of->= 2 ordering
+      RequestedScreenModeMaybe = 6;
     } else if (pItem->nImageIndex >= 2) {
       // Vanilla Plus: 1280x720 (screen mode 4)
       RequestedScreenModeMaybe = 4;
@@ -58836,7 +58841,7 @@ void __fastcall UI_SLIDER_ApplyResolution(D2EscMenuItemStrc * pItem, D2UIMouseMs
 }
 
 // VP: value labels for the runtime-attached stops (2 = 1280x720,
-// 3 = 1344x700, 4 = 1366x768 [R112]). Retail ships label DC6s only for stops
+// 3 = 1344x700, 4 = 1366x768 [R112], 5 = 1920x1080 [R115]). Retail ships label DC6s only for stops
 // 0/1
 // ("640x480"/"800x600"); the VP slots hold Route-B blank placeholders
 // (attached by the init callback) and the visible labels are drawn here
@@ -58851,7 +58856,7 @@ void __fastcall UI_SLIDER_DrawResolutionValue(D2EscMenuItemStrc * pItem, D2UIMou
     (void)pMsg;
     // VP: per-stop label table for the runtime stops (R109, R112). Stops 0/1
     // keep their retail value images; the early return keeps foreign rows dark.
-    if (!pItem || (pItem->nImageIndex != 2 && pItem->nImageIndex != 3 && pItem->nImageIndex != 4)) {
+    if (!pItem || (pItem->nImageIndex != 2 && pItem->nImageIndex != 3 && pItem->nImageIndex != 4 && pItem->nImageIndex != 5)) {
       return;
     }
 
@@ -58889,11 +58894,14 @@ void __fastcall UI_SLIDER_DrawResolutionValue(D2EscMenuItemStrc * pItem, D2UIMou
     static const wchar_t gwszLabel720[] = L"1280x720";
     static const wchar_t gwszLabel1344[] = L"1344x700";
     static const wchar_t gwszLabel1366[] = L"1366x768"; // Vanilla Plus [R112]
+    static const wchar_t gwszLabel1920[] = L"1920x1080"; // Vanilla Plus [R115]
     const wchar_t* gwszLabel;
     if (pItem->nImageIndex == 3) {
       gwszLabel = gwszLabel1344;
     } else if (pItem->nImageIndex == 4) {
       gwszLabel = gwszLabel1366;
+    } else if (pItem->nImageIndex == 5) {
+      gwszLabel = gwszLabel1920;
     } else {
       gwszLabel = gwszLabel720;
     }
@@ -58930,7 +58938,7 @@ void __fastcall UI_SLIDER_LoadAndApplyResolution(D2EscMenuItemStrc * pItem, D2UI
     }
 
     // VP: attach the Route-B blank placeholders into the runtime stops' label
-    // slots (no "1280x720"/"1344x700"/"1366x768" DC6 assets exist in the
+    // slots (no "1280x720"/"1344x700"/"1366x768"/"1920x1080" DC6 assets exist in the
     // MPQs; see VanillaPlusCore.h). Count-check guards keep re-inits from
     // stacking.
     if (pItem->nSubImageCount == 2) {
@@ -58960,6 +58968,17 @@ void __fastcall UI_SLIDER_LoadAndApplyResolution(D2EscMenuItemStrc * pItem, D2UI
         pItem->nSubImageCount = 5; // Vanilla Plus: ... / 1344x700 / 1366x768
       }
     }
+    // VP [R115]: sixth stop (1920x1080) gets the fourth blank. A failed
+    // attach leaves the count at 5 and the clamp below folds position 5
+    // back to the 1366x768 stop. The slot array is [6] since R115
+    // (EscMenu.h).
+    if (pItem->nSubImageCount == 5) {
+      DC6* pBlank = nullptr;
+      if (VPRES_BuildBlankPlaceholder(&pBlank)) {
+        pItem->pDC6SubImages[5] = pBlank;
+        pItem->nSubImageCount = 6; // Vanilla Plus: ... / 1366x768 / 1920x1080
+      }
+    }
     if (*pnOut < 0 || *pnOut > pItem->nSubImageCount - 1) {
       *pnOut = pItem->nSubImageCount - 1; // foreign registry value or failed attach: largest working stop
     }
@@ -58971,6 +58990,8 @@ void __fastcall UI_SLIDER_LoadAndApplyResolution(D2EscMenuItemStrc * pItem, D2UI
       RequestedScreenModeMaybe = 3; // Vanilla Plus: dormant 1344x700
     } else if (*pnOut == 4) {
       RequestedScreenModeMaybe = 5; // Vanilla Plus [R112]: 1366x768
+    } else if (*pnOut == 5) {
+      RequestedScreenModeMaybe = 6; // Vanilla Plus [R115]: 1920x1080
     } else if (*pnOut >= 2) {
       RequestedScreenModeMaybe = 4; // Vanilla Plus: 1280x720
     }
@@ -59152,7 +59173,9 @@ static int32_t ESCMENU_GetItemIndexFromMouseY(int32_t nParam) {
       // >= 1 read the tail of the PREVIOUS row's slot array as nYPosition and
       // the mouse could not hit any row (keyboard walk uses array indexing
       // and kept working). 0x155 ints = 0x554 bytes again.
-      pItemYPosition += 0x155;
+      // [R115] the array grew again, [5] -> [6] (0x554 -> 0x558 bytes):
+      // 0x156 ints = 0x558 bytes. The gate suite pins this stride.
+      pItemYPosition += 0x156;
     } while (nMenuCenterY < nMenuItemCount);
 
     if (nFoundIndex < 0) {
@@ -59493,7 +59516,7 @@ void __fastcall ESCMENU_LoadLocalizedImages(int * pMenuHeader, D2EscMenuItemStrc
           pMenuTable[nItemIndex].pDC6Main = pLoadedDC6;
           if (nSubImageCount == 1) {
             nSubImageCount = pMenuTable[nItemIndex].nSubImageCount;
-            if (nSubImageCount <= 0 || nSubImageCount > 5) {
+            if (nSubImageCount <= 0 || nSubImageCount > 6) {
               // [R61 issue #19] was: fatal HaltTail(0x4fe). Retail data can never
               // land here (static tables parsed well-formed), but the Vanilla+
               // Resolution row legitimately mutates nSubImageCount 2->3 at runtime
@@ -59507,8 +59530,10 @@ void __fastcall ESCMENU_LoadLocalizedImages(int * pMenuHeader, D2EscMenuItemStrc
               // struct bytes as a "path" (the field stride walks into
               // pDC6Main/pDC6SubImages). Slots beyond the walk keep their
               // runtime-attached blanks across re-inits (static storage).
+              // [R115] count 6 joins (the sixth VP stop attaches blank 5;
+              // the walk cap stays 4 - no new path field exists).
               D2BOOT_MarkFmt("escmenu: %s item %d sub-image count %d out of range - clamped [R61]", ESCMENU_TableName(pMenuTable), nItemIndex, nSubImageCount);
-              nSubImageCount = nSubImageCount > 5 ? 5 : 0;
+              nSubImageCount = nSubImageCount > 6 ? 6 : 0;
             }
             // VP [R112]: walk bound - never step past szSubImage4Path (see above).
             int nSubImageWalkCount = nSubImageCount > 4 ? 4 : nSubImageCount;
@@ -59558,7 +59583,8 @@ void __fastcall ESCMENU_LoadLocalizedImages(int * pMenuHeader, D2EscMenuItemStrc
       // background row's new slot 4 (drawn over the baked "Resolution"
       // caption), later items wrote pointers into szSubImage4Path bytes
       // (reload corruption). 0x155 ints = the R112 0x554-byte stride.
-      nSubImageOffset += 0x155;
+      // [R115] the struct grew again (0x558 bytes): 0x156 ints.
+      nSubImageOffset += 0x156;
       nItemIndex++;
     } while (nItemIndex < *pMenuHeader);
 
@@ -59661,7 +59687,9 @@ void __fastcall ESCMENU_FreeLoadedImages(int * pnItemCount, D2EscMenuItemStrc * 
         // below walks pDC6SubImages by array indexing - slot 5 is in-bounds
         // since the R112 array growth, and freeing the synthesized blanks is
         // the same DC6_FreeAndDelete shape R109 already exercised.
-        if (nSubImageCount <= 0 || nSubImageCount > 5) {
+        // [R115]: count 6 joins (the 1920x1080 stop's blank; slot 5 is
+        // in-bounds since the R115 array growth - same walk shape).
+        if (nSubImageCount <= 0 || nSubImageCount > 6) {
           ESCMENU_FreeLoadedImages_HaltTail(0x565);
         }
         if (nSubImageCount > 0) {
@@ -59965,7 +59993,9 @@ void __stdcall DRAW_EscMenu() {
               {
                 D2EscMenuItemStrc* pDrawItem = &gpEscMenuCurrentTable[nItemIndex];
                 int nDrawIdx = pDrawItem->nImageIndex;
-                if (nDrawIdx < 0 || nDrawIdx > 4) {
+                // VP [R112]: was > 4 - the R115 sixth stop's blank rides
+                // slot 5, so the draw-site clamp widens to 5.
+                if (nDrawIdx < 0 || nDrawIdx > 5) {
                   nDrawIdx = 0;
                 }
                 if (pDrawItem->pDC6SubImages[nDrawIdx]) {

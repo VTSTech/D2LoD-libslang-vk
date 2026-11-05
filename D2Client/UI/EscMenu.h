@@ -49,7 +49,7 @@ struct D2EscMenuItemStrc {
     /* 0x334 */ char szSubImage3Path[260]; // Path to third sub-image
     /* 0x438 */ char szSubImage4Path[260]; // Path to fourth sub-image
     /* 0x53C */ struct DC6 * pDC6Main; // Loaded main DC6 image
-    /* 0x540 */ struct DC6 * pDC6SubImages[5]; // Array of loaded sub-image DC6 pointers (VP [R112]: grown from retail 4 to 5 for the video-options slider's fifth stop (1366x768); retail tables keep shipping <= 4 stops, the designated inits zero-fill the fifth slot, and the only count-5 row is the VP Resolution row whose slots 2-4 attach at runtime)
+    /* 0x540 */ struct DC6 * pDC6SubImages[6]; // Array of loaded sub-image DC6 pointers (VP [R115]: grown from R112's 5 to 6 for the video-options slider's sixth stop (1920x1080); retail tables keep shipping <= 4 stops, the designated inits zero-fill the tail slots, and the only count-6 row is the VP Resolution row whose slots 2-5 attach at runtime)
 };
 
 struct D2EscMenuUIFlagStrc {

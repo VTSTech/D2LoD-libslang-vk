@@ -487,8 +487,9 @@ static BOOL VPRES_IsDisplayModeListed(int nWidth, int nHeight) {
 
 // Vanilla Plus [vpres d3d probe]: can an exclusive-mode renderer actually
 // enter this resolution stop? Stops 0 (640x480) and 2 (800x600) are retail
-// standards listed on every driver. Stops 3 (1344x700), 4 (1280x720) and
-// 5 (1366x768 [R112]) also accept the D3D renderer's host-mode ladder (see
+// standards listed on every driver. Stops 3 (1344x700), 4 (1280x720),
+// 5 (1366x768 [R112]) and 6 (1920x1080 [R115]) also accept the D3D
+// renderer's host-mode ladder (see
 // RENDERER_D3D_InitializeDevice), so for D3D the probe passes when EITHER
 // the exact mode OR a host mode (1366x768 / 1360x768) is listed - client
 // and renderer agree on the candidate set, so a stop that survives this
@@ -502,6 +503,10 @@ static BOOL VPRES_IsDisplayModeListed(int nWidth, int nHeight) {
 // 8 bpp its DD1 SetDisplayMode requests (extinct on modern drivers, which
 // means stops 3/4/5 refuse gracefully there instead of gambling on the
 // fatal resize).
+// [R115] stop 6 (1920x1080) is the most universally listed CEA timing of
+// all - it almost always enters true-exclusive; the exotic unlistable
+// driver hosts (and downscales) it on the same 1366x768/1360x768 ladder
+// the other wide stops use.
 static BOOL VPRES_ExclusiveRendererCanEnterStop(DWORD dwStop) {
     int nWidth;
     int nHeight;
@@ -517,6 +522,11 @@ static BOOL VPRES_ExclusiveRendererCanEnterStop(DWORD dwStop) {
       // tail below covers the exotic unlistable driver (stretch ladder).
       nWidth = 0x556;
       nHeight = 0x300;
+    } else if (dwStop == 6) {
+      // Vanilla Plus [R115]: 1920x1080 - the most universally listed CEA
+      // timing; same exact-or-host contract as stop 5.
+      nWidth = 0x780;
+      nHeight = 0x438;
     } else if (dwStop >= 2) {
       nWidth = 1280;
       nHeight = 720;
@@ -550,7 +560,7 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
     // snap it would re-enter this refusal forever while the menu kept
     // showing the dead stop). Glide skips the probe entirely - it enters
     // any frame size without touching the display mode.
-    if (RequestedScreenModeMaybe == 3 || RequestedScreenModeMaybe == 4 || RequestedScreenModeMaybe == 5) {
+    if (RequestedScreenModeMaybe == 3 || RequestedScreenModeMaybe == 4 || RequestedScreenModeMaybe == 5 || RequestedScreenModeMaybe == 6) {
       eD2RendererMode eMode_lcl = D2gfx::D2GFX::D2GFX_GetRendererMode();
       if ((eMode_lcl == RENDERED_DirectDraw || eMode_lcl == RENDERER_Direct3D) &&
           !VPRES_ExclusiveRendererCanEnterStop(RequestedScreenModeMaybe)) {
@@ -563,6 +573,8 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
           dwPosition_lcl = 3;
         } else if (dwScreenSize == 5) {
           dwPosition_lcl = 4; // Vanilla Plus [R112]: the 1366x768 slider stop
+        } else if (dwScreenSize == 6) {
+          dwPosition_lcl = 5; // Vanilla Plus [R115]: the 1920x1080 slider stop
         }
         Storm::Source::SReg::SRegSaveValue("Diablo II", "Resolution", 0, dwPosition_lcl);
         Fog::Src::LogManager::LOGFILE_WriteStringToFile(
@@ -615,6 +627,19 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
           // not list it the R112 stretch host ladder presents instead.
           ScreenSizeX = 0x556;
           ScreenSizeY = 0x300;
+          nScreenMode = 1;
+          break;
+        }
+      case 6:
+        {
+          // Vanilla Plus [R115]: 1920x1080 - the panel-standard big 16:9
+          // stop (0x780 x 0x438). Same retail downstream flow the other
+          // wide stops ride; D3D almost always enters it true-exclusive
+          // (the most universally listed CEA timing), and when a driver
+          // does not list it the R112 stretch host ladder presents instead
+          // (hosted, downscaled onto 1366x768/1360x768).
+          ScreenSizeX = 0x780;
+          ScreenSizeY = 0x438;
           nScreenMode = 1;
           break;
         }

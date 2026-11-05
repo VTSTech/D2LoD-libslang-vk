@@ -674,10 +674,10 @@ void __stdcall SetupMiniPanel() {
     if (!bReadOk) {
       nResolution = 1;
     }
-    // VP: the registry value is the slider position (0/1/2/3/4; stops 2/3/4
-    // are attached by the Resolution row's init callback). Clamp foreign
-    // values to 800x600.
-    if (nResolution < 0 || nResolution > 4) {
+    // VP: the registry value is the slider position (0/1/2/3/4/5; stops
+    // 2/3/4/5 are attached by the Resolution row's init callback). Clamp
+    // foreign values to 800x600.
+    if (nResolution < 0 || nResolution > 5) {
       nResolution = 1;
     }
 
@@ -692,6 +692,9 @@ void __stdcall SetupMiniPanel() {
     } else if (nResolution == 4) {
       // Vanilla Plus [R112]: 1366x768 - same ahead-of->= 2 ordering.
       nScreenMode_lcl = 5;
+    } else if (nResolution == 5) {
+      // Vanilla Plus [R115]: 1920x1080 - same ordering.
+      nScreenMode_lcl = 6;
     } else if (nResolution >= 2) {
       nScreenMode_lcl = 4; // Vanilla Plus: 1280x720
     }

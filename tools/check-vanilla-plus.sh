@@ -279,8 +279,8 @@ gate "resolution: draw fn defined"           D2Client/UI/EscMenu.cpp     '__fast
 # new D2Hell module (the old UI include pin on it retired with the move).
 gate "resolution: apply maps mode 4"         D2Client/UI/EscMenu.cpp     'RequestedScreenModeMaybe = 4' 2
 gate "resolution: decl in EscMenu.h"         D2Client/UI/EscMenu.h       'UI_SLIDER_DrawResolutionValue' 1
-gate "resolution: init attach"                  D2Client/UI/EscMenu.cpp     'VPRES_BuildBlankPlaceholder|nSubImageCount = 3' 4
-gate "resolution: minipanel clamp + modes 4/5"  D2Client/UI/MiniPanel.cpp   'nResolution > 4|nScreenMode_lcl = 5|nScreenMode_lcl = 4' 3
+gate "resolution: init attach"                  D2Client/UI/EscMenu.cpp     'VPRES_BuildBlankPlaceholder|nSubImageCount = 3' 5
+gate "resolution: minipanel clamp + modes 4/5/6" D2Client/UI/MiniPanel.cpp   'nResolution > 5|nScreenMode_lcl = 6|nScreenMode_lcl = 5|nScreenMode_lcl = 4' 4
 gate "resolution: core blank builder"        D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_BuildBlankPlaceholder' 1
 gate "resolution: core font pick"            D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_PickFontMatchingDC6' 1
 gate "resolution: self-check wiring"         D2Client/UI/VanillaPlusCore.cpp 'UI_SLIDER_DrawResolutionValue' 1
@@ -369,17 +369,55 @@ gate "res5: wide classifier"               D2Client/UI/VanillaPlusCore.cpp  'eRe
 gate "res5: esc menu mapping mode 5"       D2Client/UI/EscMenu.cpp          'RequestedScreenModeMaybe = 5' 2
 gate "res5: init attach stop 5"            D2Client/UI/EscMenu.cpp          'nSubImageCount = 5' 1
 gate "res5: per-stop label 1366x768"       D2Client/UI/EscMenu.cpp          'L"1366x768"' 1
-gate "res5: draw clamp covers slot 4"      D2Client/UI/EscMenu.cpp          'nDrawIdx > 4' 1
-gate "res5: escmenu count 5 legal (load+free)" D2Client/UI/EscMenu.cpp          'nSubImageCount > 5' 3
+gate "res6: draw clamp covers slot 5"      D2Client/UI/EscMenu.cpp          'nDrawIdx > 5' 1
+gate "res6: escmenu count 6 legal (load+free)" D2Client/UI/EscMenu.cpp          'nSubImageCount > 6' 3
 gate "res5: loader walk cap"               D2Client/UI/EscMenu.cpp          'nSubImageWalkCount' 3
 # R113 (the R112 struct-growth fallout round): D2EscMenuItemStrc grew to
 # 0x554 bytes (pDC6SubImages[5]); the two raw 0x550-byte (0x154-int) table
 # walks and the FreeLoadedImages count-4 halt were still retail-shaped. Pin
 # the corrected strides so a future struct change cannot silently re-arm it.
-gate "r113: mouse-Y walk stride 0x554"     D2Client/UI/EscMenu.cpp          'pItemYPosition \+= 0x155' 1
-gate "r113: loader item stride 0x554"      D2Client/UI/EscMenu.cpp          'nSubImageOffset \+= 0x155' 1
+# [R115] the struct grew AGAIN for the sixth stop ([5] -> [6], 0x554 ->
+# 0x558 bytes): both strides re-point 0x155 -> 0x156 in the SAME commit as
+# the growth (the R113 lesson). The pins carry the CURRENT stride.
+gate "r115: mouse-Y walk stride 0x558"     D2Client/UI/EscMenu.cpp          'pItemYPosition \+= 0x156' 1
+gate "r115: loader item stride 0x558"      D2Client/UI/EscMenu.cpp          'nSubImageOffset \+= 0x156' 1
 gate "res5: minipanel maps mode 5"         D2Client/UI/MiniPanel.cpp        'nScreenMode_lcl = 5' 1
-gate "res5: subimage slots [5] (EscMenu.h)" D2Client/UI/EscMenu.h           'pDC6SubImages\[5\]' 1
+gate "res6: subimage slots [6] (EscMenu.h)" D2Client/UI/EscMenu.h           'pDC6SubImages\[6\]' 1
+
+# ---- resolution mode 6 (1920x1080 sixth stop, R115) -------------------------
+# Owner: "Great job. works. Published Glide3xVK 0.4.7. Now lets do 1080p".
+# Same playbook as mode 5 (R112): D2GFX case 6 + D3D mirror (0x780 x 0x438),
+# probe stop-6 dims + refusal snap-back position 5, slider SIXTH stop
+# (position 5 -> mode 6, both mappings, ahead of >= 2) + L"1920x1080" label
+# + FOURTH runtime blank (count 6), mini-panel == 5 -> mode 6 + clamp > 5,
+# D3D perspective-class gate != 6, DDraw [7] tables + horizontal bound 0x780,
+# GDI DIB + scale width, Glide grSstWinOpen enum 19 + perspective path, wide
+# class (Glide dims pairs + D3D x2 + DDraw + GDI + VanillaPlusCore x2).
+# Struct growth rides the R113 lesson: strides 0x155 -> 0x156 + free clamp
+# > 6 + draw clamp > 5 land in the SAME commit (pinned above).
+# Wrapper dependency: Glide3xVK needs g3x_resolution_size entry 19 =
+# {0x780, 0x438} (wrapper 0.4.8 ships it; older wrappers fail soft to
+# 640x480 + "unknown resolution 19" log, same contract as 16/17/18).
+gate "res6: d2gfx size-table case 6"        D2gfx/D2GFX.cpp                  '\*nWidth = 0x780' 1
+gate "res6: d3d mirror case 6"              D2Direct3D/Renderer/Direct3D.cpp '\*nWidth = 0x780' 1
+gate "res6: d3d perspective-class gate"     D2Direct3D/Renderer/Direct3D.cpp 'nResolutionMode != 6' 1
+gate "res6: glide entry 19"                 D2Glide/Renderer/Glide.cpp       'screen_resolution = 19' 1
+gate "res6: glide mode-6 surface"           D2Glide/Renderer/Glide.cpp       'RENDERER_nWindowWidth = 0x780' 1
+gate "res6: glide perspective path incl 6"  D2Glide/Renderer/Glide.cpp       'nParam != 5 && nParam != 6' 1
+gate "res6: ddraw table entries"            D2DDraw/Renderer/DirectDraw.cpp  '0x556, 0x780' 1
+gate "res6: ddraw horizontal bound"         D2DDraw/Renderer/DirectDraw.cpp  'gnDDrawRenderWidth = 0x780' 1
+gate "res6: gdi dib 1920x1080"              D2Gdi/Renderer/Windowed.cpp      'nResolutionMode == 6' 1
+gate "res6: gdi scale width 1920"           D2Gdi/Renderer/Windowed.cpp      'nParam == 6' 1
+gate "res6: mode-set case 6"                D2Client/ClientModeInGame.cpp    'ScreenSizeX = 0x780' 1
+gate "res6: probe stop-6 dims"              D2Client/ClientModeInGame.cpp    'nWidth = 0x780' 1
+gate "res6: probe gates stop 6"             D2Client/ClientModeInGame.cpp    'RequestedScreenModeMaybe == 6' 1
+gate "res6: snap-back stop 6 -> position 5" D2Client/ClientModeInGame.cpp    'dwPosition_lcl = 5' 1
+gate "res6: wide classifier"                D2Client/UI/VanillaPlusCore.cpp  'eResolutionMode == 6' 1
+gate "res6: noshift wide-class arm"         D2Client/UI/VanillaPlusCore.cpp 'ScreenSizeX == 1920 && ScreenSizeY == 1080' 1
+gate "res6: esc menu mapping mode 6"        D2Client/UI/EscMenu.cpp          'RequestedScreenModeMaybe = 6' 2
+gate "res6: init attach stop 6"             D2Client/UI/EscMenu.cpp          'nSubImageCount = 6' 1
+gate "res6: per-stop label 1920x1080"       D2Client/UI/EscMenu.cpp          'L"1920x1080"' 1
+gate "res6: minipanel maps mode 6"          D2Client/UI/MiniPanel.cpp        'nScreenMode_lcl = 6' 1
 # The stretch-present channel (five TUs must agree):
 gate "stretch: d2gfx channel set/get"      D2gfx/D2GFX.cpp                  'D2GFX_SetPresentationStretch|D2GFX_GetPresentationStretch' 2
 gate "stretch: d3d present helper"         D2Direct3D/Renderer/Direct3D.cpp 'VPRES3D_PresentHostedFrame' 5
@@ -838,7 +876,7 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # pDC6SubImages[5] growth left the two raw 0x550-byte walks stale - mouse
 # hit-test dead + sub-image slot spill - and the FreeLoadedImages retail
 # halt armed on the new count-5 row)
-gate "res: self-id 0.0.7-R113"                Game/Main.cpp                    'Vanilla\+0\.0\.7-R113' 1
+gate "res: self-id 0.0.7-R115"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R115' 1
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the
