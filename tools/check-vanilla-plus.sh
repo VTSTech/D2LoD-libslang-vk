@@ -423,7 +423,11 @@ gate "stretch: d2gfx channel set/get"      D2gfx/D2GFX.cpp                  'D2G
 gate "stretch: d3d present helper"         D2Direct3D/Renderer/Direct3D.cpp 'VPRES3D_PresentHostedFrame' 7
 gate "stretch: d3d Blt present"            D2Direct3D/Renderer/Direct3D.cpp 'DDBLT_WAIT' 2
 gate "stretch: d3d arm + release-clear"    D2Direct3D/Renderer/Direct3D.cpp 'D2GFX_SetPresentationStretch' 2
-gate "stretch: endscene2 guard"            D2Direct3D/Renderer/Direct3D.cpp 'VPRES3D_PresentHostedFrame' 2
+# R123: upstream's file-symbols round refiled EndScene2 from D2Client/Renderer/
+# Direct3D.cpp into this TU; the R112 hook rode along (count gate 7 = all five
+# call sites + the helper's own 2). The row pins the transplant marker so a
+# future regen of the refiled function cannot drop the hook silently.
+gate "stretch: endscene2 guard"            D2Direct3D/Renderer/Direct3D.cpp 'R123: function refiled here' 1
 gate "stretch: cursor host->logical"       D2Win/Src/D2WinMain.cpp          'D2GFX_GetPresentationStretch' 1
 
 # ---- R116: GDI windowed 1366x768 diagonal shear ----------------------------
@@ -646,7 +650,12 @@ gate "row-10: dispatch hoisted (rev44)"    D2Client/UI/Draw.cpp            'rend
 gate "site-5: spell grid shifts (R45)"      D2Client/UI/SpellSel.cpp        'VPRES_GetWideUiOffsetX' 5
 gate "site-5: spell right-grid icons bar-anchored (R45)" D2Client/UI/SpellSel.cpp 'SPELLSEL_DrawSkillGrid\(UNIT::Player::GetPlayerUnit_UI\(\), nStartX,' 2
 gate "site-5: spell swap-grid icons ride panel (R45)" D2Client/UI/SpellSel.cpp 'SPELLSEL_DrawSkillGrid\(UNIT::Player::GetPlayerUnit_UI\(\), 0x50 \+ VPRES_GetWideUiOffsetX' 2
-gate "site-5: spell icons not vanilla-anchored (R45)" D2Client/UI/SpellSel.cpp 'DrawSkillGrid\(UNIT::Player::GetPlayerUnit_UI\(\), 0x50,' 0
+# R123 re-pin 0 -> 1: upstream's 693-unreferenced batch added never-called
+# thunks (Unreferenced_004aa6e0/710) whose DrawSkillGrid anchors keep the
+# retail spell. The fork's REACHABLE sites stay offset-anchored (rows above:
+# nStartX x2, 0x50+offset x2); the thunks are upstream-dialect code by house
+# rule and are dead until a future regen wires them.
+gate "site-5: spell icons not vanilla-anchored (R45)" D2Client/UI/SpellSel.cpp 'DrawSkillGrid\(UNIT::Player::GetPlayerUnit_UI\(\), 0x50,' 1
 # R93: 1 -> 2 (the issue #26 border-3 scene-build guard adds a second
 # VPRES_IsWideLayoutMode call in GAMEVIEW_PrepareScene)
 gate "site-5: summit clouds gate"          D2Client/GAME/View.cpp          'VPRES_IsWideLayoutMode' 3
@@ -1043,7 +1052,7 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # pDC6SubImages[5] growth left the two raw 0x550-byte walks stale - mouse
 # hit-test dead + sub-image slot spill - and the FreeLoadedImages retail
 # halt armed on the new count-5 row)
-gate "res: self-id 0.0.7-R122"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R122' 1
+gate "res: self-id 0.0.7-R123"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R123' 1
 # R115: string bumped R113 -> R115 (the 1080p sixth-stop round; owner:
 # "Great job. works. Published Glide3xVK 0.4.7. Now lets do 1080p")
 # R116: string bumped R115 -> R116 (the GDI windowed 1366x768 shear fix;

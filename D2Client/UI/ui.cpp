@@ -10091,26 +10091,14 @@ void __stdcall DRAW_UI_TradePrompt() {
     if (g_nTradeWindowState > 2) {
       bIsDialogActive = DRAW_IsDialogActive();
       if (!bIsDialogActive) {
-        if (gnPanelOffsetX + 0x111 <= nMouseX2 && nMouseX2 <= gnPanelOffsetX + 0x133 && 0xa8 - gnPanelOffsetY + VPRES_GetWideUiOffsetY() <= nMouseY && nMouseY <= 0xca - gnPanelOffsetY + VPRES_GetWideUiOffsetY()) {
-          nCenterFlag = 0;
-          nColor = 0;
-          nTooltipY = 0xa7 - gnPanelOffsetY + VPRES_GetWideUiOffsetY();
-          nMouseX = gnPanelOffsetX + 0xef;
-          D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(D2Lang::StrTable::strtable::GetLocaleString(0x1023), nMouseX, nTooltipY, nColor, nCenterFlag);
+        if (nMouseX2 >= gnPanelOffsetX + 0x111 && nMouseX2 <= gnPanelOffsetX + 0x133 && nMouseY >= 0xa8 - gnPanelOffsetY + VPRES_GetWideUiOffsetY() && nMouseY <= 0xca - gnPanelOffsetY + VPRES_GetWideUiOffsetY()) {
+          D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(D2Lang::StrTable::strtable::GetLocaleString(0x1023), gnPanelOffsetX + 0xef, 0xa7 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), 0, 0); // VP: [resolution site-6]
         }
-        if (gnPanelOffsetX + 0xdd <= nMouseX2 && nMouseX2 <= gnPanelOffsetX + 0xff && 0x17f - gnPanelOffsetY + VPRES_GetWideUiOffsetY() <= nMouseY && nMouseY <= 0x1a1 - gnPanelOffsetY + VPRES_GetWideUiOffsetY()) {
-          nCenterFlag = 0;
-          nColor = 0;
-          nTooltipY = 0x17e - gnPanelOffsetY + VPRES_GetWideUiOffsetY();
-          nMouseX = gnPanelOffsetX + 0xbb;
-          D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(D2Lang::StrTable::strtable::GetLocaleString(0x1023), nMouseX, nTooltipY, nColor, nCenterFlag);
+        if (nMouseX2 >= gnPanelOffsetX + 0xdd && nMouseX2 <= gnPanelOffsetX + 0xff && nMouseY >= 0x17f - gnPanelOffsetY + VPRES_GetWideUiOffsetY() && nMouseY <= 0x1a1 - gnPanelOffsetY + VPRES_GetWideUiOffsetY()) {
+          D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(D2Lang::StrTable::strtable::GetLocaleString(0x1023), gnPanelOffsetX + 0xbb, 0x17e - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), 0, 0); // VP: [resolution site-6]
         }
-        if (gnPanelOffsetX + 0x111 <= nMouseX2 && nMouseX2 <= gnPanelOffsetX + 0x133 && 0x17f - gnPanelOffsetY + VPRES_GetWideUiOffsetY() <= nMouseY && nMouseY <= 0x1a1 - gnPanelOffsetY + VPRES_GetWideUiOffsetY()) {
-          nCenterFlag = 0;
-          nColor = 0;
-          nMouseY = 0x17e - gnPanelOffsetY + VPRES_GetWideUiOffsetY();
-          nMouseX2 = gnPanelOffsetX + 0x107;
-          D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(D2Lang::StrTable::strtable::GetLocaleString(0x1022), nMouseX2, nMouseY, nColor, nCenterFlag);
+        if (nMouseX2 >= gnPanelOffsetX + 0x111 && nMouseX2 <= gnPanelOffsetX + 0x133 && nMouseY >= 0x17f - gnPanelOffsetY + VPRES_GetWideUiOffsetY() && nMouseY <= 0x1a1 - gnPanelOffsetY + VPRES_GetWideUiOffsetY()) {
+          D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(D2Lang::StrTable::strtable::GetLocaleString(0x1022), gnPanelOffsetX + 0x107, 0x17e - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), 0, 0); // VP: [resolution site-6]
         }
       }
     }

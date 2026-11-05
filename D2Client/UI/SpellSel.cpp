@@ -1294,7 +1294,8 @@ void __stdcall SPELLSEL_RenderAllSkillGrids() {
       bShowTooltips = 0;
       bIsWeaponSwap = 0;
       gSpellSelGridRegion.sGridIndex[0] = 0;
-      SPELLSEL_DrawSkillGrid(UNIT::Player::GetPlayerUnit_UI(), ScreenSizeX - VPRES_GetWideUiOffsetX() - 0x80, bIsWeaponSwap, bShowTooltips, bIsLeftHand); // VP: site-5, bar-anchored grid (R45: offset restored; R123: upstream's inlined-arg shape)
+      nStartX = ScreenSizeX - VPRES_GetWideUiOffsetX() - 0x80; // VP: site-5, bar-anchored grid (R45: offset restored)
+      SPELLSEL_DrawSkillGrid(UNIT::Player::GetPlayerUnit_UI(), nStartX, bIsWeaponSwap, bShowTooltips, bIsLeftHand); // VP: site-5, bar-anchored grid (R45: icon pass re-paired with its tooltip pass)
       if (!gbSpellSelMouseHandFlag) {
         goto draw_right_grid_tooltips;
       }
@@ -1310,7 +1311,10 @@ void __stdcall SPELLSEL_RenderAllSkillGrids() {
 
     draw_right_grid_tooltips:
     bIsLeftHand = 0;
-    SPELLSEL_DrawSkillGrid(UNIT::Player::GetPlayerUnit_UI(), ScreenSizeX - VPRES_GetWideUiOffsetX() - 0x80, 0, 1, bIsLeftHand); // VP: site-5, bar-anchored grid (R123: upstream inlines the flag writes)
+    bShowTooltips = 1;
+    bIsWeaponSwap = 0;
+    nStartX = ScreenSizeX - VPRES_GetWideUiOffsetX() - 0x80; // VP: site-5, bar-anchored grid
+    SPELLSEL_DrawSkillGrid(UNIT::Player::GetPlayerUnit_UI(), nStartX, bIsWeaponSwap, bShowTooltips, bIsLeftHand);
 }
 
 void __stdcall SPELLSEL_ClearWaitingForSkillFlag_Unref_004aa8e0() {

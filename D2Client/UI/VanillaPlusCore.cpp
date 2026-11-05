@@ -26,7 +26,6 @@
 #include "D2Client/GAME/Sound.h"
 #include "D2Client/GAME/Wall2.h"
 #include "D2Client/Message.h"
-#include "D2Client/Renderer/Renderer.h"
 #include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/Sound/SoundHdr.h"
@@ -79,7 +78,7 @@
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
+#include "D2Common/D2UnitStrc.h" // R123: upstream refiled the header D2Common/Unit/ -> D2Common/
 #include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2DDraw/Renderer/DirectDraw.h"
