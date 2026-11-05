@@ -48,8 +48,8 @@ each can be fixed, replaced and released independently.
   at 6,733 of 14,626 functions (46.0%) / 21.87% of bytes (`asm_matching/msvc8`).
 - **The closed defect tracks stay closed** (HISTORY H1/H26): the glide crash
   series (fixes 1–13), sound (15–16; upstreamed as jaenster/redivivus PR #10 —
-  drops and the Act 5 snow hang came back with it) and the fullscreen-D3D
-  recovery (17–27) are all field-verified. The 720p-era D3D perspective-toggle
+  drops work again and the Act 5 snow hang is gone, both upstream fixes) and
+  the fullscreen-D3D recovery (17–27) are all field-verified. The 720p-era D3D perspective-toggle
   crash was root-fixed at `R98` (the flat-wall builder's `uint8_t` subtile
   iterator wraps after 12 subtiles — latent since the original decompilation).
 - **The full smoke belt has passed twice on the 0.0.7 line**: on the R83 build
@@ -61,13 +61,16 @@ each can be fixed, replaced and released independently.
   (incl. the native 1280x720 widescreen mode), sound end to end and the
   `-nointro` boot switch (R86) are all field-green; the build is field-played daily.
 - **The Vanilla+ surface is eight features deep** — all opt-in, default OFF,
-  all manageable in-game from the Vanilla+ Options page (`Esc → Options`,
-  shipped R67; see Features below): alt-key item-label toggle, portable saves,
-  auto gold pickup, persistent globe text, item-level tooltips, the ten-page
-  shared stash (field-proven R74/R82), No Panel World Shift (field-proven
-  R95–R101) and the Mana Burn fix (R106, options row R108).
+  all manageable in-game from the Vanilla+ Options page (`Esc → Options`;
+  the page shipped with 0.0.6 on 2026-10-30 and grew to eight rows — Shared
+  Stash R67, No Panel World Shift R101, Mana Burn Fix R108; see Features
+  below): alt-key item-label toggle, portable saves, auto gold pickup,
+  persistent globe text, item-level tooltips, the ten-page shared stash
+  (field-proven R74/R82), No Panel World Shift (field-proven R95–R101) and
+  the Mana Burn fix (R106, options row R108).
 - **Releases**: `0.0.1` → `0.0.7` shipped 2026-10-27 → 2026-11-02; the 0.0.7
-  line now advances by R-tag — `R84` … **`R108`** (current latest; self-ID
+  line now advances by R-tag — `R67` (first 0.0.7) … **`R108`** (current
+  latest; self-ID
   `Vanilla+0.0.7-R108`, pinned by line 1 of `d2boot.log`). GitHub CI
   (mingw-i686) builds every release tag and ships `d2s-<sha>.exe` (stripped) +
   `d2-map-<sha>.map` (linker map, load-bearing for crash symbolization).

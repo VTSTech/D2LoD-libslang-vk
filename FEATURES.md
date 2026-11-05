@@ -1,6 +1,9 @@
 # FEATURES.md — D2R backport slate (vanilla-plus)
 
-*v5, 2026-11-05. Rows 12–13 (`stack_gems`, `stack_runes`) added from an owner suggestion —
+*v6, 2026-11-05. Rows 14–15 added on owner ask — **planned, not implemented**: resolution
+modes. Row 14 activates retail's own **dormant 1344x700** (mode 3 — wired in the binaries,
+never a UI stop); row 15 adds **1920x1080**. Video-options slider stops, not `[features]`
+keys. Earlier: v5, 2026-11-05. Rows 12–13 (`stack_gems`, `stack_runes`) added from an owner suggestion —
 **planned, not implemented**: no D2R parity (Blizzard never shipped rune/gem stacking — a live
 player request through 2.7), PD2 ships it. Earlier: v4, 2026-11-05. Status sweep: shipped rows
 marked Shipped with their first release (1, 3, 6, 9, 10, 11); row 9's SMOKE debts cleared (§H items 25/27 in the R83 full-belt pass [#24], the ten-page items in the R104 pass [#28]); §1/§6/§9/§10 as-built notes refreshed, §9's pre-ship draft marked superseded by the shipped in-panel tab. Earlier: v3, 2026-10-29 — row 9 (`shared_stash`) added from an owner suggestion — side-file design, `.d2s`/`.d2x` untouched; row 4 (`transparent_hud`) added from an owner suggestion — no D2R parity, engine-native draw modes. Scoped by research: D2R official QoL behavior + prior art from the
@@ -49,12 +52,17 @@ Every slate row must satisfy all of these before it ships:
 | 11 | Mana Burn fix (melee drain 256x bug) | Combat (D2Game) | D2R 2.4 patch notes ("fixed melee hits draining 256 times too much") + Basin wiki Mana Burn | S | Low | **Implemented** (R106 — `mana_burn_fix`; ini-only at ship, in-game **Mana Burn Fix** row on the Vanilla+ Options page since R108; server-side gate TU + VP-marked drain-roll shim in SUnitDmg.cpp; field QA + llvm-mingw gate pending) |
 | 12 | Stackable gems | Inventory | None — owner suggestion 2026-11-05; PD2 stacks gems in its currency tab | M | Med | `stack_gems` |
 | 13 | Stackable runes | Inventory | None — owner suggestion 2026-11-05; PD2 stacks runes in its currency tab | M | Med | `stack_runes` |
+| 14 | 1344x700 resolution (retail's dormant mode 3) | Video / renderers | Retail-dormant engine mode — the binaries carry the tables, no UI stop ever shipped; D2MultiRes-era community prior art | S–M | Low–Med | video-options slider stop 3 (not `[features]`-gated); plan: 1344x700-PLAN.md |
+| 15 | 1920x1080 resolution | Video / renderers | None — owner suggestion 2026-11-05; SGD2FreeRes/D2DX-class arbitrary-res prior art | M | Med | video-options slider stop 4 (not `[features]`-gated) |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
 the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipped for 0.0.4, and row 1 shipped as the orb-face readout and was repurposed post-release (see §1).
 Rows 12–13 are **planned scope** (owner suggestion 2026-11-05, not yet implemented): one
 mechanism — letting a class of items merge into stacks the way arrows/tomes already do —
-behind two separate gates, drafted together in §12/§13.
+behind two separate gates, drafted together in §12/§13. Rows 14–15 are planned scope too
+(owner ask 2026-11-05): 1344x700 activates a retail-dormant engine mode — the whole
+site-1..6 pipeline already routes it, two gaps close it (§14, [1344x700-PLAN.md](1344x700-PLAN.md)) —
+and 1920x1080 is one full site-1..6 round on the 720p playbook (§15).
 **Shipped as of R108**: rows 1, 3, 6, 9, 10 and 11 — plus, outside this slate, the
 pre-slate pair `alt_toggle`/`portable_save` (handoff ledger rows 28–31, releases
 0.0.2/0.0.3) and `no_panel_shift` (born from issue #26, R95–R101). As-built docs for
@@ -464,6 +472,56 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
   class) consumes 3 off a stack of N without dupe or loss, and two of the same rune in one
   container always end as one stack with the right count.
 
+### 14. 1344x700 resolution — activate retail's dormant mode 3 (PLANNED — owner ask 2026-11-05, not implemented)
+
+- **The dormant mode**: retail 1.14d ships mode-3 plumbing end to end but no UI stop — the
+  size table maps 3 → 1344x700 (`D2gfx/D2GFX.cpp` `D2GFX_GetWindowSizeByResolutionMode`,
+  case 3 = `0x540` x 700), GDI windowed has native `0x540`-wide branches (DIB alloc +
+  scale factor), DDraw carried a `{0}` sentinel slot until the 720p round filled it with
+  1344x700, and the D3D path clamped registry modes 1/3 back to 800x600 — while the video
+  slider only ever offered two stops. The owner framing ("planned by Blizzard … never
+  implemented or shipped") matches the mechanism half: wired, never exposed. The
+  classic-D2 community has played on it for years via patches (D2MultiRes 2009-era;
+  SlashDiablo HD1 "up to 1344x700"; Puppeteer's "1344x700 and 1068x600" dlls).
+- **Why it is cheap**: the 1280x720 round (sites 1–6,
+  [docs/resolution-widelayout-audit.md](docs/resolution-widelayout-audit.md)) built the
+  wide-UI class generically and reserved mode 3 everywhere — `VPRES_IsWideLayoutMode`
+  includes 3, offsets compute themselves (X 272 / Y 100), and every renderer dispatch and
+  dims guard already lists (1344,700). Two gaps close it: the missing `case 3` in
+  `CLIENT_SetScreenResolution` and the slider's missing fourth stop.
+  Plan: [1344x700-PLAN.md](1344x700-PLAN.md).
+- **Proposed**: append a fourth slider stop mapping to mode 3. Existing registry positions
+  0–2 keep their meaning (720p users unaffected); not `[features]`-gated — opt-in by
+  picking the stop, same as 720p.
+- **Risk**: Low–Med. Two files plus a label table; every renderer path was field-proven at
+  720p. DDraw 8-bit fullscreen at 1344x700 is hardware-dependent (may be N/A on modern
+  systems — record, don't block).
+- **Exit**: pick the stop → 1344x700 with the 800-class UI centered (272/100); in-game
+  switch 800↔1344↔720 clean; cutscene round-trip returns; save → relaunch keeps the stop;
+  old registry values behave exactly as before.
+
+### 15. 1920x1080 resolution (PLANNED — owner ask 2026-11-05, not implemented)
+
+- **No retail parity**: 640x480/800x600 are retail's stops and 1344x700 is retail's dormant
+  one — 1080p is pure owner scope, in the SGD2FreeRes/D2DX class of arbitrary-resolution
+  play.
+- **Why it rides the 720p playbook**: the same site-1..6 checklist per new mode —
+  `CLIENT_SetScreenResolution` + D2GFX table cases, D3D size case + wide-set + dims guards,
+  DDraw `[6]` tables + horizontal bounds, GDI windowed branches, Glide wrapper
+  `g3x_resolution_size` entry 18 + client mapping, `VPRES_IsWideLayoutMode`, slider stop 5.
+  The wide-UI offsets are formulas (X 560 / Y 480).
+- **Order**: schedule AFTER row 14 — 1344x700 exercises the wide class at a non-1280 width
+  first, cheap insurance; and the round should start by consolidating the copy-pasted
+  dims-pair tests (`(1280,720) || (1344,700)` across Glide.cpp ×2, Direct3D.cpp ×2,
+  Windowed.cpp ×1) into one predicate, so per-mode cost stops growing.
+- **Open verify items (tree-verify pass)**: D3D texture-cache sizing
+  (`gnD3DTextureCacheBlockSize/Count`, floor/subtile caches — field-proven at 720p, unknown
+  whether they scale from screen dims at 1080p); DDraw 8-bit fullscreen 1920x1080 (expect
+  N/A by hardware); front-end menus; CPU-side tile dispatch at ~2.25× the 720p pixel
+  count.
+- **Risk**: Med. **Exit**: row 14's loop at 1920x1080 — UI centered (560/480), switch
+  matrix clean, caches sane (no tile artifacts), save → relaunch keeps the stop.
+
 ---
 
 ## Dropped candidates (and why)
@@ -502,5 +560,11 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
   now drop stacked gems and runes" in the patch notes linked above).
 - Engine grounding: Phrozen Keep draw-mode documentation (25%/50% stipple, color
   blends; 1.10/1.13-era threads) — the paletted transparency family row 4 mode 2 uses.
+- Resolution prior art: retail's dormant mode 3 (in-tree: size-table case, DDraw sentinel
+  slot, GDI `0x540` branches); D2MultiRes (moddb, 2009 — "resolutions other than 640x480
+  and 800x600"); SlashDiablo HD (slashdiablo.net/about — "HD1 with up to 1344x700");
+  Puppeteer extended-resolution dlls ("1344x700 and 1068x600"); SGD2FreeRes
+  (github mir-diablo-ii-tools — arbitrary-resolution backport project).
 - In-tree grounding: handoff.md rows 28–31 (the feature-era map), fix-14 Drop.cpp map;
-  FEATURES row-4 scan of `D2Client/UI/Panel.cpp` (2026-10-29).
+  FEATURES row-4 scan of `D2Client/UI/Panel.cpp` (2026-10-29); resolution site-1..6 record
+  (docs/resolution-widelayout-audit.md) + the mode-3 recon in 1344x700-PLAN.md §3.
