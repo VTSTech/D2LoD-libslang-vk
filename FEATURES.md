@@ -3,7 +3,9 @@
 *v6, 2026-11-05. Rows 14–15 added on owner ask — **planned, not implemented**: resolution
 modes. Row 14 activates retail's own **dormant 1344x700** (mode 3 — wired in the binaries,
 never a UI stop); row 15 adds **1920x1080**. Video-options slider stops, not `[features]`
-keys. Earlier: v5, 2026-11-05. Rows 12–13 (`stack_gems`, `stack_runes`) added from an owner suggestion —
+keys. Tree-verified same-day against the pushed tree (1344x700-PLAN.md §8): a third gap
+joined row 14 — the mini-panel's own position→mode re-apply (`SetupMiniPanel`) — and the
+dims-pair count corrected to seven. Earlier: v5, 2026-11-05. Rows 12–13 (`stack_gems`, `stack_runes`) added from an owner suggestion —
 **planned, not implemented**: no D2R parity (Blizzard never shipped rune/gem stacking — a live
 player request through 2.7), PD2 ships it. Earlier: v4, 2026-11-05. Status sweep: shipped rows
 marked Shipped with their first release (1, 3, 6, 9, 10, 11); row 9's SMOKE debts cleared (§H items 25/27 in the R83 full-belt pass [#24], the ten-page items in the R104 pass [#28]); §1/§6/§9/§10 as-built notes refreshed, §9's pre-ship draft marked superseded by the shipped in-panel tab. Earlier: v3, 2026-10-29 — row 9 (`shared_stash`) added from an owner suggestion — side-file design, `.d2s`/`.d2x` untouched; row 4 (`transparent_hud`) added from an owner suggestion — no D2R parity, engine-native draw modes. Scoped by research: D2R official QoL behavior + prior art from the
@@ -61,7 +63,7 @@ Rows 12–13 are **planned scope** (owner suggestion 2026-11-05, not yet impleme
 mechanism — letting a class of items merge into stacks the way arrows/tomes already do —
 behind two separate gates, drafted together in §12/§13. Rows 14–15 are planned scope too
 (owner ask 2026-11-05): 1344x700 activates a retail-dormant engine mode — the whole
-site-1..6 pipeline already routes it, two gaps close it (§14, [1344x700-PLAN.md](1344x700-PLAN.md)) —
+site-1..6 pipeline already routes it, three gaps close it (§14, [1344x700-PLAN.md](1344x700-PLAN.md)) —
 and 1920x1080 is one full site-1..6 round on the 720p playbook (§15).
 **Shipped as of R108**: rows 1, 3, 6, 9, 10 and 11 — plus, outside this slate, the
 pre-slate pair `alt_toggle`/`portable_save` (handoff ledger rows 28–31, releases
@@ -487,13 +489,14 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
   [docs/resolution-widelayout-audit.md](docs/resolution-widelayout-audit.md)) built the
   wide-UI class generically and reserved mode 3 everywhere — `VPRES_IsWideLayoutMode`
   includes 3, offsets compute themselves (X 272 / Y 100), and every renderer dispatch and
-  dims guard already lists (1344,700). Two gaps close it: the missing `case 3` in
-  `CLIENT_SetScreenResolution` and the slider's missing fourth stop.
+  dims guard already lists (1344,700). Three gaps close it: the missing `case 3` in
+  `CLIENT_SetScreenResolution`, the slider's missing fourth stop, and the mini-panel's own
+  position→mode re-apply (`SetupMiniPanel` — runs at every game-enter and cutscene-exit).
   Plan: [1344x700-PLAN.md](1344x700-PLAN.md).
 - **Proposed**: append a fourth slider stop mapping to mode 3. Existing registry positions
   0–2 keep their meaning (720p users unaffected); not `[features]`-gated — opt-in by
   picking the stop, same as 720p.
-- **Risk**: Low–Med. Two files plus a label table; every renderer path was field-proven at
+- **Risk**: Low–Med. Three files plus a label table; every renderer path was field-proven at
   720p. DDraw 8-bit fullscreen at 1344x700 is hardware-dependent (may be N/A on modern
   systems — record, don't block).
 - **Exit**: pick the stop → 1344x700 with the 800-class UI centered (272/100); in-game
@@ -513,7 +516,8 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
 - **Order**: schedule AFTER row 14 — 1344x700 exercises the wide class at a non-1280 width
   first, cheap insurance; and the round should start by consolidating the copy-pasted
   dims-pair tests (`(1280,720) || (1344,700)` across Glide.cpp ×2, Direct3D.cpp ×2,
-  Windowed.cpp ×1) into one predicate, so per-mode cost stops growing.
+  DirectDraw.cpp ×1, Windowed.cpp ×1, VanillaPlusCore.cpp ×1 — seven copies) into one
+  predicate, so per-mode cost stops growing.
 - **Open verify items (tree-verify pass)**: D3D texture-cache sizing
   (`gnD3DTextureCacheBlockSize/Count`, floor/subtile caches — field-proven at 720p, unknown
   whether they scale from screen dims at 1080p); DDraw 8-bit fullscreen 1920x1080 (expect
