@@ -304,17 +304,29 @@ gate "res3: per-stop label 1344x700"      D2Client/UI/EscMenu.cpp        'L"1344
 gate "res3: draw covers both stops"       D2Client/UI/EscMenu.cpp        'nImageIndex != 2 && pItem->nImageIndex != 3' 1
 gate "res3: mappings to mode 3"           D2Client/UI/EscMenu.cpp        'RequestedScreenModeMaybe = 3' 2
 gate "res3: minipanel maps mode 3"        D2Client/UI/MiniPanel.cpp      'nScreenMode_lcl = 3' 1
-# Field round (R109): "works in Glide, crashes upon switching in D3D". Root
+# Field round 1 (R109): "works in Glide, crashes upon switching in D3D". Root
 # cause: Vista+ mode lists omit 1344x700 (non-standard timing), the exclusive
 # DD7 SetDisplayMode rejects it, and D2Win::D2GFX_SetVideoMode exits on a
 # failed resize. Two-layer fix that must move together (client probe and
-# renderer ladder agree on the candidate set: exact mode, else 1366x768 /
+# renderer agree on the candidate set: exact mode, else 1366x768 /
 # 1360x768 letterbox hosts).
-gate "res3: d3d host-mode ladder table"   D2Direct3D/Renderer/Direct3D.cpp 'gnVPHostDisplayModes' 3
-gate "res3: d3d ladder retry log"         D2Direct3D/Renderer/Direct3D.cpp 'retrying with host mode' 1
+# Field round 2 (R110 -> R111): "doesn't crash, but D3D shows a borderless
+# window instead of fullscreen". The R110 ladder only fired on a REJECTED
+# SetDisplayMode; the Win10/11 DDraw emulation can also ACCEPT a mode it
+# cannot set (fake success) and fall back to a borderless window on the
+# unchanged desktop. R111 probes the mode list BEFORE the mode-set
+# (unlisted stop -> straight to a listed host, no doomed call) and sizes
+# the window to the HOST (R110 moved it to the logical 1344x700 inside the
+# 1366x768 host mode, leaving the desktop peeking past the window edges).
+gate "res3: d3d host-mode ladder table"   D2Direct3D/Renderer/Direct3D.cpp 'gnVPHostDisplayModes' 4
+gate "res3: d3d probe-first log"          D2Direct3D/Renderer/Direct3D.cpp 'hosting fullscreen at' 1
+gate "res3: d3d probe helper"             D2Direct3D/Renderer/Direct3D.cpp 'VPRES3D_IsDisplayModeListed' 3
+gate "res3: d3d window covers host"       D2Direct3D/Renderer/Direct3D.cpp 'nHostWidth \? nHostWidth : RENDERER_nWindowWidth' 1
 gate "res3: d3d clear uses locked rows"   D2Direct3D/Renderer/Direct3D.cpp 'nRowsLeft = \(int\)ddSurfDescSize\.dwHeight' 1
 gate "res3: client probe helper"          D2Client/ClientModeInGame.cpp  'VPRES_ExclusiveRendererCanEnterStop' 2
-gate "res3: probe exact+host listing"     D2Client/ClientModeInGame.cpp  'VPRES_IsDisplayModeListed' 4
+gate "res3: probe exact+host listing"     D2Client/ClientModeInGame.cpp  'VPRES_IsDisplayModeListed' 7
+gate "res3: probe depth-aware helper"     D2Client/ClientModeInGame.cpp  'VPRES_IsDisplayModeListedAtDepth' 3
+gate "res3: ddraw exact-8bpp arm"         D2Client/ClientModeInGame.cpp  'VPRES_IsDisplayModeListedAtDepth\(nWidth, nHeight, 8\)' 1
 gate "res3: probe gates stops 3 and 4"    D2Client/ClientModeInGame.cpp  'RequestedScreenModeMaybe == 3 \|\| RequestedScreenModeMaybe == 4' 1
 gate "res3: probe refusal log include"    D2Client/ClientModeInGame.cpp  'include "Fog/Src/LogManager\.h"' 1
 gate "fork-api include in EscMenu.cpp"       D2Client/UI/EscMenu.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
@@ -764,7 +776,10 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # stale until this round)
 # R109: string bumped R108 -> R109 (the 1344x700 dormant-mode round: slider
 # stop 3 + the client-side mode-set/mini-panel mappings)
-gate "res: self-id 0.0.7-R109"                Game/Main.cpp                    'Vanilla\+0\.0\.7-R109' 1
+# R111: string bumped R109 -> R111 (the D3D probe-first fullscreen round;
+# R110 shipped the first D3D crash fix without a mark bump - mark skipped
+# straight to R111 per the owner's every-round-is-a-new-Rxx rule)
+gate "res: self-id 0.0.7-R111"                Game/Main.cpp                    'Vanilla\+0\.0\.7-R111' 1
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the

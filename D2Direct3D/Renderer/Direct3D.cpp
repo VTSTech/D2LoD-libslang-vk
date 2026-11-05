@@ -2286,6 +2286,30 @@ static void RENDERER_D3D_GetWindowSizeByResolutionMode(int nResolutionMode, int*
     }
 }
 
+// Vanilla Plus [vpres d3d ladder v2 / R111]: is this exact display mode in
+// the driver's mode list? Twin of the client-side VPRES_IsDisplayModeListed
+// (D2Client::ClientModeInGame) - separate module, so it carries its own copy
+// (same shape as the 7-copy dims pair this tree already tolerates; shared
+// helper deferred to the shared-predicate round). Walks the primary display's
+// enumerated modes at 32 bpp - the same list the exclusive DD7
+// SetDisplayMode consumes on Vista+ (it rides ChangeDisplaySettings).
+static BOOL VPRES3D_IsDisplayModeListed(int nWidth, int nHeight) {
+    DEVMODEA sDevMode;
+    int nIndex = 0;
+    for (;;) {
+      memset(&sDevMode, 0, sizeof(DEVMODEA));
+      sDevMode.dmSize = sizeof(DEVMODEA);
+      if (!EnumDisplaySettingsA(nullptr, nIndex++, &sDevMode)) {
+        return 0;
+      }
+      if ((sDevMode.dmFields & (DM_PELSWIDTH | DM_PELSHEIGHT)) == (DM_PELSWIDTH | DM_PELSHEIGHT) &&
+          (int)sDevMode.dmPelsWidth == nWidth && (int)sDevMode.dmPelsHeight == nHeight &&
+          sDevMode.dmBitsPerPel == 32) {
+        return 1;
+      }
+    }
+}
+
 static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWnd) {
     // Static local variables (originally global data)
     static uint8_t gszRendererD3DDeviceInitializationCode[272] = {
@@ -2610,46 +2634,73 @@ static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWn
       return 0;
     }
 
-    nResult = g_pDirectDraw7->lpVtbl->SetDisplayMode(g_pDirectDraw7, RENDERER_nWindowWidth, RENDERER_nWindowHeight, 0x20, 0, 0);
-    if (nResult) {
-      // Vanilla Plus [vpres d3d ladder]: Vista+ display-mode lists (what
-      // ChangeDisplaySettings - and therefore this exclusive SetDisplayMode -
-      // accept) omit the dormant 1344x700: a non-standard timing retail never
-      // shipped, so no driver mode table carries it, while 1280x720 (CEA
-      // standard) enters everywhere. A rejected mode here used to be fatal
-      // (D2Win: "Failed to resize window... this is fatal!"), which is the
-      // field-reported D3D crash on switching to the new stop while Glide
-      // worked (the wrapper sizes its own swapchain and never touches the
-      // display mode). Retry with the smallest standard modes that fully
-      // contain the logical frame: the viewport below and every render
-      // coordinate stay RENDERER_nWindowWidth x RENDERER_nWindowHeight, so
-      // the wider/taller flip chain shows as inert black letterbox bands
-      // (RENDERER_D3D_ClearBackbuffer clears the locked surface rows).
-      // Dims-agnostic ladder: a hypothetical unlistable 1280x720 is hosted
-      // by the same two modes.
-      static const int gnVPHostDisplayModes[2][2] = {
-          {0x556, 0x300}, // 1366x768 - the panel-standard 16:9 host
-          {0x550, 0x300}, // 1360x768 - CEA-864 alternative host
-      };
+    // Vanilla Plus [vpres d3d ladder v2 / R111]: decide the presentation
+    // from the driver's display-mode list BEFORE touching SetDisplayMode.
+    // R110's reactive ladder taught two field facts: (1) Vista+ mode lists
+    // omit the dormant 1344x700 (a non-standard timing retail never shipped;
+    // 1280x720 is CEA-standard, which is why 720p never hit this), so the
+    // exclusive DD7 mode-set is rejected and D2Win's resize-failure path
+    // exits the process (the field-reported D3D crash - Glide is immune, the
+    // wrapper sizes its own swapchain and never changes the display mode);
+    // (2) the Win10/11 DDraw fullscreen emulation can also ACCEPT a mode it
+    // cannot actually set - fake success, no error to retry on - and its
+    // fallback (a borderless window at the logical size on the unchanged
+    // desktop) is exactly the "borderless window instead of fullscreen" the
+    // owner reported against R110, whose ladder never fired because there
+    // was no failed call to react to. Probing first sidesteps both shapes:
+    // an unlisted stop goes straight to a listed host mode (a REAL mode
+    // set). The flip chain below is created without DDSD_WIDTH/HEIGHT, so
+    // it auto-sizes to the host display mode, while the viewport and every
+    // render coordinate stay logical RENDERER_nWindowWidth x
+    // RENDERER_nWindowHeight - the extra host rows/cols show as inert black
+    // letterbox bands (RENDERER_D3D_ClearBackbuffer clears the LOCKED
+    // surface's own row count, so the bands stay black on every flip).
+    // Dims-agnostic: a hypothetical unlistable 1280x720 is hosted by the
+    // same two modes. Candidate set is agreed with the client-side probe
+    // (D2Client::ClientModeInGame::VPRES_ExclusiveRendererCanEnterStop), so
+    // a stop that survives that probe always finds its presentation here.
+    static const int gnVPHostDisplayModes[2][2] = {
+        {0x556, 0x300}, // 1366x768 - the panel-standard 16:9 host
+        {0x550, 0x300}, // 1360x768 - CEA-864 alternative host
+    };
+    int nHostWidth = 0;
+    int nHostHeight = 0;
+    if (!VPRES3D_IsDisplayModeListed(RENDERER_nWindowWidth, RENDERER_nWindowHeight)) {
       int nHostTry;
       for (nHostTry = 0; nHostTry < 2; nHostTry++) {
-        Fog::Src::LogManager::LOGFILE_WriteStringToFile(
-            "[vanilla-plus vpres] display mode %dx%d rejected (hr=0x%08x), retrying with host mode %dx%d",
-            RENDERER_nWindowWidth, RENDERER_nWindowHeight, nResult,
-            gnVPHostDisplayModes[nHostTry][0], gnVPHostDisplayModes[nHostTry][1]);
-        nResult = g_pDirectDraw7->lpVtbl->SetDisplayMode(
-            g_pDirectDraw7, gnVPHostDisplayModes[nHostTry][0], gnVPHostDisplayModes[nHostTry][1], 0x20, 0, 0);
-        if (!nResult) {
+        if (VPRES3D_IsDisplayModeListed(gnVPHostDisplayModes[nHostTry][0], gnVPHostDisplayModes[nHostTry][1])) {
+          nHostWidth = gnVPHostDisplayModes[nHostTry][0];
+          nHostHeight = gnVPHostDisplayModes[nHostTry][1];
           break;
         }
       }
-      if (nResult) {
-        DIRECTD3D_LogError("SetDisplayMode failed!", nResult);
-        return 0;
+      if (nHostWidth) {
+        Fog::Src::LogManager::LOGFILE_WriteStringToFile(
+            "[vanilla-plus vpres] stop %dx%d is not in the display mode list: hosting fullscreen at %dx%d (black letterbox bands)",
+            RENDERER_nWindowWidth, RENDERER_nWindowHeight, nHostWidth, nHostHeight);
       }
     }
 
-    /* BOOL bRepaint for MoveWindow */ /* int nHeight for MoveWindow */ /* int nWidth for MoveWindow */ /* int Y for MoveWindow */ /* int X for MoveWindow */ /* HWND hWnd for MoveWindow */ MoveWindow((HWND)hWnd, 0, 0, RENDERER_nWindowWidth, RENDERER_nWindowHeight, 1);
+    if (nHostWidth) {
+      nResult = g_pDirectDraw7->lpVtbl->SetDisplayMode(g_pDirectDraw7, nHostWidth, nHostHeight, 0x20, 0, 0);
+    } else {
+      nResult = g_pDirectDraw7->lpVtbl->SetDisplayMode(g_pDirectDraw7, RENDERER_nWindowWidth, RENDERER_nWindowHeight, 0x20, 0, 0);
+    }
+    if (nResult) {
+      DIRECTD3D_LogError("SetDisplayMode failed!", nResult);
+      return 0;
+    }
+
+    // Vanilla Plus [vpres d3d ladder v2]: cover the HOST when hosted. R110
+    // moved the window to the logical 1344x700 inside the 1366x768 host
+    // mode; under the emulated fullscreen that shrink left the desktop
+    // peeking past the window's right/bottom edges - the other half of the
+    // reported borderless-window look. True exclusive fullscreen ignores
+    // the window rectangle entirely, so covering the host is byte-identical
+    // to retail whenever the mode-set was real.
+    MoveWindow((HWND)hWnd, 0, 0,
+        nHostWidth ? nHostWidth : RENDERER_nWindowWidth,
+        nHostHeight ? nHostHeight : RENDERER_nWindowHeight, 1);
     g_bDeviceInitialized = 1;
     g_bCutsceneModeActive = 0;
     ddsurfacedesc.dwSize = 0x7c;

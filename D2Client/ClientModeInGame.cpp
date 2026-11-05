@@ -459,9 +459,10 @@ int32_t __stdcall fAPPMODE_client_ReturnAppMode(HMODULE hModule, D2IniConfigStrc
 // mode-set and D2Win's resize-failure path then exited the process (the
 // field-reported "works in Glide, crashes on switching in D3D" - Glide is
 // immune because the wrapper sizes its own swapchain and never changes the
-// display mode). Enumerates the primary display's 32 bpp mode list, the
-// same list DDraw's exclusive mode-set consumes.
-static BOOL VPRES_IsDisplayModeListed(int nWidth, int nHeight) {
+// display mode). Enumerates the primary display's mode list at the depth
+// the caller's renderer requests - the same list the exclusive mode-set
+// consumes.
+static BOOL VPRES_IsDisplayModeListedAtDepth(int nWidth, int nHeight, DWORD dwBitsPerPel) {
     DEVMODEA sDevMode;
     int nIndex = 0;
     for (;;) {
@@ -472,20 +473,33 @@ static BOOL VPRES_IsDisplayModeListed(int nWidth, int nHeight) {
       }
       if ((sDevMode.dmFields & (DM_PELSWIDTH | DM_PELSHEIGHT)) == (DM_PELSWIDTH | DM_PELSHEIGHT) &&
           (int)sDevMode.dmPelsWidth == nWidth && (int)sDevMode.dmPelsHeight == nHeight &&
-          sDevMode.dmBitsPerPel == 32) {
+          sDevMode.dmBitsPerPel == dwBitsPerPel) {
         return 1;
       }
     }
+}
+
+// 32 bpp wrapper: what the D3D renderer's exclusive mode-set requests
+// (RENDERER_D3D_InitializeDevice passes 0x20).
+static BOOL VPRES_IsDisplayModeListed(int nWidth, int nHeight) {
+    return VPRES_IsDisplayModeListedAtDepth(nWidth, nHeight, 32);
 }
 
 // Vanilla Plus [vpres d3d probe]: can an exclusive-mode renderer actually
 // enter this resolution stop? Stops 0 (640x480) and 2 (800x600) are retail
 // standards listed on every driver. Stops 3 (1344x700) and 4 (1280x720)
 // also accept the D3D renderer's host-mode letterbox ladder (see
-// RENDERER_D3D_InitializeDevice), so the probe passes when EITHER the exact
-// mode OR a host mode (1366x768 / 1360x768) is listed - client and renderer
-// agree on the candidate set, so a stop that survives this probe can never
-// trip the fatal resize path in D2Win::D2GFX_SetVideoMode.
+// RENDERER_D3D_InitializeDevice), so for D3D the probe passes when EITHER
+// the exact mode OR a host mode (1366x768 / 1360x768) is listed - client
+// and renderer agree on the candidate set, so a stop that survives this
+// probe can never trip the fatal resize path in D2Win::D2GFX_SetVideoMode
+// nor strand the presentation in the emulated borderless-window fallback
+// (field R110). The DirectDraw renderer gets the exact-only branch: its
+// 8-bit palettized pipeline has no letterbox mechanism, so hosting would
+// present a frame smaller than its own surface - it enters a stop only
+// when the driver genuinely lists the mode at the 8 bpp its DD1
+// SetDisplayMode requests (extinct on modern drivers, which means stops
+// 3/4 refuse gracefully there instead of gambling on the fatal resize).
 static BOOL VPRES_ExclusiveRendererCanEnterStop(DWORD dwStop) {
     int nWidth;
     int nHeight;
@@ -501,6 +515,9 @@ static BOOL VPRES_ExclusiveRendererCanEnterStop(DWORD dwStop) {
     } else {
       nWidth = 800;
       nHeight = 600;
+    }
+    if (D2gfx::D2GFX::D2GFX_GetRendererMode() == RENDERED_DirectDraw) {
+      return VPRES_IsDisplayModeListedAtDepth(nWidth, nHeight, 8);
     }
     return VPRES_IsDisplayModeListed(nWidth, nHeight) ||
            VPRES_IsDisplayModeListed(0x556, 0x300) || // 1366x768 host

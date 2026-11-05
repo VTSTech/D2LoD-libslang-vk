@@ -11,7 +11,16 @@ stop live in the menu), **D3D crash caught and fixed in-round** — Vista+ displ
 omit 1344x700, so the exclusive DD7 `SetDisplayMode` rejected it and D2Win's fatal-resize
 path exited the process; fix = a D3D host-mode letterbox ladder (1366x768 → 1360x768) plus
 a client-side mode-list probe that refuses the stop cleanly when nothing fits (§14).
-Gates 401/401; llvm-mingw build gate pending (owner; D3D re-test owed). Earlier: v5, 2026-11-05. Rows 12–13 (`stack_gems`, `stack_runes`) added from an owner suggestion —
+Gates 401/401; llvm-mingw build gate pending (owner; D3D re-test owed). **Field round 2
+(owner QA, R110 → R111)**: the D3D crash fix held ("doesn't crash"), but the stop came up
+as a **borderless window instead of fullscreen** — the Win10/11 DDraw fullscreen
+emulation can also ACCEPT a mode it cannot actually set (fake success, no error to
+react to), so R110's retry ladder never fired and the emulation's fallback (borderless
+window at the logical size on the unchanged desktop) showed. R111 probes the mode list
+BEFORE the mode-set — an unlisted stop goes straight to a listed host mode (a real mode
+set) — and sizes the window to the HOST so the emulated-fullscreen window covers the
+screen; frame stays 1344x700 with black letterbox bands (§14). Gates 405/405; llvm-mingw
+build gate + D3D re-test pending (owner). Earlier: v5, 2026-11-05. Rows 12–13 (`stack_gems`, `stack_runes`) added from an owner suggestion —
 **planned, not implemented**: no D2R parity (Blizzard never shipped rune/gem stacking — a live
 player request through 2.7), PD2 ships it. Earlier: v4, 2026-11-05. Status sweep: shipped rows
 marked Shipped with their first release (1, 3, 6, 9, 10, 11); row 9's SMOKE debts cleared (§H items 25/27 in the R83 full-belt pass [#24], the ten-page items in the R104 pass [#28]); §1/§6/§9/§10 as-built notes refreshed, §9's pre-ship draft marked superseded by the shipped in-panel tab. Earlier: v3, 2026-10-29 — row 9 (`shared_stash`) added from an owner suggestion — side-file design, `.d2s`/`.d2x` untouched; row 4 (`transparent_hud`) added from an owner suggestion — no D2R parity, engine-native draw modes. Scoped by research: D2R official QoL behavior + prior art from the
@@ -60,7 +69,7 @@ Every slate row must satisfy all of these before it ships:
 | 11 | Mana Burn fix (melee drain 256x bug) | Combat (D2Game) | D2R 2.4 patch notes ("fixed melee hits draining 256 times too much") + Basin wiki Mana Burn | S | Low | **Implemented** (R106 — `mana_burn_fix`; ini-only at ship, in-game **Mana Burn Fix** row on the Vanilla+ Options page since R108; server-side gate TU + VP-marked drain-roll shim in SUnitDmg.cpp; field QA + llvm-mingw gate pending) |
 | 12 | Stackable gems | Inventory | None — owner suggestion 2026-11-05; PD2 stacks gems in its currency tab | M | Med | `stack_gems` |
 | 13 | Stackable runes | Inventory | None — owner suggestion 2026-11-05; PD2 stacks runes in its currency tab | M | Med | `stack_runes` |
-| 14 | 1344x700 resolution (retail's dormant mode 3) | Video / renderers | Retail-dormant engine mode — the binaries carry the tables, no UI stop ever shipped; D2MultiRes-era community prior art | S–M | Low–Med | **Implemented** (R109 — Gap A `case 3` + Gap B slider stop 3 + Gap C mini-panel mapping; field: Glide GREEN, D3D switch crash fixed in-round via mode-list probe + host-mode letterbox ladder; gates 401/401; llvm-mingw gate + D3D re-test pending (owner); plan: 1344x700-PLAN.md) |
+| 14 | 1344x700 resolution (retail's dormant mode 3) | Video / renderers | Retail-dormant engine mode — the binaries carry the tables, no UI stop ever shipped; D2MultiRes-era community prior art | S–M | Low–Med | **Implemented** (R109 — Gap A `case 3` + Gap B slider stop 3 + Gap C mini-panel mapping; field: Glide GREEN, D3D switch crash fixed in-round via mode-list probe + host-mode letterbox ladder; field round 2 (R111): D3D borderless-window look fixed — probe-first presentation + host-sized window, gates 405/405; llvm-mingw gate + D3D re-test pending (owner); plan: 1344x700-PLAN.md) |
 | 15 | 1920x1080 resolution | Video / renderers | None — owner suggestion 2026-11-05; SGD2FreeRes/D2DX-class arbitrary-res prior art | M | Med | video-options slider stop 4 (not `[features]`-gated) |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
@@ -518,6 +527,34 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
   listed, so no path can reach the fatal resize. Boot is covered by layer 1 (the game
   boots at 640x480 and only re-applies the saved stop through the probed choke point).
   Gates: 7 new `res3:` D3D/probe rows → **401/401**; D3D re-test owed (owner).
+- **Field round 2 (owner QA, R110 → R111)**: R110 (the crash fix, delivered as a hotfix
+  overlay — mark bumped only at R111) held: "doesn't crash". But fullscreen D3D + the
+  1344x700 stop came up as a **borderless window on the unchanged desktop**. Second
+  emulation behavior pinned: the Win10/11 DDraw fullscreen emulation can ACCEPT a
+  `SetDisplayMode` it cannot actually set (fake success) and fall back to a borderless
+  window at the requested size — R110's ladder only fired on a REJECTED call, so there
+  was nothing to retry on. Two code shapes fixed in R111: (1) **probe-first** —
+  `RENDERER_D3D_InitializeDevice` asks the driver's mode list (new
+  `VPRES3D_IsDisplayModeListed`, twin of the client helper) BEFORE the mode-set; an
+  unlisted stop goes straight to a listed host mode (1366x768 → 1360x768, same candidate
+  set, now a real mode-set every time) and the doomed call is never made; (2) **the
+  window covers the HOST** — R110 `MoveWindow`'d the game window to the logical
+  1344x700 inside the 1366x768 host mode, which under the emulated fullscreen left the
+  desktop peeking past the window's right/bottom edges (the other half of the reported
+  look); hosted stops now move to the host size, true exclusive paths stay retail
+  byte-identical. Same commit: the client probe gained a depth-aware base
+  (`VPRES_IsDisplayModeListedAtDepth`) and a **DirectDraw exact-only branch** — the
+  8-bit palettized DDRAW renderer has no letterbox mechanism, so it enters stops 3/4
+  only when the driver genuinely lists the mode at 8 bpp (extinct on modern drivers →
+  graceful refusal there too, closing the same crash class DDRAW was still carrying).
+  Presentation ladder log line renamed (`[vanilla-plus vpres] stop WxH is not in the
+  display mode list: hosting fullscreen at WxH`). Gates: retry-log pin replaced,
+  counts re-pinned, 4 new rows (`d3d probe-first log`, `d3d probe helper`, `d3d window
+  covers host`, `probe depth-aware helper`, `ddraw exact-8bpp arm` minus the retired
+  retry log = +4) → **405/405**; syntax-check error digests identical pre/post on the
+  three touched TUs (the pre-existing D2Hell.h host-shim noise only). D3D re-test owed
+  (owner; expected: display switches to 1366x768, game frame top-left 1344x700 with
+  black bands right/bottom, no desktop visible, mouse confined to the logical frame).
 - **The dormant mode**: retail 1.14d ships mode-3 plumbing end to end but no UI stop — the
   size table maps 3 → 1344x700 (`D2gfx/D2GFX.cpp` `D2GFX_GetWindowSizeByResolutionMode`,
   case 3 = `0x540` x 700), GDI windowed has native `0x540`-wide branches (DIB alloc +
