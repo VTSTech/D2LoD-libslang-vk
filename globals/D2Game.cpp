@@ -243,6 +243,7 @@ uint8_t gbQuestReconnectMode = 0x1; D2_GLOBAL_GUARD(gbQuestReconnectMode, "gbQue
 uint32_t gptItemCodeArmor = 0; D2_GLOBAL_GUARD(gptItemCodeArmor, "gptItemCodeArmor");
 uint32_t gptItemCodeSwordType = 0; D2_GLOBAL_GUARD(gptItemCodeSwordType, "gptItemCodeSwordType");
 int gQServerClientTablesInitialized = 0; D2_GLOBAL_GUARD(gQServerClientTablesInitialized, "gQServerClientTablesInitialized");
+BOOL DEBUGPRINT = 0; D2_GLOBAL_GUARD(DEBUGPRINT, "DEBUGPRINT");
 
 namespace D2Common::Drlg::Maze {
 
@@ -448,13 +449,25 @@ namespace Class::HANDLER {
 
 } // namespace Class::HANDLER
 
-namespace D2Client::CharScreen {
+namespace D2Launch::CharSel {
 
-} // namespace D2Client::CharScreen
+} // namespace D2Launch::CharSel
 
-namespace D2Client::UI::ui {
+namespace D2Game::GAME::Rendering {
 
-} // namespace D2Client::UI::ui
+} // namespace D2Game::GAME::Rendering
+
+namespace D2Client::Renderer {
+
+} // namespace D2Client::Renderer
+
+namespace D2DDraw::Renderer::DirectDraw {
+
+} // namespace D2DDraw::Renderer::DirectDraw
+
+namespace D2Lang::Unicode::UNISYS {
+
+} // namespace D2Lang::Unicode::UNISYS
 
 namespace D2Game::Quests::QUESTS::Quest40 {
 
@@ -10628,14 +10641,10 @@ namespace D2Client::Draw::LightMap {
 
 } // namespace D2Client::Draw::LightMap
 
-namespace D2Client::Mouse {
+namespace D2Win::Src::D2WinMain {
 
-} // namespace D2Client::Mouse
+} // namespace D2Win::Src::D2WinMain
 
-namespace D2Client::Forms {
+namespace D2Win::D2GFX {
 
-} // namespace D2Client::Forms
-
-namespace D2Client::GAME::Record {
-
-} // namespace D2Client::GAME::Record
+} // namespace D2Win::D2GFX

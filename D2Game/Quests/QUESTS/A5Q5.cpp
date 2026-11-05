@@ -3,9 +3,9 @@
 #include "D2Game/Quests/QUESTS/A5Q5.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/Units.h"
+#include "D2Common/Collision.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
@@ -43,6 +43,7 @@
 #include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Objects/Objects.h"
 #include "D2Game/PLAYER/Player.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
 #include "D2Game/UNIT/Party.h"
@@ -566,7 +567,8 @@ void __fastcall Q35_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 }
 
 // A5Q5 (Rite of Passage) XP reward function. Grants 1,400,000 / 20,000,000 / 40,000,000 XP for Normal/Nightmare/Hell respectively, capped to one level's worth of experience. Loops awarding XP until the cap is exhausted or the level table is exceeded. Caller is responsible for setting Completed/JustCompleted quest states.
-static uint32_t __stdcall RewardExperienceFromAncients(::SGAMEDATA * pQuestData, D2UnitStrc * pUnit) {
+// @returns void: EAX at the epilogue is whatever the last stat call left; none of the three callers (0058c741, 0058c89d, 0058caab) reads it. Found by KierTaylor on the Mac twin (Redivivus proposal #1207).
+static void __stdcall RewardExperienceFromAncients(::SGAMEDATA * pQuestData, D2UnitStrc * pUnit) {
     int32_t nExpNeeded;
     uint32_t nValue;
     int32_t ePlayerClassId;
@@ -592,9 +594,9 @@ static uint32_t __stdcall RewardExperienceFromAncients(::SGAMEDATA * pQuestData,
     }
 
     int32_t pExpTxt = D2Common::DATATBLS::DataTbls::TXT_Experience_GetMaxLevel(ePlayerClassId);
-    DWORD nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-    if ((int)nLevel >= pExpTxt) {
-      return nLevel;
+    int nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
+    if (nLevel >= pExpTxt) {
+      return;
     }
 
     DWORD dwExpCurrentLevel = D2Common::DATATBLS::DataTbls::TXT_Experience_GetLineLevel(ePlayerClassId, nLevel + 1);
@@ -606,7 +608,7 @@ static uint32_t __stdcall RewardExperienceFromAncients(::SGAMEDATA * pQuestData,
     do {
       int32_t nCurrentExp;
       if (!nExpRemaining) {
-        return dwExpNextLevel;
+        return;
       }
 
       nCurrentExp = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_nextexp, 0);
@@ -623,11 +625,7 @@ static uint32_t __stdcall RewardExperienceFromAncients(::SGAMEDATA * pQuestData,
         D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_experience, nExpRemaining + nCurrentExp, 0);
         nExpRemaining = 0;
       }
-
-      dwExpNextLevel = nLevel;
-    } while ((int)nLevel < pExpTxt);
-
-    return nLevel;
+    } while (nLevel < pExpTxt);
 }
 
 // [A5Q5 = Rite of Passage] Q35_SetCompleteForPartyMember: party-completion callback. If member not Completed, is level-gated (>=(diff+1)*20) and physically in Act V, sets RiteOfPassage Completed + JustCompleted and awards XP. Shares the kill credit with the whole party.
@@ -667,12 +665,7 @@ void __fastcall Q35_SetCompleteForPartyMember(::SGAMEDATA * pGame, D2UnitStrc * 
 // Quest event 10 (player leaves game) for Q35: removes the leaving player's GUID (pQuestArgs->pPlayer->dwUnitId, or -1 with no player) from pQuestData->sQuestGUID via a tail jump to QUESTGUID_RemovePlayerFromList.
 // Evidence: Q35_InitData stores it at sStateFunctions slot 10 (+0xc8); the slot is a QUESTCALLBACK (fastcall ECX=pQuestData, EDX=pQuestArgs). Was the label SERVER_QUEST_Q35_Callback_10 (kept as a secondary label).
 void __fastcall Q35_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if (!pQuestArgs->pPlayer) {
-      QUESTGUID_RemovePlayerFromList(&pQuestData->sQuestGUID, -1);
-      return;
-    }
-
-    QUESTGUID_RemovePlayerFromList(&pQuestData->sQuestGUID, pQuestArgs->pPlayer->nUnitGUID);
+    QUESTGUID_RemovePlayerFromList(&pQuestData->sQuestGUID, !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID);
 }
 
 // [A5Q5 = Rite of Passage] Q35_SetCannotComplete: per-player callback run after the Ancients die. If a player is NOT Completed and NOT JustCompleted (e.g. under the level gate, so they missed credit), marks RiteOfPassage CannotCompleteQuestInGame and sends packet 0x23 — they must re-fight in a new game.
@@ -747,11 +740,11 @@ static void __stdcall Q35_FireAncientDeathMissile(D2QuestArgStrc * pQuestArg, D2
     }
 
     memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.pOwner = pQuestArg->pTarget;
     sSkillArg.nFlags = 0x420;
     sSkillArg.nMissileTxtNo = MISSILE_AncientDeathCenter;
-    eD2UnitType eUnitType = pAncientUnit->eUnitType;
+    sSkillArg.pOwner = pQuestArg->pTarget;
     sSkillArg.pMissile = sSkillArg.pOwner;
+    eD2UnitType eUnitType = pAncientUnit->eUnitType;
     int nUnitXValue;
     if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nUnitXValue = pAncientUnit->pPath.pStaticPath->nPosX;
@@ -1172,13 +1165,7 @@ static void Q35_SetStatueAnimMode(D2QuestDataA5Q5Strc * pQuestData, D2ObjectInit
 void __fastcall Objects_InitFn65_AncientStatue2(D2ObjectInitFnArg * pInitArg) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_RiteOfPassage);
     D2QuestDataA5Q5Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q5;
-    if (!pInitArg->pObject) {
-      pQuestSpecificData->anStatueObjectGUID[0] = -1;
-      Q35_SetStatueAnimMode(pQuestSpecificData, pInitArg);
-      return;
-    }
-
-    pQuestSpecificData->anStatueObjectGUID[0] = pInitArg->pObject->nUnitGUID;
+    pQuestSpecificData->anStatueObjectGUID[0] = !pInitArg->pObject ? -1 : pInitArg->pObject->nUnitGUID;
     Q35_SetStatueAnimMode(pQuestSpecificData, pInitArg);
 }
 
@@ -1186,13 +1173,7 @@ void __fastcall Objects_InitFn65_AncientStatue2(D2ObjectInitFnArg * pInitArg) {
 void __fastcall Objects_InitFn63_AncientStatue3(D2ObjectInitFnArg * pInitArg) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_RiteOfPassage);
     D2QuestDataA5Q5Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q5;
-    if (!pInitArg->pObject) {
-      pQuestSpecificData->anStatueObjectGUID[1] = -1;
-      Q35_SetStatueAnimMode(pQuestSpecificData, pInitArg);
-      return;
-    }
-
-    pQuestSpecificData->anStatueObjectGUID[1] = pInitArg->pObject->nUnitGUID;
+    pQuestSpecificData->anStatueObjectGUID[1] = !pInitArg->pObject ? -1 : pInitArg->pObject->nUnitGUID;
     Q35_SetStatueAnimMode(pQuestSpecificData, pInitArg);
 }
 
@@ -1200,13 +1181,7 @@ void __fastcall Objects_InitFn63_AncientStatue3(D2ObjectInitFnArg * pInitArg) {
 void __fastcall Objects_InitFn64_AncientStatue1(D2ObjectInitFnArg * pInitArg) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_RiteOfPassage);
     D2QuestDataA5Q5Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q5;
-    if (!pInitArg->pObject) {
-      pQuestSpecificData->anStatueObjectGUID[2] = -1;
-      Q35_SetStatueAnimMode(pQuestSpecificData, pInitArg);
-      return;
-    }
-
-    pQuestSpecificData->anStatueObjectGUID[2] = pInitArg->pObject->nUnitGUID;
+    pQuestSpecificData->anStatueObjectGUID[2] = !pInitArg->pObject ? -1 : pInitArg->pObject->nUnitGUID;
     Q35_SetStatueAnimMode(pQuestSpecificData, pInitArg);
 }
 

@@ -17,7 +17,6 @@
 #include "D2Win/DC6Block.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
-#include "support/d2_trace.h"
 #include "Fog/SMem.h"
 #include "Fog/Source/SFile.h"
 #include "Fog/Src/AsyncData.h"
@@ -30,6 +29,7 @@
 #include "globals/globals.h"
 #include "D2CMP/D2CMP.h"
 #include "D2CMP/SRC/SpriteCache.data.h"
+#include "D2Direct3D/Renderer/Direct3D.data.h"
 #include "D2Game/Monster/AI/AI.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -500,11 +500,15 @@ static BOOL SPRITECACHE_FindOrLoad(char * szText, D2GfxDataStrc * pGfxData) {
             }
           case UNIT_OBJECT:
             {
-              if (pGfxData->nClassId == 0x156) {
-                return 1;
-              }
-              if (pGfxData->nClassId == 0x233) {
-                return 1;
+              switch (pGfxData->nClassId) {
+                case 0x156:
+                  {
+                    return 1;
+                  }
+                case 0x233:
+                  {
+                    return 1;
+                  }
               }
 
               break;
@@ -837,13 +841,17 @@ static DC6Block * __stdcall SPRITECACHE_FindFrameBlock(D2GfxDataStrc * pGfxData,
       byDirectionsPlus1 = pDecodeState->nDirectionsPlus1;
       nFrameOffset = pGfxData->nDirection;
     } else {
-      if (eUnitType == UNIT_OBJECT) {
-        nDirIdx = 0;
-        goto find_frame_in_direction;
-      }
-      if (eUnitType == UNIT_ITEM) {
-        nDirIdx = pGfxData->nDirection;
-        goto find_frame_in_direction;
+      switch (eUnitType) {
+        case UNIT_OBJECT:
+          {
+            nDirIdx = 0;
+            goto find_frame_in_direction;
+          }
+        case UNIT_ITEM:
+          {
+            nDirIdx = pGfxData->nDirection;
+            goto find_frame_in_direction;
+          }
       }
 
       byDirectionsPlus1 = pDecodeState->nDirectionsPlus1;
@@ -953,6 +961,10 @@ static void __stdcall SPRITECACHE_LoadAndCacheDC6(D2CelFileCacheEntryStrc * pCel
     return;
 }
 
+void __stdcall SPRITECACHE_Unlock_Unref_005fee00() {
+
+}
+
 uint32_t __stdcall SPRITECACHE_GetTotalEntries() {
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&D2GfxMemoryStrc_0089db60.lpCriticalSection);
     uint32_t nUsedMemory = D2GfxMemoryStrc_0089db60.nUsedMemory;
@@ -964,12 +976,20 @@ uint32_t __stdcall SPRITECACHE_GetCacheSize() {
     return D2GfxMemoryStrc_0089db60.pMaxMemory;
 }
 
+void __stdcall SPRITECACHE_Unlock_Unref_005fee50() {
+
+}
+
 int __stdcall SPRITECACHE_GetMaxSize() {
     return gCelDataCacheLru.nBytesUsed;
 }
 
 uint32_t __stdcall SPRITECACHE_GetCurrentSize() {
     return gCelDataCacheLru.dwBufSize;
+}
+
+int __fastcall Unreferenced_005fee80(int param_1) {
+    return (uint32_t)(*(int*)(param_1 + 0x2c) != 0);
 }
 
 // @sourcefile .\SRC\SpriteCache.cpp
@@ -1675,13 +1695,14 @@ static uint32_t __stdcall SPRITECACHE_LoadFromArchive(D2GfxDataStrc * pGfxData, 
         hArchiveHandle = *pOffsetTable;
         tDecodeRequest.pfnComplete = SPRITECACHE_DecodeFrameByIndex;
         tDecodeRequest.nFrameCount = nFrameStep;
+        pAsyncData = Fog::Src::AsyncData::STRUCT_AllocAsyncData_Line0x128(D2GfxMemoryStrc_0089db60.pMemory, szFileName, 1, hArchiveHandle, nDataSize2, nullptr, (D2AsyncDataCallbackStrc*)pDecodeRequest, -2, ".\\SRC\\SpriteCache.cpp", 0x3da);
       } else {
         hArchiveHandle = *pOffsetTable;
         nLine = 0x3e6;
         pDecodeRequest = 0;
+        pAsyncData = Fog::Src::AsyncData::STRUCT_AllocAsyncData_Line0x128(D2GfxMemoryStrc_0089db60.pMemory, szFileName, 1, hArchiveHandle, nDataSize2, nullptr, (D2AsyncDataCallbackStrc*)pDecodeRequest, -2, ".\\SRC\\SpriteCache.cpp", 0x3e6);
       }
 
-      pAsyncData = Fog::Src::AsyncData::STRUCT_AllocAsyncData_Line0x128(D2GfxMemoryStrc_0089db60.pMemory, szFileName, 1, hArchiveHandle, nDataSize2, nullptr, (D2AsyncDataCallbackStrc*)pDecodeRequest, -2, ".\\SRC\\SpriteCache.cpp", nLine);
       pCacheEntry->tDecode.pAsyncData = pAsyncData;
       if (!pAsyncData) {
         return -1;
@@ -1793,11 +1814,6 @@ void __stdcall GFX_InitCelDataCache(uint32_t nFlags, uint32_t dwCacheBytes, uint
     }
 
     gbSpriteCacheConversionEnabled = (uint32_t)(dwAvailMemOverride < 0x4000000);
-    {
-        static int s_nInitCalls = 0;
-        ++s_nInitCalls;
-        const unsigned* pw = (const unsigned*)&gCelDataCacheLru;
-    }
     CelDataHash::CELDATAHASH_InitHashTable(gaCelDataHashTable);
     LRUCache::LRUCACHE_FreeAll(&gCelDataCacheLru);
     memset(&gCelDataCacheLru, 0, 0x34);
@@ -2138,6 +2154,17 @@ BOOL __stdcall SPRITECACHE_PrecacheSpriteSync(D2GfxDataStrc * pGfxData) {
     }
 
     return 0;
+}
+
+void __fastcall SPRITECACHE_SetMaxSize_Unref_00624700(size_t nSize) {
+    // Static local variables (originally global data)
+    static unsigned long long gpItemTypeTableContext = 0; D2_STATIC_GUARD(gpItemTypeTableContext, "D2CMP::SRC::SpriteCache::SPRITECACHE_SetMaxSize_Unref_00624700::gpItemTypeTableContext");
+
+    *(uint32_t*)(char*)&gpItemTypeTableContext = nSize;
+}
+
+void __fastcall SPRITECACHE_SetMaxSize_Unref_006b2f30(size_t nSize) {
+    g_bPerspectiveMode = nSize;
 }
 
 } // namespace D2CMP::SRC::SpriteCache

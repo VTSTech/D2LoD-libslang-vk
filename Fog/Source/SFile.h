@@ -71,7 +71,10 @@ int __fastcall SFILE_GetBlizzardAppDataPath(char * szOutPath, uint32_t nMaxLen);
 BOOL __stdcall GetUseDirectCommand();
 int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot);
 void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize);
-int32_t __fastcall SFILE_CalculateBufferOffset(int32_t pThis, int32_t nBufferOffset);
+int __fastcall Unreferenced_00407260(int param_1);
+int __fastcall Unreferenced_00407280(int param_1);
+int __fastcall Unreferenced_00407290(int param_1);
+int32_t __thiscall SFILE_CalculateBufferOffset(int32_t pThis, int32_t nBufferOffset);
 // [vanilla-plus options page] bust the portable_save 2 s hot-read cache (called
 // from D2Client's D2VP_ConfigReloaded after a page toggle write).
 void __stdcall PORTABLESAVE_FlushConfig();

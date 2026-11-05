@@ -66,6 +66,8 @@
 #include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
+#include "D2Client/UI/Inv.data.h"
+#include "D2Client/UI/MiniPanel.data.h"
 #include "D2Client/UI/Panel.data.h"
 #include "D2Client/UNIT/PlrSkills.h"
 #include "D2Common/ITEMS/ItemMods.h"
@@ -128,6 +130,8 @@ BOOL bShowHpText = 0; D2_GLOBAL_GUARD(bShowHpText, "D2Client::UI::Panel::bShowHp
 BOOL bShowmpText = 0; D2_GLOBAL_GUARD(bShowmpText, "D2Client::UI::Panel::bShowmpText");
 } // namespace D2Client::UI::Panel
 static uint8_t gbPanelStaminaColorRed = 0; D2_STATIC_GUARD(gbPanelStaminaColorRed, "gbPanelStaminaColorRed");
+static int gbPanelBorderDrawn = 0; D2_STATIC_GUARD(gbPanelBorderDrawn, "gbPanelBorderDrawn");
+static uint32_t gpPanelBorderImage = 0; D2_STATIC_GUARD(gpPanelBorderImage, "gpPanelBorderImage");
 
 namespace D2Client::UI::Panel {
 
@@ -149,6 +153,19 @@ void __stdcall thunk_CMD_UseBeltSlot3() {
 // JMP thunk
 void __stdcall thunk_CMD_UseBeltSlot4() {
     ::D2Client::UI::Panel::CMD_UseBeltSlot4();
+}
+
+uint32_t __stdcall PANEL_GetBeltSlotHoverFlag_Unref_0047ec40() {
+    return (uint32_t)(gnMiniPanelClickedButton != 0);
+}
+
+void __stdcall PANEL_SetBottomPanelGlobals1_Unref_004880f0() {
+    gnInvMouseX = 0;
+    gpInvCursorItem = 0;
+}
+
+uint32_t __stdcall PANEL_GetBeltSlotHoverFlag_Unref_0048a690() {
+    return (uint32_t)(pItemToDescribe != 0);
 }
 
 void __stdcall LoadPanelImages() {
@@ -471,8 +488,8 @@ static int32_t PANEL_GetSmoothedStatValue(eD2UnitStat eUnitStat) {
     }
 
     int nStartTime = gaPanelImageLoadFlags[nSlotOffset * 4 + 1];
-    nNow = GAME::Game::GetEntryIndex();
-    nAbsDiff = nNow - nStartTime;
+    nAbsDiff = GAME::Game::GetEntryIndex();
+    nAbsDiff -= nStartTime;
     int nDuration = nStartTime - gaPanelImageLoadFlags[nSlotOffset * 4 + 3];
     if (nDuration < 7) {
       nDuration = 7;
@@ -1324,6 +1341,20 @@ void __stdcall PANEL_DrawPanelLayout() {
     D2Win::Src::D2WinFont::DRAW_text(wszMpText, ScreenSizeX - VPRES_GetWideUiOffsetX() - nTextWidth / 2 - 0x50, ScreenSizeY - 0x5f, 0, 0); // VP: site-5, orb-anchored
 }
 
+int Unreferenced_00498310() {
+    D2RoomStrc* pRoom = UNIT::CUnit::GetCurrentRoom();
+    eD2LevelId eVar1 = LEVEL_None;
+    if (pRoom) {
+      eVar1 = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
+      if (gpPanelBorderImage != eVar1) {
+        gpPanelBorderImage = eVar1;
+        gbPanelBorderDrawn = 0x3c;
+      }
+    }
+
+    return eVar1;
+}
+
 void __stdcall PANEL_DrawLife() {
     uint16_t nStringId;
     int nMouseX = Cursor::GetMouseX();
@@ -1731,7 +1762,8 @@ void __stdcall CMD_UseBeltSlot1() {
 
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
     uint16_t wShiftKeyState = GetKeyState(0x10);
-    ClickBeltRight(0, pUnit, pUnit->pInventory, wShiftKeyState & 0x8000);
+    wShiftKeyState &= 0x8000;
+    ClickBeltRight(0, pUnit, pUnit->pInventory, wShiftKeyState);
 }
 
 // Key-command handler for belt slot 2. If not exiting and the player is alive and
@@ -1751,7 +1783,8 @@ void __stdcall CMD_UseBeltSlot2() {
 
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
     uint16_t wShiftKeyState = GetKeyState(0x10);
-    ClickBeltRight(1, pUnit, pUnit->pInventory, wShiftKeyState & 0x8000);
+    wShiftKeyState &= 0x8000;
+    ClickBeltRight(1, pUnit, pUnit->pInventory, wShiftKeyState);
 }
 
 // Key-command handler for belt slot 3. If not exiting and the player is alive and
@@ -1771,7 +1804,8 @@ void __stdcall CMD_UseBeltSlot3() {
 
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
     uint16_t wShiftKeyState = GetKeyState(0x10);
-    ClickBeltRight(2, pUnit, pUnit->pInventory, wShiftKeyState & 0x8000);
+    wShiftKeyState &= 0x8000;
+    ClickBeltRight(2, pUnit, pUnit->pInventory, wShiftKeyState);
 }
 
 // Key-command handler for belt slot 4. If not exiting and the player is alive and
@@ -1791,7 +1825,8 @@ void __stdcall CMD_UseBeltSlot4() {
 
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
     uint16_t wShiftKeyState = GetKeyState(0x10);
-    ClickBeltRight(3, pUnit, pUnit->pInventory, wShiftKeyState & 0x8000);
+    wShiftKeyState &= 0x8000;
+    ClickBeltRight(3, pUnit, pUnit->pInventory, wShiftKeyState);
 }
 
 void __fastcall PANEL_SetBeltSlotHoverFlag(uint32_t nIndex, int byValue) {
@@ -2093,10 +2128,6 @@ void __stdcall PANEL_DrawBottomPanel() {
 }
 
 void __stdcall DRAW_UI_BordersAndOrbsAndFillers() {
-    // Static local variables (originally global data)
-    static int gbPanelBorderDrawn; D2_STATIC_GUARD_BSS(gbPanelBorderDrawn, "D2Client::UI::Panel::DRAW_UI_BordersAndOrbsAndFillers::gbPanelBorderDrawn");
-    static uint32_t gpPanelBorderImage; D2_STATIC_GUARD_BSS(gpPanelBorderImage, "D2Client::UI::Panel::DRAW_UI_BordersAndOrbsAndFillers::gpPanelBorderImage");
-
     eD2LevelId eRoomLevelId;
     eD2RendererMode eRendererMode = D2gfx::D2GFX::D2GFX_GetRendererMode();
     DWORD eResolutionMode = D2gfx::D2GFX::D2GFX_GetResolutionMode();

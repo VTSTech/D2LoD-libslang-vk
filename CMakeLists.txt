@@ -94,13 +94,16 @@ target_include_directories(d2 PRIVATE ${D2_INCLUDE_DIRS})
 set(CXX_ONLY "$<COMPILE_LANGUAGE:CXX>")
 set_target_properties(d2 PROPERTIES
     CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+# -fwrapv: signed overflow wraps. VC8 never exploits signed-overflow UB, so the
+# original's arithmetic wraps wherever it overflows; GCC without it may assume the
+# overflow away (SEVT_NextPowerOf2 folded its loop that way).
 # [vanilla-plus] LEAN drops -g (codegen identical at -O0; see option above)
 if(REDIVIVUS_LEAN)
     target_compile_options(d2 PRIVATE
-        "$<${CXX_ONLY}:-w;-fms-extensions>")
+        "$<${CXX_ONLY}:-w;-fms-extensions;-fwrapv>")
 else()
     target_compile_options(d2 PRIVATE
-        "$<${CXX_ONLY}:-g;-w;-fms-extensions>")
+        "$<${CXX_ONLY}:-g;-w;-fms-extensions;-fwrapv>")
 endif()
 target_compile_options(d2 PRIVATE
     "$<${CXX_ONLY}:SHELL:-include ${CMAKE_SOURCE_DIR}/d2_platform.h>"

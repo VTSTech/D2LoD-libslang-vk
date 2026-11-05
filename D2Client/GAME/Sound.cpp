@@ -223,6 +223,10 @@ uint32_t __fastcall SOUND_GetStreamProgress(D2ClientSoundChannelStrc * pChannel)
     return nProgress;
 }
 
+void __stdcall SOUND_ShutdownAudio_Thunk_Unref_004df910() {
+    D2Sound::Src::D2SoundFast::SOUND_GetSoundMixer();
+}
+
 BOOL __stdcall SOUND_Is3DMixerActive() {
     if (!pAudioMixerInterface) {
       return 0;
@@ -317,7 +321,7 @@ static BOOL SOUND_InitStreamChannels(int32_t nMixerMode) {
       } else if (nMixerMode == 1) {
         gaSoundChannels[nChannelIdx].nChannelType = 2;
       } else {
-        gaSoundChannels[nChannelIdx].nChannelType = nMixerMode != 2 ? 0 : 0x6;
+        gaSoundChannels[nChannelIdx].nChannelType = nMixerMode == 2 ? 0x6 : 0;
       }
 
       pNewSampleInst = D2Sound::Src::D2SoundSmp::CallSounds(gaSoundChannels[nChannelIdx].nChannelType, BackgroundSoundsActive);
@@ -1091,6 +1095,10 @@ int32_t __fastcall SOUND_SelectNpcGreetingSound(D2UnitStrc * pUnit, int32_t nMod
     int32_t nRecordingIdx = Game::gnRecordingIndex();
     pGreetingSounds->nLastRecordingIdx = nRecordingIdx;
     return nCycleIdx;
+}
+
+BOOL __stdcall SOUND_IsInitializedDup_Unref_004e0680() {
+    return gnDialogDataInitialized;
 }
 
 } // namespace D2Client::GAME::Sound

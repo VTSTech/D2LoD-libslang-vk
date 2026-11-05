@@ -139,13 +139,25 @@ namespace Class::HANDLER {
 
 } // namespace Class::HANDLER
 
-namespace D2Client::CharScreen {
+namespace D2Launch::CharSel {
 
-} // namespace D2Client::CharScreen
+} // namespace D2Launch::CharSel
 
-namespace D2Client::UI::ui {
+namespace D2Game::GAME::Rendering {
 
-} // namespace D2Client::UI::ui
+} // namespace D2Game::GAME::Rendering
+
+namespace D2Client::Renderer {
+
+} // namespace D2Client::Renderer
+
+namespace D2DDraw::Renderer::DirectDraw {
+
+} // namespace D2DDraw::Renderer::DirectDraw
+
+namespace D2Lang::Unicode::UNISYS {
+
+} // namespace D2Lang::Unicode::UNISYS
 
 namespace D2Game::Quests::QUESTS::Quest40 {
 
@@ -315,38 +327,29 @@ namespace D2Client::Draw::LightMap {
 
 } // namespace D2Client::Draw::LightMap
 
-namespace D2Client::Mouse {
+namespace D2Win::Src::D2WinMain {
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-int nPosX = 0; D2_GLOBAL_GUARD(nPosX, "D2Client::Mouse::nPosX");
-int nPosY = 0; D2_GLOBAL_GUARD(nPosY, "D2Client::Mouse::nPosY");
+int nPosX = 0; D2_GLOBAL_GUARD(nPosX, "D2Win::Src::D2WinMain::nPosX");
+int nPosY = 0; D2_GLOBAL_GUARD(nPosY, "D2Win::Src::D2WinMain::nPosY");
+D2ControlStrc * pFormsList = 0; D2_GLOBAL_GUARD(pFormsList, "D2Win::Src::D2WinMain::pFormsList");
+D2ControlStrc * pFormUnknown = 0; D2_GLOBAL_GUARD(pFormUnknown, "D2Win::Src::D2WinMain::pFormUnknown");
+D2ControlStrc * pFormSecond = 0; D2_GLOBAL_GUARD(pFormSecond, "D2Win::Src::D2WinMain::pFormSecond");
+::D2WinEditBox * pFormTextAndEditBox = 0; D2_GLOBAL_GUARD(pFormTextAndEditBox, "D2Win::Src::D2WinMain::pFormTextAndEditBox");
+D2ControlStrc * pFormFourth = 0; D2_GLOBAL_GUARD(pFormFourth, "D2Win::Src::D2WinMain::pFormFourth");
+D2ControlStrc * pFormImage = 0; D2_GLOBAL_GUARD(pFormImage, "D2Win::Src::D2WinMain::pFormImage");
 
-} // namespace D2Client::Mouse
+} // namespace D2Win::Src::D2WinMain
 
-namespace D2Client::Forms {
-
-// =============================================================================
-// Initialized scalars
-// =============================================================================
-
-D2ControlStrc * pFormsList = 0; D2_GLOBAL_GUARD(pFormsList, "D2Client::Forms::pFormsList");
-D2ControlStrc * pFormUnknown = 0; D2_GLOBAL_GUARD(pFormUnknown, "D2Client::Forms::pFormUnknown");
-D2ControlStrc * pFormSecond = 0; D2_GLOBAL_GUARD(pFormSecond, "D2Client::Forms::pFormSecond");
-D2WinEditBox * pFormTextAndEditBox = 0; D2_GLOBAL_GUARD(pFormTextAndEditBox, "D2Client::Forms::pFormTextAndEditBox");
-D2ControlStrc * pFormFourth = 0; D2_GLOBAL_GUARD(pFormFourth, "D2Client::Forms::pFormFourth");
-D2ControlStrc * pFormImage = 0; D2_GLOBAL_GUARD(pFormImage, "D2Client::Forms::pFormImage");
-
-} // namespace D2Client::Forms
-
-namespace D2Client::GAME::Record {
+namespace D2Win::D2GFX {
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-WndProcB pWndProcB = (::WndProcB)0; D2_GLOBAL_GUARD(pWndProcB, "D2Client::GAME::Record::pWndProcB");
+::WndProcB pWndProcB = (::WndProcB)0; D2_GLOBAL_GUARD(pWndProcB, "D2Win::D2GFX::pWndProcB");
 
-} // namespace D2Client::GAME::Record
+} // namespace D2Win::D2GFX

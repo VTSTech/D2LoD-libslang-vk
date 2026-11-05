@@ -49,6 +49,7 @@
 #include "Fog/Src/Safesock.h"
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
+#include "Storm/Source/SComp.h"
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SMem.h"
 #include "Storm/Source/SReg.h"
@@ -4086,49 +4087,49 @@ static int gnClassDescriptionTooltipState = -0x1; D2_STATIC_GUARD(gnClassDescrip
 static uint32_t gbTermsOfServiceCancelled = 0; D2_STATIC_GUARD(gbTermsOfServiceCancelled, "gbTermsOfServiceCancelled");
 static D2ControlStrc * bCharacterCreationInProgress = 0; D2_STATIC_GUARD(bCharacterCreationInProgress, "bCharacterCreationInProgress");
 // also labelled: gbPasswordChangeInProgress
-static D2WinEditBox * gpBnetPasswordEditBox = 0; D2_STATIC_GUARD(gpBnetPasswordEditBox, "gpBnetPasswordEditBox");
-static D2WinTextBox * gpCtlTcpIpConnectAddressLabel = 0; D2_STATIC_GUARD(gpCtlTcpIpConnectAddressLabel, "gpCtlTcpIpConnectAddressLabel");
-static D2WinTextBox * gpCtlCharCreateBNetRealmTextBox = 0; D2_STATIC_GUARD(gpCtlCharCreateBNetRealmTextBox, "gpCtlCharCreateBNetRealmTextBox");
-static D2WinEditBox * gpCtlChangePasswordInput = 0; D2_STATIC_GUARD(gpCtlChangePasswordInput, "gpCtlChangePasswordInput");
-static D2WinTimer * gpMainMenuTcpIpTimerControl = 0; D2_STATIC_GUARD(gpMainMenuTcpIpTimerControl, "gpMainMenuTcpIpTimerControl");
+static ::D2WinEditBox * gpBnetPasswordEditBox = 0; D2_STATIC_GUARD(gpBnetPasswordEditBox, "gpBnetPasswordEditBox");
+static ::D2WinTextBox * gpCtlTcpIpConnectAddressLabel = 0; D2_STATIC_GUARD(gpCtlTcpIpConnectAddressLabel, "gpCtlTcpIpConnectAddressLabel");
+static ::D2WinTextBox * gpCtlCharCreateBNetRealmTextBox = 0; D2_STATIC_GUARD(gpCtlCharCreateBNetRealmTextBox, "gpCtlCharCreateBNetRealmTextBox");
+static ::D2WinEditBox * gpCtlChangePasswordInput = 0; D2_STATIC_GUARD(gpCtlChangePasswordInput, "gpCtlChangePasswordInput");
+static ::D2WinTimer * gpMainMenuTcpIpTimerControl = 0; D2_STATIC_GUARD(gpMainMenuTcpIpTimerControl, "gpMainMenuTcpIpTimerControl");
 // also labelled: gpBNetCharNameInputControl
-static D2WinButton * gpCtlCreateCharLadderCheckbox = 0; D2_STATIC_GUARD(gpCtlCreateCharLadderCheckbox, "gpCtlCreateCharLadderCheckbox");
-static D2WinEditBox * gpaCharNameBuffers = 0; D2_STATIC_GUARD(gpaCharNameBuffers, "gpaCharNameBuffers");
+static ::D2WinButton * gpCtlCreateCharLadderCheckbox = 0; D2_STATIC_GUARD(gpCtlCreateCharLadderCheckbox, "gpCtlCreateCharLadderCheckbox");
+static ::D2WinEditBox * gpaCharNameBuffers = 0; D2_STATIC_GUARD(gpaCharNameBuffers, "gpaCharNameBuffers");
 static D2ControlStrc * FORMS_pListExEx[64] = {}; D2_STATIC_GUARD(FORMS_pListExEx, "FORMS_pListExEx");
 static D2ControlStrc * FORMS_pList[64] = {}; D2_STATIC_GUARD(FORMS_pList, "FORMS_pList");
 char gszPasswordChangeNewPasswordMB[24] = {}; D2_GLOBAL_GUARD(gszPasswordChangeNewPasswordMB, "gszPasswordChangeNewPasswordMB");
-static D2WinTextBox * gpCtlCreateCharExpClassPanel = 0; D2_STATIC_GUARD(gpCtlCreateCharExpClassPanel, "gpCtlCreateCharExpClassPanel");
+static ::D2WinTextBox * gpCtlCreateCharExpClassPanel = 0; D2_STATIC_GUARD(gpCtlCreateCharExpClassPanel, "gpCtlCreateCharExpClassPanel");
 static D2ControlStrc * gaAnimImgCharCreateByClass[7] = {}; D2_STATIC_GUARD(gaAnimImgCharCreateByClass, "gaAnimImgCharCreateByClass");
-static D2WinTextBox * gpCtlTcpIpLocalIpTextBox = 0; D2_STATIC_GUARD(gpCtlTcpIpLocalIpTextBox, "gpCtlTcpIpLocalIpTextBox");
+static ::D2WinTextBox * gpCtlTcpIpLocalIpTextBox = 0; D2_STATIC_GUARD(gpCtlTcpIpLocalIpTextBox, "gpCtlTcpIpLocalIpTextBox");
 // also labelled: LastKnownIp
-static D2WinEditBox * gpBnetAccountEditBox = 0; D2_STATIC_GUARD(gpBnetAccountEditBox, "gpBnetAccountEditBox");
+static ::D2WinEditBox * gpBnetAccountEditBox = 0; D2_STATIC_GUARD(gpBnetAccountEditBox, "gpBnetAccountEditBox");
 // also labelled: gnMainMenuUnused8Counter
-static D2WinTextBox * gpMainMenuGatewayListTextBox = 0; D2_STATIC_GUARD(gpMainMenuGatewayListTextBox, "gpMainMenuGatewayListTextBox");
+static ::D2WinTextBox * gpMainMenuGatewayListTextBox = 0; D2_STATIC_GUARD(gpMainMenuGatewayListTextBox, "gpMainMenuGatewayListTextBox");
 static D2ControlStrc * gpCtlBNetPasswordChangeButton = 0; D2_STATIC_GUARD(gpCtlBNetPasswordChangeButton, "gpCtlBNetPasswordChangeButton");
 static D2ControlStrc * gpCtlCreateCharCancelButton = 0; D2_STATIC_GUARD(gpCtlCreateCharCancelButton, "gpCtlCreateCharCancelButton");
 static uint32_t gnTcpIpConnectionSuccessFlag = 0; D2_STATIC_GUARD(gnTcpIpConnectionSuccessFlag, "gnTcpIpConnectionSuccessFlag");
 static D2ControlStrc * gpCtlTcpIpAddressButton = 0; D2_STATIC_GUARD(gpCtlTcpIpAddressButton, "gpCtlTcpIpAddressButton");
 static D2ControlStrc * gpCtlTcpIpConnectButton = 0; D2_STATIC_GUARD(gpCtlTcpIpConnectButton, "gpCtlTcpIpConnectButton");
 // also labelled: gnMainMenuPasswordChangeBuffer
-static D2WinEditBox * gpBnetPasswordConfirmEditBox = 0; D2_STATIC_GUARD(gpBnetPasswordConfirmEditBox, "gpBnetPasswordConfirmEditBox");
-static D2WinButton * gpCtlRealmNameButton = 0; D2_STATIC_GUARD(gpCtlRealmNameButton, "gpCtlRealmNameButton");
+static ::D2WinEditBox * gpBnetPasswordConfirmEditBox = 0; D2_STATIC_GUARD(gpBnetPasswordConfirmEditBox, "gpBnetPasswordConfirmEditBox");
+static ::D2WinButton * gpCtlRealmNameButton = 0; D2_STATIC_GUARD(gpCtlRealmNameButton, "gpCtlRealmNameButton");
 // also labelled: pSingleplayerCharacterListTextbox
-static D2WinTextBox * gpCtlCreateCharHardcoreLabel = 0; D2_STATIC_GUARD(gpCtlCreateCharHardcoreLabel, "gpCtlCreateCharHardcoreLabel");
+static ::D2WinTextBox * gpCtlCreateCharHardcoreLabel = 0; D2_STATIC_GUARD(gpCtlCreateCharHardcoreLabel, "gpCtlCreateCharHardcoreLabel");
 // also labelled: gpCtlCreateCharExpClassButton
 static D2ControlStrc * gpCtlCreateCharExpansionCheckboxImage = 0; D2_STATIC_GUARD(gpCtlCreateCharExpansionCheckboxImage, "gpCtlCreateCharExpansionCheckboxImage");
 // also labelled: gpBNetRealmQueryControl
-static D2WinTextBox * gpCtlCreateCharLadderLabel = 0; D2_STATIC_GUARD(gpCtlCreateCharLadderLabel, "gpCtlCreateCharLadderLabel");
+static ::D2WinTextBox * gpCtlCreateCharLadderLabel = 0; D2_STATIC_GUARD(gpCtlCreateCharLadderLabel, "gpCtlCreateCharLadderLabel");
 static pfnUIMenuInstance gpCurrentUIMenuInstance = (pfnUIMenuInstance)0; D2_STATIC_GUARD(gpCurrentUIMenuInstance, "gpCurrentUIMenuInstance");
 // also labelled: gpSingleplayerCharSelControl
 static D2ControlStrc * gpCtlCreateCharHardcoreCheckbox = 0; D2_STATIC_GUARD(gpCtlCreateCharHardcoreCheckbox, "gpCtlCreateCharHardcoreCheckbox");
 // also labelled: gnClassCreateClassIndex
-static D2WinButton * gpCtlCreateCharExpansionCheckbox = 0; D2_STATIC_GUARD(gpCtlCreateCharExpansionCheckbox, "gpCtlCreateCharExpansionCheckbox");
-static D2WinTextBox * gpCtlCreateCharOKButton = 0; D2_STATIC_GUARD(gpCtlCreateCharOKButton, "gpCtlCreateCharOKButton");
+static ::D2WinButton * gpCtlCreateCharExpansionCheckbox = 0; D2_STATIC_GUARD(gpCtlCreateCharExpansionCheckbox, "gpCtlCreateCharExpansionCheckbox");
+static ::D2WinTextBox * gpCtlCreateCharOKButton = 0; D2_STATIC_GUARD(gpCtlCreateCharOKButton, "gpCtlCreateCharOKButton");
 D2IniConfigStrc * D2IniData_launcher = 0; D2_GLOBAL_GUARD(D2IniData_launcher, "D2IniData_launcher");
-static D2WinTextBox * gpCtlClassDescriptionTooltipPrimary = 0; D2_STATIC_GUARD(gpCtlClassDescriptionTooltipPrimary, "gpCtlClassDescriptionTooltipPrimary");
-static D2WinTextBox * gpCtlClassDescriptionTooltipSecondary = 0; D2_STATIC_GUARD(gpCtlClassDescriptionTooltipSecondary, "gpCtlClassDescriptionTooltipSecondary");
-static D2WinTextBox * gpCtlTcpIpAddress = 0; D2_STATIC_GUARD(gpCtlTcpIpAddress, "gpCtlTcpIpAddress");
-static D2WinTextBox * gpCtlTcpIpPort = 0; D2_STATIC_GUARD(gpCtlTcpIpPort, "gpCtlTcpIpPort");
+static ::D2WinTextBox * gpCtlClassDescriptionTooltipPrimary = 0; D2_STATIC_GUARD(gpCtlClassDescriptionTooltipPrimary, "gpCtlClassDescriptionTooltipPrimary");
+static ::D2WinTextBox * gpCtlClassDescriptionTooltipSecondary = 0; D2_STATIC_GUARD(gpCtlClassDescriptionTooltipSecondary, "gpCtlClassDescriptionTooltipSecondary");
+static ::D2WinTextBox * gpCtlTcpIpAddress = 0; D2_STATIC_GUARD(gpCtlTcpIpAddress, "gpCtlTcpIpAddress");
+static ::D2WinTextBox * gpCtlTcpIpPort = 0; D2_STATIC_GUARD(gpCtlTcpIpPort, "gpCtlTcpIpPort");
 static uint32_t gnSelectedCharGameState = 0; D2_STATIC_GUARD(gnSelectedCharGameState, "gnSelectedCharGameState");
 eOogCurrentCharSelectionMode OogCurrentCharSelectionMode = 0; D2_GLOBAL_GUARD(OogCurrentCharSelectionMode, "OogCurrentCharSelectionMode");
 static uint32_t gnIsFecharPalette = 0; D2_STATIC_GUARD(gnIsFecharPalette, "gnIsFecharPalette");
@@ -4208,42 +4209,58 @@ uint32_t gbCdCheckPassed[25] = {}; D2_GLOBAL_GUARD(gbCdCheckPassed, "gbCdCheckPa
 static int FORMS_nListExExCount = 0; D2_STATIC_GUARD(FORMS_nListExExCount, "FORMS_nListExExCount");
 static int FORMS_nListCount = 0; D2_STATIC_GUARD(FORMS_nListCount, "FORMS_nListCount");
 static uint32_t gbMainMenuUIActive = 0; D2_STATIC_GUARD(gbMainMenuUIActive, "gbMainMenuUIActive");
-static D2WinEditBox * gpMainMenuFormPtrs = 0; D2_STATIC_GUARD(gpMainMenuFormPtrs, "gpMainMenuFormPtrs");
+static ::D2WinEditBox * gpMainMenuFormPtrs = 0; D2_STATIC_GUARD(gpMainMenuFormPtrs, "gpMainMenuFormPtrs");
 // also labelled: gnMainMenuCreditsLineHeights
-static D2WinTextBox * gpMainMenuCreditsPairLeftTextBox = 0; D2_STATIC_GUARD(gpMainMenuCreditsPairLeftTextBox, "gpMainMenuCreditsPairLeftTextBox");
+static ::D2WinTextBox * gpMainMenuCreditsPairLeftTextBox = 0; D2_STATIC_GUARD(gpMainMenuCreditsPairLeftTextBox, "gpMainMenuCreditsPairLeftTextBox");
 // also labelled: gMainMenuCreditScrollOffset
-static D2WinTextBox * gpMainMenuCreditsPairRightTextBox = 0; D2_STATIC_GUARD(gpMainMenuCreditsPairRightTextBox, "gpMainMenuCreditsPairRightTextBox");
+static ::D2WinTextBox * gpMainMenuCreditsPairRightTextBox = 0; D2_STATIC_GUARD(gpMainMenuCreditsPairRightTextBox, "gpMainMenuCreditsPairRightTextBox");
 // also labelled: gnMainMenuCreditsLinePositions
-static D2WinTextBox * gpMainMenuCreditsLineTextBox = 0; D2_STATIC_GUARD(gpMainMenuCreditsLineTextBox, "gpMainMenuCreditsLineTextBox");
+static ::D2WinTextBox * gpMainMenuCreditsLineTextBox = 0; D2_STATIC_GUARD(gpMainMenuCreditsLineTextBox, "gpMainMenuCreditsLineTextBox");
 static int gnMainMenuCreditsFrameIndex = 0; D2_STATIC_GUARD(gnMainMenuCreditsFrameIndex, "gnMainMenuCreditsFrameIndex");
 static uint32_t gnPaletteLoadedFlag = 0; D2_STATIC_GUARD(gnPaletteLoadedFlag, "gnPaletteLoadedFlag");
 static uint32_t gnMainMenuConnectFlag = 0; D2_STATIC_GUARD(gnMainMenuConnectFlag, "gnMainMenuConnectFlag");
 // also labelled: gnPatchProgressValue
-static D2WinTextBox * gpPatchProgressTextBox = 0; D2_STATIC_GUARD(gpPatchProgressTextBox, "gpPatchProgressTextBox");
-static D2WinImage * gpCtlPatchProgressAnimImage = 0; D2_STATIC_GUARD(gpCtlPatchProgressAnimImage, "gpCtlPatchProgressAnimImage");
+static ::D2WinTextBox * gpPatchProgressTextBox = 0; D2_STATIC_GUARD(gpPatchProgressTextBox, "gpPatchProgressTextBox");
+static ::D2WinImage * gpCtlPatchProgressAnimImage = 0; D2_STATIC_GUARD(gpCtlPatchProgressAnimImage, "gpCtlPatchProgressAnimImage");
 static uint32_t gbMainMenuShowBNetRealmPanel = 0; D2_STATIC_GUARD(gbMainMenuShowBNetRealmPanel, "gbMainMenuShowBNetRealmPanel");
 static D2BNetRealmEntryStrc * * g_pBNetRealmList = 0; D2_STATIC_GUARD(g_pBNetRealmList, "g_pBNetRealmList");
 static int gnRealmListCount = 0; D2_STATIC_GUARD(gnRealmListCount, "gnRealmListCount");
+static uint32_t gnBnetConnectionSuccessFlag = 0; D2_STATIC_GUARD(gnBnetConnectionSuccessFlag, "gnBnetConnectionSuccessFlag");
 static uint32_t gnMCPConnectThreadHandle = 0; D2_STATIC_GUARD(gnMCPConnectThreadHandle, "gnMCPConnectThreadHandle");
 static D2ControlStrc * gpCtlBnetProgressBar2 = 0; D2_STATIC_GUARD(gpCtlBnetProgressBar2, "gpCtlBnetProgressBar2");
-static D2WinTextBox * gpCtlBnetProgressBar = 0; D2_STATIC_GUARD(gpCtlBnetProgressBar, "gpCtlBnetProgressBar");
-static D2WinTextBox * gbBnetConnectionTimerActive = 0; D2_STATIC_GUARD(gbBnetConnectionTimerActive, "gbBnetConnectionTimerActive");
+::D2WinTextBox * gpCtlBnetProgressBar = 0; D2_GLOBAL_GUARD(gpCtlBnetProgressBar, "gpCtlBnetProgressBar");
+::D2WinTextBox * gbBnetConnectionTimerActive = 0; D2_GLOBAL_GUARD(gbBnetConnectionTimerActive, "gbBnetConnectionTimerActive");
 static int gbBnetProgressActive = 0; D2_STATIC_GUARD(gbBnetProgressActive, "gbBnetProgressActive");
 static HANDLE ghBnetConnectHandle = 0; D2_STATIC_GUARD(ghBnetConnectHandle, "ghBnetConnectHandle");
 static unsigned int gbBNetConnectionProgressFlag = {}; D2_STATIC_GUARD(gbBNetConnectionProgressFlag, "gbBNetConnectionProgressFlag");
-static D2WinEditBox * gpCharSelAccountNameInputControl = 0; D2_STATIC_GUARD(gpCharSelAccountNameInputControl, "gpCharSelAccountNameInputControl");
-static D2WinEditBox * gpCtlDisconnectMessage1 = 0; D2_STATIC_GUARD(gpCtlDisconnectMessage1, "gpCtlDisconnectMessage1");
-static D2WinEditBox * gpCtlDisconnectMessage2 = 0; D2_STATIC_GUARD(gpCtlDisconnectMessage2, "gpCtlDisconnectMessage2");
-static D2WinEditBox * gpCtlDisconnectMessage3 = 0; D2_STATIC_GUARD(gpCtlDisconnectMessage3, "gpCtlDisconnectMessage3");
-static D2WinEditBox * gpnEmailBuffer = 0; D2_STATIC_GUARD(gpnEmailBuffer, "gpnEmailBuffer");
-static D2WinEditBox * gpCtlEnterEmailInput = 0; D2_STATIC_GUARD(gpCtlEnterEmailInput, "gpCtlEnterEmailInput");
+static ::D2WinEditBox * gpCharSelAccountNameInputControl = 0; D2_STATIC_GUARD(gpCharSelAccountNameInputControl, "gpCharSelAccountNameInputControl");
+static ::D2WinEditBox * gpCtlDisconnectMessage1 = 0; D2_STATIC_GUARD(gpCtlDisconnectMessage1, "gpCtlDisconnectMessage1");
+static ::D2WinEditBox * gpCtlDisconnectMessage2 = 0; D2_STATIC_GUARD(gpCtlDisconnectMessage2, "gpCtlDisconnectMessage2");
+static ::D2WinEditBox * gpCtlDisconnectMessage3 = 0; D2_STATIC_GUARD(gpCtlDisconnectMessage3, "gpCtlDisconnectMessage3");
+static ::D2WinEditBox * gpnEmailBuffer = 0; D2_STATIC_GUARD(gpnEmailBuffer, "gpnEmailBuffer");
+static ::D2WinEditBox * gpCtlEnterEmailInput = 0; D2_STATIC_GUARD(gpCtlEnterEmailInput, "gpCtlEnterEmailInput");
 static D2ControlStrc * gpCtlEmailConfirmButton = 0; D2_STATIC_GUARD(gpCtlEmailConfirmButton, "gpCtlEmailConfirmButton");
 static uint32_t gbEmailAddressScreenReady = 0; D2_STATIC_GUARD(gbEmailAddressScreenReady, "gbEmailAddressScreenReady");
-static D2WinEditBox * gpCharSelPasswordInputControl = 0; D2_STATIC_GUARD(gpCharSelPasswordInputControl, "gpCharSelPasswordInputControl");
-static D2WinEditBox * gpCtlDisconnectDialog = 0; D2_STATIC_GUARD(gpCtlDisconnectDialog, "gpCtlDisconnectDialog");
+static ::D2WinEditBox * gpCharSelPasswordInputControl = 0; D2_STATIC_GUARD(gpCharSelPasswordInputControl, "gpCharSelPasswordInputControl");
+static ::D2WinEditBox * gpCtlDisconnectDialog = 0; D2_STATIC_GUARD(gpCtlDisconnectDialog, "gpCtlDisconnectDialog");
 static D2ControlStrc * gpCtlBnetPasswordOkButton = 0; D2_STATIC_GUARD(gpCtlBnetPasswordOkButton, "gpCtlBnetPasswordOkButton");
 
 namespace D2Launch::MainMenus {
+
+void __stdcall FORMS_DestroyListJmp_Unref_0041f930() {
+    uint32_t* in_ECX;
+    Storm::Source::SComp::COMPRESS_DestroyEncoderContext(in_ECX);
+}
+
+void __stdcall FORMS_DestroyListJmp_Unref_0041f940() {
+    uint32_t* in_ECX;
+    Storm::Source::SComp::COMPRESS_DestroyEncoderContext(in_ECX);
+}
+
+int __fastcall Unreferenced_0042e5c0(int param_1) {
+    uint32_t in_EAX;
+    return (uint32_t)((uint32_t)(uint16_t)(short int)((uint32_t)in_EAX >> 0x10) << 16 | (uint32_t)(uint16_t)((uint16_t)param_1 << 8 | (uint16_t)param_1 >> 8));
+}
 
 void __fastcall CRYPTO_ByteSwap16Array(uint16_t * pArray, uint32_t nCount) {
     uint32_t nIndex;
@@ -4256,10 +4273,26 @@ void __thiscall CRYPTO_ByteSwap32Array(uint16_t * pwOut, uint16_t wValue) {
     *pwOut = wValue;
 }
 
+int __fastcall Unreferenced_0042e620(int param_1) {
+    return (uint32_t)(*(short int*)param_1 == 10);
+}
+
+int __fastcall Unreferenced_0042e630(int param_1) {
+    if (*(uint16_t*)param_1 < 0x80) {
+      int iVar1;
+      iVar1 = isalpha((int)*(char*)param_1);
+      if (iVar1) {
+        return 1;
+      }
+    }
+
+    return 0;
+}
+
 void __thiscall CRYPTO_ByteSwap64Array(uint16_t * pwIn, uint16_t * pwOut) {
     uint16_t wValue = *pwIn;
     if (wValue < 0x100) {
-      *pwOut = D2Client::UI::ui::CharacterLookupTable[wValue];
+      *pwOut = D2Lang::Unicode::UNISYS::CharacterLookupTable[wValue];
       return;
     }
 
@@ -4272,6 +4305,10 @@ void __fastcall MAINMENU_SetGlobalValue1(pfnUIMenuInstance pfnMenuInstance) {
 
 void __stdcall MAINMENU_SetGlobalFlag() {
     gbMainMenuUIActive = 1;
+}
+
+BOOL __stdcall MAINMENU_GetGlobalValue2_Unref_0042e6c0() {
+    return gbMainMenuUIActive;
 }
 
 // Loads all predefined DC6 image resources for main menus and UI elements. Constructs file paths using wsprintfA into a stack buffer, then loads 40+ DC6 images (buttons, backgrounds, popups) via IMAGE_LoadDC6. Expansion detection switches between classic and expansion asset paths for 8 conditional images.
@@ -4591,6 +4628,16 @@ int __fastcall D2GFX_SetPaletteForDraw(char * szPaletteDat, char * szPalettePl2)
     gnPaletteLoadedFlag = (uint32_t)!bIsFecharPalette;
     D2Win::Src::D2WinPalette::LoadPalette(szDatPath, szPl2Path);
     return 1;
+}
+
+int Unreferenced_0042f370() {
+    int in_EAX;
+    if (gnPaletteLoadedFlag) {
+      in_EAX = D2GFX_SetPaletteForDraw("palette\\fechar\\pal.dat", "palette\\fechar\\pal.pl2");
+      gnPaletteLoadedFlag = 0;
+    }
+
+    return in_EAX;
 }
 
 D2ControlStrc * __fastcall FORMS_CreateAnyFormFromList(int32_t nFormIndex) {
@@ -5165,20 +5212,20 @@ void __stdcall UIMENU_TCPIPOptions() {
 BOOL __stdcall MAINMENU_DisableControlIfDataNonZero(int32_t pControlData) {
     if (*(int*)(pControlData + 0xc)) {
       D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpAddress->sControl, 1);
-      return 1;
+    } else {
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpAddress->sControl, 0);
     }
 
-    D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpAddress->sControl, 0);
     return 1;
 }
 
 BOOL __stdcall MAINMENU_DisableControlIfDataNonZero2(int32_t pControlData) {
     if (*(int*)(pControlData + 0xc)) {
       D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpPort->sControl, 1);
-      return 1;
+    } else {
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpPort->sControl, 0);
     }
 
-    D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpPort->sControl, 0);
     return 1;
 }
 
@@ -5312,7 +5359,8 @@ BOOL __stdcall MAINMENU_ScrollListExDown(D2ControlMsg * pControlMsg) {
 
       if (ppForm) {
         nLine = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetScrollPosition(ppForm);
-        D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(ppForm, nLine + 1);
+        nLine += 1;
+        D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(ppForm, nLine);
         return 1;
       }
     }
@@ -5337,11 +5385,10 @@ void __stdcall UIMENU_AreYouSureToCreateHardcoreCharacter() {
 // Validates character name input as user types. First character must be a-z or A-Z (rejects '-' and '_' at start). If nTextLen is 0 (first char position), rejects non-alpha. Also rejects consecutive '-' or '_' characters by checking if previous character was the same special char. Returns 1 if valid, 0 if invalid.
 int __stdcall MAINMENU_ValidateCharacterName(::D2WinEditBox * pEditBox, int nTextLen, char * pKeyChar) {
     char szNameBuffer[32];
-    char cFirstChar = *pKeyChar;
-    if (!((cFirstChar < 'a' || cFirstChar > 'z') && (cFirstChar < 'A' || cFirstChar > 'Z'))) {
+    if (!((*pKeyChar < 'a' || *pKeyChar > 'z') && (*pKeyChar < 'A' || *pKeyChar > 'Z'))) {
       return 1;
     }
-    if (cFirstChar != '-' && cFirstChar != '_' || !nTextLen) {
+    if (*pKeyChar != '-' && *pKeyChar != '_' || !nTextLen) {
       return 0;
     }
 
@@ -5780,6 +5827,13 @@ void __stdcall MAINMENU_SyncCreditsColumns() {
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsLineTextBox, "");
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairLeftTextBox, "");
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairRightTextBox, "");
+}
+
+int Unreferenced_00431020() {
+    int extraout_EAX;
+    D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairLeftTextBox, "");
+    D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetTextFromAnsiSimple(gpMainMenuCreditsPairRightTextBox, "");
+    return extraout_EAX;
 }
 
 // @sourcefile .\Src\MainMenus.cpp
@@ -6245,7 +6299,7 @@ void __stdcall UIMENU_ShowRealmNameOnButton() {
       do {
         wCh = awButtonText[i];
         if ((uint16_t)wCh < 0x100) {
-          wCh = D2Client::UI::ui::CharacterLookupTable[(uint16_t)wCh];
+          wCh = D2Lang::Unicode::UNISYS::CharacterLookupTable[(uint16_t)wCh];
         }
 
         awButtonText[i] = wCh;
@@ -6264,10 +6318,26 @@ BOOL __stdcall MAINMENU_CleanupSoundAndClearMessageLoop(D2ControlMsg * pControlM
     return 1;
 }
 
-int __stdcall MAINMENU_HandleNetworkPacket(int nFrameIndex) {
-    // Static local variables (originally global data)
-    static uint32_t gnBnetConnectionSuccessFlag; D2_STATIC_GUARD_BSS(gnBnetConnectionSuccessFlag, "D2Launch::MainMenus::MAINMENU_HandleNetworkPacket::gnBnetConnectionSuccessFlag");
+int __fastcall Unreferenced_00431c60(int param_1, int param_2) {
+    int in_EAX;
+    if (param_2 == -1) {
+      return in_EAX;
+    }
+    if (*(uint8_t*)param_1 != 0xaf) {
+      in_EAX = *(uint8_t*)param_1 - 0xb0;
+      if (!in_EAX) {
+        gnBnetConnectionSuccessFlag = in_EAX;
+        return 0;
+      }
+    } else {
+      gnBnetConnectionSuccessFlag = 1;
+      in_EAX = 0;
+    }
 
+    return in_EAX;
+}
+
+int __stdcall MAINMENU_HandleNetworkPacket(int nFrameIndex) {
     char szPacketBuffer[512];
     size_t nPacketSize;
     nPacketSize = D2Net::SRC::Client::NET_D2GS_CLIENT_ExtractPacketSize_from0xAE(szPacketBuffer, 0x200);
@@ -6338,11 +6408,11 @@ int __stdcall MAINMENU_CreateGameServerThreadPump(int nFrameIndex) {
     if (!nThreadResult) {
       gnTcpIpConnectionSuccessFlag = nThreadResult;
       D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
-      return 1;
-    }
-    if (nThreadResult == 2) {
-      gnTcpIpConnectionSuccessFlag = 1;
-      D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
+    } else {
+      if (nThreadResult == 2) {
+        gnTcpIpConnectionSuccessFlag = 1;
+        D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
+      }
     }
 
     return 1;
@@ -6388,6 +6458,13 @@ static void MAINMENU_SetSelectedClassInINI(eD2PlayerClassID ePlayerClass) {
     D2IniData_launcher->bASSASSIN = true;
 }
 
+BOOL __stdcall MAINMENU_OnPressGotoCharacterSelect_Unref_00431f50(D2ControlMsg * pControlMsg) {
+    D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
+    FORMS_DestroyLists();
+    CharSel::UIMENU_CharacterSelectAllGameTypes();
+    return 1;
+}
+
 BOOL __stdcall MAINMENU_CheckCharacterSaveFileExists() {
     char acStack_708[1024];
     char szCharNameUtf8[256];
@@ -6405,6 +6482,20 @@ BOOL __stdcall MAINMENU_CheckCharacterSaveFileExists() {
     }
 
     return 0;
+}
+
+BOOL __stdcall MAINMENU_OnPressGotoCharacterSelect_Unref_00432020(D2ControlMsg * pControlMsg) {
+    D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
+    FORMS_DestroyLists();
+    CharSel::UIMENU_CharacterSelectAllGameTypes();
+    return 1;
+}
+
+BOOL __stdcall MAINMENU_OnPressGotoCharacterSelect_Unref_00432040(D2ControlMsg * pControlMsg) {
+    D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
+    FORMS_DestroyLists();
+    CharSel::UIMENU_CharacterSelectAllGameTypes();
+    return 1;
 }
 
 BOOL __stdcall MAINMENU_OnPressInvokeCurrentMenuInstance(D2ControlMsg * pControlMsg) {
@@ -6483,6 +6574,11 @@ void __stdcall UIMENU_ChangePassword() {
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_LinkTabOrder(gpBnetPasswordConfirmEditBox, gpBnetAccountEditBox);
     FORMS_CreateAnyFormFromListExEx(0x5d);
     FORMS_CreateAnyFormFromListExEx(0x5e);
+}
+
+BOOL __stdcall MAINMENU_OnPressShowDisconnectedFromBattleNet2_Unref_00432300(D2ControlMsg * pControlMsg) {
+    UIMENU_ChangePassword();
+    return 1;
 }
 
 BOOL __stdcall MAINMENU_OnPressSaveAccountNameAndShowDisconnected(D2ControlMsg * pControlMsg) {
@@ -6916,13 +7012,12 @@ void __fastcall UIMENU_CreatePopupWithContentAndFooter(uint16_t * wszTitle, uint
       pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0xf0);
       D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pTextBox, 1);
       MAINMENU_SetMultilineText(wszFooter, pTextBox, 4, '\0');
-      gpCurrentUIMenuInstance = pMenuInstance;
-      return;
+    } else {
+      pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0xee);
+      D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pTextBox, 1);
+      MAINMENU_SetMultilineText(wszContent, pTextBox, 0, '\0');
     }
 
-    pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0xee);
-    D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pTextBox, 1);
-    MAINMENU_SetMultilineText(wszContent, pTextBox, 0, '\0');
     gpCurrentUIMenuInstance = pMenuInstance;
 }
 
@@ -6971,6 +7066,10 @@ void __fastcall MAINMENU_ShowPopupDialog(uint16_t * wszText, pfnUIMenuInstance p
     D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pTextBox, 1);
     MAINMENU_SetMultilineText(wszText, pTextBox, 0, '\0');
     gpCurrentUIMenuInstance = pfnMenuInstance;
+}
+
+void __fastcall Unreferenced_00433440(uint16_t * param_1, pfnUIMenuInstance param_2) {
+    MAINMENU_ShowPopupDialog(param_1, param_2, 0);
 }
 
 void __fastcall MAINMENU_ShowPopupWithCancel(uint16_t * wszText, pfnUIMenuInstance pfnMenuInstance) {
@@ -7509,11 +7608,11 @@ void __stdcall MAINMENU_QueryAndBuildRealmList() {
 
     pszSrc = (char*)(gpRealmQueryResultBuffer + 8);
     MAINMENU_FreeRealmList();
-    nRemaining = gnRealmListCount;
     if (!gnRealmListCount) {
       return;
     }
 
+    nRemaining = gnRealmListCount;
     nAllocSize = gnRealmListCount * 4;
     pRealmArray = (D2BNetRealmEntryStrc**)D2_ALLOC_AT(nAllocSize, ".\\Src\\MainMenus.cpp", 0x118c);
     g_pBNetRealmList = pRealmArray;
@@ -8383,12 +8482,12 @@ void __stdcall UIMENU_CreateHeroSinglePlayer() {
       if (OogCurrentCharSelectionMode != CHAR_SELECTION_BNET) {
         goto add_class_portraits;
       }
-      if (!nCharacterSelectionIndex) {
-        gpCtlCreateCharLadderLabel = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0xc1);
-        nTextAlign = 0xc2;
-      } else {
+      if (nCharacterSelectionIndex) {
         gpCtlCreateCharLadderLabel = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0xc3);
         nTextAlign = 0xc4;
+      } else {
+        gpCtlCreateCharLadderLabel = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0xc1);
+        nTextAlign = 0xc2;
       }
     } else {
       gpCtlCreateCharHardcoreLabel = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0xca);
@@ -8579,10 +8678,10 @@ BOOL __stdcall MAINMENU_OnPressSinglePlayer(D2ControlMsg * pControlMsg) {
       D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
       FORMS_DestroyLists();
       CharSel::UIMENU_CharacterSelectAllGameTypes();
-      return 1;
+    } else {
+      UIMENU_CreateHeroSinglePlayer();
     }
 
-    UIMENU_CreateHeroSinglePlayer();
     return 1;
 }
 
@@ -8787,6 +8886,19 @@ BOOL __stdcall MAINMENU_Unused14(D2ControlMsg * pControlMsg) {
 }
 
 BOOL __stdcall MAINMENU_OnPressDestroyListAndReturnToMainMenuAgain(D2ControlMsg * pControlMsg) {
+    FORMS_DestroyList();
+    UIMENU_MainMenuAgain();
+    return 1;
+}
+
+BOOL __stdcall MAINMENU_OnPressSelectBattleNet_Unref_00436320(D2ControlMsg * pControlMsg) {
+    gbMainMenuUIActive = 1;
+    UIMENU_MainMenuAgain();
+    return 1;
+}
+
+int __stdcall Unreferenced_00436340(int param_1) {
+    gpCurrentUIMenuInstance = MAINMENU_SetConnectFlag;
     FORMS_DestroyList();
     UIMENU_MainMenuAgain();
     return 1;

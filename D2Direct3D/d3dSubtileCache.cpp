@@ -7,18 +7,17 @@
 #include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/INVENTORY/Inventory.h"
+#include "D2DDraw/Renderer/DirectDraw.h"
 #include "D2Direct3D/Renderer/Direct3D.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Glide/glSubtileCache.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
-#include "D2DDraw/Renderer/DirectDraw.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -117,12 +116,11 @@ void __fastcall D3DSUBTILE_SetPalette(D3DSubtileCacheStrc * pCache, void * pPale
 static void __fastcall D3DSUBTILE_InsertNodeAtTail(D3DSubtileCacheNodeStrc * pNode, D3DSubtileCacheStrc * pCache) {
     if (!pCache->pUsedHead) {
       pCache->pUsedHead = pNode;
-      pCache->pUsedTail = pNode;
-      return;
+    } else {
+      pCache->pUsedTail->pNext = pNode;
+      pNode->pPrev = pCache->pUsedTail;
     }
 
-    pCache->pUsedTail->pNext = pNode;
-    pNode->pPrev = pCache->pUsedTail;
     pCache->pUsedTail = pNode;
 }
 
@@ -139,12 +137,10 @@ D3DSubtileCacheNodeStrc * __fastcall D3DSUBTILE_RemoveNodeByIndex(D3DSubtileCach
       pCache->pUsedHead = (D3DSubtileCacheNodeStrc*)pNextNode;
       if (pNextNode) {
         pNextNode->pUnitData.pUnitDataPlayer = 0;
-        pUsedHead->pRightArmItem = 0;
-        pUsedHead->pLeftArmItem = 0;
-        return (D3DSubtileCacheNodeStrc*)pUsedHead;
+      } else {
+        pCache->pUsedTail = 0;
       }
 
-      pCache->pUsedTail = 0;
       pUsedHead->pRightArmItem = 0;
       pUsedHead->pLeftArmItem = 0;
       return (D3DSubtileCacheNodeStrc*)pUsedHead;
@@ -153,13 +149,11 @@ D3DSubtileCacheNodeStrc * __fastcall D3DSUBTILE_RemoveNodeByIndex(D3DSubtileCach
       pNextNode = ((D2InventoryGridStrc*)pCache->pUsedTail)->pLeftArmItem;
       pCache->pUsedTail = (D3DSubtileCacheNodeStrc*)pNextNode;
       pNextNode->eAnimMode.ePlayerMode = Death;
-      pTargetNode->pRightArmItem = 0;
-      pTargetNode->pLeftArmItem = 0;
-      return (D3DSubtileCacheNodeStrc*)pTargetNode;
+    } else {
+      pTargetNode->pLeftArmItem->eAnimMode = d2_bits_as<uD2UnitMode>(pTargetNode->pRightArmItem);
+      pTargetNode->pRightArmItem->pUnitData = d2_bits_as<D2UnitDataUnion>(pTargetNode->pLeftArmItem);
     }
 
-    pTargetNode->pLeftArmItem->eAnimMode = d2_bits_as<uD2UnitMode>(pTargetNode->pRightArmItem);
-    pTargetNode->pRightArmItem->pUnitData = d2_bits_as<D2UnitDataUnion>(pTargetNode->pLeftArmItem);
     pTargetNode->pRightArmItem = 0;
     pTargetNode->pLeftArmItem = 0;
     return (D3DSubtileCacheNodeStrc*)pTargetNode;
@@ -189,13 +183,12 @@ static int __stdcall D3DSUBTILE_AllocateNodeFromFreeList(D3DSubtileCacheStrc * p
     if (!pCache->pUsedHead) {
       pCache->nUsedCount++;
       pCache->pUsedHead = pNode;
-      pCache->pUsedTail = pNode;
-      return pNode->nIndex + 1;
+    } else {
+      pCache->pUsedTail->pNext = pNode;
+      pNode->pPrev = pCache->pUsedTail;
+      pCache->nUsedCount++;
     }
 
-    pCache->pUsedTail->pNext = pNode;
-    pNode->pPrev = pCache->pUsedTail;
-    pCache->nUsedCount++;
     pCache->pUsedTail = pNode;
     return pNode->nIndex + 1;
 }
@@ -334,13 +327,7 @@ void __fastcall D3DSUBTILE_Free(D3DSubtileCacheStrc * pCache, BOOL bInvalidateAl
         pCache->pNodeBuffer = 0;
       }
 
-      pCache->nMaxNodes = 0;
-      pCache->nUsedCount = 0;
-      pCache->pUsedHead = 0;
-      pCache->pUsedTail = 0;
-      pCache->pFreeHead = 0;
-      pCache->pFreeTail = 0;
-      pCache->pNodeBuffer = 0;
+      memset(pCache, 0, sizeof(*pCache));
     }
 }
 

@@ -5,11 +5,11 @@
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/GAME/PalShift.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Common/D2BinFieldExcelStrc.h"
 #include "D2Common/Txt/D2TxtLinkNodeStrc.h"
 #include "D2Game/D2QuestDataStrc.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
 #include "D2Hell/D2Hell.h"
 #include "D2Lang/D2Lang.h"
@@ -1605,6 +1605,8 @@ int nD2CompItemsSize = 0; D2_GLOBAL_GUARD(nD2CompItemsSize, "nD2CompItemsSize");
 void * pD2CompItems = 0; D2_GLOBAL_GUARD(pD2CompItems, "pD2CompItems");
 uint8_t gaItemPaletteTransformData[241920] = {}; D2_GLOBAL_GUARD(gaItemPaletteTransformData, "gaItemPaletteTransformData");
 static uint8_t gaGlideEmblemPrimaryColorTableEntries[12] = {}; D2_STATIC_GUARD(gaGlideEmblemPrimaryColorTableEntries, "gaGlideEmblemPrimaryColorTableEntries");
+static D2TxtLinkStrc * gnHitClassTxtLinkHandle = 0; D2_STATIC_GUARD(gnHitClassTxtLinkHandle, "gnHitClassTxtLinkHandle");
+static D2TxtLinkStrc * pD2CompItemsLinker = 0; D2_STATIC_GUARD(pD2CompItemsLinker, "pD2CompItemsLinker");
 static D2TxtLinkStrc * gnItemTypesCacheHandle = 0; D2_STATIC_GUARD(gnItemTypesCacheHandle, "gnItemTypesCacheHandle");
 static void * gpItemTypesTxt = 0; D2_STATIC_GUARD(gpItemTypesTxt, "gpItemTypesTxt");
 static size_t gnD2CompCompressionBufferSize = 0; D2_STATIC_GUARD(gnD2CompCompressionBufferSize, "gnD2CompCompressionBufferSize");
@@ -1633,18 +1635,15 @@ static void D2COMP_PadStringTo4Chars(char * szInput, char * szOutput) {
     if (szInput[1] == '\0') {
       szOutput[1] = ' ';
       szOutput[2] = ' ';
-      szOutput[3] = ' ';
-      return;
+    } else {
+      szOutput[1] = szInput[1];
+      if (szInput[2] == '\0') {
+        szOutput[2] = ' ';
+      } else {
+        szOutput[2] = szInput[2];
+      }
     }
 
-    szOutput[1] = szInput[1];
-    if (szInput[2] == '\0') {
-      szOutput[2] = ' ';
-      szOutput[3] = ' ';
-      return;
-    }
-
-    szOutput[2] = szInput[2];
     szOutput[3] = ' ';
 }
 
@@ -1994,7 +1993,7 @@ uint8_t * __fastcall D2COMP_GetPaletteTransformTable(uint32_t nPaletteShift) {
     if (!nTransformGroup) {
       return gaItemPaletteTransformData + (nColorIndex + 0x348) * 0x100;
     }
-    if (-1 < nTransformGroup && nTransformGroup < 9 && (nTransformGroup <= 2 || nTransformGroup > 4)) {
+    if (nTransformGroup >= 0 && nTransformGroup < 9 && (nTransformGroup <= 2 || nTransformGroup > 4)) {
       return gaItemPaletteTransformData + (nTransformGroup * 0x69 + nColorIndex) * 0x100;
     }
 
@@ -2498,8 +2497,8 @@ static int32_t __stdcall D2COMP_LoadLayerSpritesAndCalcHeight(uint8_t * pbLayerC
         sGfxData.dwRenderFlags |= 2;
         nLoadedCount = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(&sGfxData, 0, 1);
         if (nLoadedCount && sGfxData.pDC6Block) {
-          nOffsetY = D2CMP::SRC::CelCmp::GetDC6OffsetY(sGfxData.pDC6Block);
-          nLoadedCount = nOffsetY + *(int*)(nCOFContext + 0x14);
+          nLoadedCount = D2CMP::SRC::CelCmp::GetDC6OffsetY(sGfxData.pDC6Block);
+          nLoadedCount += *(int*)(nCOFContext + 0x14);
           if (nLoadedCount > *pnMaxHeight) {
             *pnMaxHeight = nLoadedCount;
           }
@@ -2939,7 +2938,10 @@ void __stdcall D2COMP_SetUnitDisplayStrings(D2CharSelCompStrc * pCompUnit, uint1
 
 BOOL __fastcall D2COMP_SetAnimationMode(D2CharSelCompStrc * pCompUnit, int32_t nAnimMode) {
     int pCOFLayerData;
-    if (pCompUnit) {
+    if (!pCompUnit) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8bf);
+      exit(-1);
+    } else {
       {
         int* pCOFEntry;
         pCOFEntry = *pCompUnit->ppCofCacheEntries;
@@ -2968,9 +2970,6 @@ BOOL __fastcall D2COMP_SetAnimationMode(D2CharSelCompStrc * pCompUnit, int32_t n
         return 1;
       }
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8bf);
-    exit(-1);
 }
 
 // Returns the code index (1..13) paired with the four-character weapon-class code nWeaponClassCode ('bow '..'ht2 ') in gaCompWeaponClassCodeMap, or 0 when the code is not in the map; the index selects gaCompWeaponClassByCodeIndex.
@@ -3050,7 +3049,6 @@ void __fastcall D2COMP_AllocTxt_Items(D2PoolManagerStrc * pMemory) {
     static D2ItemsTxt * pD2CompArmor; D2_STATIC_GUARD_BSS(pD2CompArmor, "D2Win::Src::D2Comp::D2COMP_AllocTxt_Items::pD2CompArmor");
     static size_t nD2CompMiscSize; D2_STATIC_GUARD_BSS(nD2CompMiscSize, "D2Win::Src::D2Comp::D2COMP_AllocTxt_Items::nD2CompMiscSize");
     static short * pD2CompItemsShortStructure; D2_STATIC_GUARD_BSS(pD2CompItemsShortStructure, "D2Win::Src::D2Comp::D2COMP_AllocTxt_Items::pD2CompItemsShortStructure");
-    static D2TxtLinkStrc * pD2CompItemsLinker; D2_STATIC_GUARD_BSS(pD2CompItemsLinker, "D2Win::Src::D2Comp::D2COMP_AllocTxt_Items::pD2CompItemsLinker");
 
     int j;
     int nItemIdx = 0;
@@ -3124,6 +3122,27 @@ void __fastcall D2COMP_LoadItemTypesTxt(D2PoolManagerStrc * pMemory) {
     };
     gnItemTypesCacheHandle = Fog::Src::Excel::STRUCT_CreateTxtLinkStrc(".\\Src\\D2Comp.cpp", 0xa97);
     gpItemTypesTxt = LoadTxt(pMemory, "itemtypes", aBinFields, &gnD2CompCompressionBufferSize, 0xe4);
+}
+
+int Unreferenced_005049d0() {
+    if (pD2CompItemsLinker) {
+      Fog::Src::Excel::STRUCT_FreeTxtLink(pD2CompItemsLinker);
+      pD2CompItemsLinker = 0;
+    }
+    if (gnItemTypesCacheHandle) {
+      Fog::Src::Excel::STRUCT_FreeTxtLink(gnItemTypesCacheHandle);
+      gnItemTypesCacheHandle = 0;
+    }
+
+    int iVar1 = 0;
+    if (gnHitClassTxtLinkHandle) {
+      int extraout_EAX;
+      Fog::Src::Excel::STRUCT_FreeTxtLink(gnHitClassTxtLinkHandle);
+      gnHitClassTxtLinkHandle = 0;
+      iVar1 = extraout_EAX;
+    }
+
+    return iVar1;
 }
 
 int32_t __stdcall D2COMP_IsItemTypeDescendant(int32_t nItemType, int32_t nAncestorType) {
@@ -3660,11 +3679,11 @@ void __stdcall D2COMP_LoadGuildEmblemIcon(D2CharSelCompStrc * pCompUnit, uint8_t
     uint8_t nGuildEmblemColor1Value;
     if ((uint8_t)(byPrimaryColor - 1) <= 9) {
       nGuildEmblemColor1Value = gaGlideEmblemPrimaryColorTableEntries[byPrimaryColor - 1];
+      pCompUnit->nGuildEmblemColor1 = nGuildEmblemColor1Value;
     } else {
       nGuildEmblemColor1Value = 0;
+      pCompUnit->nGuildEmblemColor1 = nGuildEmblemColor1Value;
     }
-
-    pCompUnit->nGuildEmblemColor1 = nGuildEmblemColor1Value;
     if ((uint8_t)(bySecondaryColor - 1) <= 9) {
       pCompUnit->nGuildEmblemColor2 = gaGlideEmblemSecondaryColorTableEntries[bySecondaryColor - 1];
       return;
@@ -4242,7 +4261,6 @@ void __fastcall DRAW_OOG_ChannelPlayers(D2QuestDataA3Q6Strc * pA3Q6Data) {
 void __stdcall D2COMP_AllocTxt_EverythingItems() {
     // Static local variables (originally global data)
     static void * gpHitClassTxt; D2_STATIC_GUARD_BSS(gpHitClassTxt, "D2Win::Src::D2Comp::D2COMP_AllocTxt_EverythingItems::gpHitClassTxt");
-    static D2TxtLinkStrc * gnHitClassTxtLinkHandle; D2_STATIC_GUARD_BSS(gnHitClassTxtLinkHandle, "D2Win::Src::D2Comp::D2COMP_AllocTxt_EverythingItems::gnHitClassTxtLinkHandle");
     static uint32_t gbD2CompItemsAllocated; D2_STATIC_GUARD_BSS(gbD2CompItemsAllocated, "D2Win::Src::D2Comp::D2COMP_AllocTxt_EverythingItems::gbD2CompItemsAllocated");
 
     uint32_t nTwoHandedMapIdx;

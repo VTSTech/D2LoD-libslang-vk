@@ -306,6 +306,23 @@ void __fastcall SKILLNEC_OnCurseExpire(D2UnitStrc * pUnit, eD2States eState, int
     SkillsServer::DefaultExpireFunction(pUnit, eState, dwParam);
 }
 
+int __fastcall Unreferenced_005c33d0(int param_1) {
+    switch (param_1) {
+      case 0x17:
+        {
+          return 10;
+        }
+      case 0x1b:
+        {
+          return 0xc;
+        }
+      default:
+        {
+          return param_1 == 0x38 ? 0xb : 0;
+        }
+    }
+}
+
 uint32_t __fastcall SKILLNEC_IsReviveOrRaiseSkeleton(eD2Skills eSkill) {
     if (eSkill != SKILL_Penetrate) {
       return (uint32_t)(eSkill == SKILL_Meteor);
@@ -361,7 +378,7 @@ void __thiscall SKILLNEC_AssignCurseAiBehavior(::SGAMEDATA * pGame, D2UnitStrc *
     int32_t sAuraTargetState = pSkillsTxt->auratargetstate;
     if (sAuraTargetState != 0x17) {
       if (sAuraTargetState != 0x1b) {
-        nFunctionId = sAuraTargetState != 0x38 ? 0 : 0xb;
+        nFunctionId = sAuraTargetState == 0x38 ? 0xb : 0;
       } else {
         nFunctionId = 0xc;
       }
@@ -416,14 +433,21 @@ void __fastcall SKILLNEC_ApplyCurseToUnit(D2UnitStrc * pUnit, D2NecroSkillArgStr
       }
 
       eAuraState = pNecroSkillArg->eAuraState;
-      if (eAuraState != STATE_dimvision) {
-        if (eAuraState != STATE_taunt) {
-          nCorpseConsumeType = eAuraState != STATE_terror ? 0 : 0xb;
-        } else {
-          nCorpseConsumeType = 0xc;
-        }
-      } else {
-        nCorpseConsumeType = 10;
+      switch (eAuraState) {
+        case STATE_dimvision:
+          {
+            nCorpseConsumeType = 10;
+            break;
+          }
+        case STATE_taunt:
+          {
+            nCorpseConsumeType = 0xc;
+            break;
+          }
+        default:
+          {
+            nCorpseConsumeType = eAuraState == STATE_terror ? 0xb : 0;
+          }
       }
 
       bCorpseConsumedOk = SkillsServer::D2CheckCorpseConsumed(pUnit, nCorpseConsumeType);
@@ -1873,7 +1897,7 @@ BOOL __fastcall Skills_SrvDoFunc_060_SummonBoneWall(::SGAMEDATA * pGame, D2UnitS
     }
 
     uint32_t nTargetY = nCursorYRaw;
-    D2RoomStrc* pTargetRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nTargetX, nTargetY);
+    D2RoomStrc* pTargetRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nTargetX, nTargetY);
     if (!pTargetRoom) {
       return 0;
     }
@@ -1960,10 +1984,10 @@ BOOL __fastcall Skills_SrvDoFunc_060_SummonBoneWall(::SGAMEDATA * pGame, D2UnitS
       sSkillArg.nSkillLevel = nSkillLvl;
       sSkillArg.nMissileTxtNo = (eMissilesId)pSkillsTxt->srvmissile[1];
       sSkillArg.pOwner = pUnit;
-      nRadius = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-      iVar1 = nRadius - nTargetX;
-      nRadius = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-      nDirOffsetY = nRadius - nCursorYRaw;
+      iVar1 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
+      iVar1 -= nTargetX;
+      nDirOffsetY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
+      nDirOffsetY -= nCursorYRaw;
       if (!iVar1 && !nDirOffsetY) {
         iVar1 = 1;
       }
@@ -2014,8 +2038,7 @@ static D2UnitStrc * __stdcall SKILLNEC_CreateSummonAtPosition(::SGAMEDATA * pGam
     }
 
     int32_t nSpawnYSaved = nSpawnY;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nSpawnX, nSpawnYSaved);
+    D2RoomStrc* pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nSpawnX, nSpawnYSaved);
     sSummonParams.nFunctionId = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
     if (sSummonParams.nFunctionId) {
       return nullptr;
@@ -2533,7 +2556,6 @@ BOOL __fastcall ITEMEVENT_LifeTap(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2Un
 // Item-event callback that drains life from a revived necromancer minion back to its owner. Fires when pUnit is a monster with pParam->offset_0x4c damage dealt. Looks up the owner via GetOwnerUnit, checks owner is alive and above 0xFF HP, reads the monster's Skill1 leech rate from MonStats.txt via GetSkillParam4, subtracts a percentage of the dealt damage from owner HP (floor 0x100), and reduces the tracked damage value in pParam.
 BOOL __fastcall ITEMEVENT_NecroReviveLeech(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
     int32_t nValue;
-    uint32_t nDivisor;
     if (!(pUnit && pDamage && pUnit->eUnitType == UNIT_MONSTER && pDamage->dwDmgTotal > 0)) {
       return 0;
     }
@@ -2556,9 +2578,7 @@ BOOL __fastcall ITEMEVENT_NecroReviveLeech(::SGAMEDATA * pGame, uint32_t nUnitEv
     D2MonStatsTxt* pMonStatsTxt = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(pUnit->nClassId);
     if (pMonStatsTxt && pMonStatsTxt->aSkill[0] >= 0) {
       int32_t nLeechAmt;
-      nDivisor = 100;
-      nLeechAmt = D2Client::UI::SkillDesc::GetSkillParam4((int)pMonStatsTxt->aSkill[0]);
-      nLeechAmt = D2Client::Stats::D2ApplyPercent(pDamage->dwDmgTotal, nLeechAmt, nDivisor);
+      nLeechAmt = D2Client::Stats::D2ApplyPercent(pDamage->dwDmgTotal, D2Client::UI::SkillDesc::GetSkillParam4((int)pMonStatsTxt->aSkill[0]), 100);
       nValue = nOwnerCurHp - nLeechAmt;
       if (nValue < 0x100) {
         nValue = 0x100;

@@ -12,12 +12,12 @@
 #include "D2Client/SKILLS/Skills.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/CmdTbl.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Missile.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
+#include "D2Client/Warden/WardenClient.h"
 #include "D2Common/Collision.h"
 #include "D2Common/D2DynamicPathStrc.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -46,12 +46,14 @@
 #include "D2Common/Units/UnitFinds.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Win/Src/D2WinFont.h"
+#include "D2gfx/D2GFX.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Fog.h"
 #include "Fog/Src/ErrorManager.h"
@@ -1139,7 +1141,7 @@ void __fastcall CLIENT_SpawnMonstersAroundUnit(D2UnitStrc * pUnit, int32_t nMons
       DVar1 = D2_SEED_NEXT_VAL(nRngProduct);
       pUnit->sSeed = DVar1;
       nY = DVar1.nSeedLow % 5 - 2 + ptCenter.y;
-      pRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nSpawnX, nY);
+      pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, nSpawnX, nY);
       eCollision = D2Common::Collision::CheckCollision_BlockAll_Width(pRoom, nSpawnX, nY, (int)pMonStats2->SizeX, 0x3f11);
       if (eCollision == COLLIDE_NONE) {
         UNIT::CUnit::CreateMissileOrMonster(nClassIdSaved, nSpawnX, nY, UNIT_MONSTER, 0);
@@ -1409,9 +1411,7 @@ static uint32_t __stdcall MONSTER_TryMoveTowardTarget(D2UnitStrc * pUnit, uint8_
     D2DynamicPathStrc* pServerPath = pUnit->pPath.pDynamicPath;
     int32_t eCollisionFlag = D2Common::PATH::DynamicPath::GetCollisionType(pServerPath);
     eD2CollisionUnitSize nWidth = COLLISION_UNIT_SIZE_POINT;
-    int nY = nStepY + nUnitY;
-    int nX = nStepX + nMonsterY;
-    eCollisionFlags eCollisionResult = D2Common::Collision::CheckCollision_BlockAll_Width(D2Common::Units::UNITS_GetRoom(pUnit), nX, nY, nWidth, eCollisionFlag);
+    eCollisionFlags eCollisionResult = D2Common::Collision::CheckCollision_BlockAll_Width(D2Common::Units::UNITS_GetRoom(pUnit), nStepX + nMonsterY, nStepY + nUnitY, nWidth, eCollisionFlag);
     if (eCollisionResult != COLLIDE_NONE) {
       return 0;
     }
@@ -2237,6 +2237,14 @@ void __fastcall CLIENT_DispatchMonsterAiBehavior(D2UnitStrc * pUnit) {
     ;
 }
 
+int __fastcall Unreferenced_0046d9c0(int param_1) {
+    if (param_1 >= 0 && param_1 < sgptDataTable->nTxtOverlaySize) {
+      return (int)(sgptDataTable->pTxtOverlay + param_1);
+    }
+
+    return 0;
+}
+
 eD2UnitType __fastcall CLIENT_GetEffectiveUnitType(D2UnitStrc * pUnit) {
     if (pUnit) {
       if (!(pUnit->eUnitFlagsEx >> 3 & 1)) {
@@ -2283,6 +2291,28 @@ DWORD __fastcall CLIENT_GetEffectiveClassId(D2UnitStrc * pUnit) {
     }
 
     return -1;
+}
+
+void thunk_DRAW_Overlay_SecondsLeftToGame_Unref_00477690() {
+    D2gfx::D2GFX::RENDERER_TogglePerspective();
+}
+
+void thunk_DRAW_Overlay_SecondsLeftToGame_Unref_004776a0() {
+    D2gfx::D2GFX::RENDERER_ToggleBlendedShadows();
+}
+
+void thunk_DRAW_Overlay_SecondsLeftToGame_Unref_004776b0() {
+    D2gfx::D2GFX::D2GFX_ToggleLowQuality();
+}
+
+void thunk_DRAW_Overlay_SecondsLeftToGame_Unref_0047f940() {
+    LPVOID* in_ECX;
+    Warden::WARDEN_FreeModuleLibraries(in_ECX);
+}
+
+void thunk_DRAW_Overlay_SecondsLeftToGame_Unref_0047fbe0() {
+    LPVOID* in_ECX;
+    Warden::WARDEN_FreeModuleLibraries(in_ECX);
 }
 
 } // namespace D2Client::Source::ClientEngine

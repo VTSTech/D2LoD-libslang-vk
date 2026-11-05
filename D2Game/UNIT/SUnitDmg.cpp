@@ -10,12 +10,12 @@
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/Stats.h"
 #include "D2Client/UI/Automap.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
 #include "D2Common/COMPOSIT/Composit.h"
+#include "D2Common/Collision.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
 #include "D2Common/D2MonStatsTxt.h"
@@ -39,6 +39,7 @@
 #include "D2Common/Merc.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
+#include "D2Common/Seed.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Common/Unit.h"
@@ -1300,7 +1301,7 @@ static int32_t DAMAGE_CalculateExperienceMultiplier(D2DamageContext * pCtx) {
       uMercType = D2Client::UNIT::CheckFlags(pAttackerSave, UNITFLAG_ISREVIVE);
       if (uMercType) {
         uMercType = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pAttackerSave);
-        return (uMercType ? -200 : 0) + 400;
+        return uMercType ? 0xc8 : 400;
       }
     }
 
@@ -1366,7 +1367,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x1,
         /* .nFlag7 = */ 0x0,
         /* .nEnabled = */ 0x1,
-        /* .nEventId = */ (char *)0x006e1664,
+        /* .nEventId = */ s_Dam_006e1664,
         0x8
     },
     {
@@ -1392,7 +1393,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x2,
         /* .nFlag7 = */ 0x0,
         /* .nEnabled = */ 0x1,
-        /* .nEventId = */ (char *)0x006e1654,
+        /* .nEventId = */ s_Ligt_006e1654,
         0x8
     },
     {
@@ -1418,7 +1419,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x2,
         /* .nFlag7 = */ 0x0,
         /* .nEnabled = */ 0x1,
-        /* .nEventId = */ (char *)0x006e1644,
+        /* .nEventId = */ s_Magc_006e1644,
         0x8
     },
     {
@@ -1470,7 +1471,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x0,
         /* .nFlag7 = */ 0x0,
         /* .nEnabled = */ 0x1,
-        /* .nEventId = */ (char *)0x006e1624,
+        /* .nEventId = */ s_Pois_006e1624,
         0x0
     },
     {
@@ -1483,7 +1484,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x0,
         /* .nFlag7 = */ 0x1,
         /* .nEnabled = */ 0x1,
-        /* .nEventId = */ (char *)0x006e161c,
+        /* .nEventId = */ s_Life_006e161c,
         0x8
     },
     {
@@ -1509,7 +1510,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x0,
         /* .nFlag7 = */ 0x1,
         /* .nEnabled = */ 0x1,
-        /* .nEventId = */ (char *)0x006e160c,
+        /* .nEventId = */ s_Stam_006e160c,
         0x8
     }
 }; D2_STATIC_GUARD(gaDefenseReductionTable, "D2Game::UNIT::SUnitDmg::DAMAGE_ApplyDefensiveReduction::gaDefenseReductionTable");
@@ -2041,7 +2042,7 @@ BOOL __stdcall DAMAGE_CheckKnockbackThreshold(D2UnitStrc * pUnit, D2DamageStrc *
       break;
     }
 
-    if (!(pDamage1->dwDmgTotal >= nMaxHp / (int)nKbDivisor && (pDamage1->dwDmgTotal >= nMaxHp / (int)(nKbDivisor / 2) || (uRandRoll = D2Client::Seed::RNG_GetRandomInRange(&pUnit->sSeed.nSeedLow, 2) , uRandRoll != 0)) && (pDamage1->dwDmgTotal >= nMaxHp / ((int)nKbDivisor >> 2) || (uRandRoll2 = D2Client::Seed::RNG_GetRandomInRange(&pUnit->sSeed.nSeedLow, 4) , uRandRoll2 != 0)) && (!pUnit || pUnit->eUnitType != UNIT_MONSTER || (uRandRoll2 = D2Client::Source::ClientEngine::GetSomeMonsterStatFlag(pUnit->nClassId, 3) , uRandRoll2 != 0)))) {
+    if (!(pDamage1->dwDmgTotal >= nMaxHp / (int)nKbDivisor && (pDamage1->dwDmgTotal >= nMaxHp / (int)(nKbDivisor / 2) || (uRandRoll = D2Common::Seed::RNG_GetRandomInRange(&pUnit->sSeed.nSeedLow, 2) , uRandRoll != 0)) && (pDamage1->dwDmgTotal >= nMaxHp / ((int)nKbDivisor >> 2) || (uRandRoll2 = D2Common::Seed::RNG_GetRandomInRange(&pUnit->sSeed.nSeedLow, 4) , uRandRoll2 != 0)) && (!pUnit || pUnit->eUnitType != UNIT_MONSTER || (uRandRoll2 = D2Client::Source::ClientEngine::GetSomeMonsterStatFlag(pUnit->nClassId, 3) , uRandRoll2 != 0)))) {
       return 1;
     }
 
@@ -2162,7 +2163,7 @@ void __fastcall SERVER_KillMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Un
     pMonsterKill.pAttacker = pAttacker;
     pMonsterKill.nAnimatedMode1 = (uint8_t)nDirection;
     D2Game::Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &pMonsterKill, 1);
-    if (-1 < (int)pUnit->eUnitFlags) {
+    if ((int)pUnit->eUnitFlags >= 0) {
       Quests::QUESTS::QUEST_OnMonsterKilled(pGame, pUnit, pAttacker);
     }
 
@@ -2260,7 +2261,6 @@ void __fastcall SERVER_GetHitCalculation(::SGAMEDATA * pGameIn, D2UnitStrc * pUn
     D2SkillsTxt* pSkillsTxt;
     int32_t nFasterBlockRate;
     D2MonsterKillStrc sMonsterKill;
-    eD2States eState;
     ::SGAMEDATA* pGameLocal;
     uint16_t wDmgResultFlags;
     D2UnitStrc* pAttacker = pUnit;
@@ -2389,7 +2389,7 @@ void __fastcall SERVER_GetHitCalculation(::SGAMEDATA * pGameIn, D2UnitStrc * pUn
       } else {
         wDmgResultFlags = pDamage->wResultFlags;
         if ((char)wDmgResultFlags < '\0') {
-          eState = STATE_dodge;
+          pStatList = D2Common::Stats::StatsEx::GetStatsByState(pVictim, STATE_dodge);
         } else {
           if (!(wDmgResultFlags & 0x100)) {
             if (wDmgResultFlags & 0x200) {
@@ -2485,16 +2485,15 @@ void __fastcall SERVER_GetHitCalculation(::SGAMEDATA * pGameIn, D2UnitStrc * pUn
             return;
           }
 
-          eState = STATE_avoid;
+          pStatList = D2Common::Stats::StatsEx::GetStatsByState(pVictim, STATE_avoid);
         }
-
-        pStatList = D2Common::Stats::StatsEx::GetStatsByState(pVictim, eState);
         if (pStatList) {
           eSkill = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_skill, 0);
           pEvadeSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pVictim, eSkill);
           if (pEvadeSkill) {
             dwSkillFlags = D2Common::Skills::SKILL_GetFlags(pEvadeSkill);
-            D2Common::Skills::SKILL_SetFlags(pEvadeSkill, dwSkillFlags | 4);
+            dwSkillFlags |= 4;
+            D2Common::Skills::SKILL_SetFlags(pEvadeSkill, dwSkillFlags);
             if (!pUnit) {
               nAttackerGUID = -1;
               eVictimType = UNIT_COUNT;
@@ -2860,6 +2859,7 @@ static void __stdcall DAMAGE_ApplyIgnoreAndFractionalAC(int * pnHitChance, int *
 // Always 5% minimum, 95% maximum hit chance.
 // Checked BEFORE block/dodge/avoid/evade (all independent rolls).
 BOOL __fastcall DAMAGE_RollAttackHit(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int32_t nToHitBonusExtra, int32_t bIsRangedAttack) {
+    int nAcTotal;
     D2UnitStrc* pActiveWeapon;
     uint32_t nToHitStat;
     int nToHitBonusStat;
@@ -2869,7 +2869,6 @@ BOOL __fastcall DAMAGE_RollAttackHit(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, in
     int32_t nAttackerLevel;
     int32_t nDefenderLevel;
     int32_t nBaseAR;
-    eD2UnitStat eAcStatType;
     short int nMonType;
     D2SeedStrc sSeedResult;
     if (!pUnit2 || !pUnit) {
@@ -2880,12 +2879,11 @@ BOOL __fastcall DAMAGE_RollAttackHit(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, in
     int iVar1 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_level, 0);
     int32_t nAR = D2Common::Units::GetDefense(pUnit2);
     if (bIsRangedAttack) {
-      eAcStatType = UNITSTAT_armorclass_vs_missile;
+      nAcTotal = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_armorclass_vs_missile, 0);
     } else {
-      eAcStatType = UNITSTAT_armorclass_vs_hth;
+      nAcTotal = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_armorclass_vs_hth, 0);
     }
 
-    int nAcTotal = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, eAcStatType, 0);
     int32_t nTotalAC = nAR + nAcTotal;
     int iVar2 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
     int32_t nToHitBonus = 0;
@@ -3166,8 +3164,7 @@ uint32_t __fastcall DAMAGE_CheckBlockAndEvasion(::SGAMEDATA * pGame, D2UnitStrc 
       return uBlockResult;
     }
 
-    int bExpansion = pGame->bExpansion;
-    int nBlockRate = D2Common::Units::GetBlockRate(pDefUnit, bExpansion);
+    int nBlockRate = D2Common::Units::GetBlockRate(pDefUnit, pGame->bExpansion);
     if (nBlockRate <= 0) {
       uBlockResult = DAMAGE_CheckDefenseEvasion(bIsMissile, pDefUnit, pUnit);
       return uBlockResult;
@@ -3209,7 +3206,7 @@ void __fastcall DAMAGE_ApplyAreaOfEffectDamage(::SGAMEDATA * pGame, D2UnitStrc *
     D2UnitStrc* pMissileUnit = pUnit;
     ::SGAMEDATA* pGameLocal = pGame;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2RoomStrc* pBestRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nCenterX, nCenterY);
+    D2RoomStrc* pBestRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, nCenterX, nCenterY);
     if (!nUnitFlags) {
       nUnitFlags = 0x583;
     }
@@ -3466,8 +3463,9 @@ static void __stdcall SERVER_PlayerUpdateExperience(::SGAMEDATA * pGame, int32_t
     int32_t nCurrentXp = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_experience, 0);
     int32_t ePlayerClass_00 = pUnit->nClassId;
     int32_t pExpTxtLine = D2Common::DATATBLS::DataTbls::TXT_Experience_GetMaxLevel(ePlayerClass_00);
-    DWORD nMaxXp = D2Common::DATATBLS::DataTbls::TXT_Experience_GetLineLevel(ePlayerClass_00, pExpTxtLine - 1);
+    pExpTxtLine -= 1;
     uint32_t nValue = nCurrentXp + nXpGain;
+    DWORD nMaxXp = D2Common::DATATBLS::DataTbls::TXT_Experience_GetLineLevel(ePlayerClass_00, pExpTxtLine);
     if ((uint32_t)(nCurrentXp + nXpGain) > nMaxXp) {
       nValue = nMaxXp;
     }

@@ -5,17 +5,19 @@
 #include "D2CMP/SRC/CelCmp/TCELENTRY.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
+#include "D2Client/UI/ui.h"
 #include "D2Common/Chat/Ignorelist/IgnoreList.h"
 #include "D2Common/Chat/Ignorelist/MappingEntryNode.h"
 #include "D2Common/Chat/Ignorelist/StringEntryNode.h"
 #include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Game/GAME/Targets.h"
+#include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Storm/H/CCritSect.h"
-#include "Storm/Source/SFile.h"
+#include "Storm/Source/SErr.h"
 #include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
@@ -553,14 +555,14 @@ template<> ::MappingEntryNode * __thiscall TSHashTable<MappingEntryNode, HASHKEY
     int pNext = pList->m_linkoffset;
     if ((int)dwNext < 0) {
       *(TSLink<::MappingEntryNode>**)~dwNext = (TSLink<::MappingEntryNode>*)pBucketHead;
-      pHeadEntry->m_next = (int)pNode;
-      return pNode;
-    }
-    if (pNext < 0) {
-      pNext = (int)pHeadEntry - pHeadEntry->m_prevlink->m_next;
+    } else {
+      if (pNext < 0) {
+        pNext = (int)pHeadEntry - pHeadEntry->m_prevlink->m_next;
+      }
+
+      *(TSLink<::MappingEntryNode>**)(dwNext + pNext) = (TSLink<::MappingEntryNode>*)pBucketHead;
     }
 
-    *(TSLink<::MappingEntryNode>**)(dwNext + pNext) = (TSLink<::MappingEntryNode>*)pBucketHead;
     pHeadEntry->m_next = (int)pNode;
     return pNode;
 }
@@ -716,11 +718,10 @@ template<> __attribute__((noinline)) inline void TSHashTable<MappingEntryNode, H
     }
     if (tempList.m_terminator.m_next < 0) {
       *(TSLink<::MappingEntryNode>**)~tempList.m_terminator.m_next = tempList.m_terminator.m_prevlink;
-      tempList.m_terminator.m_prevlink->m_next = tempList.m_terminator.m_next;
-      return;
+    } else {
+      *(TSLink<::MappingEntryNode>**)(tempList.m_terminator.m_next + (uintptr_t)&tempList + (4 - tempList.m_terminator.m_prevlink->m_next)) = tempList.m_terminator.m_prevlink;
     }
 
-    *(TSLink<::MappingEntryNode>**)(tempList.m_terminator.m_next + (uintptr_t)&tempList + (4 - tempList.m_terminator.m_prevlink->m_next)) = tempList.m_terminator.m_prevlink;
     tempList.m_terminator.m_prevlink->m_next = tempList.m_terminator.m_next;
 }
 

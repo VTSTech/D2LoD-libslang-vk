@@ -83,6 +83,16 @@ struct D2RealmCharListCacheEntryStrc {
     /* 0x0C */ struct D2RealmCharListCacheEntryStrc * pNext;
 };
 
+// =============================================================================
+// Global data (co-located with struct definitions)
+// =============================================================================
+
+namespace D2Launch::CharSel {
+
+extern struct D2CharSelStrc * D2CharSelStrcFirst;
+
+} // namespace D2Launch::CharSel
+
 namespace D2Launch::CharSel {
 
 // Function declarations
@@ -95,6 +105,7 @@ void __fastcall CHARSEL_CacheRealmData(char * szRealmName, void * pData, size_t 
 void __stdcall CHARSEL_FreeCachedRealmData();
 void __stdcall UIMENU_ItsLikeRealmSelectionMenuButOffsetToRightSide();
 char * __stdcall GetPreferedRealm();
+int __fastcall Unreferenced_00437f30(int param_1);
 // @sourcefile .\Src\CharSel.cpp
 void __stdcall CHARSEL_DestroySelectedChar();
 // Draws local character slots in selection screen. Iterates gaCharSelScreenSlotControls[0-7] to render each slot's character name, level, class, and hardcore/expansion flags. Highlights selected slot, draws character preview sprite, and handles expired characters.
@@ -102,6 +113,7 @@ void __stdcall DRAW_LocalCharsInSelectionScreen();
 void __stdcall DRAW_LocalCharsInSelectionScreen0();
 // @sourcefile .\Src\CharSel.cpp
 void __stdcall CHARSEL_DestroyAllCharEntries();
+int __fastcall Unreferenced_00438f40(int param_1);
 void __stdcall CHARSEL_EnumerateLocalSaves();
 int __stdcall CHARSEL_UpdateSelectionExpansion();
 // @sourcefile .\Src\CharSel.cpp
@@ -132,6 +144,7 @@ void __stdcall CHARSEL_AddRetrievingEntry();
 // @sourcefile .\Src\CharSel.cpp
 void __stdcall CHARSEL_ClearCharDetailUI();
 void __stdcall CHARSEL_ResetCharListUI();
+int Unreferenced_0043a7e0();
 void __stdcall UIMENU_ChangeHavingMultipleRealmsAsia123();
 BOOL __stdcall ChangeClosedRealmChoice(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall CHARSEL_OpenRealmChangeDialog(struct D2ControlMsg * pControlMsg);

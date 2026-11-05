@@ -14,31 +14,11 @@ struct D2ItemGenContextStrc;
 struct D2UnitStrc;
 typedef uint32_t eD2Skills;
 
-struct D2BooksTxt;
 struct D2LowQualityItemsTxt;
-struct D2MagicAffixTxt;
 struct D2QualityItemsTxt;
 struct D2RareAffixTxt;
 
 // Data types
-struct D2BooksTableStrc {
-    /* 0x00 */ int nSize;
-    /* 0x04 */ struct D2BooksTxt * pTable;
-};
-
-struct D2BooksTxt {
-    /* 0x00 */ uint16_t name; // d2bs binfields FIELDTYPE_KEY_WORD
-    /* 0x02 */ char spellicon; // d2bs binfields FIELDTYPE_CHAR
-    /* 0x03 */ uint8_t field_0x3;
-    /* 0x04 */ int pSpell; // d2bs binfields FIELDTYPE_INT
-    /* 0x08 */ int scrollskill; // d2bs binfields FIELDTYPE_NAME_INT
-    /* 0x0C */ int bookskill; // d2bs binfields FIELDTYPE_NAME_INT
-    /* 0x10 */ int basecost; // d2bs binfields FIELDTYPE_INT
-    /* 0x14 */ int costpercharge; // d2bs binfields FIELDTYPE_INT
-    /* 0x18 */ char scrollspellcode[4]; // d2bs binfields FIELDTYPE_RAW4
-    /* 0x1C */ char bookspellcode[4]; // d2bs binfields FIELDTYPE_RAW4
-};
-
 struct D2LowQualityItemsTableStrc {
     /* 0x00 */ int nSize;
     /* 0x04 */ struct D2LowQualityItemsTxt * pTable;
@@ -47,41 +27,6 @@ struct D2LowQualityItemsTableStrc {
 struct D2LowQualityItemsTxt {
     /* 0x00 */ char Name[32]; // d2bs binfields FIELDTYPE_ASCII
     /* 0x20 */ uint16_t wNameStringId;
-};
-
-struct D2MagicAffixTableStrc {
-    /* 0x00 */ int nSize; // total row count across all three sub-tables
-    /* 0x04 */ struct D2MagicAffixTxt * pTable; // base of the 0x90-byte row array
-    /* 0x08 */ struct D2MagicAffixTxt * pSuffixStart; // magicsuffix rows; the suffix range runs from here to pPrefixStart
-    /* 0x0C */ struct D2MagicAffixTxt * pPrefixStart; // magicprefix rows; the prefix range runs from here to pAutoMagicStart
-    /* 0x10 */ struct D2MagicAffixTxt * pAutoMagicStart; // automagic rows; that range runs from here to pTable + nSize*0x90
-};
-
-struct __attribute__((packed)) D2MagicAffixTxt {
-    /* 0x00 */ char name[32];
-    /* 0x20 */ uint16_t wNameStr; // string table ID for affix name (GetLocaleString index)
-    /* 0x22 */ short version;
-    /* 0x24 */ D2MagixAffixModStrc mod[3];
-    /* 0x54 */ bool spawnable;
-    /* 0x55 */ uint8_t pad0x55; // alignment padding after spawnable
-    /* 0x56 */ uint8_t transformcolor;
-    /* 0x57 */ uint8_t pad0x57; // alignment padding after transformcolor
-    /* 0x58 */ int level;
-    /* 0x5C */ int group;
-    /* 0x60 */ int maxlevel;
-    /* 0x64 */ bool rare;
-    /* 0x65 */ uint8_t levelreq;
-    /* 0x66 */ char classspecific;
-    /* 0x67 */ uint8_t class_;
-    /* 0x68 */ char classlevelreq;
-    /* 0x69 */ uint8_t pad0x69; // alignment padding after classlevelreq
-    /* 0x6A */ short include_type[7];
-    /* 0x78 */ short exclude_type[5];
-    /* 0x82 */ char frequency;
-    /* 0x83 */ uint8_t pad0x83; // alignment padding after frequency
-    /* 0x84 */ int divide;
-    /* 0x88 */ int multiply;
-    /* 0x8C */ int add;
 };
 
 struct D2QualityItemsTableStrc {

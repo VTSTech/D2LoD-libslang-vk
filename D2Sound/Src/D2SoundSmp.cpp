@@ -84,7 +84,7 @@ static uint8_t gaEAXPropertyGuid_ObstructionParams[9] = {
 }; D2_STATIC_GUARD(gaEAXPropertyGuid_ObstructionParams, "gaEAXPropertyGuid_ObstructionParams");
 static float gnSoundFrequency_22kHz = 2; D2_STATIC_GUARD(gnSoundFrequency_22kHz, "gnSoundFrequency_22kHz");
 static float gnSoundQuality_Low = 100; D2_STATIC_GUARD(gnSoundQuality_Low, "gnSoundQuality_Low");
-static double gnSoundAttenuation_Max = 0.0000999999974737875; D2_STATIC_GUARD(gnSoundAttenuation_Max, "gnSoundAttenuation_Max");
+static double gnSoundAttenuation_Max = 0.00009999999747378752; D2_STATIC_GUARD(gnSoundAttenuation_Max, "gnSoundAttenuation_Max");
 static uint32_t gnSoundGlobalVolume = 0xff; D2_STATIC_GUARD(gnSoundGlobalVolume, "gnSoundGlobalVolume");
 static uint32_t g_nSoundSampleParam = 0; D2_STATIC_GUARD(g_nSoundSampleParam, "g_nSoundSampleParam");
 static int * gpSoundSampleList = 0; D2_STATIC_GUARD(gpSoundSampleList, "gpSoundSampleList");
@@ -666,7 +666,13 @@ void __fastcall CleanupSoundBuffer(uint32_t nFadeTimeMs) {
     }
 
     dwSpeakerFlag = SOUND_GetSpeakerConfigFlag();
-    uint32_t nCurrentVolume = dwSpeakerFlag ? gnSoundGlobalVolume : 0;
+    uint32_t nCurrentVolume;
+    if (dwSpeakerFlag) {
+      nCurrentVolume = gnSoundGlobalVolume;
+    } else {
+      nCurrentVolume = 0;
+    }
+
     uint32_t nVolumeStep = (uint32_t)(nCurrentVolume / (nFadeTimeMs / 0x14));
     while (nCurrentVolume) {
       /* DWORD dwMilliseconds for Sleep */ /* Patch self out */ Sleep(0x14);
@@ -961,22 +967,22 @@ void __stdcall SOUNDSMP_CreateSoundThread() {
 }
 
 float __stdcall SOUNDSMP_LogVolumeToLinear(float dwVolume) {
-    long double fVar1 = CRT_CILog((long double)dwVolume);
+    long double fVar1 = log((double)dwVolume);
     return (float)fVar1;
 }
 
 float __stdcall SOUNDSMP_LinearToLogVolume(float dwLinearValue, float dwScale) {
-    long double fVar1 = CRT_CIPow((long double)dwLinearValue, (long double)dwScale);
+    long double fVar1 = pow((double)dwLinearValue, (double)dwScale);
     return (float)fVar1;
 }
 
 float SOUNDSMP_LogToLinearNoParam(float fValue) {
-    long double fVar1 = CRT_CILog((long double)fValue);
+    long double fVar1 = log((double)fValue);
     return (float)fVar1;
 }
 
 float SOUNDSMP_LinearToLogNoParam(float fValue, float fValue2) {
-    long double fVar1 = CRT_CIPow((long double)fValue, (long double)fValue2);
+    long double fVar1 = pow((double)fValue, (double)fValue2);
     return (float)fVar1;
 }
 
@@ -1004,7 +1010,7 @@ float __stdcall SOUNDSMP_ClampVolume(float fValue, float fMax, float fInput) {
       fDivisor = fVar1;
     }
 
-    fVar1 = CRT_CILog10((fUpper + (long double)fValue) / fDivisor);
+    fVar1 = log10((double)((fUpper + (long double)fValue) / fDivisor));
     // [vanilla-plus fix 10; R87-merge note: upstream adopted the -2000.0 scale]
     // -0x3f60c00000000000 (-0.00341796875) cannot be right: the exact inverse of this
     // curve, ClampAttenuation below, divides by 2000.0. With -0.00342 every nonzero
@@ -1012,6 +1018,7 @@ float __stdcall SOUNDSMP_ClampVolume(float fValue, float fMax, float fInput) {
     // curve degenerates to binary full/silent. Restore the -2000.0 scale so 20*log10
     // amplitude-dB semantics hold, matching retail 1.14d FUN_005165f0:
     // 255->0 dB, 110->-730, 0->-10000.
+    // [R123-merge note: upstream regen spells the call as plain log10((double)(...)).]
     return (float)(fVar1 * (long double)-2000.0);
 }
 
@@ -1024,7 +1031,7 @@ float __stdcall SOUNDSMP_ClampAttenuation(float fMillibels) {
       return 0.0;
     }
 
-    long double fLinearGain = CRT_CIPow((long double)10.0, fVar1 / (long double)2000.0);
+    long double fLinearGain = pow((double)10.0, (double)(fVar1 / (long double)2000.0));
     return (float)fLinearGain;
 }
 
@@ -1055,11 +1062,7 @@ static int * __stdcall SOUNDSMP_FindWavChunk(uint32_t * pRemainingSize, uint32_t
 }
 
 void __fastcall SOUNDSMP_InitWaveFormat(WAVEFORMATEX * pWaveFormat, WORD nChannels) {
-    pWaveFormat->wFormatTag = 0;
-    pWaveFormat->nChannels = 0;
-    pWaveFormat->nBlockAlign = 0;
-    pWaveFormat->wBitsPerSample = 0;
-    pWaveFormat->cbSize = 0;
+    memset(pWaveFormat, 0, sizeof(*pWaveFormat));
     pWaveFormat->nBlockAlign = nChannels * 2;
     pWaveFormat->wFormatTag = 1;
     pWaveFormat->nChannels = nChannels;
@@ -1106,7 +1109,7 @@ int * __fastcall SOUNDSMP_ParseWavHeader(int * pWavData, uint32_t * pDataSize, W
 
 void __fastcall SOUNDSMP_CalculateVolumeAndPan(uint32_t * pnVolume, uint32_t * pnPan, float fDeltaX, float fDeltaY, float fDeltaZ) {
     int nLongResult;
-    long double fVolumeDivisor = __CIsqrt((long double)(fDeltaZ * fDeltaZ + fDeltaY * fDeltaY + fDeltaX * fDeltaX));
+    long double fVolumeDivisor = sqrt((double)(fDeltaZ * fDeltaZ + fDeltaY * fDeltaY + fDeltaX * fDeltaX));
     float fAttenuationDb = (float)fVolumeDivisor;
     if (100.0 < fAttenuationDb) {
       fAttenuationDb = 100.0;
@@ -1114,11 +1117,11 @@ void __fastcall SOUNDSMP_CalculateVolumeAndPan(uint32_t * pnVolume, uint32_t * p
     if (!(2.0 <= fAttenuationDb)) {
       fAttenuationDb = 0.0;
     } else {
-      fVolumeDivisor = CRT_CILog((long double)(fAttenuationDb * 0.5));
+      fVolumeDivisor = log((double)(fAttenuationDb * 0.5));
       fAttenuationDb = (float)fVolumeDivisor / 0.6931472 * 6.0;
     }
 
-    fVolumeDivisor = CRT_CIPow((long double)10.0, (long double)(fAttenuationDb / 20.0));
+    fVolumeDivisor = pow((double)10.0, (double)(fAttenuationDb / 20.0));
     uint32_t nPanClamped = (int)(255.0 / (float)fVolumeDivisor) <= 0 ? 0 : (int)(255.0 / (float)fVolumeDivisor);
     if ((int)nPanClamped >= 0xff) {
       nPanClamped = 0xff;

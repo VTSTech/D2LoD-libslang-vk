@@ -10,9 +10,7 @@
 #include "D2Client/GAME/RosterPets.h"
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/Stats.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
-#include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
 #include "D2Common/COMPOSIT/Composit.h"
 #include "D2Common/Collision.h"
@@ -142,6 +140,10 @@ typedef void (__fastcall *pfnSkillRangeCb)(D2UnitStrc * pUnit, void * pCtx);
 #ifndef RECON_FPTD_PFN_StatExpireCallback
 #define RECON_FPTD_PFN_StatExpireCallback
 typedef void (__fastcall *PFN_StatExpireCallback)(D2UnitStrc * pUnit, eD2States eState, int32_t nParam);
+#endif
+#ifndef RECON_FPTD_pfnUIMenuInstance
+#define RECON_FPTD_pfnUIMenuInstance
+typedef void (__stdcall *pfnUIMenuInstance)();
 #endif
 
 static D2SkillSrvStFunc SKILLSRVSTFUNCS[91] = {
@@ -949,14 +951,15 @@ uint32_t __fastcall SKILLS_AreaEffect_TrackBestUnitByUnitId(D2SkillCallbackConte
       pNextGUIDCtx->nCount++;
       pNextGUIDCtx->nNextGUID = nUnitId;
       pNextGUIDCtx->pNext = pTargetUnit;
-      return 1;
-    }
-    if (nUnitId <= pNextGUIDCtx->nLowestGUID) {
-      pNextGUIDCtx->nLowestGUID = nUnitId;
-      pNextGUIDCtx->pLowest = pTargetUnit;
+    } else {
+      if (nUnitId <= pNextGUIDCtx->nLowestGUID) {
+        pNextGUIDCtx->nLowestGUID = nUnitId;
+        pNextGUIDCtx->pLowest = pTargetUnit;
+      }
+
+      pNextGUIDCtx->nCount++;
     }
 
-    pNextGUIDCtx->nCount++;
     return 1;
 }
 
@@ -997,7 +1000,7 @@ void __fastcall SKILLS_UpdatePetMax(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int
       return;
     }
 
-    D2PetTypeTxt* pPetTypeTxt = D2Client::GAME::RosterPets::GetPetTypeTxtById((int)(char)byPetType);
+    D2PetTypeTxt* pPetTypeTxt = PLAYER::PlayerPets::GetPetTypeTxtById((int)(char)byPetType);
     if (!pPetTypeTxt) {
       return;
     }
@@ -1651,7 +1654,7 @@ BOOL __fastcall SKILLS_SrvStFn03_Unsummon(::SGAMEDATA * pGame, D2UnitStrc * pUni
     }
 
     int32_t nPetId = PLAYER::PlayerPets::GetOwnersPetType(pUnit, pTarget->nUnitGUID);
-    D2PetTypeTxt* pPetTypeTxt = D2Client::GAME::RosterPets::GetPetTypeTxtById(nPetId);
+    D2PetTypeTxt* pPetTypeTxt = PLAYER::PlayerPets::GetPetTypeTxtById(nPetId);
     if (!pPetTypeTxt) {
       return 0;
     }
@@ -1745,7 +1748,6 @@ void __fastcall SKILLS_SetPeriodicSkillTimer(::SGAMEDATA * pGame, D2UnitStrc * p
 }
 
 void __fastcall SKILLS_SetPeriodicStatOrSkillTimer(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nStatId, eD2Skills eSkill, int32_t nSkillLvl, int32_t bPeriodicSkill) {
-    int nEventType;
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return;
     }
@@ -1765,13 +1767,11 @@ void __fastcall SKILLS_SetPeriodicStatOrSkillTimer(::SGAMEDATA * pGame, D2UnitSt
       GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_PERIODICSKILLS, -1);
       eSkill = SKILL_Attack;
       nStatId = -1;
-      nEventType = 8;
+      GAME::Event::SetEvent(pGame, pUnit, 8, (nGameFrame - 1 + nPerDelay) / nPerDelay * nPerDelay + 1, nStatId, eSkill);
     } else {
       GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_PERIODICSTATS, nStatId);
-      nEventType = 9;
+      GAME::Event::SetEvent(pGame, pUnit, 9, (nGameFrame - 1 + nPerDelay) / nPerDelay * nPerDelay + 1, nStatId, eSkill);
     }
-
-    GAME::Event::SetEvent(pGame, pUnit, nEventType, (nGameFrame - 1 + nPerDelay) / nPerDelay * nPerDelay + 1, nStatId, eSkill);
 }
 
 // Server-side: spawns and links a Town Portal object for pUnit. Finds a free spawn coordinate in eSrcLevel, checks for the special Duriel portal, creates an OBJECT unit of pUnit's class, stores the source level ID in the portal's char name buffer, sets portal flags, and bidirectionally links owner/portal via StoreOwner and LinkPortalCoords. Frees the placeholder pUnit on spawn failure. Returns the new portal unit or NULL on error.
@@ -1807,7 +1807,7 @@ D2UnitStrc * __fastcall LinkPortal(::SGAMEDATA * pGame, D2UnitStrc * pOwner, D2U
     ptPortalPos.y = nSpawnY;
     BOOL BVar1 = Quests::QUESTS::IsPortalFromDuriel(pGame, &ptPortalPos, nLevelId2, &eLevel);
     if (BVar1) {
-      eLevel = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(eLevel, ptPortalPos.x, ptPortalPos.y);
+      eLevel = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(eLevel, ptPortalPos.x, ptPortalPos.y);
     }
     if (!eLevel) {
       eLevel = pSpawnRoom;
@@ -1852,7 +1852,8 @@ D2UnitStrc * __fastcall LinkPortal(::SGAMEDATA * pGame, D2UnitStrc * pOwner, D2U
 
       pNewPortal->pUnitData.pUnitDataPlayer->szCharName[4] = (char)eSrcLevelId;
       byPortalFlags = D2Common::Units::GetObjectPortalFlags(pNewPortal);
-      D2Common::Units::SetObjectPortalFlags(pNewPortal, byPortalFlags | 3);
+      byPortalFlags |= 3;
+      D2Common::Units::SetObjectPortalFlags(pNewPortal, byPortalFlags);
       D2Common::Units::SetupUpdateFlag(pNewPortal, 2);
       UNIT::SUnit::LinkPortalCoords(pUnit, pNewPortal);
       D2Common::Units::StoreOwner(pUnit, pNewPortal);
@@ -1902,7 +1903,7 @@ BOOL __fastcall SERVER_SpawnPortal(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ro
 
         nPosY = ptSpawnPos.y;
         nPosX = ptSpawnPos.x;
-        pSpawnRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, ptSpawnPos.x, ptSpawnPos.y);
+        pSpawnRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, ptSpawnPos.x, ptSpawnPos.y);
         if (!pSpawnRoom) {
           return 0;
         }
@@ -1919,7 +1920,8 @@ BOOL __fastcall SERVER_SpawnPortal(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ro
         }
 
         byPortalFlags = D2Common::Units::GetObjectPortalFlags(pPortal);
-        D2Common::Units::SetObjectPortalFlags(pPortal, byPortalFlags | 3);
+        byPortalFlags |= 3;
+        D2Common::Units::SetObjectPortalFlags(pPortal, byPortalFlags);
         D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pSpawnRoom, 0);
         D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(D2Common::Units::UNITS_GetRoom(pPortal), 0);
         return 1;
@@ -2402,7 +2404,7 @@ D2UnitStrc * __fastcall SKILL_CreateSummon(::SGAMEDATA * pGame, D2MonsterCastPet
     nSpawnPosX = nTargetX;
     D2RoomStrc* pRoom;
     pRoom = D2Common::Units::UNITS_GetRoom(pPetCreation->pPlayer);
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nSpawnPosX, nTargetY);
+    pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, nSpawnPosX, nTargetY);
     if (!pRoom) {
       return nullptr;
     }
@@ -2471,8 +2473,7 @@ void __fastcall SKILLS_DropItemByCode(::SGAMEDATA * pGame, D2UnitStrc * pUnit, u
       bSearchNeighbors = 1;
       nMinDistance = 1;
       pNewPosition = &ptSpawnPos;
-      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-      pRoom = ITEMS::Items::Drop::FindBestSpotToSpawnItem(pRoom, &ptOrigPos, pNewPosition, nMinDistance, bSearchNeighbors);
+      pRoom = ITEMS::Items::Drop::FindBestSpotToSpawnItem(D2Common::Units::UNITS_GetRoom(pUnit), &ptOrigPos, pNewPosition, nMinDistance, bSearchNeighbors);
       if (pRoom) {
         memset(&sItemGenCtx, 0, 0x84);
         sItemGenCtx.wItemFormat = pGame->wItemFormat;
@@ -2521,8 +2522,7 @@ void __fastcall SKILLS_ForEachUnitInRangeCallback(::SGAMEDATA * pGame, int32_t n
     sUnitFindArg.nDistance = nDistance;
     uint32_t nTargetY = nCursorYPos;
     sUnitFindArg.nFlags = nUnitFindFlags;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit_00);
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, (int32_t)pTargetX, nTargetY);
+    D2RoomStrc* pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit_00), (int32_t)pTargetX, nTargetY);
     if (!pRoom) {
       return;
     }
@@ -2576,8 +2576,7 @@ void __fastcall SKILLS_ForEachUnitBaalWave(::SGAMEDATA * pGame, D2BaalWaveParamS
       sSkillParam.nX = nX_00;
       sSkillParam.nY = iUnit;
       sSkillParam.nDistance = nDistance;
-      pRoom = D2Common::Units::UNITS_GetRoom(sSkillParam.pAttacker);
-      pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX_00, iUnit);
+      pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(sSkillParam.pAttacker), nX_00, iUnit);
       if (!pRoom) {
         return;
       }
@@ -2767,7 +2766,7 @@ void __fastcall SKILLS_AddRandomSkillDamage(D2UnitStrc * pUnit, int32_t * pDamag
 uint32_t __fastcall SKILLS_GetWeaponClassBitfield(D2UnitStrc * pUnit) {
     int32_t nWeaponClass = 0;
     D2Common::COMPOSIT::Composit::COMPOSIT_GetWeaponClassWithTransform(pUnit, pUnit->pInventory, (uint32_t*)&nWeaponClass, -1, 1);
-    return nWeaponClass != 7 ? 0 : 0x1f;
+    return nWeaponClass == 7 ? 0x1f : 0;
 }
 
 void __fastcall SKILLS_SetupAnimTimerPercent(D2UnitStrc * pUnit, int32_t nPercent) {
@@ -3102,8 +3101,7 @@ uint32_t __fastcall SKILLS_ApplyEffectToUnitsInRange(::SGAMEDATA * pGame, uint32
     }
 
     uint32_t nTargetYCopy = nTargetY;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nTargetX, nTargetYCopy);
+    D2RoomStrc* pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nTargetX, nTargetYCopy);
     if (!pRoom) {
       return 0;
     }
@@ -3382,8 +3380,8 @@ D2UnitStrc * __fastcall CreatingAMissile(::SGAMEDATA * pGame, eMissilesId nSrvMi
     }
 
     sSkillArg.nY = nOwnerCoord + nOffsetY;
-    sSkillArg.nSkillLevel = nSkillLvl;
     sSkillArg.eSkillNo = eSkill;
+    sSkillArg.nSkillLevel = nSkillLvl;
     sSkillArg.nMissileTxtNo = nSrvMissle;
     if (!nTargetX || !nTargetY) {
       BOOL BVar1;
@@ -3566,10 +3564,10 @@ BOOL __fastcall Skills_SrvDoFunc_001_ShootArrow(::SGAMEDATA * pGame, D2UnitStrc 
       nArrowMissileId = D2Common::Skills::SKILL_GetArrowModifierSkill(pUnit, &nSkillLvl);
       if (nArrowMissileId != MISSILE_Magicarrow) {
         CreatingAMissile(pGame, nArrowMissileId, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 1);
-        return 1;
+      } else {
+        CreatingAMissile(pGame, MISSILE_Magicarrow, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 0);
       }
 
-      CreatingAMissile(pGame, MISSILE_Magicarrow, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 0);
       return 1;
     }
 
@@ -3720,11 +3718,11 @@ BOOL __fastcall Skills_SrvDoFunc_003_ThrowWeaponLeftHand(::SGAMEDATA * pGame, D2
       if (!nActiveWeaponHand) {
         if (nActiveWeaponSlot == 5) {
           nThrowableStatVal = 4;
+          pWeaponItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 4);
         } else {
           nThrowableStatVal = 5;
+          pWeaponItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 5);
         }
-
-        pWeaponItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, nThrowableStatVal);
       }
 
       nThrowableStatVal = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_throwable(pWeaponItem);
@@ -3772,11 +3770,11 @@ BOOL __fastcall Skills_SrvDoFunc_005_ThrowWeaponRightHand(::SGAMEDATA * pGame, D
       if (nWeaponHand) {
         if (nWeaponSlot == 5) {
           nThrowableStat = 4;
+          pWeaponItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 4);
         } else {
           nThrowableStat = 5;
+          pWeaponItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 5);
         }
-
-        pWeaponItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, nThrowableStat);
       }
 
       nThrowableStat = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_throwable(pWeaponItem);
@@ -4558,6 +4556,10 @@ D2UnitStrc * __fastcall SKILL_CreateTimedAuraStatList(::SGAMEDATA * pGame, D2Uni
     GAME::Event::SetEvent(pGame, pTargetUnit, 0xc, pGame->dwGameFrame + nAuraDuration, 0, 0);
     SkillDruid::D2SetAurastatsFromSkills(pUnit, pStatListEx, pSkillsTxt, eSkill, nSkillLvl);
     return (D2UnitStrc*)pStatListEx;
+}
+
+void __fastcall MAINMENU_ShowPopupWithCancel_Unref_005c6cb0(uint16_t * wszText, pfnUIMenuInstance pfnMenuInstance) {
+    D2UpdateState((D2UnitStrc*)wszText, (eD2States)pfnMenuInstance, 1);
 }
 
 } // namespace D2Game::SKILLS::SkillsServer

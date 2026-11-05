@@ -134,11 +134,10 @@ D2LightMapStrc * __fastcall AllocLightMap(D2UnitStrc * pUnit, int32_t nLightType
         nPixelMapDim = nDiameter * 2 + 1;
         pPixelMap = (int*)D2_ALLOC_AT(nPixelMapDim * nPixelMapDim * 4, ".\\DRAW\\dLightMap.cpp", 0x116);
         pLightMap->pPixelMap = pPixelMap;
-        gpLightMap = pLightMap;
-        return pLightMap;
+      } else {
+        pLightMap->pPixelMap = 0;
       }
 
-      pLightMap->pPixelMap = 0;
       gpLightMap = pLightMap;
       return pLightMap;
     }
@@ -197,6 +196,10 @@ int32_t __fastcall GetRadiusX(D2LightMapStrc * pLightMap) {
     }
 
     return pLightMap->nRadiusX >> 3;
+}
+
+int Unreferenced_00474380() {
+    return 0x20;
 }
 
 void __fastcall SetRGB(D2LightMapStrc * pLightMap, uint8_t nRed, uint8_t nGreen, uint8_t nBlue) {
@@ -1155,7 +1158,7 @@ void __stdcall LIGHTMAP_BuildCollisionFlags() {
       int nCellX;
       nCellX = 0;
       do {
-        pRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, gnLightmapWorldRefreshFlag + nCellX, gnLightmapBufferState + nCellY);
+        pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, gnLightmapWorldRefreshFlag + nCellX, gnLightmapBufferState + nCellY);
         if (!pRoom) {
           pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
         }
@@ -1344,19 +1347,19 @@ void __fastcall ACTCALLBACKFN(D2RoomStrc * pRoom) {
           }
 
           nRadiusCells = pLightMap->nRadiusX >> 3;
-          pNearbyRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX + nRadiusCells, nUnitY);
+          pNearbyRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX + nRadiusCells, nUnitY);
           if (pNearbyRoom == pRoom) {
             pLightMap->bPixelMapReady = 0;
           } else {
-            pNearbyRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX - nRadiusCells, nUnitY);
+            pNearbyRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX - nRadiusCells, nUnitY);
             if (pNearbyRoom == pRoom) {
               pLightMap->bPixelMapReady = 0;
             } else {
-              pNearbyRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX, nUnitY + nRadiusCells);
+              pNearbyRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX, nUnitY + nRadiusCells);
               if (pNearbyRoom == pRoom) {
                 pLightMap->bPixelMapReady = 0;
               } else {
-                pUnitRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX, nUnitY - nRadiusCells);
+                pUnitRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nUnitX, nUnitY - nRadiusCells);
                 if (pUnitRoom == pRoom) {
                   pLightMap->bPixelMapReady = 0;
                 }

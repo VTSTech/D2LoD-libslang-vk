@@ -4,6 +4,7 @@
 #include "Fog/3rdparty/crashy.h"
 #include "Fog/Debug.h"
 #include "Fog/File.h"
+#include "Storm/Source/SFile.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 #include "Fog/Engine/Application.data.h"
@@ -85,12 +86,16 @@ bool DEBUG_CaptureThreadContext(uint32_t dwThreadId, LPCONTEXT pContext) {
     return bGotContext;
 }
 
+int Unreferenced_004046d0() {
+    return (uintptr_t)&ExceptionList;
+}
+
 static uint32_t DEBUG_GetPEImageType(short * nMagic) {
     if (*nMagic == 0x10b) {
       return 1;
     }
 
-    return *nMagic != 0x20b ? 0 : 0x2;
+    return *nMagic == 0x20b ? 0x2 : 0;
 }
 
 static uint32_t DEBUG_ParsePEDebugDirectory(uint32_t * pnSize, int * pnRVA, short * pOptHeader) {
@@ -752,6 +757,11 @@ bool __stdcall DEBUG_FormatAddressInfo(uint32_t nAddress, char * pOutput) {
 
     strncpy_s(pSrcFileField, 0x100, pSep, -1);
     return true;
+}
+
+int Unreferenced_004067c0() {
+    int32_t iVar1 = Storm::Source::SFile::SFileSetBasePath(".\\");
+    return iVar1;
 }
 
 uint32_t __stdcall PATH_GetKnownFolderPath(LPSTR szOutPath, int32_t nBufferSize) {

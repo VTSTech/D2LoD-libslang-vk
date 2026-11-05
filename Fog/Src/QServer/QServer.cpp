@@ -85,6 +85,14 @@ static unsigned int gdwHacklistLastLogTime = {}; D2_STATIC_GUARD(gdwHacklistLast
 
 namespace Fog::Src {
 
+void __stdcall _NullSubRet8_Unref_004080a0(D2QServerStrc * dwArg1, uint32_t dwArg2) {
+
+}
+
+void __stdcall _NullSubRet4_Unref_006bc850(uint32_t dwArg1) {
+
+}
+
 // The body here is a bare
 // RET (byte c3) - __cdecl, so the caller cleans up. Every call site pushes a tag pointer
 // (006cc837, the empty string) followed by a printf-style format and its arguments:
@@ -423,14 +431,14 @@ int __thiscall HACKL_CheckAndResetHacklistEntry(D2QServerStrc * pQServer, uint32
         return 0;
       }
       if (pDVar1->ipAddress.S_un.S_addr == nIpAddress) {
-        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ if (pDVar1->nSecondaryTtlSec) {
+        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ if (!pDVar1->nSecondaryTtlSec) {
+          LeaveCriticalSection(lpCriticalSection);
+          return 0;
+        } else {
           pDVar1->nSecondaryTtlSec = 0x78;
           LeaveCriticalSection(lpCriticalSection);
           return 1;
         }
-
-        LeaveCriticalSection(lpCriticalSection);
-        return 0;
       }
 
       pDVar1 = pDVar1->pNext;
@@ -779,6 +787,15 @@ static void FreeHacklistBuckets(D2QServerStrc * pQServer) {
 
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ pQServer->nHacklistSize = 0;
     LeaveCriticalSection(&pQServer->csHacklist);
+}
+
+void __fastcall Unreferenced_006bf170(int param_1) {
+    if (*(int*)param_1) {
+      QServer::QServerNT::AwaitAndClose((D2QServerStrc*)param_1);
+      return;
+    }
+
+    QServer::QServer98::QSERVER_CloseAllConnections((D2QServerStrc*)param_1);
 }
 
 // Increments active-connection counter for a client IP in QServer's per-IP hash table.
@@ -1663,8 +1680,7 @@ void __stdcall BanClient(D2QServerStrc * pQServer, int nClientId, char * szFile,
     _struct_1227 sClientIpAddr = pClientConn->ipAddress.S_un.S_un_b;
     char* szLogFile = szFile;
     int nLogLine = nLine;
-    char* szIpAddress = inet_ntoa((in_addr)sClientIpAddr);
-    LogManager::LOGMANAGER_TraceToModuleLog("HACK", "[HACKLIST]  IP:%s  QSHackList() from FILE:%s  LINE:%d", szIpAddress, szLogFile, nLogLine);
+    LogManager::LOGMANAGER_TraceToModuleLog("HACK", "[HACKLIST]  IP:%s  QSHackList() from FILE:%s  LINE:%d", inet_ntoa((in_addr)sClientIpAddr), szLogFile, nLogLine);
     CloseRemoteConnection(pQServer, nClientId, szFile, nLine);
     BanIpAddress(pQServer, szFile, (uint32_t)d2_bits_of(sClientIpAddr), nLine);
 }

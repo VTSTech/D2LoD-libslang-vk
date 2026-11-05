@@ -44,7 +44,7 @@ static char * gaErrorTypeNames[12] = {
     s_Missing_Dll_006ccb50,
     s_Registry_Error_006ccb40,
     s_Deadlock_006ccb34,
-    (char*)0x006ccb30
+    s_____006ccb30
 }; D2_STATIC_GUARD(gaErrorTypeNames, "gaErrorTypeNames");
 static _RTL_CRITICAL_SECTION lpCriticalSection_0074c830 = {
     /* .DebugInfo = */ nullptr,
@@ -75,8 +75,44 @@ static uint32_t gbFogErrorManagerInitialized = 0; D2_STATIC_GUARD(gbFogErrorMana
 
 namespace Fog::Src::ErrorManager {
 
+void __fastcall StubHook1_Unref_004016b0(uint32_t dwThreadId, HANDLE hThread) {
+
+}
+
 BOOL __stdcall FOG_ReturnZeroCallback(char * szFileName, void * pContext) {
     return 0;
+}
+
+void __fastcall StubHook1_Unref_00403f50(uint32_t dwThreadId, HANDLE hThread) {
+
+}
+
+void __fastcall StubHook1_Unref_00405a50(uint32_t dwThreadId, HANDLE hThread) {
+
+}
+
+void __fastcall StubHook1_Unref_00405a60(uint32_t dwThreadId, HANDLE hThread) {
+
+}
+
+void __fastcall StubHook1_Unref_004072c0(uint32_t dwThreadId, HANDLE hThread) {
+
+}
+
+void __fastcall StubHook1_Unref_004072d0(uint32_t dwThreadId, HANDLE hThread) {
+
+}
+
+void __fastcall StubHook1_Unref_004072e0(uint32_t dwThreadId, HANDLE hThread) {
+
+}
+
+void __fastcall StubHook1_Unref_004072f0(uint32_t dwThreadId, HANDLE hThread) {
+
+}
+
+void __fastcall StubHook1_Unref_00407300(uint32_t dwThreadId, HANDLE hThread) {
+
 }
 
 void __stdcall CrashGame() {
@@ -146,7 +182,7 @@ bool __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_STATIC_GUARD(gaLanguageNames, "Fog::Src::ErrorManager::WriteCrashReportProcessInfo::gaLanguageNames");
 
     uint8_t* szPath;
@@ -252,6 +288,11 @@ bool __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
     return true;
 }
 
+int Unreferenced_00407dd0() {
+    uint32_t in_EAX;
+    return in_EAX & -256;
+}
+
 void __stdcall InitializeSystemInfo() {
     _MEMORYSTATUS memoryStatus;
     uint32_t dwMajorVersion;
@@ -263,7 +304,7 @@ void __stdcall InitializeSystemInfo() {
     if (bVersionOk) {
       fMinorVersionFrac = (float)(int)osVersionInfo.dwMinorVersion;
       if ((int)osVersionInfo.dwMinorVersion < 0) {
-        fMinorVersionFrac += 4.2949673e+09;
+        fMinorVersionFrac += 4294967296.0;
       }
 
       for (; 1.0 < fMinorVersionFrac; fMinorVersionFrac /= 10.0) {}
@@ -271,7 +312,7 @@ void __stdcall InitializeSystemInfo() {
       dwMajorVersion = osVersionInfo.dwMajorVersion;
       fMajorVersionF = (float)(int)osVersionInfo.dwMajorVersion;
       if ((int)osVersionInfo.dwMajorVersion < 0) {
-        fMajorVersionF += 4.2949673e+09;
+        fMajorVersionF += 4294967296.0;
       }
 
       fGameVersion = fMajorVersionF + fMinorVersionFrac / 100.0;
@@ -329,6 +370,14 @@ void __fastcall StubHook2(int32_t nReserved) {
 
 }
 
+void __fastcall StubHook2_Unref_00407fa0(int32_t nReserved) {
+
+}
+
+void __fastcall StubHook2_Unref_00407fb0(int32_t nReserved) {
+
+}
+
 void __fastcall LogStringConditional(int32_t nLogLevel, char * szText) {
     if (nLogLevel) {
       LogManager::LogWithCategory(szText, "%s");
@@ -366,6 +415,22 @@ char * __fastcall StripPathPrefixToRelative(char * szText) {
 
     pszResult = szText;
     return pszResult;
+}
+
+void __fastcall StubHook2_Unref_00408050(int32_t nReserved) {
+
+}
+
+void __fastcall StubHook2_Unref_00408060(int32_t nReserved) {
+
+}
+
+void __fastcall StubHook2_Unref_00408070(int32_t nReserved) {
+
+}
+
+void __fastcall StubHook2_Unref_00408080(int32_t nReserved) {
+
 }
 
 // Returns the caller's return address, i.e. the instruction pointer of the call site. Body is MOV EAX,[ESP]; RET - it reads the return address off the stack and returns it. Takes NO arguments: the RET (not RET 4) leaves the caller's stack untouched, and the DWORD after the call is the __LINE__ value the caller pushed for the assert/halt call that follows. Fog ordinal #10265 @ RVA 0x8090.
@@ -725,17 +790,7 @@ void ERROR_UnrecoverableInternalError_AssertionFailure(char * szUnused, int32_t 
 
 // Tail-calls FOG_ErrorHandler(ERROR_Halt=6, "", nLine, "Unrecoverable internal error %08x", nAddress). Byte-identical to ERROR_UnrecoverableInternalError_AssertionFailure (00408a30, type 5) and _Warning (00408a90, type 7) apart from the error-type immediate, so the three share one parameter layout. Arg 2 is the call-site instruction pointer produced by GetInstructionPointer (00408090), NOT a line number; arg 3 is __LINE__. Arg 1 is the assertion message, stripped to "" (0x6cc837) in this release build and ignored by the body, which substitutes that same empty string for FOG_ErrorHandler's szFile. __cdecl: call sites clean 12 bytes with ADD ESP,0xC. Fog ordinal #10024 @ RVA 0x8A60.
 void ERROR_UnrecoverableInternalError_Halt(char * szMessage, void * nAddress, int32_t nLine) {
-    // The halt is marked "does not return" but every path through FOG_ErrorHandler and
-    // CRASH_FillupCrashTxt returns, here and in the original - what terminates the real
-    // game is the Blizzard error dialog inside ErrorReportingLaunch, which this build has
-    // no reporter for. So control falls back into the caller, which for a non-void callee
-    // means GCC's fall-off-the-end ud2 and a C000001D three frames from the assert that
-    // actually fired. Naming the line here is what makes an assert readable at all.
-    D2TraceFmt("HALT line=%d (0x%x) addr=%08X ra=%08X", nLine, nLine,
-               (unsigned)(uintptr_t)nAddress, (unsigned)(uintptr_t)__builtin_return_address(0));
-    // ra as a module RVA: the absolute value is useless across runs because the image is
-    // relocated, and every attempt to place a halt has started by guessing the load base.
-    // The crash report (support/d2_crash.cpp) records the halt and the halting stack.
+    // Crash report for the halt (support/d2_crash.cpp).
     D2CRASH_ReportHalt(nLine, (unsigned)(uintptr_t)nAddress);
     Safesock::WSACleanup();
     FOG_ErrorHandler(ERROR_Halt, "", nLine, "Unrecoverable internal error %08x", nAddress);
@@ -4997,6 +5052,10 @@ void __fastcall ERRORMANAGER_InitErrorManager(char * dwUnused1, char * szText, B
       Debug::DEBUG_LoadStackCrawlDbgHelp();
       Storm::Source::SErr::SErrSetBlizzardErrorFunction(CRASH_FillupCrashTxt);
     }
+}
+
+void __fastcall StubHook2_Unref_004095d0(int32_t nReserved) {
+
 }
 
 // compiler-generated C++ EH handler; its frame is never registered with the OS

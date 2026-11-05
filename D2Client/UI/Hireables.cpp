@@ -12,7 +12,6 @@
 #include "D2Client/UI/CmdTbl.h"
 #include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/Path.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Monster.h"
@@ -31,6 +30,7 @@
 #include "D2Common/Merc.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -405,6 +405,16 @@ void __stdcall INPUT_HireableInteract(D2UIMouseMsgStrc * pMsg) {
     pMsg->bHandled = 0;
 }
 
+int Unreferenced_004934b0() {
+    D2UnitStrc* pDVar1 = UNIT::Player::GetPlayerUnit_UI();
+    if (!pDVar1) {
+      return 0;
+    }
+
+    pDVar1 = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pDVar1->pInventory);
+    return (int)pDVar1;
+}
+
 int32_t __stdcall UI_CheckItemCanEquipToHireling(int32_t bPlaySound) {
     eD2ItemTypes eItemType;
     BOOL bMeetsReqs;
@@ -591,8 +601,7 @@ void __stdcall UI_HandleHirelingTooltipHoverTimer(D2UIMouseMsgStrc * pMsg) {
     D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
     if (!pPlayer || (pPlayer = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pPlayer->pInventory) , !pPlayer)) {
       DWORD dwNow;
-      nMercGUID = 0;
-      nMercGUID = GAME::RosterPets::GetRosterPetGUID(UNIT::Player::GetPlayerUnit_UI(), 7, nMercGUID);
+      nMercGUID = GAME::RosterPets::GetRosterPetGUID(UNIT::Player::GetPlayerUnit_UI(), 7, 0);
       if (nMercGUID != -1) {
         gnHireIconHoverY = 1;
         dwNow = GetTickCount();
@@ -684,8 +693,7 @@ void __stdcall INPUT_HireableLongPress(D2UIMouseMsgStrc * pMsg) {
           return;
         }
 
-        nMercGUID = 0;
-        nMercGUID = GAME::RosterPets::GetRosterPetGUID(UNIT::Player::GetPlayerUnit_UI(), 7, nMercGUID);
+        nMercGUID = GAME::RosterPets::GetRosterPetGUID(UNIT::Player::GetPlayerUnit_UI(), 7, 0);
         if (nMercGUID == -1) {
           return;
         }

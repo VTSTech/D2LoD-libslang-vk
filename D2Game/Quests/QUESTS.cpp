@@ -6,10 +6,8 @@
 #include "D2Client/D2GSPacketSrv0x91.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Monster.h"
-#include "D2Client/UNIT/Player.h"
 #include "D2Common/Collision.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -64,6 +62,7 @@
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerIntro.h"
 #include "D2Game/PLAYER/PlayerMsg.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS/A1Q1.h"
 #include "D2Game/Quests/QUESTS/A1Q2.h"
@@ -93,6 +92,7 @@
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
+#include "D2Game/UNIT/sunitproxy.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/Save.h"
@@ -168,13 +168,25 @@ static int NPCINTRO_ListAct2[11] = {
 }; D2_STATIC_GUARD(NPCINTRO_ListAct2, "NPCINTRO_ListAct2");
 static int NPCINTRO_ListAct3[7] = { 0xf5, 0xfc, 0xfd, 0xfe, 0xff, 0x108, 0x129 }; D2_STATIC_GUARD(NPCINTRO_ListAct3, "NPCINTRO_ListAct3");
 static int NPCINTRO_ListAct5[7] = { 0x208, 0x209, 0x1ff, 0x200, 0x201, 0x202, 0x203 }; D2_STATIC_GUARD(NPCINTRO_ListAct5, "NPCINTRO_ListAct5");
-static BOOL DEBUGPRINT = 0; D2_STATIC_GUARD(DEBUGPRINT, "DEBUGPRINT");
 
 namespace D2Game::Quests::QUESTS {
 
 D2BitBufferStrc * __fastcall GetQuestBitBuffer(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     D2UnitDataPlayerStrc* pBitBuffer = D2Common::Units::GetPlayerData(pUnit);
     return pBitBuffer->pQuestRecord[pGame->nDifficulty];
+}
+
+int __fastcall Unreferenced_00543540(int param_1, int param_2) {
+    D2UnitDataPlayerStrc* pDVar1 = D2Common::Units::GetPlayerData((D2UnitStrc*)param_2);
+    return (int)pDVar1->pInteractedNPCs[*(uint8_t*)(param_1 + 0x6d)];
+}
+
+int __fastcall Unreferenced_00543560(int param_1) {
+    if (param_1 >= 0 && param_1 < sgptDataTable->nTxtSuperUniquesSize) {
+      return sgptDataTable->pTxtSuperUniques[param_1].hcIdx;
+    }
+
+    return -1;
 }
 
 // @sourcefile .\QUESTS\QUESTS.CPP
@@ -225,6 +237,18 @@ D2QuestDataStrc * __fastcall GetQuestDataByQuestNoInternal(::SGAMEDATA * pGame, 
     }
 
     return nullptr;
+}
+
+int __fastcall Unreferenced_00543690(int param_1, int param_2) {
+    int* piVar1;
+    int* piVar2;
+    for (piVar1 = *(int**)(param_1 + 0x74); piVar1 && (piVar2 = (int*)*piVar1 , piVar2 != 0); piVar1 = (int*)piVar1[1]) {
+      if (*piVar2 == param_2) {
+        return (int)piVar2;
+      }
+    }
+
+    return 0;
 }
 
 // Looks up quest data by internal quest ID and attaches it to a unit. For QUESTINT_TheSearchForCain attaches to the cage object (classId 0x3d) and calls Q04_SetRescueTrigger; for QUESTINT_RadamentsLair attaches to Radament (0xe5); for QUESTINT_TheSummoner runs Q14 join noop on the Summoner (0xfa). Falls through to QUEST_AttachToUnit for all others.
@@ -496,12 +520,6 @@ void __fastcall QUEST_OnMonsterKilled(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
 
 void __fastcall QUEST_OnPlayerEnteredArea(::SGAMEDATA * pGame, int32_t ePreviousLevelId, int32_t eEnteredLevelId, D2UnitStrc * pUnit) {
     D2QuestArgStrc questArg;
-    // Zeroed deliberately. Every one of these builders leaves part of the struct unwritten
-    // and QUEST_DispatchBroadcast dereferences pGame and pPlayer - it crashed in UNITS_GetRoom on a
-    // garbage pPlayer the first time an NPC gossip fired. Reading uninitialised stack is not a
-    // behaviour worth reproducing; a zero reaches the null guards and the broadcast is skipped.
-    // Retire-When: the writes the decompiler dropped are recovered per call site.
-    memset(&questArg, 0, sizeof(questArg));
     questArg.pGame = pGame;
     questArg.nEvent = 3;
     questArg.sQuestArgs.sNpcActivate.nIndex = eEnteredLevelId;
@@ -583,7 +601,6 @@ void __fastcall QUEST_OnPlayerDisconnect(::SGAMEDATA * pGame, D2UnitStrc * pPlay
 
 void __fastcall QUEST_OnUnitInteraction_Unused(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, D2UnitStrc * pUnit) {
     D2QuestArgStrc questArg;
-    memset(&questArg, 0, sizeof(questArg));
     questArg.pGame = pGame;
     questArg.nEvent = 0;
     questArg.pTarget = pUnit;
@@ -594,7 +611,6 @@ void __fastcall QUEST_OnUnitInteraction_Unused(::SGAMEDATA * pGame, D2UnitStrc *
 // NOTE: Register param types inferred (medium confidence): pClient (ECX): D2ClientStrc *, pUnitStrc (EDX): D2UnitStrc *
 void __fastcall QUEST_OnNpcInteraction(D2ClientStrc * pClient, D2UnitStrc * pUnitStrc, D2UnitStrc * pUnit, D2GSPacketSrv0x27_TextStrc * pGSPacketSrv0x27_Text) {
     D2QuestArgStrc questArg;
-    memset(&questArg, 0, sizeof(questArg));
     questArg.pGame = GAME::Clients::CLIENT_GetGame(pClient);
     questArg.nEvent = 0;
     questArg.pTarget = pUnit;
@@ -620,7 +636,6 @@ void __fastcall QUEST_OnNpcDeactivate(::SGAMEDATA * pGame, D2UnitStrc * pPlayer,
 
 void __fastcall QUEST_OnItemPickedUp(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, D2UnitStrc * pUnit) {
     D2QuestArgStrc questArg;
-    memset(&questArg, 0, sizeof(questArg));
     questArg.pGame = pGame;
     questArg.nEvent = 4;
     questArg.pTarget = pUnit;
@@ -630,7 +645,6 @@ void __fastcall QUEST_OnItemPickedUp(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, 
 
 void __fastcall QUEST_OnItemDropped(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, D2UnitStrc * pUnit) {
     D2QuestArgStrc questArg;
-    memset(&questArg, 0, sizeof(questArg));
     questArg.pGame = pGame;
     questArg.nEvent = 5;
     questArg.pTarget = pUnit;
@@ -640,7 +654,6 @@ void __fastcall QUEST_OnItemDropped(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, D
 
 void __fastcall QUEST_OnItemEvent_Unused(::SGAMEDATA * pGame, D2UnitStrc * pTarget) {
     D2QuestArgStrc questArg;
-    memset(&questArg, 0, sizeof(questArg));
     questArg.pGame = pGame;
     questArg.nEvent = 6;
     questArg.pTarget = pTarget;
@@ -744,7 +757,7 @@ void __fastcall QUEST_GetQuestLogDisplayState(D2QuestDataStrc * pQuestData, uint
       }
       if (pQuestData->nQuestNoInternal != QUESTINT_TheSearchForCain || !bCannotComplete) {
         if (pQuestData->nQuestNoInternal == QUESTINT_TheTaintedSun) {
-          *pQuestData2 = pQuestData->nStateFlagPrev != 4 ? 12 : 4;
+          *pQuestData2 = pQuestData->nStateFlagPrev == 4 ? 0x4 : 0xc;
           return;
         }
 
@@ -937,7 +950,6 @@ void __fastcall QUEST_SetStateFlag(D2QuestDataStrc * pQuestData, int32_t nState,
 
 void __fastcall QUEST_OnNpcGossip(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, uint32_t nNpcGUID, uint16_t nGossipIndex) {
     D2QuestArgStrc questArg;
-    memset(&questArg, 0, sizeof(questArg));
     questArg.pGame = pGame;
     questArg.nEvent = 0xb;
     questArg.pPlayer = pPlayer;
@@ -1129,13 +1141,18 @@ void __fastcall QUEST_DispatchMonsterDeathToQ12(::SGAMEDATA * pGame, D2RoomStrc 
     if (!(nMonsterClassId >= 0 && nMonsterClassId < sgptDataTable->nTxtMonStatsSize)) {
       return;
     }
-    if (nMonsterClassId != 0xc9) {
-      if (nMonsterClassId == 0x14b) {
-        A2Q4::A2Q4_OnMonsterDeathClass331_NoOp(nX, nY);
-        return;
-      }
-    } else {
-      A2Q4::A2Q4_OnMonsterDeathClass201_NoOp(nX, nY);
+
+    switch (nMonsterClassId) {
+      case 0xc9:
+        {
+          A2Q4::A2Q4_OnMonsterDeathClass201_NoOp(nX, nY);
+          break;
+        }
+      case 0x14b:
+        {
+          A2Q4::A2Q4_OnMonsterDeathClass331_NoOp(nX, nY);
+          return;
+        }
     }
 }
 
@@ -1298,13 +1315,17 @@ void __fastcall SetTimerByMonsterId(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
                 }
 
                 eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-                if (eLevelId == LEVEL_SpiderForest) {
-                  Monster::Create::SpawnMonsterAtUnit(pGame, pUnit, 0x12d, eD2MonsterAnimMode_ns::Neutral, -1, 0);
-                  return;
-                }
-                if (eLevelId == LEVEL_ChaosSanctuary) {
-                  A4Q3::Q35_SpawnAncientsWave(pGame, pUnit);
-                  return;
+                switch (eLevelId) {
+                  case LEVEL_SpiderForest:
+                    {
+                      Monster::Create::SpawnMonsterAtUnit(pGame, pUnit, 0x12d, eD2MonsterAnimMode_ns::Neutral, -1, 0);
+                      return;
+                    }
+                  case LEVEL_ChaosSanctuary:
+                    {
+                      A4Q3::Q35_SpawnAncientsWave(pGame, pUnit);
+                      return;
+                    }
                 }
               }
             } else {
@@ -1641,14 +1662,13 @@ static BOOL __stdcall INTRONPC_FillInPacketWithIntroNpcIds(D2UnitDataPlayerInter
 
 // Builds and sends packet 0x91 (NpcGossip) to the player's client for a given act, listing which intro NPCs the player has already spoken with. Selects the act-specific NPC list (Acts I/II/III/V), calls INTRONPC_FillInPacketWithIntroNpcIds to populate the packet, and sends it only if at least one NPC entry needs to be communicated.
 // @sourcefile .\QUESTS\QUESTS.CPP
-BOOL __fastcall INTRONPC_FillInPacketWithIntroNpcIdsInAct(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eAct nActNo) {
+// @returns void: EAX at the epilogue is leftover from the last call, and all four call sites in IterateNpcIntroUnits (void) discard it. Found by KierTaylor on the Mac twin (Redivivus proposal #1215).
+void __fastcall INTRONPC_FillInPacketWithIntroNpcIdsInAct(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eAct nActNo) {
     bool bNeedSend;
-    D2UnitDataPlayerInteractedNPCStrc* pInteractedNPCsAfterSend;
     int* aNpcList;
     D2GSPacketSrv0x91 pD2GSPacketSrv0x91;
     int32_t nListSize;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    D2UnitDataPlayerInteractedNPCStrc* pInteractedNPCs = pPlayerData->pInteractedNPCs[pGame->nDifficulty];
     switch (nActNo) {
       case ACT_I:
         nListSize = 6;
@@ -1664,25 +1684,21 @@ BOOL __fastcall INTRONPC_FillInPacketWithIntroNpcIdsInAct(::SGAMEDATA * pGame, D
       break;
       default:
         {
-          return (BOOL)(uintptr_t)pInteractedNPCs;
+          return;
         }
       case ACT_V:
         nListSize = 7;
       aNpcList = NPCINTRO_ListAct5;
     }
 
-    BOOL bNeedToBeSent = INTRONPC_FillInPacketWithIntroNpcIds(pInteractedNPCs, aNpcList, nListSize, &pD2GSPacketSrv0x91);
-    pInteractedNPCs = 0;
+    BOOL bNeedToBeSent = INTRONPC_FillInPacketWithIntroNpcIds(pPlayerData->pInteractedNPCs[pGame->nDifficulty], aNpcList, nListSize, &pD2GSPacketSrv0x91);
     if (bNeedToBeSent) {
       D2ClientStrc* pClient;
       pD2GSPacketSrv0x91.nPacketId = 0x91;
       pD2GSPacketSrv0x91.nAct = nActNo;
       pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\QUESTS\\QUESTS.CPP", 0xab7);
       GAME::SCmd::NET_D2GS_SERVER_Send_0x91_WELCOME_BACK(pClient, &pD2GSPacketSrv0x91);
-      pInteractedNPCs = pInteractedNPCsAfterSend;
     }
-
-    return (BOOL)(uintptr_t)pInteractedNPCs;
 }
 
 void __fastcall QUESTGUID_AddPlayerToList(D2QuestGUIDStrc * pQuestGUID, int32_t nPlayerGUID) {
@@ -1759,6 +1775,10 @@ BOOL __fastcall QUEST_HasPlayerParticipated(D2QuestDataStrc * pQuestData, int32_
     return 0;
 }
 
+int __fastcall Unreferenced_005452f0(int param_1) {
+    return (uint32_t)*(uint16_t*)(param_1 + 0x80);
+}
+
 void __fastcall QUESTGUID_SetPlayerCountToZero(D2QuestGUIDStrc * pQuestGUID) {
     pQuestGUID->nPlayerCount = 0;
 }
@@ -1770,12 +1790,8 @@ void __fastcall QUESTGUID_RemovePlayerFromQuest(D2QuestDataStrc * pQuestData, D2
     if (pQuestData->sQuestGUID.nPlayerCount <= 0) {
       return;
     }
-    if (!pQuestArgs->pPlayer) {
-      QUESTGUID_RemovePlayerFromList(&pQuestData->sQuestGUID, -1);
-      return;
-    }
 
-    QUESTGUID_RemovePlayerFromList(&pQuestData->sQuestGUID, pQuestArgs->pPlayer->nUnitGUID);
+    QUESTGUID_RemovePlayerFromList(&pQuestData->sQuestGUID, !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID);
 }
 
 // Searches outward from a candidate POINT in expanding rings (up to nSearchIterations passes, stride 2) for a map tile that passes a collision-vector check (eCollisionFlags) within nScanRadius. Steps across nearby rooms via DRLGROOM_FindBetterNearbyRoom when the search position leaves the current room. On success writes the adjusted tile coordinates back into pPoint and the containing room into *pRoomsNear; on failure sets *pRoomsNear to NULL.
@@ -1811,7 +1827,7 @@ void __fastcall FindSpawnableLocation(D2RoomStrc * pRoom, POINT * pPoint, uint32
             nY = nYInner + nScanOriginY;
             pRowRoom = pRoom;
             if ((int)nY < (int)nRoomYStart || (int)nY >= (int)(sRoomCoords.dwYSize + nRoomYStart)) {
-              pRowRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nCurX, nY);
+              pRowRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, nCurX, nY);
               nYStep = nNegRadius;
               nRoomYStart = sRoomCoords.dwYStart;
             }
@@ -1824,7 +1840,7 @@ void __fastcall FindSpawnableLocation(D2RoomStrc * pRoom, POINT * pPoint, uint32
                   D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRowRoom, &sRoomCoords);
                   nCurX = nX;
                   if ((int)nX < sRoomCoords.dwXStart || (int)nY >= sRoomCoords.dwXSize + sRoomCoords.dwXStart) {
-                    pCandidateRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRowRoom, nX, nY);
+                    pCandidateRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRowRoom, nX, nY);
                   }
                   if (pCandidateRoom) {
                     nVectorX = nScanRadius * 2 + 1;
@@ -1832,7 +1848,7 @@ void __fastcall FindSpawnableLocation(D2RoomStrc * pRoom, POINT * pPoint, uint32
                     if (wCollisionResult == COLBIT_NONE && nX >= (uint32_t)sRoomCoords.dwXStart && nX < (uint32_t)(sRoomCoords.dwXSize + sRoomCoords.dwXStart) && nY >= (uint32_t)sRoomCoords.dwYStart && nY < (uint32_t)(sRoomCoords.dwYSize + sRoomCoords.dwYStart)) {
                       pOutPoint->x = nX + nHalfRadius;
                       pOutPoint->y = nY + nHalfRadius;
-                      pCandidateRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pOrigRoom, nX + nHalfRadius, nY + nHalfRadius);
+                      pCandidateRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pOrigRoom, nX + nHalfRadius, nY + nHalfRadius);
                       *pRoomsNear = pCandidateRoom;
                       return;
                     }
@@ -1859,6 +1875,29 @@ void __fastcall FindSpawnableLocation(D2RoomStrc * pRoom, POINT * pPoint, uint32
     *pRoomsNear = 0;
 }
 
+int __fastcall Unreferenced_005454e0(int param_1, int param_2) {
+    eD2UnitType eUnitType;
+    int extraout_EAX;
+    int32_t nUnitGUID;
+    if (!param_2) {
+      nUnitGUID = -1;
+      eUnitType = UNIT_COUNT;
+    } else {
+      nUnitGUID = *(int32_t*)(param_2 + 0xc);
+      eUnitType = *(eD2UnitType*)param_2;
+    }
+
+    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom((D2UnitStrc*)param_2), eUnitType, nUnitGUID);
+    D2Common::Units::RemoveCollision_Vector((D2UnitStrc*)param_2);
+    D2Common::Unit::RemoveUnitFromRoom((D2UnitStrc*)param_2);
+    if (param_2) {
+      *(uint32_t*)(param_2 + 0xc4) &= -3;
+    }
+
+    ITEMS::Items::Drop::ITEM_DeleteItemAndFreeUnit((::SGAMEDATA*)param_1, (D2UnitStrc*)param_2);
+    return extraout_EAX;
+}
+
 void __fastcall SetRewardAndFinishFlags(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     ::SGAMEDATA* pGame = pQuestData->pGame;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
@@ -1872,12 +1911,8 @@ void __fastcall SetRewardAndFinishFlags(D2QuestDataStrc * pQuestData, D2QuestArg
     if (!(bRewardAwaits && pQuestData->sQuestGUID.nPlayerCount > 0)) {
       return;
     }
-    if (!pQuestArgs->pPlayer) {
-      QUESTGUID_RemovePlayerFromList(&pQuestData->sQuestGUID, -1);
-      return;
-    }
 
-    QUESTGUID_RemovePlayerFromList(&pQuestData->sQuestGUID, pQuestArgs->pPlayer->nUnitGUID);
+    QUESTGUID_RemovePlayerFromList(&pQuestData->sQuestGUID, !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID);
 }
 
 // Sends quest state information to a specific unit (player). Retrieves quest control by difficulty, constructs a quest info packet, and sends to the player client.
@@ -2114,7 +2149,7 @@ D2UnitStrc * __fastcall QUEST_SpawnMonsterNearCoords(::SGAMEDATA * pGame, int32_
         do {
           sSpawnPoint.x = nX + 1;
           sSpawnPoint.y = nY + 1;
-          pBestRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom_00, sSpawnPoint.x, sSpawnPoint.y);
+          pBestRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom_00, sSpawnPoint.x, sSpawnPoint.y);
           if (!pBestRoom) {
             sSpawnPoint.x = nOrigSpawnX;
             sSpawnPoint.y = nSpawnY;
@@ -2192,8 +2227,7 @@ uint32_t __fastcall QUEST_CheckSpecialLevelCondition(::SGAMEDATA * pGame, D2Unit
 D2UnitStrc * __fastcall QUEST_SpawnSuperUniqueAtPoint(::SGAMEDATA * pGame, D2UnitStrc * pUnit, POINT * pPoint, int32_t nAct, int32_t nSuperUnique) {
     int32_t nMonstatClassId = D2Common::DATATBLS::MonsterTbls::MONSTERTBLS_GetPresetActValue(nAct, nSuperUnique);
     LONG nY = pPoint->y;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, pPoint->x, nY);
+    D2RoomStrc* pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), pPoint->x, nY);
     if (pRoom) {
       D2UnitStrc* pSpawnedMonster;
       pSpawnedMonster = Monsters::Spawn::SpawnMonster(pGame, pRoom, nMonstatClassId, pPoint->x, pPoint->y, 1);
@@ -3097,7 +3131,7 @@ static void __stdcall ReplaceJerhyn(D2RoomStrc * pRoom, D2QuestDataStrc * pQuest
     }
 
     pPoint->y += -3;
-    pNearbyRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, pPoint->x, pPoint->y);
+    pNearbyRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, pPoint->x, pPoint->y);
     FindSpawnableLocation(pRoom, pPoint, 3, 0x100, &pNearbyRoom, 9, 100);
     pSevenTombsData = Monster::Create::SpawnMonsterAtRoomPos(pQuestData->pGame, pNearbyRoom, pPoint->x, pPoint->y, 0xc9, eD2MonsterAnimMode_ns::Neutral, -1, 0);
     if (!(pSevenTombsData || (pSevenTombsData = Monster::Create::SpawnMonsterAtRoomPos(pQuestData->pGame, pNearbyRoom, pPoint->x, pPoint->y, 0xc9, eD2MonsterAnimMode_ns::Neutral, 2, 0) , pSevenTombsData != 0))) {
@@ -3434,8 +3468,7 @@ void __fastcall QUEST_JerhynNpcAILogic(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 static void CreateSealGlow(D2ObjectOperateFnArg * pOperateArg, POINT * pPoint, int32_t nSealIndex) {
     int32_t nCollisionMask;
     LONG nY = pPoint->y;
-    D2RoomStrc* pVictimRoom = D2Common::Units::UNITS_GetRoom(pOperateArg->sArg.pVictim);
-    pVictimRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pVictimRoom, pPoint->x, nY);
+    D2RoomStrc* pVictimRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pOperateArg->sArg.pVictim), pPoint->x, nY);
     if (!pVictimRoom) {
       return;
     }

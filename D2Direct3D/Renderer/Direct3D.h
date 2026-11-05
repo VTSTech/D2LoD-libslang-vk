@@ -18,9 +18,15 @@ struct D2RenderClipOutStrc;
 struct D2SmackerContextStrc;
 struct D2TileLibraryEntryStrc;
 struct DDSURFACEDESC;
+struct EHExceptionRecord;
+struct EHRegistrationNode;
 struct IDirectDraw;
 struct IDirectDrawPalette;
 struct IDirectDrawSurface1;
+typedef int _EXCEPTION_DISPOSITION;
+#ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
+struct _CONTEXT;
+#endif // _WIN32
 struct DDSURFACEDESC2;
 struct IDirect3DDevice;
 struct IDirect3DInterface7;
@@ -1109,12 +1115,22 @@ namespace D2Direct3D::Renderer {
 // it sets is the one Direct3DCallBack tests for "Supports 1555 textures".
 HRESULT __stdcall D3D_EnumTextureFormatsCallback(void * lpDDPixFmt, DWORD * pnDeviceFlags);
 void __fastcall ClearCaches();
+BOOL __fastcall CheckCutScene();
+void __fastcall UpdateScaleFactor(int nScaleFactor);
+int __fastcall CheckGamma();
+BOOL __fastcall EndScene2();
+int __fastcall GetScreenSize(int * pWidth, int * pHeight);
+void __fastcall SetPalette(LPPALETTEENTRY pPalette);
 uint32_t __fastcall PALETTE_GetColorByIndex(int nPaletteIndex);
+void __fastcall SetPaletteTable(BYTE * * ppPaletteTable);
 void __fastcall RENDERER_D3D_ConvertPalettedTo16Bit(uint8_t * pSrc8Bit, uint16_t * pDest16Bit, int nWidth, int nHeight, int nDestPitchInPixels, uint32_t dwUnused);
 void __fastcall RENDERER_D3D_SetBlendMode(int nBlendMode);
 // Sets Direct3D alpha blending mode. Mode 1=opaque, 2=additive, 3=modulate, 4=alpha blend. Caches current mode to avoid redundant state changes.
 void __fastcall SetBlendMode(int nBlendMode);
 void __fastcall RENDERER_D3D_SetTextureFilterMode(int nFilterMode);
+int * __fastcall GetRenderStatistics();
+BOOL __fastcall ActivateWindow();
+BOOL __fastcall SetOption(int nOption, int nValue);
 void __fastcall DIRECTD3D_LogError(char * szErrorMessage, DWORD nResult);
 void __fastcall RENDERER_D3D_SaveDeviceConfigToRegistry(uint32_t nRenderMode, int nDeviceIndex);
 void __stdcall RENDERER_D3D_AllocateTextureCaches();
@@ -1131,7 +1147,7 @@ void __stdcall RENDERER_D3D_ClearBackbuffer();
 // TRUE = presented the logical frame stretched over the host mode; FALSE =
 // not hosted / Blt refused, caller does the retail Flip. Consumed by this
 // renderer's CreateWindow/ResizeWindow/PlayCutScene and by
-// D2Client::Renderer::EndScene2 (the per-frame present).
+// EndScene2 (the per-frame present).
 BOOL VPRES3D_PresentHostedFrame();
 void __fastcall RENDERER_D3D_CopySurfacePixels(struct IDirectDrawSurface7 * pSrcSurface, struct IDirectDrawSurface7 * pDestSurface, int nHeight);
 void __fastcall RENDERER_DIRECT3D_ErrorLog(char * szText, DWORD dwHResult);
@@ -1142,6 +1158,7 @@ void * __stdcall Catch_All_006b4c73();
 int __stdcall BootDirect3d(HINSTANCE hInstance);
 void * __stdcall Catch_All_006b4d4b();
 BOOL __fastcall Initialize(HINSTANCE hInstance);
+int Unreferenced_006b5520();
 // @sourcefile .\Src\d3dCore.cpp
 BOOL Release();
 BOOL __fastcall CreateWindow(HWND hWnd, int nResolutionMode);
@@ -1170,6 +1187,7 @@ void __fastcall DebugFillBackBuffer(int nPosX, int nPosY);
 void __stdcall RENDERER_D3D_InitializeTexturePools();
 void __stdcall RENDERER_D3D_ReleaseFontTextures();
 void __stdcall RENDERER_D3D_CreateFontTextures();
+int __fastcall Unreferenced_006b74f0(int param_1);
 void __fastcall DrawString(int nPosX, int nPosY, char * szFormat, va_list va);
 void __fastcall DrawLight(DWORD * pLight, DWORD * pPlayerLight, int nPosX, int nPosY);
 int __fastcall RENDERER_D3D_InitializeFontSystem(int nBaseOffset);
@@ -1218,6 +1236,8 @@ void __stdcall RENDERER_D3D_ResetSmackerSurfaces();
 void __stdcall RENDERER_D3D_PresentSmackerFrame();
 void __fastcall DecodeSmacker(char * szSmacker, struct D2SmackerContextStrc * pBuffer, int nVersion);
 void __fastcall PlayerSmacker(struct D2SmackerContextStrc * pContext);
+_EXCEPTION_DISPOSITION SehHandler_6ca520(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
+_EXCEPTION_DISPOSITION SehHandler_6ca530(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 // 14 internal functions (defined in .cpp)
 
 } // namespace D2Direct3D::Renderer

@@ -10,8 +10,8 @@
 #include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Draw.h"
 #include "D2Client/GAME/PalShift.h"
-#include "D2Client/Renderer/Renderer.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
+#include "D2DDraw/Renderer/DirectDraw.h"
 #include "D2Hell/D2Hell.h"
 #include "D2Multi/OOGUtilities.h"
 #include "D2Win/DC6.h"
@@ -23,8 +23,9 @@
 #include "Fog/Src/LogManager.h"
 #include "Storm/Source/SReg.h"
 #include "globals/globals.h"
+#include "D2Client/GAME/Game/Game.data.h"
+#include "D2Client/GAME/View.data.h"
 #include "D2Client/UI/Help.data.h"
-#include "D2Client/UI/Panel.h"
 #include "D2Win/Src/D2WinFont.h"
 #include "D2gfx/D2GFX.data.h"
 #include "D2gfx/D2GfxHelperStrc.data.h"
@@ -50,6 +51,7 @@ static BOOL bAspect = 0x1; D2_STATIC_GUARD(bAspect, "bAspect");
 static uint32_t IsOSCursorVisible = 0x1; D2_STATIC_GUARD(IsOSCursorVisible, "IsOSCursorVisible");
 // also labelled: gnGFXUnknownA
 static char * gpszDiabloIIClassNameSource = s_Diablo_II_006cc8b8; D2_STATIC_GUARD(gpszDiabloIIClassNameSource, "gpszDiabloIIClassNameSource");
+static uint32_t gnD2GFX_RequestedScaleFactor = 0x100; D2_STATIC_GUARD(gnD2GFX_RequestedScaleFactor, "gnD2GFX_RequestedScaleFactor");
 static uint32_t gnD2GFX_ActiveScaleFactor = 0x100; D2_STATIC_GUARD(gnD2GFX_ActiveScaleFactor, "gnD2GFX_ActiveScaleFactor");
 HINSTANCE hInstance = 0; D2_GLOBAL_GUARD(hInstance, "hInstance");
 eD2RendererMode eRendererMode = 0; D2_GLOBAL_GUARD(eRendererMode, "eRendererMode");
@@ -66,7 +68,7 @@ int RENDERER_nWindowHeight = 0; D2_GLOBAL_GUARD(RENDERER_nWindowHeight, "RENDERE
 int gnGlideWindowHandle = 0; D2_GLOBAL_GUARD(gnGlideWindowHandle, "gnGlideWindowHandle");
 int gnRenderState = 0; D2_GLOBAL_GUARD(gnRenderState, "gnRenderState");
 D2GfxSettingsStrc * pD2GFXRenderedDataStrc = 0; D2_GLOBAL_GUARD(pD2GFXRenderedDataStrc, "pD2GFXRenderedDataStrc");
-D2GfxHelperStrc * D2GfxRendereInitFunctionsStrc = 0; D2_GLOBAL_GUARD(D2GfxRendereInitFunctionsStrc, "D2GfxRendereInitFunctionsStrc");
+::D2GfxHelperStrc * D2GfxRendereInitFunctionsStrc = 0; D2_GLOBAL_GUARD(D2GfxRendereInitFunctionsStrc, "D2GfxRendereInitFunctionsStrc");
 BYTE * * gpPaletteTable = 0; D2_GLOBAL_GUARD(gpPaletteTable, "gpPaletteTable");
 // also labelled: ppvBits_007c9154
 BYTE * gpRenderBackBufferBits = 0; D2_GLOBAL_GUARD(gpRenderBackBufferBits, "gpRenderBackBufferBits");
@@ -82,8 +84,28 @@ static LPCSTR szWindowClassName = 0; D2_STATIC_GUARD(szWindowClassName, "szWindo
 static LPCSTR gpszWindowTitle = 0; D2_STATIC_GUARD(gpszWindowTitle, "gpszWindowTitle");
 static int nD2GFX_PerspectiveScaleY = 0; D2_STATIC_GUARD(nD2GFX_PerspectiveScaleY, "nD2GFX_PerspectiveScaleY");
 static int32_t nD2GFX_PerspectiveScaleX = 0; D2_STATIC_GUARD(nD2GFX_PerspectiveScaleX, "nD2GFX_PerspectiveScaleX");
+static BYTE * gaPaletteBlendEntries[72] = {}; D2_STATIC_GUARD(gaPaletteBlendEntries, "gaPaletteBlendEntries");
 
 namespace D2gfx::D2GFX {
+
+void __stdcall RENDERER_TogglePerspective_Unref_0044dc40() {
+    gbBloodFlag = (uint32_t)!gbBloodFlag;
+}
+
+void __stdcall RENDERER_TogglePerspective_Unref_00474140() {
+    gbLightmapColorEnabled = (uint32_t)!gbLightmapColorEnabled;
+}
+
+void __stdcall RENDERER_TogglePerspective_Unref_004769b0() {
+    gnFrameDrawCounter = (uint32_t)!gnFrameDrawCounter;
+}
+
+void __stdcall RENDERER_TogglePerspective_Unref_00477be0() {
+    // Static local variables (originally global data)
+    static uint32_t gnCurrentEngineFlags; D2_STATIC_GUARD_BSS(gnCurrentEngineFlags, "D2gfx::D2GFX::RENDERER_TogglePerspective_Unref_00477be0::gnCurrentEngineFlags");
+
+    gnCurrentEngineFlags = (uint32_t)!gnCurrentEngineFlags;
+}
 
 // JMP thunk
 BOOL __stdcall D2GFX_GetPerspectiveCapable_ForPerspectiveItem() {
@@ -98,6 +120,10 @@ BOOL __stdcall D2GFX_CheckGamma_ForGammaItem() {
 // JMP thunk
 void thunk_D2GFX_ResetViewport() {
     ::D2gfx::D2GFX::D2GFX_ResetViewport();
+}
+
+int __stdcall Unreferenced_004f5040(int param_1, int param_2, int param_3) {
+    return 0;
 }
 
 BOOL __stdcall D2GFX_Release() {
@@ -142,6 +168,10 @@ eD2RendererMode __stdcall D2GFX_GetRendererMode() {
     return eRendererMode;
 }
 
+eD2RendererMode __stdcall D2GFX_GetRendererMode_Unref_004f5150() {
+    return bD2GFX_Windowed;
+}
+
 DWORD __stdcall D2GFX_GetResolutionMode() {
     return nResolutionMode;
 }
@@ -168,6 +198,10 @@ uint32_t __stdcall D2GFX_IsPerspectiveActive() {
 
 void __stdcall D2GFX_SetPerspective(BOOL bPerspective) {
     D2GFXRenderedData.bPerspectiveEnabled = bPerspective;
+}
+
+BOOL __stdcall D2GFX_GetLowQuality_Unref_004f51f0() {
+    return D2GFXRenderedData.bBlendedShadows;
 }
 
 void __stdcall D2GFX_SetBlendedShadows(BOOL bResult) {
@@ -219,7 +253,7 @@ BOOL __fastcall D2GFX_SetOption(int32_t nOption, int32_t nValue) {
 
 BOOL __stdcall D2GFX_Initialize(HINSTANCE hInstance, WNDPROC pfWndProc, eD2RendererMode eRenderedMode, BOOL bWindowed) {
     // Static local variables (originally global data)
-    static D2GfxHelperStrc D2GfxHelperStrc_0072da60 = {
+    static ::D2GfxHelperStrc D2GfxHelperStrc_0072da60 = {
     /* .nfpFillYBufferTable = */ (::fpFillYBufferTable)&D2gfx::fpFillYBufferTable,
     /* .nfpDrawVisTile = */ &D2gfx::fpDrawVisTile,
     /* .nfpDrawVisTileLit = */ (fpUnknown)&D2gfx::DRAW_DrawWallTileWithLighting,
@@ -228,7 +262,7 @@ BOOL __stdcall D2GFX_Initialize(HINSTANCE hInstance, WNDPROC pfWndProc, eD2Rende
     /* .nfpDrawBlendedVisTile = */ (::fpDrawBlendedVisTile)&D2gfx::fpDrawBlendedVisTile,
     /* .nfpDrawRoofTile = */ (::fpDrawRoofTile)&D2gfx::fpDrawRoofTile
 }; D2_STATIC_GUARD(D2GfxHelperStrc_0072da60, "D2gfx::D2GFX::D2GFX_Initialize::D2GfxHelperStrc_0072da60");
-    static D2RendererFunctionsStrc * RENDERER_RenderedFunctionsSelector[7] = { nullptr, (D2RendererFunctionsStrc*)&D2Client::Renderer::WindowedFunctionTable, nullptr, (D2RendererFunctionsStrc*)&D2Client::Renderer::DirectDrawFunctionTable, (D2RendererFunctionsStrc*)&D2Client::Renderer::GlideFunctionTable, nullptr, (D2RendererFunctionsStrc*)&D2Client::Renderer::Direct3DFunctionTable }; D2_STATIC_GUARD(RENDERER_RenderedFunctionsSelector, "D2gfx::D2GFX::D2GFX_Initialize::RENDERER_RenderedFunctionsSelector");
+    static D2RendererFunctionsStrc * RENDERER_RenderedFunctionsSelector[7] = { nullptr, (D2RendererFunctionsStrc*)&D2Client::Renderer::WindowedFunctionTable, nullptr, (D2RendererFunctionsStrc*)&D2DDraw::Renderer::DirectDraw::DirectDrawFunctionTable, (D2RendererFunctionsStrc*)&D2Client::Renderer::GlideFunctionTable, nullptr, (D2RendererFunctionsStrc*)&D2Client::Renderer::Direct3DFunctionTable }; D2_STATIC_GUARD(RENDERER_RenderedFunctionsSelector, "D2gfx::D2GFX::D2GFX_Initialize::RENDERER_RenderedFunctionsSelector");
     static WNDPROC gpfnWndProc; D2_STATIC_GUARD_BSS(gpfnWndProc, "D2gfx::D2GFX::D2GFX_Initialize::gpfnWndProc");
 
     WNDCLASSA wndClass;
@@ -236,7 +270,7 @@ BOOL __stdcall D2GFX_Initialize(HINSTANCE hInstance, WNDPROC pfWndProc, eD2Rende
     gpfnWndProc = pfWndProc;
     wndClass.lpfnWndProc = pfWndProc;
     wndClass.cbClsExtra = 0;
-    wndClass.style = eRenderedMode != RENDERED_Unused5 ? 0 : 0x20;
+    wndClass.style = eRenderedMode == RENDERED_Unused5 ? 0x20 : 0;
     wndClass.cbWndExtra = 0;
     wndClass.hInstance = hInstance;
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
@@ -1069,9 +1103,6 @@ void __stdcall D2GFX_DebugFillBackBuffer(int32_t nXpos, int32_t nYpos) {
 }
 
 void __stdcall D2GFX_UpdateScaleFactor() {
-    // Static local variables (originally global data)
-    static uint32_t gnD2GFX_RequestedScaleFactor = 0x100; D2_STATIC_GUARD(gnD2GFX_RequestedScaleFactor, "D2gfx::D2GFX::D2GFX_UpdateScaleFactor::gnD2GFX_RequestedScaleFactor");
-
     gnD2GFX_ActiveScaleFactor = gnD2GFX_RequestedScaleFactor;
     RENDERER_CurrentRenderedFunctions->nfpUpdateScaleFactor(gnD2GFX_RequestedScaleFactor);
 }
@@ -1083,6 +1114,32 @@ int32_t __stdcall D2GFX_GetScaleFactor() {
 void __stdcall D2GFX_SetDefaultScaleFactor() {
     gnD2GFX_ActiveScaleFactor = 0x100;
     RENDERER_CurrentRenderedFunctions->nfpUpdateScaleFactor(0x100);
+}
+
+int Unreferenced_004f6610() {
+    int iVar1 = gnD2GFX_RequestedScaleFactor;
+    if (gnD2GFX_RequestedScaleFactor < 0x200) {
+      iVar1 = gnD2GFX_RequestedScaleFactor + 0x20;
+      gnD2GFX_RequestedScaleFactor = iVar1;
+      if (iVar1 > 0x200) {
+        gnD2GFX_RequestedScaleFactor = 0x200;
+      }
+    }
+
+    return iVar1;
+}
+
+int Unreferenced_004f6640() {
+    int iVar1 = gnD2GFX_RequestedScaleFactor;
+    if ((int32_t)gnD2GFX_RequestedScaleFactor > 0x100) {
+      iVar1 = gnD2GFX_RequestedScaleFactor - 0x20;
+      gnD2GFX_RequestedScaleFactor = iVar1;
+      if (iVar1 < 0x100) {
+        gnD2GFX_RequestedScaleFactor = 0x100;
+      }
+    }
+
+    return iVar1;
 }
 
 void __stdcall D2GFX_SetPerspectiveScale(int32_t nXScale, int32_t nYScale) {
@@ -1854,9 +1911,6 @@ void __fastcall D2GFX_FillYBufferFast(int32_t nScreenWidth, int32_t nScreenHeigh
 
 // Initializes color lookup tables for palette blending. Populates gPaletteBlendLookupTable (256x256 entries) by blending all combinations of source and destination palette indices. Used by rendering functions for alpha blending and color effects.
 void __fastcall PALETTE_InitColorLookupTables(BYTE * * ppPaletteTable) {
-    // Static local variables (originally global data)
-    static BYTE * gaPaletteBlendEntries[72] = {}; D2_STATIC_GUARD(gaPaletteBlendEntries, "D2gfx::D2GFX::PALETTE_InitColorLookupTables::gaPaletteBlendEntries");
-
     int nCount;
     uint8_t* pDstRow;
     uint8_t** pPaletteEntry = gaPaletteBlendEntries;
@@ -1884,6 +1938,12 @@ void __fastcall PALETTE_InitColorLookupTables(BYTE * * ppPaletteTable) {
     } while ((int)pPaletteEntry < (uintptr_t)((char*)&gaPaletteBlendEntries + 208));
 }
 
+int Unreferenced_004f8e90() {
+    int extraout_EAX;
+    D2GFX_SetPaletteTable(gaPaletteBlendEntries);
+    return extraout_EAX;
+}
+
 void __stdcall D2GFX_InitializeWindowSize() {
     // Frame slots -12..-4 are ONE object: &dwGamma is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -1909,6 +1969,16 @@ void __stdcall D2GFX_InitializeWindowSize() {
     Storm::Source::SReg::SRegLoadValue("Diablo II", "Gamma", 0, (int32_t*)&__frame0.dwGamma);
     D2GFXRenderedData.nGamma = __frame0.dwGamma;
     D2GFX_SetGamma(__frame0.dwGamma);
+}
+
+void __stdcall D2GFX_EnableVSync_Unref_00506a80() {
+    gbSmackerKeepTempFile = 1;
+}
+
+BOOL __stdcall D2GFX_ToggleLowQuality_Unref_00608520() {
+    bool bVar1 = !gbCodecUseFallbackDecompressor;
+    gbCodecUseFallbackDecompressor = (uint32_t)bVar1;
+    return (uint32_t)bVar1;
 }
 
 void StaticInit_gpszWindowClassName() {

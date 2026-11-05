@@ -10,11 +10,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/D2ArchiveStrc.h"
 #include "globals/globals.h"
-#include "support/d2_trace.h"
-#include "Fog/Memory.data.h"
-#define POOLPROBE(tag) D2TraceFmt("poolprobe %-22s nPoolId=%d", tag, \
-    (int)Fog::Memory::pGlobalPoolSystem.pManagers[0].nPoolId)
-
 #include "D2Lang/StrTable/strtable.data.h"
 #include "Fog/File.data.h"
 #include "Game/Main.h"
@@ -443,6 +438,23 @@ BOOL __stdcall ARCHIVE_LoadMPQFiles() {
     return 1;
 }
 
+void __stdcall Unreferenced_005248e0() {
+    if (MPQ_d2data) {
+      D2Hell::ARCHIVE_FreeMpqFile(MPQ_d2data);
+      MPQ_d2data = 0;
+    }
+    if (MPQ_patch_d2) {
+      D2Hell::ARCHIVE_FreeMpqFile(MPQ_patch_d2);
+      MPQ_patch_d2 = 0;
+    }
+    if (!MPQ_d2exp) {
+      return;
+    }
+
+    D2Hell::ARCHIVE_FreeMpqFile(MPQ_d2exp);
+    MPQ_d2exp = 0;
+}
+
 static uint16_t * __stdcall STRTABLE_GetStringByIndex(D2StringTableTblFileStrc * pStrTable, uint16_t * * ppEntryTable, uint16_t wRawIndex, DWORD dwErrorCode) {
     uint32_t _wRawIndex;
     uint16_t wBoundedIndex = wRawIndex;
@@ -569,7 +581,7 @@ uint16_t * __fastcall STRTABLE_GetTranslatedString(uint8_t * pbKey) {
         pcFormatted = s__not_xlated_call_ken_w_00730520;
         pcVar1 = pcFormatted + strlen(pcFormatted);
         pcFormatted = pcVar1 + 1;
-        pcFormatted = (char*)D2_ALLOC_AT((size_t)(pcVar1 + (int)(pbKeyCopy + (-(int)s__not_xlated_call_ken_w_00730520 - (int)pbSrc)) + 1), ".\\StrTable\\strtable.cpp", 0x26c);
+        pcFormatted = (char*)D2_ALLOC_AT((size_t)(pcVar1 + (int)(pbKeyCopy + (-(intptr_t)&s__not_xlated_call_ken_w_00730520 - (int)pbSrc)) + 1), ".\\StrTable\\strtable.cpp", 0x26c);
         strcpy(pcFormatted, (char*)pbKey);
         pcSuffixDst = s__not_xlated_call_ken_w_00730520;
         pcSuffixEnd = pcSuffixDst + strlen(pcSuffixDst);
@@ -581,19 +593,19 @@ uint16_t * __fastcall STRTABLE_GetTranslatedString(uint8_t * pbKey) {
         } while (*pcSuffixSrc != '\0');
 
         pcSuffixSrc = s__not_xlated_call_ken_w_00730520;
-        for (nCopyCount = (uint32_t)(pcSuffixEnd - ((int)s__not_xlated_call_ken_w_00730520 - 1)) >> 2; nCopyCount; nCopyCount--) {
+        for (nCopyCount = (uint32_t)(pcSuffixEnd - ((intptr_t)&s__not_xlated_call_ken_w_00730520 - 1)) >> 2; nCopyCount; nCopyCount--) {
           *(uint32_t*)pcSuffixDst = *(uint32_t*)pcSuffixSrc;
           pcSuffixSrc += 4;
           pcSuffixDst += 4;
         }
 
-        for (nCopyCount = (uint32_t)(pcSuffixEnd - ((int)s__not_xlated_call_ken_w_00730520 - 1)) & 3; nCopyCount; nCopyCount--) {
+        for (nCopyCount = (uint32_t)(pcSuffixEnd - ((intptr_t)&s__not_xlated_call_ken_w_00730520 - 1)) & 3; nCopyCount; nCopyCount--) {
           *pcSuffixDst = *pcSuffixSrc;
           pcSuffixSrc++;
           pcSuffixDst++;
         }
 
-        pcKeyEnd = Unicode::UNISYS::UNICODE_GetWideCharCount(pcFormatted, (int32_t)(pcVar1 + (int)(pbKeyCopy + (-(int)s__not_xlated_call_ken_w_00730520 - (int)pbSrc))));
+        pcKeyEnd = Unicode::UNISYS::UNICODE_GetWideCharCount(pcFormatted, (int32_t)(pcVar1 + (int)(pbKeyCopy + (-(intptr_t)&s__not_xlated_call_ken_w_00730520 - (int)pbSrc))));
         wszText = (uint16_t*)D2_ALLOC_AT(pcKeyEnd * 2 + 2, ".\\StrTable\\strtable.cpp", 0x271);
         *pCacheNode = (uint32_t)(uintptr_t)wszText;
         UTF8_ConvertToWideChar(wszText, pcFormatted, pcKeyEnd);
@@ -771,6 +783,11 @@ void STRTABLE_InitCRC(uint16_t * pwCRC) {
 
 void STRTABLE_UpdateCRC(uint16_t * pwCRC, uint8_t byData) {
     *pwCRC = *pwCRC << 8 ^ gwStrTableDefaultEncoding[(uint32_t)(*pwCRC >> 8) ^ (uint32_t)byData];
+}
+
+int __fastcall Unreferenced_00525010(int param_1) {
+    uint32_t in_EAX;
+    return (uint32_t)((uint32_t)(uint16_t)(short int)((uint32_t)in_EAX >> 0x10) << 16 | (uint32_t)(uint16_t)(short int)param_1);
 }
 
 void __stdcall STRTABLE_CalculateCRC(uint16_t * pwCRC, uint8_t * pBuffer, uint32_t nOffset, uint32_t nEndOffset) {
@@ -1220,9 +1237,6 @@ static uint16_t * __fastcall STRTABLE_LoadStringTableFile(char * szFileName) {
     uint32_t wComputedCRC;
     D2StringTableTblFileStrc* pArchive = (D2StringTableTblFileStrc*)D2Hell::D2FILE_AllocAndLoadD2File((D2PoolManagerStrc*)MPQ_d2data, szFileName, nullptr, ".\\StrTable\\strtable.cpp", 0xc0);
     uint32_t nCrcStartOffset = pArchive->dwDataStartOffset;
-    {   /* TEMP diagnostic: is the packed header being read correctly? */
-        const unsigned char* hb = (const unsigned char*)pArchive;
-    }
     STRTABLE_CalculateCRC((uint16_t*)&wComputedCRC, (uint8_t*)pArchive, nCrcStartOffset, pArchive->dwFileSize);
     if ((uint16_t)wComputedCRC != pArchive->wCRC) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xce);
@@ -1323,10 +1337,7 @@ int __fastcall TABLES_LoadStrings(D2PoolManagerStrc * pPoolManager, char * szTex
       } while (nEntryIdx < *pnEntryCount);
     }
 
-    /* TEMP EXPERIMENT: does the conversion loop write past this buffer? If the
-       pool smear disappears with slack, the two-pass sizing is off. Not a fix. */
-    POOLPROBE("before-widebuf-alloc");
-    gpStringBufferBase = (uint16_t*)D2_ALLOC_AT(nWideCharCount * 2 + 0x10000, ".\\StrTable\\strtable.cpp", 0x1a9);
+    gpStringBufferBase = (uint16_t*)D2_ALLOC_AT(nWideCharCount * 2, ".\\StrTable\\strtable.cpp", 0x1a9);
     nEntryIdx = 0;
     uint16_t* k = gpStringBufferBase;
     if (*pnEntryCount > 0) {
@@ -1343,13 +1354,9 @@ int __fastcall TABLES_LoadStrings(D2PoolManagerStrc * pPoolManager, char * szTex
       } while (nEntryIdx < *pnEntryCount);
     }
 
-    POOLPROBE("after-string.tbl-convert");
     strncpy(szFormatBuf, "data\\local\\lng\\%s\\patchstring.tbl", 0x103);
     sprintf(szPathBuf, szFormatBuf, l);
-    POOLPROBE("before-patchstring-load");
     gpStringTablePatchD2 = (D2StringTableTblFileStrc*)STRTABLE_LoadStringTableFile(szPathBuf);
-    POOLPROBE("after-patchstring-load");
-    POOLPROBE("patch-count-loop-start");
     if (!gpStringTablePatchD2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1c3);
       exit(-1);
@@ -1435,9 +1442,7 @@ int __fastcall TABLES_LoadStrings(D2PoolManagerStrc * pPoolManager, char * szTex
         }
       }
 
-      POOLPROBE("expansion-convert-loop-done");
       STRTABLE_LoadAbbreviationSymbols((DWORD)pEntryData);
-      POOLPROBE("abbrev-symbols-done");
       return 1;
     }
 }

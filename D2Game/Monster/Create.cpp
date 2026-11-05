@@ -5,12 +5,10 @@
 #include "D2Client/Archive.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Missile.h"
 #include "D2Client/UNIT/Monster.h"
-#include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
 #include "D2Common/Collision.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -49,6 +47,7 @@
 #include "D2Game/Monster/MonsterRegion.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/Objects/Objects.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/Quests/QUESTS.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
@@ -66,6 +65,15 @@
 
 
 namespace D2Game::Monster::Create {
+
+int32_t __fastcall TXT_MonStats_GetBaseId_NoChecks(int32_t nMonsterId) {
+    D2MonStatsTxt* pMonStatsTxt = nMonsterId >= 0 && nMonsterId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nMonsterId : nullptr;
+    if (pMonStatsTxt) {
+      nMonsterId = (int32_t)pMonStatsTxt->BaseId;
+    }
+
+    return nMonsterId;
+}
 
 int * * __fastcall MONSTER_FindUnitInPartySlot(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
     D2UnitNodeStrc* pPartyNode;
@@ -111,9 +119,6 @@ static void __fastcall MONSTER_EquipFromClassTable(D2UnitStrc * pUnit) {
 
     ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit);
     int nMonsterLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-    // HAND FIX: the original indexes LEA ESI,[ESI*8+0x6e1bb0], a base 540 rows before
-    // gaMonsterEquipTable that lands inside an unrelated string; Ghidra cannot fold that
-    // bias, so the generated line read the Ancients' gear from the string's neighbours.
     uint32_t* pEquipTableEntry = (uint32_t*)&gaMonsterEquipTable[nClassId - 540];
     int nEquipSlotsLeft = 4;
     do {
@@ -212,7 +217,7 @@ static void __fastcall MONSTER_OnCreateAttachQuests(D2UnknownCreateMonsterStrc *
       Monsters::InitUmods(pGame, pMonster, 0x12, 1);
       return;
       case 0xaf:
-        nUmodId = sgptDataTable->nTxtMonStatsSize > 0xaf ? 0xaf : -1;
+        nUmodId = sgptDataTable->nTxtMonStatsSize <= 0xaf ? -1 : 0xaf;
       Quests::QUESTS::QUEST_DispatchMonsterDeathToQ12(pGame, pRoom, D2Client::Units::GetXPosFromDynamicPathUnit(pMonster), D2Client::Units::GetYPosFromDynamicPathUnit(pMonster), nUmodId);
       return;
       case 0xfa:
@@ -415,11 +420,10 @@ D2UnitStrc * __fastcall SpawnMonsterAtUnit(::SGAMEDATA * pGame, D2UnitStrc * pUn
       }
 
       sCreateParams.nY = 0;
-      pSpawnedAlt = CreateMonster(&sCreateParams);
-      return pSpawnedAlt;
+    } else {
+      sCreateParams.nY = pUnit->pPath.pStaticPath->nPosY;
     }
 
-    sCreateParams.nY = pUnit->pPath.pStaticPath->nPosY;
     pSpawnedAlt = CreateMonster(&sCreateParams);
     return pSpawnedAlt;
 }
@@ -692,7 +696,7 @@ static void MONSTER_SpawnMinionGroup(D2UnknownCreateMonsterStrc * pGame, D2UnitS
       return;
     }
 
-    int32_t nMinionClassId = D2Client::UNIT::Player::TXT_MonStats_GetBaseId_NoChecks(nPartySize);
+    int32_t nMinionClassId = TXT_MonStats_GetBaseId_NoChecks(nPartySize);
     if (nMinionClassId >= 0 && nMinionClassId < sgptDataTable->nTxtMonStatsSize && nMinionClassId == 0x105) {
       if (!pUnit) {
         nMinionClassId = -1;
@@ -870,7 +874,7 @@ D2UnitStrc * __fastcall CreateMonster(D2UnknownCreateMonsterStrc * pMonsterSpawn
     nSpawnX = 0;
     if (pMonStats2->spawnCol == '\x01' && (nWalkY = pMonsterSpawnData->nClassId , nWalkY < 0x102 || nWalkY > 0x107) && nWalkY != 0x99) {
       FindDiagonalNonCollisionCoords(pWorkingRoom, &nSpawnX, &nSpawnY);
-      pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pWorkingRoom, nSpawnX, nSpawnY);
+      pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pWorkingRoom, nSpawnX, nSpawnY);
     } else {
       POINT pt;
       if (nClassId > (int)nMaxWalkRadius) {
@@ -1321,130 +1325,22 @@ BOOL __fastcall SpawnMonsterAtUnitOffset(::SGAMEDATA * pGame, D2RoomStrc * pRoom
 
 BOOL __fastcall MONSTER_SpawnPredefinedAtUnit(::SGAMEDATA * pGame, D2RoomStrc * pRoom, int32_t nUnused1, int32_t nUnused2, D2UnitStrc * pUnit, int32_t nClassId, uint16_t wFlags) {
     // Static local variables (originally global data)
-    static uint8_t sPredefinedDataUnknown[124] = {
+    static int sPredefinedDataUnknown[16] = {
     0x4,
     0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
     0x1,
-    0x0,
-    0x0,
-    0x0,
     0x1,
-    0x0,
-    0x0,
-    0x0,
     0x1,
-    0x0,
-    0x0,
-    0x0,
     0x1,
-    0x0,
-    0x0,
-    0x0,
     0x1,
-    0x0,
-    0x0,
-    0x0,
-    0xff,
-    0xff,
-    0xff,
-    0xff,
+    -0x1,
     0x3,
-    0x0,
-    0x0,
-    0x0,
-    0xff,
-    0xff,
-    0xff,
-    0xff,
-    0xff,
-    0xff,
-    0xff,
-    0xff,
+    -0x1,
+    -0x1,
     0x3,
-    0x0,
-    0x0,
-    0x0,
-    0xff,
-    0xff,
-    0xff,
-    0xff,
+    -0x1,
     0x1,
-    0x0,
-    0x0,
-    0x0,
     0x3,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x1c,
-    0xc8,
-    0x6c,
-    0x0,
-    0x14,
-    0xc8,
-    0x6c,
-    0x0,
-    0xc,
-    0xc8,
-    0x6c,
-    0x0,
-    0x4,
-    0xc8,
-    0x6c,
-    0x0,
-    0xf8,
-    0xc7,
-    0x6c,
-    0x0,
-    0xf0,
-    0xc7,
-    0x6c,
-    0x0,
-    0xe4,
-    0xc7,
-    0x6c,
-    0x0,
-    0xdc,
-    0xc7,
-    0x6c,
-    0x0,
-    0xc8,
-    0xc7,
-    0x6c,
-    0x0,
-    0xb4,
-    0xc7,
-    0x6c,
-    0x0,
-    0xac,
-    0xc7,
-    0x6c,
-    0x0,
-    0xa4,
-    0xc7,
-    0x6c,
-    0x0,
-    0x88,
-    0xc7,
-    0x6c,
-    0x0,
-    0x80,
-    0xc7,
-    0x6c,
-    0x0,
-    0x7c,
-    0xc7,
-    0x6c,
     0x0
 }; D2_STATIC_GUARD(sPredefinedDataUnknown, "D2Game::Monster::Create::MONSTER_SpawnPredefinedAtUnit::sPredefinedDataUnknown");
 
@@ -1474,7 +1370,7 @@ BOOL __fastcall MONSTER_SpawnPredefinedAtUnit(::SGAMEDATA * pGame, D2RoomStrc * 
         nPosY = 0;
       }
 
-      nResult = SpawnMonsterAtUnitOffset(pGame, pRoom, nPosX, nPosY, nullptr, 0x154, eD2MonsterAnimMode_ns::Skill1, (int*)sPredefinedDataUnknown, wFlags);
+      nResult = SpawnMonsterAtUnitOffset(pGame, pRoom, nPosX, nPosY, nullptr, 0x154, eD2MonsterAnimMode_ns::Skill1, sPredefinedDataUnknown, wFlags);
     }
 
     return nResult;

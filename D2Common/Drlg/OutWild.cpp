@@ -56,7 +56,7 @@ int __stdcall DRLGOUTROOM_GetPresetVariantFromGridCell(uint32_t nGridFlags, int 
       return (&gaTombCanyonPresetOffsets.aTombEntries[7].nVariant)[nPresetType * 2];
     }
 
-    return (nGridFlags & 0x100 ? -3 : 0) + 3;
+    return nGridFlags & 0x100 ? 0 : 3;
 }
 
 // Finds and places a river crossing preset pair in an outdoor wilderness level. Uses the level seed to pick a random starting row among usable grid rows (excluding top/bottom edge), then iterates rows looking for two horizontally adjacent cells whose grid flags both have bits 0x30000 set (river tile markers). On match, spawns preset 0x1c at both X positions; the second spawn variant depends on whether the road flag (dwFlags&4) is set.
@@ -148,7 +148,7 @@ void __stdcall DRLGOUTROOM_SpawnVerticalBorderPresets(D2DrlgLevelStrc * pLevel, 
             nVariant = (&gaTombCanyonPresetOffsets.aTombEntries[7].nPresetId)[nVariant * 2];
           }
         } else {
-          nVariant = (nGridFlags & 0x100 ? -3 : 0) + 3;
+          nVariant = nGridFlags & 0x100 ? 0 : 3;
         }
 
         Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nColumn, nY, 0x1a, nVariant, 0);
@@ -161,7 +161,7 @@ void __stdcall DRLGOUTROOM_SpawnVerticalBorderPresets(D2DrlgLevelStrc * pLevel, 
             nVariant = (&gaTombCanyonPresetOffsets.aTombEntries[7].nVariant)[nVariant * 2];
           }
         } else {
-          nVariant = (nGridFlags & 0x100 ? -3 : 0) + 3;
+          nVariant = nGridFlags & 0x100 ? 0 : 3;
         }
 
         Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nX, nY, 0x1b, nVariant, 0);
@@ -256,6 +256,10 @@ static BOOL __stdcall DRLGOUTROOM_SpawnCornerFillPreset(int nY, int nX, D2DrlgLe
     Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nX, nY, nGridFlags, -1, 0);
     pWildData->dwFlags |= 0x40;
     return 1;
+}
+
+int __fastcall Unreferenced_006801f0(int param_1) {
+    return *(int*)(param_1 + 0x1d0) == 2 ? 0x34 : 0x33;
 }
 
 // Outdoor DRLG finalization for a wilderness level (skips eD2LevelId 0x27). Driven by the level data's dwFlags: optionally spawns vertical border presets along the second-to-last grid column (if that column is empty); seed-randomly iterates the grid in row- or column-major order placing corner-fill presets (SpawnCornerFillPreset), halting via Fog ErrorManager if the grid loop completes without success; and finally (flags &0x1c, not &0x40) picks a seed-random edge position and spawns one outdoor level preset (SpawnOutdoorLevelPresetEx), then sets the 0x40 done-flag. Consumes pLevel->sSeed for randomness.

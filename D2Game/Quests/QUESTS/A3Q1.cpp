@@ -287,6 +287,7 @@ void __fastcall Q18_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     D2UnitStrc* pTomeItem = ITEMS::Items::Drop::HasQuestItem(pQuestArgs->pGame, pQuestArgs->pPlayer, 0x20626262);
     if (pTomeItem) {
       nGossipIndex = 3;
+      AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, nGossipIndex);
     } else {
       int32_t nPlayerGUID;
       if (bIsCompleted == 1) {
@@ -318,9 +319,9 @@ void __fastcall Q18_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (nGossipIndex >= 6) {
         return;
       }
-    }
 
-    AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, nGossipIndex);
+      AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, nGossipIndex);
+    }
 }
 
 // CompleteQuestStates — Lam Esen's Tome, per-player completion writer (run via IteratePlayerOrMonsterUnits when Alkor is handed the tome). For each player who is in a room and is in Act III and not already Completed/RewardAwaits, persist the three completion flags JustCompleted + Completed + RewardAwaits into the record, then send full quest info to the unit. This is the actual "quest done" commit.
@@ -564,12 +565,7 @@ void __fastcall Q18_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2Ques
     pQuestData->nQuestPacketFlags = '\0';
     QUEST_SetStateAndBroadcast(pQuestData, 2, nullptr, (::fpExecuteOnUnitFunction)Q18_PlayerNotifyCompleted, 1);
     QUEST_SetStateFlag(pQuestData, 4, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q1.cpp", 0x26c);
-    if (!pQuestArgs->pPlayer) {
-      QUESTGUID_AddPlayerToList(&pA3Q1Data->sQuestGUID, -1);
-      return;
-    }
-
-    QUESTGUID_AddPlayerToList(&pA3Q1Data->sQuestGUID, pQuestArgs->pPlayer->nUnitGUID);
+    QUESTGUID_AddPlayerToList(&pA3Q1Data->sQuestGUID, !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID);
 }
 
 // Q18_Callback_05 — Lam Esen's Tome, state-5 handler (counterpart to _04). Removes the player from the quest GUID sub-list (e.g. tome dropped/left) and, if active, sets live state flag back to 3 (a3q1.cpp:0x281) and broadcasts state 1. No record-bit writes.
@@ -598,45 +594,43 @@ BOOL __fastcall OBJOP_A3Q1_KhalimsRelicAltar(D2ObjectOperateFnArg * pOperation) 
     }
 
     D2UnitStrc* pVictim = pOperation->sArg.pVictim;
-    if (!(!pVictim || pVictim->eAnimMode.ePlayerMode == Death)) {
-      return 0;
-    }
-
-    ::SGAMEDATA* pGame = pOperation->sArg.pGame;
-    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pOperation->pAttacker)->pQuestRecord[pGame->nDifficulty];
-    BOOL bQuestCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_LamEsensTome, QUESTSTATE_Completed);
-    if (bQuestCompleted == 1) {
-      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
-      return 0;
-    }
-
-    pOperation->sArg.pVictim->dwDropItemCode = 0x20626262;
-    pVictim = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_Shield, (int32_t*)&pDropCountOut, nullptr, -1, 0);
-    if (pVictim) {
-      int32_t nVictimGUID;
-      D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
-      pA1Q3Data = pQuestData->pQuestSpecificData.pA3Q1;
-      pA1Q3Data->nPlayersInArea++;
-      pA1Q3Data->bNotifiedPlayers = '\x01';
-      pA1Q3Data->bCheckPartyForTome = true;
-      pA1Q3Data->nTomeObjectMode = 2;
-      pVictim = pOperation->sArg.pVictim;
-      if (!pVictim) {
-        nVictimGUID = -1;
-      } else {
-        nVictimGUID = pVictim->nUnitGUID;
+    if (!pVictim || pVictim->eAnimMode.ePlayerMode == Death) {
+      ::SGAMEDATA* pGame = pOperation->sArg.pGame;
+      D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pOperation->pAttacker)->pQuestRecord[pGame->nDifficulty];
+      BOOL bQuestCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_LamEsensTome, QUESTSTATE_Completed);
+      if (bQuestCompleted == 1) {
+        UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
+        return 0;
       }
 
-      pA1Q3Data->nTomeObjectGUID = nVictimGUID;
-      nPrevStateFlag = pQuestData->nStateFlag;
-      pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q18_Callback00_NpcActivate;
-      pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q18_Callback11_ScrollMessage;
-      if (nPrevStateFlag != 3) {
-        QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q1.cpp", 699);
-      }
-      if (pQuestData->nStateFlagPrev != 1) {
-        pQuestData->nQuestPacketFlags = '\0';
-        QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q18_PlayerNotifyCompleted, 0);
+      pOperation->sArg.pVictim->dwDropItemCode = 0x20626262;
+      pVictim = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_Shield, (int32_t*)&pDropCountOut, nullptr, -1, 0);
+      if (pVictim) {
+        int32_t nVictimGUID;
+        D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
+        pA1Q3Data = pQuestData->pQuestSpecificData.pA3Q1;
+        pA1Q3Data->nPlayersInArea++;
+        pA1Q3Data->bNotifiedPlayers = '\x01';
+        pA1Q3Data->bCheckPartyForTome = true;
+        pA1Q3Data->nTomeObjectMode = 2;
+        pVictim = pOperation->sArg.pVictim;
+        if (!pVictim) {
+          nVictimGUID = -1;
+        } else {
+          nVictimGUID = pVictim->nUnitGUID;
+        }
+
+        pA1Q3Data->nTomeObjectGUID = nVictimGUID;
+        nPrevStateFlag = pQuestData->nStateFlag;
+        pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q18_Callback00_NpcActivate;
+        pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q18_Callback11_ScrollMessage;
+        if (nPrevStateFlag != 3) {
+          QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q1.cpp", 699);
+        }
+        if (pQuestData->nStateFlagPrev != 1) {
+          pQuestData->nQuestPacketFlags = '\0';
+          QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q18_PlayerNotifyCompleted, 0);
+        }
       }
     }
 
@@ -770,7 +764,7 @@ bool __fastcall Q18_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
     if (bQuestState) {
       /* GetQuestState(LamEsensTome, state 0xd=JustCompleted) — adds 2 to log byte
                          (0xb -> 0xd) when freshly done */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_LamEsensTome, QUESTSTATE_JustCompleted);
-      *pbyStatusCode = bQuestState != 0 ? 13 : 11;
+      *pbyStatusCode = !bQuestState ? 0xb : 0xd;
       return true;
     }
 

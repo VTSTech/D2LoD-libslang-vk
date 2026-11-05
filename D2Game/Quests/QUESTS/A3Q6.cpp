@@ -185,8 +185,7 @@ static void __stdcall Q23_SetGuardianQuestComplete(::SGAMEDATA * pGame, D2UnitSt
     D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheGuardian, QUESTSTATE_JustCompleted);
     D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheGuardian, QUESTSTATE_Completed);
     D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheGuardian, QUESTSTATE_Step0x11);
-    uint32_t nDifficulty = (uint32_t)pGame->nDifficulty;
-    GAME::Clients::SetClientStatus(UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q6.cpp", 0xcc), 3, nDifficulty);
+    GAME::Clients::SetClientStatus(UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q6.cpp", 0xcc), 3, (uint32_t)pGame->nDifficulty);
 }
 
 // [The Guardian (Q23)] Per-player iterator run after Mephisto dies. If this player is standing in
@@ -779,13 +778,7 @@ void __fastcall Objects_InitFn44_HellGatePortal(D2ObjectInitFnArg * pInitArg) {
 
     D2QuestDataA3Q6Strc* pDVar1 = pDVar2->pQuestSpecificData.pA3Q6;
     pDVar1->bBridgeObjectValid = true;
-    if (!pInitArg->pObject) {
-      pDVar1->nBridgeObjectGUID = -1;
-      D2Common::Units::SetupUpdateFlag(pInitArg->pObject, pDVar1->nMephistoApproachMode);
-      return;
-    }
-
-    pDVar1->nBridgeObjectGUID = pInitArg->pObject->nUnitGUID;
+    pDVar1->nBridgeObjectGUID = !pInitArg->pObject ? -1 : pInitArg->pObject->nUnitGUID;
     D2Common::Units::SetupUpdateFlag(pInitArg->pObject, pDVar1->nMephistoApproachMode);
 }
 

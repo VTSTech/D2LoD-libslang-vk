@@ -246,12 +246,8 @@ void __fastcall Q31_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       pQuestData->nQuestPacketFlags = '\0';
       QUEST_SetStateAndBroadcast(pQuestData, 0xd, nullptr, (::fpExecuteOnUnitFunction)Q31_NpcGossipHandler, 1);
     }
-    if (!pQuestArgs->pPlayer) {
-      QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, -1);
-      return;
-    }
 
-    QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, pQuestArgs->pPlayer->nUnitGUID);
+    QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID);
 }
 
 // A5Q1 gossip-text builder (state 0). Picks which monster/NPC gossip line to add based on persisted state: if RewardAwaits(1) and NOT Step0x05(5) -> line 3 (claim reward); else if not Completed(0), progress<4 (or JustCompleted), intro shown -> map nStateFlag via table to a gossip index. Read-only on quest state.
@@ -291,12 +287,7 @@ void __fastcall Q31_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
 // A5Q1 state-10 (player-left) handler: removes the player's GUID from this quest's participant list. No quest-state bit changes.
 void __fastcall Q31_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if (!pQuestArgs->pPlayer) {
-      QUESTGUID_RemovePlayerFromList(&pQuestData->sQuestGUID, -1);
-      return;
-    }
-
-    QUESTGUID_RemovePlayerFromList(&pQuestData->sQuestGUID, pQuestArgs->pPlayer->nUnitGUID);
+    QUESTGUID_RemovePlayerFromList(&pQuestData->sQuestGUID, !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID);
 }
 
 // A5Q1: per-player "am I near Shenk's room?" check, run after Shenk dies. Skips if quest already Completed. Compares player's current room (and its adjacent rooms) against the saved Shenk-room GUID; if the player witnessed the kill, sets RewardAwaits(1) + JustCompleted(0xd) on their quest record so Larzuk will offer the socket reward. Iterator cb, returns 0.
@@ -535,6 +526,14 @@ bool __fastcall Q31_SequenceFilter(D2QuestDataStrc * pQuestData) {
     return false;
 }
 
+void __fastcall Unreferenced_005875d0(int param_1) {
+    if (!(*(char*)(param_1 + 0xc) == '\0' && *(char*)(param_1 + 9) != '\0')) {
+      return;
+    }
+
+    *(uint8_t*)(param_1 + 0xc) = 1;
+}
+
 // A5Q1: on game load, rebuild volatile in-memory state (nStateFlagPrev@+0xb, nStateFlag@+0xc) from the player's persisted quest-record bits. Priority: Completed(0)/FinishedPrev(0xf)/RewardAwaits(1) -> prev=5 (done); Step0x04(4) -> prev2,flag3; Step0x03(3) -> prev1,flag3; Step0x02(2) -> prev1,flag2; else if player has spoken with Larzuk-intro NPC 0x201 and intro shown -> flag=1. Decompiler shows nQuestIdReal via [ESI+0xe0].
 void __fastcall Q31_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
@@ -607,18 +606,7 @@ void __fastcall Q31_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->fpActiveFilter = Q31_ActiveFilter;
     pQuestData->fpSequenceFilter = Q31_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_UnknownDuplicate1;
-    pQuestSpecificData->pPresetDrlgFile = 0;
-    pQuestSpecificData->pShenkRoom = 0;
-    pQuestSpecificData->bLarzukTalked = 0;
-    pQuestSpecificData->field_0x09 = 0;
-    pQuestSpecificData->field_0x0A = 0;
-    pQuestSpecificData->field_0x0B = 0;
-    pQuestSpecificData->field_0x0C = 0;
-    pQuestSpecificData->nShenkMonsterGUID = 0;
-    pQuestSpecificData->field_0x14 = 0;
-    pQuestSpecificData->bShenkSpawned = 0;
-    pQuestSpecificData->bRewardAccepted = 0;
-    pQuestSpecificData->bDrlgMapTaken = 0;
+    memset(pQuestSpecificData, 0, sizeof(*pQuestSpecificData));
 }
 
 // A5Q1: finalize Siege on Harrogath when the player accepts Larzuk's reward (socketing). Sets Completed(0), clears RewardAwaits(1), then reads FinishedInPreviousGame(0xf): if NOT carried over from a prior game, asserts the live quest-data record exists (server consistency check). Larzuk then adds sockets to one item.

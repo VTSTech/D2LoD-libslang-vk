@@ -12,7 +12,6 @@
 #include "D2Client/Engine/Gfx.h"
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/UI/Path.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Monster.h"
@@ -42,6 +41,7 @@
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/Objects/Objects.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -85,18 +85,15 @@ static void GFXUTIL_PadTokenString(char * szText1, char * szText2) {
     if (szText1[1] == '\0') {
       szText2[1] = ' ';
       szText2[2] = ' ';
-      szText2[3] = ' ';
-      return;
+    } else {
+      szText2[1] = szText1[1];
+      if (szText1[2] == '\0') {
+        szText2[2] = ' ';
+      } else {
+        szText2[2] = szText1[2];
+      }
     }
 
-    szText2[1] = szText1[1];
-    if (szText1[2] == '\0') {
-      szText2[2] = ' ';
-      szText2[3] = ' ';
-      return;
-    }
-
-    szText2[2] = szText1[2];
     szText2[3] = ' ';
 }
 
@@ -1435,8 +1432,8 @@ int32_t __fastcall GFXUTIL_CalcMaxSpriteHeight(D2UnitStrc * pUnit, uint8_t * pby
           if (nSpriteLoaded && sGfxData.pDC6Block) {
             nOffsetY = D2CMP::SRC::CelCmp::GetDC6OffsetY(sGfxData.pDC6Block);
             nDrawWorldOffsetY = UI::Path::DRAW_GetWorldOffsetY();
-            nWorldOffsetY = D2Common::Units::GetTargetY(pUnit);
-            nSpriteY = nWorldOffsetY + (nOffsetY - nDrawWorldOffsetY);
+            nSpriteY = D2Common::Units::GetTargetY(pUnit);
+            nSpriteY += nOffsetY - nDrawWorldOffsetY;
             if (nSpriteY > *pOutMaxY) {
               *pOutMaxY = nSpriteY;
             }
@@ -1533,6 +1530,14 @@ uint32_t __fastcall GFXUTIL_IsUnitSpriteOnScreen(D2UnitStrc * pUnit, int32_t nWo
     }
 
     return 0;
+}
+
+void * __fastcall GFXUTIL_Identity_Unref_005641e0(void * pData) {
+    return pData;
+}
+
+void * __fastcall GFXUTIL_Identity_Unref_006c40c0(void * pData) {
+    return pData;
 }
 
 } // namespace D2Client::Engine::GfxUtil

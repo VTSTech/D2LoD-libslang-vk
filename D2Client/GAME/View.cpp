@@ -33,6 +33,7 @@
 #include "D2Common/Drlg/Transform.h"
 #include "D2Common/Seed.h"
 #include "D2Common/Units.h"
+#include "D2DDraw/Renderer/DirectDraw.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -102,6 +103,7 @@ uint8_t * gpViewPalByteTable32x40 = 0; D2_GLOBAL_GUARD(gpViewPalByteTable32x40, 
 } // namespace D2Client::GAME::View
 static DC6 * gpAncientsBgDC6 = 0; D2_STATIC_GUARD(gpAncientsBgDC6, "gpAncientsBgDC6");
 static DC6 * gnDrawBackgroundRenderOffset = 0; D2_STATIC_GUARD(gnDrawBackgroundRenderOffset, "gnDrawBackgroundRenderOffset");
+uint32_t gnFrameDrawCounter = 0; D2_GLOBAL_GUARD(gnFrameDrawCounter, "gnFrameDrawCounter");
 
 namespace D2Client::GAME::View {
 
@@ -192,6 +194,14 @@ uint8_t * __stdcall VIEW_AllocByteTable(uint32_t nDim, int32_t nSteps) {
     return pTable;
 }
 
+void __fastcall Unreferenced_00475c30(int param_1) {
+    if (!param_1) {
+      return;
+    }
+
+    D2Hell::D2MEM_VirtualFree((LPVOID)param_1);
+}
+
 // Allocates a (nDim × nDim × (nSteps+1)) pointer table via D2MEM_VirtualAlloc and fills it with pointers into gPaletteTransitionTable for each interpolated palette entry. Used to build lighting/palette blend lookup tables for the game view renderer. Returns the base pointer of the allocated table.
 uint8_t * * __stdcall VIEW_AllocPalettePointerTable(uint32_t nDim, uint32_t nSteps) {
     uint8_t** pWrite;
@@ -237,6 +247,14 @@ uint8_t * * __stdcall VIEW_AllocPalettePointerTable(uint32_t nDim, uint32_t nSte
     return pTable;
 }
 
+void __fastcall Unreferenced_00475d20(int param_1) {
+    if (!param_1) {
+      return;
+    }
+
+    D2Hell::D2MEM_VirtualFree((LPVOID)param_1);
+}
+
 uint8_t * * __stdcall VIEW_AllocPalettePointerTable2(uint32_t nDim, int32_t nSteps) {
     int nStepLeft;
     uint8_t** pWrite;
@@ -270,6 +288,14 @@ uint8_t * * __stdcall VIEW_AllocPalettePointerTable2(uint32_t nDim, int32_t nSte
     }
 
     return pTable;
+}
+
+void __fastcall Unreferenced_00475de0(int param_1) {
+    if (!param_1) {
+      return;
+    }
+
+    D2Hell::D2MEM_VirtualFree((LPVOID)param_1);
 }
 
 void __stdcall VIEW_InitLookupTables() {
@@ -907,8 +933,6 @@ D2GameViewStrc * __stdcall AllocGameView() {
 // @wasnamed Draw_AnythingInTheWorldNonUI
 // Already-documented — existing description is detailed and accurate (6-layer world rendering pipeline: background FX, underfloor, floor tiles, shadows, units, roofs/weather; handles perspective scale, lightmap updates, level-specific FX for Arcane Sanctuary and Arreat Summit).
 void __fastcall ViewDraw2(D2GameViewStrc * pGameView) {
-    // Static local variables (originally global data)
-    static uint32_t gnFrameDrawCounter; D2_STATIC_GUARD_BSS(gnFrameDrawCounter, "D2Client::GAME::View::ViewDraw2::gnFrameDrawCounter");
     // [d2boot] issue #26 D3D perspective-toggle death triage: 0 = no
     // perspective frame seen yet, 1 = enter mark written, 2 = drawn mark
     // written. A death with "enter" but no "drawn" pins the fault inside the

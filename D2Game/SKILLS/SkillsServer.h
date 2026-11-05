@@ -63,6 +63,10 @@ typedef int (__fastcall *pfnSkillNoTargetCb)(struct D2SkillCallbackContextStrc *
 #define RECON_FPTD_pfnSkillRangeCb
 typedef void (__fastcall *pfnSkillRangeCb)(struct D2UnitStrc * pUnit, void * pCtx);
 #endif
+#ifndef RECON_FPTD_pfnUIMenuInstance
+#define RECON_FPTD_pfnUIMenuInstance
+typedef void (__stdcall *pfnUIMenuInstance)();
+#endif
 
 // Data types
 struct D2AreaHitNearestCtx {
@@ -284,6 +288,7 @@ void __fastcall ClearSkills(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __thiscall SKILL_ApplyStunState(void * pThis, struct D2UnitStrc * pUnit, eD2States eState);
 void __fastcall SKILL_StunExpireAndRestoreAi(struct D2UnitStrc * pUnit, eD2States eState, uint32_t pStatListEx);
 struct D2UnitStrc * __fastcall SKILL_CreateTimedAuraStatList(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTargetUnit, eD2States eState, eD2Skills eSkill, int32_t nSkillLvl);
+void __fastcall MAINMENU_ShowPopupWithCancel_Unref_005c6cb0(uint16_t * wszText, pfnUIMenuInstance pfnMenuInstance);
 // 8 internal functions (defined in .cpp)
 
 } // namespace D2Game::SKILLS::SkillsServer

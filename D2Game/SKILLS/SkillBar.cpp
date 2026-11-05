@@ -10,7 +10,6 @@
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/SKILLS.h"
 #include "D2Client/SKILLS/Skills.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
@@ -56,6 +55,7 @@
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerModes.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/SKILLS/SkillAss.h"
 #include "D2Game/SKILLS/SkillDruid.h"
 #include "D2Game/SKILLS/SkillNec.h"
@@ -174,13 +174,11 @@ BOOL __fastcall SKILLBAR_SrvStFn33_TargetRevivableCorpse(::SGAMEDATA * pGame, D2
     }
 
     uint32_t bCanRevive = D2Common::Skills::SKILLS_IsCorpseValidForRevive(pUnit_00);
-    if (!bCanRevive) {
-      return bCanRevive;
-    }
-
-    BOOL eUnitState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit_00, STATE_corpse_noselect);
-    if (eUnitState) {
-      return 0;
+    if (bCanRevive) {
+      BOOL eUnitState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit_00, STATE_corpse_noselect);
+      if (eUnitState) {
+        return 0;
+      }
     }
 
     return bCanRevive;
@@ -605,7 +603,7 @@ BOOL __fastcall Skills_SrvDoFunc_075_GrimWard(::SGAMEDATA * pGame, D2UnitStrc * 
       return 0;
     }
 
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, sTargetPos.x, sTargetPos.y);
+    pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, sTargetPos.x, sTargetPos.y);
     if (!pRoom) {
       return 0;
     }
@@ -784,17 +782,16 @@ BOOL __fastcall Skills_SrvDoFunc_009_FrenzyMeleeHit(::SGAMEDATA * pGame, D2UnitS
       PLAYER::PlayerModes::PLRMODES_CheckWeaponQuantityAndDurability(pGame, pUnit);
       PLAYER::PlayerModes::PLRMODES_BreakZeroDurabilityWeapons(pGame, pUnit);
       SKILLBAR_ApplyFrenzyStack(pGame, pUnit, eSkill, nSkillLvl);
-      bHitResult = SKILLBAR_SkillMeleeAttack(pGame, pUnit, pTarget, eSkill, nSkillLvl);
-      return bHitResult;
+    } else {
+      pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
+      UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit, pTarget, 0);
+      PLAYER::PlayerModes::PLRMODES_CheckWeaponQuantityAndDurability(pGame, pUnit);
+      PLAYER::PlayerModes::PLRMODES_BreakZeroDurabilityWeapons(pGame, pUnit);
+      SKILLBAR_ApplyFrenzyStack(pGame, pUnit, eSkill, nSkillLvl);
+      nMeleeRange = SkillsServer::GetMeleeRangePlusFour(pUnit);
+      pTarget = SkillsServer::SKILLS_FindNextUnitInAreaByGUID(pGame, pUnit, 0, 0, nMeleeRange, 0x20003, pTarget->nUnitGUID, nullptr);
     }
 
-    pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
-    UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit, pTarget, 0);
-    PLAYER::PlayerModes::PLRMODES_CheckWeaponQuantityAndDurability(pGame, pUnit);
-    PLAYER::PlayerModes::PLRMODES_BreakZeroDurabilityWeapons(pGame, pUnit);
-    SKILLBAR_ApplyFrenzyStack(pGame, pUnit, eSkill, nSkillLvl);
-    nMeleeRange = SkillsServer::GetMeleeRangePlusFour(pUnit);
-    pTarget = SkillsServer::SKILLS_FindNextUnitInAreaByGUID(pGame, pUnit, 0, 0, nMeleeRange, 0x20003, pTarget->nUnitGUID, nullptr);
     bHitResult = SKILLBAR_SkillMeleeAttack(pGame, pUnit, pTarget, eSkill, nSkillLvl);
     return bHitResult;
 }
@@ -866,7 +863,7 @@ BOOL __fastcall SKILLBAR_SrvStFn38_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc * p
       return 0;
     }
 
-    pNearbyTarget = (D2UnitStrc*)((eUnitType == UNIT_PLAYER ? -8184 : 0) + 0x3c01);
+    pNearbyTarget = (D2UnitStrc*)(eUnitType == UNIT_PLAYER ? 0x1c09 : 0x3c01);
     D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pDynPath, 0xc01);
     D2Common::PATH::DynamicPath::PATH_SetPathType(pDynPath, 7);
     uint32_t bPathOk = D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynPath, pUnit, 0);
@@ -889,7 +886,7 @@ BOOL __fastcall SKILLBAR_SrvStFn38_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc * p
 
     nTargetX = (uint32_t)pPathPoints[nCalcResult - 1].nX;
     nTargetY = (uint32_t)pPathPoints[nCalcResult - 1].nY;
-    int eCollisionFlag = (eUnitType == UNIT_PLAYER ? -128 : 0) + 0x100;
+    int eCollisionFlag = eUnitType == UNIT_PLAYER ? 0x80 : 0x100;
     eD2CollisionShapeType nType = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
     uint32_t nCollideX = nTargetX;
     uint32_t nCollideY = nTargetY;
@@ -1036,13 +1033,13 @@ void __fastcall SKILL_DeactivateAndRestoreCollision(::SGAMEDATA * pGameStrc, D2U
     }
 
     bool bIsPlayerUnit = pUnit->eUnitType == UNIT_PLAYER;
-    int eCollisionFlag = (bIsPlayerUnit ? -128 : 0) + 0x100;
+    int eCollisionFlag = bIsPlayerUnit ? 0x80 : 0x100;
     if (nCollideX && nCollideY) {
       D2Common::Collision::RemoveCollision_Type(D2Common::Units::UNITS_GetRoom(pUnit), nCollideX, nCollideY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), eCollisionFlag);
     }
 
     D2Common::PATH::DynamicPath::PATH_ChangeCollisionType(pDynamicPath, eCollisionFlag);
-    D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pDynamicPath, (bIsPlayerUnit ? -8184 : 0) + 0x3c01);
+    D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pDynamicPath, bIsPlayerUnit ? 0x1c09 : 0x3c01);
     D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (!pSkillsTxt) {
       return;
@@ -1310,14 +1307,12 @@ static BOOL __stdcall SKILLBAR_FindValidLeapTarget(D2UnitStrc * pUnit, int32_t n
     do {
       LONG nY;
       LVar1 = sCandidatePos.y;
-      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-      pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, sCandidatePos.x, LVar1);
+      pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), sCandidatePos.x, LVar1);
       pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &sCandidatePos, D2Common::Units::GetUnitSizeX(pUnit), 0x1c09, 1);
       nY = sCandidatePos.y;
       LVar1 = sCandidatePos.x;
       if (pRoom) {
-        nRange = 0x1c09;
-        nRange = D2Common::Collision::CheckCollision_BlockPlayer_Type(pRoom, LVar1, nY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), nRange);
+        nRange = D2Common::Collision::CheckCollision_BlockPlayer_Type(pRoom, LVar1, nY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), 0x1c09);
         if (!nRange) {
           bHasLOS = D2Common::Skills::SKILLS_HasLineOfSight(nSrcX, nSrcY, LVar1, nY, pRoom, 0x804);
           if (bHasLOS) {
@@ -1380,7 +1375,7 @@ static BOOL __stdcall SKILLBAR_CanTargetPosition(D2UnitStrc * pUnit, int32_t nX,
       return 0;
     }
 
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nY);
+    pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nY);
     if (!pRoom) {
       return 0;
     }
@@ -1486,8 +1481,7 @@ BOOL __fastcall SKILLBAR_SrvStFn40_Leap(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     }
 
     uint32_t nDestYSaved = nDestY;
-    pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, eSkill, nDestYSaved);
+    pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), eSkill, nDestYSaved);
     D2Common::Collision::AddCollision_Type(pRoom, eSkill, nDestY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), 0x80);
     UNIT::SUnit::SetUninterruptableState(pUnit, 1);
     D2Common::DATATBLS::ItemStats::SetState(pUnit, STATE_skill_move, 1);
@@ -1571,9 +1565,7 @@ static BOOL __stdcall SKILLBAR_CalculateChargePath(::SGAMEDATA * pGame, int32_t 
     int nX = nPosX * 3 + nTargetUnitCoord * -2;
     nTargetUnitCoord = D2Client::Units::GetYPosFromDynamicPathUnit(pTarget);
     int nOvershootY = nPosY * 3 + nTargetUnitCoord * -2;
-    int nY = nOvershootY;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nY);
+    D2RoomStrc* pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nX, nOvershootY);
     if (pRoom) {
       BOOL bIsInTown;
       bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);

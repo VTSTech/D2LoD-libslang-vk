@@ -6,7 +6,6 @@
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/RosterPets.h"
 #include "D2Client/Stats.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
@@ -53,6 +52,7 @@
 #include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/Monsters/Spawn.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
 #include "D2Game/SKILLS/SkillAss.h"
 #include "D2Game/SKILLS/SkillDruid.h"
@@ -217,8 +217,8 @@ BOOL __fastcall Skills_SrvDoFunc_126_ImpInferno(::SGAMEDATA * pGame, D2UnitStrc 
       sSkillArg.nUnitY = D2Common::PATH::DynamicPath::GetYSP1(pUnit->pPath.pDynamicPath);
       pUnit_00 = MISSILES::Missiles::CreatingMissile(pGame, &sSkillArg);
       if (pUnit_00) {
-        nCalcResult = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillRecord->calc[1], eSkill, nSkillLvl);
-        nVelTmp = nCalcResult + pMissileRecord->Param2;
+        nVelTmp = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillRecord->calc[1], eSkill, nSkillLvl);
+        nVelTmp += pMissileRecord->Param2;
         D2Common::PATH::DynamicPath::OverwriteDistanceAndMaxDistance(pUnit_00->pPath.pDynamicPath, (uint8_t)nVelTmp);
         D2Common::Units::Missile::SetTotalFrames(pUnit_00, nVelTmp);
         D2Common::Units::Missile::SetCurrentFrame(pUnit_00, nVelTmp);
@@ -288,7 +288,6 @@ BOOL __fastcall Skills_SrvDoFunc_127_SuckBlood(::SGAMEDATA * pGame, D2UnitStrc *
     int nDmgHp;
     int32_t nHealAmount;
     D2UnitStrc* pOwner;
-    uint32_t nDivisor;
     D2SkillsTxt* pSkillTable = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (!pSkillTable) {
       return 0;
@@ -324,9 +323,7 @@ BOOL __fastcall Skills_SrvDoFunc_127_SuckBlood(::SGAMEDATA * pGame, D2UnitStrc *
         nDmgHp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pTargetUnit, UNITSTAT_hitpoints, 0);
       }
 
-      nDivisor = 100;
-      nHealAmount = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTable->calc[0], eSkill, nSkillLvl);
-      nHealAmount = D2Client::Stats::D2ApplyPercent(nDmgHp, nHealAmount, nDivisor);
+      nHealAmount = D2Client::Stats::D2ApplyPercent(nDmgHp, D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTable->calc[0], eSkill, nSkillLvl), 100);
       nCurHp += nHealAmount;
       nDmgHp = 1;
       if (nCurHp >= 1) {
@@ -759,7 +756,6 @@ BOOL __fastcall SKILLSOR_GetFrozenOrbBoltCount(D2UnitStrc * pUnitStrc, D2UnitStr
 
 void __fastcall SKILLEMONST_OnDeathSpawnExpire(D2UnitStrc * pUnit, eD2States eState, int32_t nStatListParam) {
     D2SkillsTxt* pSkillRecord;
-    char cSummonMode;
     short int sSummonId;
     D2Common::DATATBLS::ItemStats::SetState(pUnit, eState, 0);
     int nSummonMonStatsId = 0x227;
@@ -773,10 +769,8 @@ void __fastcall SKILLEMONST_OnDeathSpawnExpire(D2UnitStrc * pUnit, eD2States eSt
         if (sSummonId > 0 && (int)sSummonId < sgptDataTable->nTxtMonStatsSize) {
           nSummonMonStatsId = (int)sSummonId;
         }
-
-        cSummonMode = pSkillRecord->summode;
-        if (cSummonMode >= 0 && cSummonMode < '\x10') {
-          eSpawnAnimMode = (eD2MonsterAnimMode)cSummonMode;
+        if (pSkillRecord->summode >= 0 && pSkillRecord->summode < '\x10') {
+          eSpawnAnimMode = (eD2MonsterAnimMode)pSkillRecord->summode;
         }
       }
     }
@@ -883,9 +877,7 @@ BOOL __fastcall Skills_SrvDoFunc_135_SpawnMinionFromParams(::SGAMEDATA * pGame, 
     int32_t nX = D2Common::Skills::SKILL_GetParam2(pSkill);
     int32_t nY = D2Common::Skills::SKILL_GetParam3(pSkill);
     eD2MonsterAnimMode eSpawnAnimMode = D2Common::Skills::SKILL_GetParam4(pSkill);
-    int32_t nYCopy = nY;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nYCopy);
+    D2RoomStrc* pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nX, nY);
     if (!pRoom) {
       return 0;
     }
@@ -1142,6 +1134,20 @@ BOOL __fastcall Skills_SrvDoFunc_147_ReturnToOwner(::SGAMEDATA * pGame, D2UnitSt
     return 1;
 }
 
+int Unreferenced_005d2b40() {
+    D2UnitStrc* unaff_EDI;
+    D2StatListExStrc* pStatListEx = D2Common::Stats::StatsEx::GetStatsByState(unaff_EDI, STATE_blood_mana);
+    int iVar1 = 0;
+    if (pStatListEx) {
+      int extraout_EAX;
+      D2Common::Stats::StatsEx::STATLIST_RemoveAndRecalc(unaff_EDI, pStatListEx);
+      D2Common::Stats::StatsEx::FreeStatList(&pStatListEx->sStatList);
+      iVar1 = extraout_EAX;
+    }
+
+    return iVar1;
+}
+
 // Applies a Blood Mana HP cost of nParam to pUnit. If HP is sufficient, deducts it and removes the STATE_blood_mana stat list when remaining HP falls below the skill's Param[4] threshold (in fixed-point). If HP is insufficient, forces HP to 0x100 (minimum alive) and removes the stat list.
 void __fastcall SKILLEMONST_ProcessBloodMana(D2UnitStrc * pUnit, int32_t nHpCost) {
     D2SkillsTxt* pSkillRecord;
@@ -1259,11 +1265,10 @@ BOOL __fastcall Skills_SrvDoFunc_140_BaalTentacle(::SGAMEDATA * pGame, D2UnitStr
       pUnit->sSeed = sNewSeed;
       nSpawnYOffset = sNewSeed.nSeedLow % 0x12 - 9 + nSpawnY;
       nOffsetY = nSpawnYOffset;
-      pSpawnRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-      pSpawnRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pSpawnRoom, nOffsetX, nSpawnYOffset);
+      pSpawnRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nOffsetX, nSpawnYOffset);
       if (pSpawnRoom) {
         nSpawnYOffset = nOffsetY;
-        D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nOffsetX, nSpawnYOffset);
+        D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nOffsetX, nSpawnYOffset);
         pSpawnedMinion = Monster::Create::SpawnMonsterAtRoomPos(pGameLocal, pSpawnRoom, nOffsetX, nOffsetY, nMonStatsId, eSpawnAnimMode, -1, 0);
         if (pSpawnedMinion) {
           pSpawnedMinion->eUnitFlags |= UNITFLAG_NOXP | UNITFLAG_NOTC;

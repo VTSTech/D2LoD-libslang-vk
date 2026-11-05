@@ -376,22 +376,22 @@ int __thiscall OnUpArrow(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMs
     if (!pThis->pfnOnItemActivated) {
       pThis->nSelectedIndex = pThis->nFirstVisibleIndex;
     }
-    if (pThis->nSelectedIndex <= 0) {
+    if (pThis->nSelectedIndex > 0) {
+      pThis->nSelectedIndex--;
+      Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
+      int nSelIdx = pThis->nSelectedIndex;
+      if (nSelIdx < pThis->nFirstVisibleIndex) {
+        pThis->nFirstVisibleIndex = nSelIdx;
+      }
+      if (nSelIdx >= pThis->nVisibleRows + pThis->nFirstVisibleIndex) {
+        pThis->nFirstVisibleIndex++;
+        return 1;
+      }
+
+      return 1;
+    } else {
       return 1;
     }
-
-    pThis->nSelectedIndex--;
-    Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
-    int nSelIdx = pThis->nSelectedIndex;
-    if (nSelIdx < pThis->nFirstVisibleIndex) {
-      pThis->nFirstVisibleIndex = nSelIdx;
-    }
-    if (nSelIdx >= pThis->nVisibleRows + pThis->nFirstVisibleIndex) {
-      pThis->nFirstVisibleIndex++;
-      return 1;
-    }
-
-    return 1;
 }
 
 int __thiscall OnDownArrow(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
@@ -876,11 +876,10 @@ int __thiscall OnMouseUp(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMs
     // VP: [resolution site-5] wide modes use the 800x600 list metrics
     if (VPRES_IsWideLayoutMode(dwResMode)) {
       pThis->nScrollTrackSegments = bTallRows ? 0x1c : 0x12;
-      ExceptionList = pPrevExceptionList;
-      return pThis;
+    } else {
+      pThis->nScrollTrackSegments = 0x12;
     }
 
-    pThis->nScrollTrackSegments = 0x12;
     ExceptionList = pPrevExceptionList;
     return pThis;
 }
@@ -892,6 +891,30 @@ int __thiscall OnMouseUp(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMs
     }
 
     return pThis;
+}
+
+int __thiscall OnRightArrow_Unref_0052e090(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+    return 0;
+}
+
+int __thiscall OnRightArrow_Unref_0063c4b0(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+    return 0;
+}
+
+int __thiscall OnRightArrow_Unref_0063e060(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+    return 0;
+}
+
+int __thiscall OnRightArrow_Unref_00645030(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+    return 0;
+}
+
+int __thiscall OnRightArrow_Unref_00645ff0(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+    return 0;
+}
+
+int __thiscall OnRightArrow_Unref_00646000(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+    return 0;
 }
 
 } // namespace D2Client::UI::ListBox::ListBoxImplementation

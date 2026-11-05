@@ -3,7 +3,6 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/DataTbls/MonsterTbls.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
@@ -31,6 +30,7 @@
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/D2PathTypeArg.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -338,7 +338,7 @@ static int32_t PATH_GetCollisionPatternFromMonStats(D2UnitStrc * pUnit) {
       return 0x1804;
     }
 
-    return (*((uint8_t*)pMonStatsTxt + 0xc) & (uint8_t)gadwBitMasks[3] ? -2048 : 0) + 0x3c01;
+    return *((uint8_t*)pMonStatsTxt + 0xc) & (uint8_t)gadwBitMasks[3] ? 0x3401 : 0x3c01;
 }
 
 int32_t __stdcall PATH_GetDynamicPathField(int32_t nMonStatsIdx) {
@@ -444,11 +444,10 @@ void __stdcall PATH_InterpolateDirection(D2DynamicPathStrc * pDynamicPath) {
       return;
     }
 
-    uint8_t bDiffDir = pDynamicPath->nDiffDirection;
-    uint8_t bCurDir = bDiffDir + pDynamicPath->nDirection & 0x3f;
+    uint8_t bCurDir = pDynamicPath->nDiffDirection + pDynamicPath->nDirection & 0x3f;
     pDynamicPath->nDirection = bCurDir;
     bCurDir = bCurDir - pDynamicPath->nNewDirection & 0x3f;
-    if (!(bCurDir > 0x1f && bDiffDir > 0x3f || bCurDir < 0x1f && bDiffDir < 0x3f)) {
+    if (!(bCurDir > 0x1f && pDynamicPath->nDiffDirection > 0x3f || bCurDir < 0x1f && pDynamicPath->nDiffDirection < 0x3f)) {
       return;
     }
 
@@ -1072,11 +1071,10 @@ void __stdcall PATH_SetOrClearFlag0x2000(D2DynamicPathStrc * pDynamicPath, int32
     }
     if (bSet) {
       pDynamicPath->PathPoints[0xb] = (D2PathPointStrc)((uint32_t)d2_bits_of(pDynamicPath->PathPoints[0xb]) | 0x2000);
-      pServerPath->nSavedPathPoints = 0;
-      return;
+    } else {
+      pDynamicPath->PathPoints[0xb] = (D2PathPointStrc)((uint32_t)d2_bits_of(pDynamicPath->PathPoints[0xb]) & -8193);
     }
 
-    pDynamicPath->PathPoints[0xb] = (D2PathPointStrc)((uint32_t)d2_bits_of(pDynamicPath->PathPoints[0xb]) & -8193);
     pServerPath->nSavedPathPoints = 0;
 }
 
@@ -1404,25 +1402,33 @@ BOOL __stdcall PATH_RemoveUnitCollision(D2UnitStrc * pUnit, int32_t bForce) {
 static int32_t PATH_CalculateMissilePath(D2DynamicPathStrc * pDynamicPath, int32_t pUnit) {
     uint32_t nPathPoints;
     int ePathType = pDynamicPath->ePathType;
-    if (ePathType != 4) {
-      if (ePathType != 10) {
-        if (ePathType != 0xe) {
+    switch (ePathType) {
+      case 4:
+        {
+          nPathPoints = PATH_BuildDirectPathToTarget(pDynamicPath);
+          if (!nPathPoints) {
+            pDynamicPath->nFlags &= -33;
+            return 0;
+          }
+
+          break;
+        }
+      case 10:
+        {
+          Drlg::Path::DRLGPATH_BuildRandomizedPathPoints(pDynamicPath, (D2SeedStrc*)(pUnit + 0x20));
+          break;
+        }
+      case 0xe:
+        {
+          Drlg::Path::DRLGPATH_BuildCircularPathPoints(pDynamicPath);
+          pDynamicPath->nFlags |= 0x20;
+          return pDynamicPath->dwPathPoints;
+        }
+      default:
+        {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x207);
           exit(-1);
         }
-
-        Drlg::Path::DRLGPATH_BuildCircularPathPoints(pDynamicPath);
-        pDynamicPath->nFlags |= 0x20;
-        return pDynamicPath->dwPathPoints;
-      }
-
-      Drlg::Path::DRLGPATH_BuildRandomizedPathPoints(pDynamicPath, (D2SeedStrc*)(pUnit + 0x20));
-    } else {
-      nPathPoints = PATH_BuildDirectPathToTarget(pDynamicPath);
-      if (!nPathPoints) {
-        pDynamicPath->nFlags &= -33;
-        return 0;
-      }
     }
 
     pDynamicPath->nFlags |= 0x20;
@@ -1612,7 +1618,7 @@ uint32_t __stdcall PATH_CalculatePath(D2DynamicPathStrc * pDynamicPath, D2UnitSt
           bCanPath = ((uint32_t)*(uint32_t*)((char*)&sPathTypeArg.pCoords + 4) >> 0x10) - (uint32_t)(uint16_t)sPathTypeArg.pCoords.nPosX;
           if (nDeltaX <= 0x64 && (nDeltaX == -100 || -nDeltaX < 100 && bCanPath <= 0x64) && (bCanPath == -100 || -bCanPath < 100)) {
             sPathTypeArg.pRoom = pDynamicPath_00->pRoom;
-            sPathTypeArg.pRoomNext = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(sPathTypeArg.pRoom, (uint16_t)*(uint32_t*)((char*)&sPathTypeArg.pCoords + 4), (uint32_t)*(uint32_t*)((char*)&sPathTypeArg.pCoords + 4) >> 0x10);
+            sPathTypeArg.pRoomNext = Collision::DRLGROOM_FindBetterNearbyRoom(sPathTypeArg.pRoom, (uint16_t)*(uint32_t*)((char*)&sPathTypeArg.pCoords + 4), (uint32_t)*(uint32_t*)((char*)&sPathTypeArg.pCoords + 4) >> 0x10);
             if (sPathTypeArg.pRoom && sPathTypeArg.pRoomNext) {
               nResult = Path::PATH_CanMonsterPathInArea(pUnit, (uint16_t*)&sPathTypeArg);
               if (nResult || bIgnoreAreaCheck) {
@@ -1846,14 +1852,14 @@ void __stdcall PATH_SetCorpseCollision(D2UnitStrc * pUnit, int32_t bServer) {
       pUnit->pPath.pDynamicPath->nUnitWidth = 5;
       PATH_ChangeCollisionType(pDynamicPath, 0x8000);
       PATH_AddUnitCollision(pUnit);
-      Path::PATH_SnapPositionToTile(pDynamicPath);
-      return;
-    }
-    if (pDynamicPath) {
-      PATH_RemoveUnitCollision(pUnit, 1);
+    } else {
+      if (pDynamicPath) {
+        PATH_RemoveUnitCollision(pUnit, 1);
+      }
+
+      Collision::AddCollision_Vector(pDynamicPath->pRoom, (uint32_t)(uint16_t)pDynamicPath->Coords.tSubtile.nPosX, (uint32_t)(uint16_t)pDynamicPath->Coords.tSubtile.nPosY, 3, 3, 0x8000);
     }
 
-    Collision::AddCollision_Vector(pDynamicPath->pRoom, (uint32_t)(uint16_t)pDynamicPath->Coords.tSubtile.nPosX, (uint32_t)(uint16_t)pDynamicPath->Coords.tSubtile.nPosY, 3, 3, 0x8000);
     Path::PATH_SnapPositionToTile(pDynamicPath);
 }
 

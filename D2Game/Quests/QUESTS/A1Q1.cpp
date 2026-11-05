@@ -262,6 +262,7 @@ void __fastcall Q01_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     D2BOOT_MarkFmt("quest: akara activate classId=0x%04x rewardAwaits=%d completed=%d justCompleted=%d stateFlag=%u introduced=%d", (unsigned)iTargetClassId & 0xffff, (int)bRewardAwaits, (int)bQuestCompleted, (int)bQuestJustCompleted, (unsigned)pQuestData->nStateFlag, (int)pQuestData->bIsNotIntroduction);
     if (bRewardAwaits) {
       nMessageIndex = 3;
+      AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, iTargetClassId, nMessageIndex);
     } else {
       int32_t nPlayerId = !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID;
       bRewardAwaits = QUEST_HasPlayerParticipated(pQuestData, nPlayerId);
@@ -287,11 +288,11 @@ void __fastcall Q01_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (nMessageIndex >= 8) {
         return;
       }
-    }
 
-    // [d2boot][R53] the gossip line the server picked (3 = "return for reward")
-    D2BOOT_MarkFmt("quest: akara activate -> gossip line %u", (unsigned)nMessageIndex);
-    AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, iTargetClassId, nMessageIndex);
+      // [d2boot][R53] the gossip line the server picked (3 = "return for reward")
+      D2BOOT_MarkFmt("quest: akara activate -> gossip line %u", (unsigned)nMessageIndex);
+      AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, iTargetClassId, nMessageIndex);
+    }
 }
 
 // A1Q1 (Den of Evil) -- per-player "you missed the completion" marker (Q01_SetCannotCompleteInGame), an IteratePlayerOrMonsterUnits callback run when the Den is cleared. For each player whose QUEST_DenOfEvil record is neither Completed nor RewardAwaits (i.e. they were not present/credited for the kill), it sets QUESTSTATE_CannotCompleteQuestInGame so this player can no longer get the reward in this game, then pushes the updated quest state/info to that client.
@@ -380,12 +381,7 @@ uint32_t __fastcall GetDenMonstersLeftToKillCount(D2QuestDataStrc * pQuestData) 
 void __fastcall Q01_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     int32_t nPlayerGUID = !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID;
     QUESTGUID_RemovePlayerFromList(&pQuestData->sQuestGUID, nPlayerGUID);
-    if (!pQuestArgs->pPlayer) {
-      QUESTGUID_RemovePlayerFromList(&pQuestData->pQuestSpecificData.pA1Q1->sQuestGUID, -1);
-      return;
-    }
-
-    QUESTGUID_RemovePlayerFromList(&pQuestData->pQuestSpecificData.pA1Q1->sQuestGUID, pQuestArgs->pPlayer->nUnitGUID);
+    QUESTGUID_RemovePlayerFromList(&pQuestData->pQuestSpecificData.pA1Q1->sQuestGUID, !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID);
 }
 
 // A1Q1 (Den of Evil) -- deferred-completion timer callback (Q01_TimerNotifyCompletion), armed by Q01_Callback_08 after the Den is cleared. When it fires, if the server quest flag is still 4 ("just cleared"), it broadcasts the final completion state 5 via QUEST_SetStateAndBroadcast(MarkCompleteQuest). Clears bNotifiedCompletion and returns 1 (timer done).

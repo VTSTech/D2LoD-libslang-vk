@@ -127,6 +127,10 @@ uint16_t gwcIMECompositionString[32] = {}; D2_GLOBAL_GUARD(gwcIMECompositionStri
 
 namespace D2Client::UI::Chat {
 
+void __stdcall CHAT_InitEmpty_Unref_00477970() {
+
+}
+
 // @sourcefile .\UI\chat.cpp
 static void CHAT_HandleIMECandidateList(HIMC hImc) {
     DWORD dwListCount;
@@ -259,7 +263,7 @@ void __stdcall INPUT_HandleIMENotify(D2UIMouseMsgStrc * pMsg) {
           }
         /* DWORD idThread for GetKeyboardLayout */ hKbLayout = GetKeyboardLayout(0);
         /* HKL param_1 for ImmIsIME */ bImeStatus = ImmIsIME(hKbLayout);
-        gnIMEInputMode = (bImeStatus ? -4 : 0) + 4;
+        gnIMEInputMode = bImeStatus ? 0 : 4;
         break;
       }
 
@@ -608,7 +612,6 @@ void __stdcall DRAW_UI_ChatInput() {
     D2TextLineStrc* pWrapList;
     uint16_t wszModeLabel[20];
     int nLineIdx;
-    int nPosY;
     D2TextLineStrc* pWrapNext;
     int32_t nPrevFont;
     nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(0xd);
@@ -688,8 +691,7 @@ void __stdcall DRAW_UI_ChatInput() {
 
           pWrapNext = pWrapLine->pNext;
           if (!pWrapNext && gbChatInputEnabled && gaChatInputBuffer != '\0') {
-            nPosY = i - 0x58 + ScreenSizeY;
-            CHAT_DrawIMEComposition(D2Win::Src::D2WinFont::DRAW_text0(pWrapLine->wszLine) + 0x83, nPosY);
+            CHAT_DrawIMEComposition(D2Win::Src::D2WinFont::DRAW_text0(pWrapLine->wszLine) + 0x83, i - 0x58 + ScreenSizeY);
           }
 
           nLineIdx++;
@@ -806,7 +808,7 @@ BOOL __stdcall CHAT_ParseCommand(char * * ppszText, uint8_t * pbCommandType, cha
         /* .bAllowedInSinglePlayer = */ 0x1
     },
     {
-        /* .pszCommand = */ (char*)0x006d727c,
+        /* .pszCommand = */ s___006d727c,
         /* .nCommandType = */ 0x2,
         /* .bTakesParameter = */ 0x1,
         /* .bAllowedInSinglePlayer = */ 0x0
@@ -1498,69 +1500,75 @@ void __stdcall INPUT_HandleChatCharInput(D2UIMouseMsgStrc * pMsg) {
     nSavedLength = nTextLength;
     if (nLineWidth != 8) {
       D2TextLineStrc* pDVar1;
-      if (nLineWidth != 0xd) {
-        if (nLineWidth != 0x1b) {
-          if ((gbChatInputEnabled || (bIsValidChar = D2Win::Src::D2WinFont::D2WINFONT_IsFontCharacterValid((uint8_t)nLineWidth) , bIsValidChar != 0)) && gnChatInputTextCursorPosition < 0xff && nTextLength < 0xff) {
-            nSavedFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(0xd);
-            pWrapList = D2Win::Src::D2WinFont::D2WINFONT_WordWrapString(gwszChatInputText, (int*)&nWrapLineCount, ScreenSizeX - 0x109);
-            nLineWidth = 0;
-            pDVar1 = pWrapList;
-            while (pDVar1) {
-              ppWVar2 = &pDVar1->wszLine;
-              pDVar1 = pDVar1->pNext;
-              nLineWidth = D2Win::Src::D2WinFont::DRAW_text0(*ppWVar2);
-              nTextLength = nSavedLength;
+      switch (nLineWidth) {
+        case 0xd:
+          {
+            nScanIdx = 0;
+            while (true) {
+              if ((uint16_t)gwszChatInputText[nScanIdx] >= 0x100) {
+                break;
+              }
+
+              nLineWidth = isspace((uint32_t)(uint16_t)gwszChatInputText[nScanIdx]);
+              if (!nLineWidth) {
+                break;
+              }
+
+              nScanIdx++;
             }
 
-            D2Win::Src::D2WinFont::D2WINFONT_FreeWordWrapList((void**)&pWrapList->wszLine);
-            if (nWrapLineCount <= 3 && (nWrapLineCount != 3 || nLineWidth <= ScreenSizeX - 0x113)) {
-              nLineWidth = ScreenSizeX - 0x109;
-              gwszChatInputText[nTextLength] = *(uint16_t*)&pMsg->nWParam;
-              pWrapList = D2Win::Src::D2WinFont::D2WINFONT_WordWrapString(gwszChatInputText, (int*)&nWrapLineCount, nLineWidth);
+            nTrimmedLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(gwszChatInputText + nScanIdx);
+            if (nTrimmedLen) {
+              CHAT_AddToHistory(gwszChatInputText + nScanIdx);
+              /* LPBOOL lpUsedDefaultChar for WideCharToMultiByte */ /* LPCSTR lpDefaultChar for WideCharToMultiByte */ /* int cbMultiByte for WideCharToMultiByte */ /* LPSTR lpMultiByteStr for WideCharToMultiByte */ /* int cchWideChar for WideCharToMultiByte */ /* LPCWSTR lpWideCharStr for WideCharToMultiByte */ /* DWORD dwFlags for WideCharToMultiByte */ /* UINT CodePage for WideCharToMultiByte */ WideCharToMultiByte(0, 0x250, (LPCWSTR)gwszChatInputText, -1, szMultiByteText, 0x100, (LPCSTR)0x0, (LPBOOL)0x0);
+              ChatCommandProcessor(gwszChatInputText, szMultiByteText, nScanIdx);
+              goto consume_message;
+            }
+          }
+        case 0x1b:
+          {
+            ui::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
+            break;
+          }
+        default:
+          {
+            if ((gbChatInputEnabled || (bIsValidChar = D2Win::Src::D2WinFont::D2WINFONT_IsFontCharacterValid((uint8_t)nLineWidth) , bIsValidChar != 0)) && gnChatInputTextCursorPosition < 0xff && nTextLength < 0xff) {
+              nSavedFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(0xd);
+              pWrapList = D2Win::Src::D2WinFont::D2WINFONT_WordWrapString(gwszChatInputText, (int*)&nWrapLineCount, ScreenSizeX - 0x109);
               nLineWidth = 0;
               pDVar1 = pWrapList;
               while (pDVar1) {
                 ppWVar2 = &pDVar1->wszLine;
                 pDVar1 = pDVar1->pNext;
                 nLineWidth = D2Win::Src::D2WinFont::DRAW_text0(*ppWVar2);
+                nTextLength = nSavedLength;
               }
 
               D2Win::Src::D2WinFont::D2WINFONT_FreeWordWrapList((void**)&pWrapList->wszLine);
-              if (nWrapLineCount != 3 || nLineWidth < ScreenSizeX - 0x113) {
-                gnChatInputTextCursorPosition++;
+              if (nWrapLineCount <= 3 && (nWrapLineCount != 3 || nLineWidth <= ScreenSizeX - 0x113)) {
+                nLineWidth = ScreenSizeX - 0x109;
+                gwszChatInputText[nTextLength] = *(uint16_t*)&pMsg->nWParam;
+                pWrapList = D2Win::Src::D2WinFont::D2WINFONT_WordWrapString(gwszChatInputText, (int*)&nWrapLineCount, nLineWidth);
+                nLineWidth = 0;
+                pDVar1 = pWrapList;
+                while (pDVar1) {
+                  ppWVar2 = &pDVar1->wszLine;
+                  pDVar1 = pDVar1->pNext;
+                  nLineWidth = D2Win::Src::D2WinFont::DRAW_text0(*ppWVar2);
+                }
+
+                D2Win::Src::D2WinFont::D2WINFONT_FreeWordWrapList((void**)&pWrapList->wszLine);
+                if (nWrapLineCount != 3 || nLineWidth < ScreenSizeX - 0x113) {
+                  gnChatInputTextCursorPosition++;
+                }
               }
+
+              D2Win::Src::D2WinFont::SetAndReturnLastFont(nSavedFont);
             }
 
-            D2Win::Src::D2WinFont::SetAndReturnLastFont(nSavedFont);
+            goto consume_message;
           }
-
-          goto consume_message;
-        }
-      } else {
-        nScanIdx = 0;
-        while (true) {
-          if ((uint16_t)gwszChatInputText[nScanIdx] >= 0x100) {
-            break;
-          }
-
-          nLineWidth = isspace((uint32_t)(uint16_t)gwszChatInputText[nScanIdx]);
-          if (!nLineWidth) {
-            break;
-          }
-
-          nScanIdx++;
-        }
-
-        nTrimmedLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(gwszChatInputText + nScanIdx);
-        if (nTrimmedLen) {
-          CHAT_AddToHistory(gwszChatInputText + nScanIdx);
-          /* LPBOOL lpUsedDefaultChar for WideCharToMultiByte */ /* LPCSTR lpDefaultChar for WideCharToMultiByte */ /* int cbMultiByte for WideCharToMultiByte */ /* LPSTR lpMultiByteStr for WideCharToMultiByte */ /* int cchWideChar for WideCharToMultiByte */ /* LPCWSTR lpWideCharStr for WideCharToMultiByte */ /* DWORD dwFlags for WideCharToMultiByte */ /* UINT CodePage for WideCharToMultiByte */ WideCharToMultiByte(0, 0x250, (LPCWSTR)gwszChatInputText, -1, szMultiByteText, 0x100, (LPCSTR)0x0, (LPBOOL)0x0);
-          ChatCommandProcessor(gwszChatInputText, szMultiByteText, nScanIdx);
-          goto consume_message;
-        }
       }
-
-      ui::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
     } else {
       if (gnChatInputTextCursorPosition > 0) {
         gnChatInputTextCursorPosition--;

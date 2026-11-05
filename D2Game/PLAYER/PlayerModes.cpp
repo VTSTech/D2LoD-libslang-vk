@@ -8,12 +8,12 @@
 #include "D2Client/GAME/RosterPets.h"
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/Stats.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Common/Chat.h"
+#include "D2Common/Collision.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2DynamicPathStrc.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -38,6 +38,7 @@
 #include "D2Common/Logging.h"
 #include "D2Common/Merc.h"
 #include "D2Common/PATH/DynamicPath.h"
+#include "D2Common/Seed.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Common/Unit.h"
@@ -84,6 +85,10 @@
 
 
 namespace D2Game::PLAYER::PlayerModes {
+
+int32_t __fastcall PLRMODES_ModeCallback_DeathDead_Unref_0053b210(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nArg1, int32_t nArg2) {
+    return 1;
+}
 
 int32_t __fastcall PLRMODES_HasAnimEventLastOrComing5Frames(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     BOOL nEndAnimFrame = GAME::Event::EVENT_TimerTypeExistsOnUnit(pGame, pUnit, UNITEVENTCALLBACK_ENDANIM);
@@ -187,14 +192,19 @@ static BOOL PLRMODES_CanInterruptCurrentMode(D2UnitStrc * pUnit, ::SGAMEDATA * p
     if (iVar1) {
       return 1;
     }
-    if (nNewMode == 4) {
-      return 1;
-    }
-    if (nNewMode != 9) {
-      return 0;
+
+    switch (nNewMode) {
+      case 4:
+        {
+          return 1;
+        }
+      case 9:
+        {
+          return 1;
+        }
     }
 
-    return 1;
+    return 0;
 }
 
 // Extern entry for hand-written callers: PLRMODES_CanInterruptCurrentMode itself keeps its unit's linkage.
@@ -236,11 +246,15 @@ int __fastcall PLRMODES_TryCancelModeAndMoveToLocation(::SGAMEDATA * pGame, D2Un
       return 1;
     }
     if (pSkill == pActiveSkill) {
-      if (pSkillTxt->srvdofunc == 0x43) {
-        return 1;
-      }
-      if (pSkillTxt->srvdofunc == 0x4c) {
-        return 1;
+      switch (pSkillTxt->srvdofunc) {
+        case 0x43:
+          {
+            return 1;
+          }
+        case 0x4c:
+          {
+            return 1;
+          }
       }
     }
     if (*((uint8_t*)pSkillTxt + 0x7) & (uint8_t)gadwBitMasks[7]) {
@@ -581,8 +595,7 @@ static void __stdcall PLRMODES_DropAllEquipmentAndGold(::SGAMEDATA * pGame, D2Un
         bAllowOnGround = 1;
         nGoldAmount = 1;
         pSpawnPos = &ptBestSpot;
-        pSpawnRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-        pSpawnRoom = ITEMS::Items::Drop::FindBestSpotToSpawnItem(pSpawnRoom, &ptUnitPos, pSpawnPos, nGoldAmount, bAllowOnGround);
+        pSpawnRoom = ITEMS::Items::Drop::FindBestSpotToSpawnItem(D2Common::Units::UNITS_GetRoom(pUnit), &ptUnitPos, pSpawnPos, nGoldAmount, bAllowOnGround);
         ITEMS::Items::Drop::DropItem(pGame, pUnit, pBodyLocItem, pSpawnRoom, ptBestSpot.x, ptBestSpot.y);
         nBodyLoc_00 = nBodyLoc;
       }
@@ -666,7 +679,7 @@ D2UnitStrc * __fastcall PLRMODES_CreateDeadBody(::SGAMEDATA * pGame, D2UnitStrc 
       exit(-1);
     } else {
       ::SGAMEDATA* pGame_00;
-      pSpawnRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom((D2RoomStrc*)pSlotItem, nX, nY);
+      pSpawnRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom((D2RoomStrc*)pSlotItem, nX, nY);
       if (!pSpawnRoom) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2ff);
         exit(-1);
@@ -789,8 +802,7 @@ D2UnitStrc * __fastcall PLRMODES_CreateDeadBody(::SGAMEDATA * pGame, D2UnitStrc 
               nMaxSearchRadius = 1;
               uVar2 = 1;
               pNewPosition = &sDropCoords;
-              pSpawnRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-              pSpawnRoom = ITEMS::Items::Drop::FindBestSpotToSpawnItem(pSpawnRoom, &sUnitCoords, pNewPosition, uVar2, nMaxSearchRadius);
+              pSpawnRoom = ITEMS::Items::Drop::FindBestSpotToSpawnItem(D2Common::Units::UNITS_GetRoom(pUnit), &sUnitCoords, pNewPosition, uVar2, nMaxSearchRadius);
               ITEMS::Items::Drop::DropItem(pSavedGame, pUnit, pItemUnit, pSpawnRoom, sDropCoords.x, sDropCoords.y);
               iVar4 = nBodyLocIndex;
             }

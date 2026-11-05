@@ -420,10 +420,10 @@ gate "res6: per-stop label 1920x1080"       D2Client/UI/EscMenu.cpp          'L"
 gate "res6: minipanel maps mode 6"          D2Client/UI/MiniPanel.cpp        'nScreenMode_lcl = 6' 1
 # The stretch-present channel (five TUs must agree):
 gate "stretch: d2gfx channel set/get"      D2gfx/D2GFX.cpp                  'D2GFX_SetPresentationStretch|D2GFX_GetPresentationStretch' 2
-gate "stretch: d3d present helper"         D2Direct3D/Renderer/Direct3D.cpp 'VPRES3D_PresentHostedFrame' 5
+gate "stretch: d3d present helper"         D2Direct3D/Renderer/Direct3D.cpp 'VPRES3D_PresentHostedFrame' 7
 gate "stretch: d3d Blt present"            D2Direct3D/Renderer/Direct3D.cpp 'DDBLT_WAIT' 2
 gate "stretch: d3d arm + release-clear"    D2Direct3D/Renderer/Direct3D.cpp 'D2GFX_SetPresentationStretch' 2
-gate "stretch: endscene2 guard"            D2Client/Renderer/Direct3D.cpp   'VPRES3D_PresentHostedFrame' 2
+gate "stretch: endscene2 guard"            D2Direct3D/Renderer/Direct3D.cpp 'VPRES3D_PresentHostedFrame' 2
 gate "stretch: cursor host->logical"       D2Win/Src/D2WinMain.cpp          'D2GFX_GetPresentationStretch' 1
 
 # ---- R116: GDI windowed 1366x768 diagonal shear ----------------------------

@@ -11,7 +11,6 @@
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/Sound/SoundHdr.h"
 #include "D2Client/UI/QuestLog.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/Text.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/MonUnique.h"
@@ -45,6 +44,7 @@
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -3340,6 +3340,26 @@ void __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
     }
 
     SetSfxStepTicks(nRecordingIdx, pUnit);
+}
+
+int Unreferenced_004cb170() {
+    D2UnitStrc* in_EAX;
+    D2MonSoundsTxt* pDVar1 = TxtGetSoundIdLineFromUnit(in_EAX);
+    if (!pDVar1) {
+      return 0;
+    }
+
+    return pDVar1->Neutral;
+}
+
+int Unreferenced_004cb180() {
+    D2UnitStrc* in_EAX;
+    D2MonSoundsTxt* pDVar1 = TxtGetSoundIdLineFromUnit(in_EAX);
+    if (!pDVar1) {
+      return 0;
+    }
+
+    return pDVar1->Taunt;
 }
 
 void __fastcall UNITSND_StopAllSkillSounds(D2UnitStrc * pUnit) {

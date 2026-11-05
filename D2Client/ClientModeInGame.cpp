@@ -132,7 +132,7 @@ static uint32_t gbQServerRunning = 0; D2_STATIC_GUARD(gbQServerRunning, "gbQServ
 static unsigned int gdwLastPacketActivityTick = {}; D2_STATIC_GUARD(gdwLastPacketActivityTick, "gdwLastPacketActivityTick");
 static uint32_t gnClientModeInitValue = 0; D2_STATIC_GUARD(gnClientModeInitValue, "gnClientModeInitValue");
 static unsigned int gdwQServerStartTime = {}; D2_STATIC_GUARD(gdwQServerStartTime, "gdwQServerStartTime");
-static TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0> gQServerGameState; D2_STATIC_GUARD(gQServerGameState, "gQServerGameState");
+static TSExportTableSync<::SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0> gQServerGameState; D2_STATIC_GUARD(gQServerGameState, "gQServerGameState");
 
 namespace D2Client::ClientModeInGame {
 
@@ -233,15 +233,15 @@ BOOL __stdcall CmdLine_SaveDefaultCommandLine(CMDPARAMS * pParams, char * szCmdL
 // @provenance 1.14d asm 0044b600.
 BOOL __stdcall CmdLine_SetAppMode(CMDPARAMS * pParams, char * szCmdLine) {
     // Static local variables (originally global data)
-    static uint32_t gaClientModeHandlerTable[7] = { 0x0, 0x0, 0x6d5b14, 0x0, 0x0, 0x0, 0x0 }; D2_STATIC_GUARD(gaClientModeHandlerTable, "D2Client::ClientModeInGame::CmdLine_SetAppMode::gaClientModeHandlerTable");
+    static char * gaClientModeHandlerTable[7] = { nullptr, nullptr, s_Game_006d5b14, nullptr, nullptr, nullptr, nullptr }; D2_STATIC_GUARD(gaClientModeHandlerTable, "D2Client::ClientModeInGame::CmdLine_SetAppMode::gaClientModeHandlerTable");
 
     int nNameCmp;
     char szUserName[16];
     CMDPARAMS* pEntry = pParams;
     eD2ClientAppMode eAppMode = 0;
     do {
-      if ((char*)gaClientModeHandlerTable[eAppMode]) {
-        nNameCmp = _stricmp((char*)gaClientModeHandlerTable[eAppMode], pEntry->uValue.szStringValue);
+      if (gaClientModeHandlerTable[eAppMode]) {
+        nNameCmp = _stricmp(gaClientModeHandlerTable[eAppMode], pEntry->uValue.szStringValue);
         if (!nNameCmp) {
           gdwAppMode = eAppMode;
           return 1;
@@ -307,6 +307,17 @@ BOOL __stdcall LoadDataForGameAndSetupServer(D2IniConfigStrc * D2IniData) {
     return 1;
 }
 
+int Unreferenced_0044b780() {
+    int extraout_EAX;
+    HWND hWnd = D2gfx::D2GFX::GetHwnd();
+    if (hWnd) {
+      SendMessageA(hWnd, 0x1c, 0, 0);
+    }
+
+    D2gfx::D2GFX::D2GFX_ResetViewport();
+    return extraout_EAX;
+}
+
 D2IniConfigStrc * __stdcall D2IniData_Getter() {
     return D2IniData_client;
 }
@@ -370,6 +381,10 @@ void __stdcall CLIENTMODE_ClearIngameUIFlag() {
 
 void __fastcall D2CLIENT_SetExitVar1(BOOL bResult) {
     gbQuitGame = bResult;
+}
+
+D2IniConfigStrc * __stdcall D2IniData_Getter_Unref_0044b890() {
+    return (D2IniConfigStrc*)gbQuitGame;
 }
 
 // Client app-mode entry. Init memory/UI, load language + string tables, init TXT tables, then run pfModes[] loop. Returns to launcher based on quit/game type.
@@ -686,6 +701,11 @@ uint32_t __stdcall CLIENTMODE_WaitForQServerConnection(uint32_t dwUnused) {
     return 1;
 }
 
+void Unreferenced_0044bb70() {
+    gbQServerRunning = 1;
+    D2Game::GAME::Server::QSERVER_InitializeServerState();
+}
+
 void __stdcall FreeQServer() {
     if (!gbQServerRunning) {
       return;
@@ -717,6 +737,12 @@ bool __stdcall GameLoopFuncInitGame(uint32_t dwUnused) {
     }
 
     return nInitResult == 2;
+}
+
+int __fastcall Unreferenced_0044bc10(int param_1, int param_2) {
+    D2Net::SRC::Client::NET_D2GS_ConnectToServer(param_1, (char*)param_2);
+    _Message::MessageGameLoop((::fpGameLoopFunction)GameLoopFuncInitGame);
+    return 1;
 }
 
 // pfModes_StartServer: create/init QServer, connect to server, run MessageGameLoop for required user action; sets player count and globals.

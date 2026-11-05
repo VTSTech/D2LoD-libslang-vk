@@ -21,9 +21,41 @@
 typedef _EXCEPTION_DISPOSITION (*pfnEHHandlerRoutine)(EHExceptionRecord * pExceptionRecord, EHRegistrationNode * pRegistrationNode, _CONTEXT * pContext, void * pDispatcherContext);
 #endif
 
-static IgnoreList * gpIgnoreList = 0; D2_STATIC_GUARD(gpIgnoreList, "gpIgnoreList");
+static ::IgnoreList * gpIgnoreList = 0; D2_STATIC_GUARD(gpIgnoreList, "gpIgnoreList");
 
 namespace D2Common::Chat::Ignorelist {
+
+void __stdcall IGNORELIST_Initialize_Unref_005fe0e0() {
+
+}
+
+void __stdcall IGNORELIST_Initialize_Unref_005fe0f0() {
+
+}
+
+void __stdcall IGNORELIST_Initialize_Unref_005fe110() {
+
+}
+
+void __stdcall IGNORELIST_Initialize_Unref_005ff390() {
+
+}
+
+void __stdcall IGNORELIST_Initialize_Unref_00601b50() {
+
+}
+
+void __stdcall IGNORELIST_Initialize_Unref_0060ab70() {
+
+}
+
+void __stdcall IGNORELIST_Initialize_Unref_0060ac50() {
+
+}
+
+void __stdcall IGNORELIST_Initialize_Unref_0060b130() {
+
+}
 
 void __stdcall IGNORELIST_Shutdown() {
     if (gpIgnoreList) {
@@ -182,13 +214,7 @@ void __stdcall MISC_InitIgnorelist() {
     ExceptionList = &pPrevExceptionList;
     ::IgnoreList* ppIgnoreListVTable = (::IgnoreList*)Storm::Source::SMem::SMemAlloc(0x188, ".\\Chat\\Ignorelist.cpp", 0x41, 0);
     nSehState = 0;
-    if (ppIgnoreListVTable) {
-      gpIgnoreList = IgnoreList::Constructor(ppIgnoreListVTable);
-      ExceptionList = pPrevExceptionList;
-      return;
-    }
-
-    gpIgnoreList = 0;
+    gpIgnoreList = ppIgnoreListVTable ? IgnoreList::Constructor(ppIgnoreListVTable) : 0;
     ExceptionList = pPrevExceptionList;
 }
 
@@ -224,6 +250,14 @@ void __stdcall MISC_InitIgnorelist() {
 
 // Null stub for ignore list initialization - called during client mode init
 void __stdcall IGNORELIST_Initialize() {
+
+}
+
+void __stdcall IGNORELIST_Initialize_Unref_0063a800() {
+
+}
+
+void __stdcall IGNORELIST_Initialize_Unref_0063b9c0() {
 
 }
 

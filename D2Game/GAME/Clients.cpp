@@ -5,7 +5,6 @@
 #include "D2Client/D2BattleNetEventCallbackTable.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
@@ -264,6 +263,15 @@ void __fastcall AppearenceItems2(uint32_t pClient, D2UnitStrc * pUnit, uint32_t 
 
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3df);
     exit(-1);
+}
+
+int Unreferenced_00537ab0() {
+    int extraout_EAX;
+    D2RoomStrc* unaff_ESI;
+    D2RoomStrc* unaff_EDI;
+    D2Common::DUNGEON::Dungeon::DRLGROOM_SwapRoomDataForRoomEx(unaff_ESI, unaff_EDI);
+    D2Common::DUNGEON::Dungeon::DRLGROOM_SwapActiveRoomExBetweenLevels(unaff_ESI, unaff_EDI);
+    return extraout_EAX;
 }
 
 // @sourcefile .\GAME\Clients.cpp
@@ -1486,11 +1494,10 @@ void __fastcall SERVER_PutPacketInQueueList(D2ClientStrc * pClient, D2PacketList
     pPacketList->pNext = 0;
     if (!pClient->pPacketList) {
       pClient->pDispatchList = pPacketList;
-      pClient->pPacketList = pPacketList;
-      return;
+    } else {
+      pClient->pPacketList->pNext = pPacketList;
     }
 
-    pClient->pPacketList->pNext = pPacketList;
     pClient->pPacketList = pPacketList;
 }
 
@@ -1498,11 +1505,10 @@ void __fastcall CLIENT_SetPacketList(D2ClientStrc * pClient, D2PacketListStrc * 
     pPacketList->pNext = 0;
     if (!pClient->pDispatchList) {
       pPacketList->pNext = 0;
-      pClient->pDispatchList = pPacketList;
-      return;
+    } else {
+      pClient->pPacketList = pPacketList;
     }
 
-    pClient->pPacketList = pPacketList;
     pClient->pDispatchList = pPacketList;
 }
 
@@ -2437,6 +2443,10 @@ void __fastcall CLIENT_BroadcastMovementToAdjacentRooms(::SGAMEDATA * pGame, D2R
 
       return;
     }
+}
+
+void __stdcall ReturnVoid_Unref_0053c740(uint32_t dwParam) {
+
 }
 
 } // namespace D2Game::GAME::Clients

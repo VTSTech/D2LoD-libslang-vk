@@ -16,7 +16,6 @@
 #include "D2Client/SKILLS/SkillsBar.h"
 #include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/Sound.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/CUnitEvent.h"
 #include "D2Client/UNIT/Missile.h"
@@ -62,6 +61,7 @@
 #include "D2Game/GAME/Clients.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/Monster/MonsterMode.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -515,9 +515,7 @@ D2UnitStrc * __fastcall CastAttackWithDistanceCheck(D2UnitStrc * pUnit, eMissile
 
     int nTargetX = nX;
     int nTargetY = nY;
-    int32_t nDistOrCasterY = Units::GetYPosFromDynamicPathUnit(pUnit);
-    int32_t nCasterX = Units::GetXPosFromDynamicPathUnit(pUnit);
-    nDistOrCasterY = D2Common::PATH::DynamicPath::GetDistanceSquaredXY(nCasterX, nDistOrCasterY, nTargetX, nTargetY);
+    int32_t nDistOrCasterY = D2Common::PATH::DynamicPath::GetDistanceSquaredXY(Units::GetXPosFromDynamicPathUnit(pUnit), Units::GetYPosFromDynamicPathUnit(pUnit), nTargetX, nTargetY);
     /* Distance <= 100 */ if (nDistOrCasterY <= 10000) {
       D2UnitStrc* pMissile;
       pMissile = UNIT::Missile::CastAttack(pUnit, neMissilesId, nX, nY, eSkill, nSkillLevel);
@@ -709,8 +707,8 @@ D2UnitStrc * __fastcall MakeMissile(eMissilesId neMissilesId, D2UnitStrc * pUnit
     }
 
     sSkillArg.nY = nOwnerPos + nOffsetY;
-    sSkillArg.nSkillLevel = nSkillLevel;
     sSkillArg.eSkillNo = eSkill;
+    sSkillArg.nSkillLevel = nSkillLevel;
     sSkillArg.nMissileTxtNo = neMissilesId;
     if (!nX || !nY) {
       BOOL bGotCoords;
@@ -762,10 +760,10 @@ uint32_t __fastcall SKILLS_GetTargetTypeForSkill(D2UnitStrc * pUnit, D2UnitStrc 
     }
     if (!pUnit) {
       bInSameParty = GAME::Roster::ROSTER_CheckPlayersInSameParty(-1, nResolvedTargetGUID);
-      return (uint32_t)(bInSameParty != 0);
+    } else {
+      bInSameParty = GAME::Roster::ROSTER_CheckPlayersInSameParty(pUnit->nUnitGUID, nResolvedTargetGUID);
     }
 
-    bInSameParty = GAME::Roster::ROSTER_CheckPlayersInSameParty(pUnit->nUnitGUID, nResolvedTargetGUID);
     return (uint32_t)(bInSameParty != 0);
 }
 
@@ -1045,14 +1043,15 @@ BOOL __fastcall SKILLS_RadiusCallback_FindMinMaxGUID(D2fpSkillFuncArg * pFuncArg
       pFuncArgSub->nCount++;
       pFuncArgSub->nNextGUID = nUnitGUID;
       pFuncArgSub->pNextUnit = pUnit;
-      return 1;
-    }
-    if (nUnitGUID <= pFuncArgSub->nWrapGUID) {
-      pFuncArgSub->nWrapGUID = nUnitGUID;
-      pFuncArgSub->pWrapUnit = pUnit;
+    } else {
+      if (nUnitGUID <= pFuncArgSub->nWrapGUID) {
+        pFuncArgSub->nWrapGUID = nUnitGUID;
+        pFuncArgSub->pWrapUnit = pUnit;
+      }
+
+      pFuncArgSub->nCount++;
     }
 
-    pFuncArgSub->nCount++;
     return 1;
 }
 
@@ -1188,10 +1187,10 @@ BOOL __fastcall Skills_CltDoFunc_Bow_ThrowItem(D2UnitStrc * pUnit, eD2Skills eSk
       uint32_t nTargetX;
       GetCooordinates(pUnit, (int32_t*)&nTargetX, (int32_t*)&nTargetY);
       UNIT::Missile::MISSILE_CreateFromUnitWithOffset(pUnit, eMissileType, 0, 0, nTargetX, nTargetY, eSkillSaved, 1, 0);
-      return 1;
+    } else {
+      MakeMissileAtSkillTarget(pUnit, eMissileType, eSkillSaved, 1);
     }
 
-    MakeMissileAtSkillTarget(pUnit, eMissileType, eSkillSaved, 1);
     return 1;
 }
 
@@ -1884,11 +1883,10 @@ static void __stdcall SKILLS_HandleDualWieldWeaponSwap(int * pSwapState, D2UnitS
       *pSwapState = 5;
       D2Common::Skills::SKILL_SetParam4(pSkill, 5);
       pSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnit, SKILL_LeftHandSwing, -1);
-      D2Common::Units::SetCurrentSkill(pUnit, pSkill);
-      return;
+    } else {
+      D2Common::Skills::SKILL_SetParam4(pSkill, 0);
     }
 
-    D2Common::Skills::SKILL_SetParam4(pSkill, 0);
     D2Common::Units::SetCurrentSkill(pUnit, pSkill);
 }
 
@@ -2154,11 +2152,11 @@ void __fastcall SKILL_CreateMissileAtCoords(D2UnitStrc * pUnit, uint8_t * pMissi
 
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nX = nX;
-    sSkillArg.eSkillNo = eSkill;
     sSkillArg.nFlags = 1;
-    sSkillArg.nY = nY;
-    sSkillArg.nSkillLevel = nToHit;
     sSkillArg.pOwner = pUnit;
+    sSkillArg.nY = nY;
+    sSkillArg.eSkillNo = eSkill;
+    sSkillArg.nSkillLevel = nToHit;
     sSkillArg.nMissileTxtNo = (eMissilesId)pMissileId;
     UNIT::Missile::MakeMissile(&sSkillArg);
 }
@@ -2278,7 +2276,7 @@ BOOL __fastcall CLIENT_HandleUnitMessage0x16(D2UnitStrc * pUnit, D2UnitStrc * pT
 uint32_t __fastcall SKILL_GetWeaponClassMask(D2UnitStrc * pUnit) {
     int nWeaponClass = 0;
     D2Common::COMPOSIT::Composit::COMPOSIT_GetWeaponClassWithTransform(pUnit, pUnit->pInventory, (uint32_t*)&nWeaponClass, -1, 1);
-    return nWeaponClass != 7 ? 0 : 0x1f;
+    return nWeaponClass == 7 ? 0x1f : 0;
 }
 
 void __fastcall SKILLS_ApplyDamageReduction(D2UnitStrc * pUnit, int32_t nReductionPercent) {

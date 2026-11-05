@@ -273,7 +273,6 @@ BOOL __stdcall GetUseDirectCommand() {
 static bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen) {
     int nResult;
     char szAppDataPath[260];
-    char* pszSubPath;
     if (!nMaxLen) {
       return false;
     }
@@ -285,7 +284,7 @@ static bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen) {
     uint32_t bKnownFolderOk = Engine::Application::PATH_GetKnownFolderPath(szOutPath, nMaxLen);
     if ((char)bKnownFolderOk != '\0') {
       SFILE_EnsurePathEndsWithBackslash(szOutPath, nMaxLen);
-      pszSubPath = "Diablo II";
+      Storm::Source::SSTR::SStrPack(szOutPath, "Diablo II", nMaxLen);
     } else {
       nResult = SHGetFolderPathA(0, 5, 0, 0, szAppDataPath);
       if (nResult) {
@@ -293,10 +292,9 @@ static bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen) {
       }
 
       SFILE_EnsurePathEndsWithBackslash(szOutPath, nMaxLen);
-      pszSubPath = "Diablo II\\Save";
+      Storm::Source::SSTR::SStrPack(szOutPath, "Diablo II\\Save", nMaxLen);
     }
 
-    Storm::Source::SSTR::SStrPack(szOutPath, pszSubPath, nMaxLen);
     return true;
 }
 
@@ -559,7 +557,23 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
     }
 }
 
-int32_t __fastcall SFILE_CalculateBufferOffset(int32_t pThis, int32_t nBufferOffset) {
+int __fastcall Unreferenced_00407260(int param_1) {
+    *(uint32_t*)param_1 = 0;
+    *(uint32_t*)(param_1 + 4) = 0;
+    *(uint32_t*)(param_1 + 8) = 0;
+    *(uint32_t*)(param_1 + 0xc) = 0;
+    return param_1;
+}
+
+int __fastcall Unreferenced_00407280(int param_1) {
+    return param_1 + 0x408;
+}
+
+int __fastcall Unreferenced_00407290(int param_1) {
+    return *(int*)(param_1 + 0x808);
+}
+
+int32_t __thiscall SFILE_CalculateBufferOffset(int32_t pThis, int32_t nBufferOffset) {
     return nBufferOffset * 0x400 + 0x80c + pThis;
 }
 
@@ -725,10 +739,10 @@ void __stdcall LOGFILE_StoreGameStartupInfo() {
     Src::LogManager::LogCpuInfo();
     float fMemBytes = (float)g_dwTotalPhysicalMemory;
     if (g_dwTotalPhysicalMemory < 0) {
-      fMemBytes += 4.2949673e+09;
+      fMemBytes += 4294967296.0;
     }
 
-    Src::LogManager::LOGFILE_WriteStringToFile("Total Physical Memory: %.2fMB", (double)(fMemBytes * 9.536743e-07));
+    Src::LogManager::LOGFILE_WriteStringToFile("Total Physical Memory: %.2fMB", (double)(fMemBytes * 9.5367431640625e-7));
     BOOL bGotName = Debug::FILETOOLS_GetExecutableFolderPath(szAppPath, 0x1000);
     if (bGotName) {
       Src::LogManager::LOGFILE_WriteStringToFile("Application Path: %s", szAppPath);

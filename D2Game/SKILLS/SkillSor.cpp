@@ -9,10 +9,9 @@
 #include "D2Client/SKILLS.h"
 #include "D2Client/SKILLS/Skills.h"
 #include "D2Client/Stats.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
-#include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
+#include "D2Common/Collision.h"
 #include "D2Common/D2DynamicPathStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
@@ -55,6 +54,7 @@
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Objects/ObjectsMode.h"
 #include "D2Game/PLAYER/Player.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
 #include "D2Game/SKILLS/SkillAss.h"
 #include "D2Game/SKILLS/SkillDruid.h"
@@ -217,14 +217,14 @@ BOOL __fastcall INFERNO_BeginOrContinueChannel(::SGAMEDATA * pGame, D2UnitStrc *
       D2Common::Stats::StatsEx::SetState(pStatList, STATE_inferno);
       D2Common::DATATBLS::ItemStats::SetState(pUnit, STATE_inferno, 1);
       D2Common::Skills::SKILL_SetParam1(D2Common::Units::GetCurrentSkill(pUnit), 0);
-      return 1;
+    } else {
+      UNIT::SUnit::UNITS_SetupAnimTimerEventsWithDelay(pGame, pUnit, 1);
+      nCalcDuration = pGame->dwGameFrame + 6;
+      D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pStatList, nCalcDuration);
+      GAME::Event::SetEvent(pGame, pUnit, 0xc, nCalcDuration, 0, 0);
+      INFERNO_CastInfernoTick(pGame, pUnit, eSkill, nSkillLvl2, eMissileId);
     }
 
-    UNIT::SUnit::UNITS_SetupAnimTimerEventsWithDelay(pGame, pUnit, 1);
-    nCalcDuration = pGame->dwGameFrame + 6;
-    D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pStatList, nCalcDuration);
-    GAME::Event::SetEvent(pGame, pUnit, 0xc, nCalcDuration, 0, 0);
-    INFERNO_CastInfernoTick(pGame, pUnit, eSkill, nSkillLvl2, eMissileId);
     return 1;
 }
 
@@ -356,7 +356,7 @@ BOOL __fastcall SKILLSOR_SrvStFn14_Hydra(::SGAMEDATA * pGame, D2UnitStrc * pUnit
       return 0;
     }
 
-    pTargetRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pTargetRoom, nTargetX, nTargetY);
+    pTargetRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pTargetRoom, nTargetX, nTargetY);
     if (!pTargetRoom) {
       return 0;
     }
@@ -378,8 +378,7 @@ void __fastcall SKILL_InitChargedBoltPath(D2UnitStrc * pUnit, int32_t nMissileId
     }
 
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
-    uint32_t nSeedX = D2Common::PATH::DynamicPath::GetXSP1(pDynamicPath);
-    D2Common::Seed::InitSeed_Param_666(&pUnit->sSeed, nSeedX + nMissileIdx);
+    D2Common::Seed::InitSeed_Param_666(&pUnit->sSeed, D2Common::PATH::DynamicPath::GetXSP1(pDynamicPath) + nMissileIdx);
     D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 10);
     D2Common::PATH::DynamicPath::OverwriteDistanceAndMaxDistance(pDynamicPath, (uint8_t)nFrameCount);
     D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
@@ -884,7 +883,7 @@ BOOL __fastcall Skills_SrvDoFunc_024_FireWall(::SGAMEDATA * pGame, D2UnitStrc * 
     }
 
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nTargetX, nTargetY);
+    pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, nTargetX, nTargetY);
     BOOL bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
     if (!bIsInTown) {
       int32_t nUnitX;
@@ -1252,7 +1251,6 @@ BOOL __fastcall ITEMEVENT_SorAuraManaAbsorb(::SGAMEDATA * pGame, uint32_t nUnitE
     int32_t* pnDamageField;
     int32_t nAbsorbAmt;
     int32_t nManaCap;
-    int nDirection;
     D2SkillsTxt* pSkillTxt;
     uint32_t* pAbsorbEntry;
     bool bNotMonsterOnly;
@@ -1311,9 +1309,7 @@ BOOL __fastcall ITEMEVENT_SorAuraManaAbsorb(::SGAMEDATA * pGame, uint32_t nUnitE
             nCurMana = (int)nCurMana <= 0 ? 0 : nCurMana;
             D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_mana, nCurMana, 0);
             if (pTarget && (int)eSkill > 0 && pSkillTxt->prgoverlay >= 0 && (int)pSkillTxt->prgoverlay <= sgptDataTable->nTxtOverlaySize) {
-              nAbsorbPct = D2Client::Units::GetYPosFromDynamicPathUnit(pTarget);
-              nDirection = D2Common::Units::GetDirectionToCoords(pUnit, D2Client::Units::GetXPosFromDynamicPathUnit(pTarget), nAbsorbPct);
-              bVar1 = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nDirection);
+              bVar1 = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)D2Common::Units::GetDirectionToCoords(pUnit, D2Client::Units::GetXPosFromDynamicPathUnit(pTarget), D2Client::Units::GetYPosFromDynamicPathUnit(pTarget)));
               D2Common::Units::SetOverlay(pUnit, (int)pSkillTxt->prgoverlay + (uint32_t)bVar1, 0);
             }
             if ((int)nCurMana > 0) {
@@ -1370,7 +1366,7 @@ BOOL __fastcall Skills_SrvDoFunc_144_Hydra(::SGAMEDATA * pGame, D2UnitStrc * pUn
           if (pRoom) {
             _bGotTarget = SkillsServer::SKILLS_GetTargetOrCursorPos(pGameSaved, pUnit, &nSpawnX, &nSpawnY);
             if (_bGotTarget) {
-              pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nSpawnX, nSpawnY);
+              pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, nSpawnX, nSpawnY);
               if (pRoom) {
                 _bGotTarget = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
                 if (!_bGotTarget) {

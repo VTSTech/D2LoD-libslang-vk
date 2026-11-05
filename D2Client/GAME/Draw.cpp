@@ -16,7 +16,6 @@
 #include "D2Client/GAME/Wall2.h"
 #include "D2Client/Seed.h"
 #include "D2Client/UI/Path.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -39,6 +38,7 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Units.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "D2gfx/D2GFX.h"
@@ -602,12 +602,17 @@ void __stdcall DRAW_CalcRoofLightOrtho(D2GfxLightExStrc * pLightGrid, int32_t nS
 static void __stdcall DRAW_CalcRoofLightGridPerspective(D2GfxLightExStrc * pLightEntry, int32_t nTileX, int32_t nTileY, int32_t nDepth, int32_t bBorderOnly, int32_t nSplitSide) {
     int* pXAdjust;
     int nScreenHalfAdj = 0;
-    if (nSplitSide != 1) {
-      if (nSplitSide == 2) {
-        nScreenHalfAdj = ScreenSizeX / 4;
-      }
-    } else {
-      nScreenHalfAdj = -(ScreenSizeX / 4);
+    switch (nSplitSide) {
+      case 1:
+        {
+          nScreenHalfAdj = -(ScreenSizeX / 4);
+          break;
+        }
+      case 2:
+        {
+          nScreenHalfAdj = ScreenSizeX / 4;
+          break;
+        }
     }
 
     int nRowY = 0;

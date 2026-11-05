@@ -118,14 +118,13 @@ static void __stdcall SLOG_OutputTime(int32_t bHasData, D2SLogStrc * pLog) {
     if (bHasData) {
       SMem::SMemCopy(pLog->acBuffer + pLog->nUsed, gszSLogTimeStr, gnSLogTimeStrLen + 1);
       pLog->nUsed += gnSLogTimeStrLen;
-      SLOG_OutputIndent(pLog);
-      return;
+    } else {
+      SMem::SMemFill(pLog->acBuffer + pLog->nUsed, gnSLogTimeStrLen, 0x20);
+      uint32_t nTimestampPrefixLen = gnSLogTimeStrLen;
+      pLog->acBuffer[pLog->nUsed + gnSLogTimeStrLen] = '\0';
+      pLog->nUsed += nTimestampPrefixLen;
     }
 
-    SMem::SMemFill(pLog->acBuffer + pLog->nUsed, gnSLogTimeStrLen, 0x20);
-    uint32_t nTimestampPrefixLen = gnSLogTimeStrLen;
-    pLog->acBuffer[pLog->nUsed + gnSLogTimeStrLen] = '\0';
-    pLog->nUsed += nTimestampPrefixLen;
     SLOG_OutputIndent(pLog);
 }
 
@@ -137,10 +136,12 @@ static void SLOG_UnlockDeleteLog(LPVOID pTarget, int32_t nSlot) {
       while ((void*)pNode != pTarget) {
         ppPrevNext = &pNode->pNext;
         pNode = *ppPrevNext;
-        if (!pNode) {
-          /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(gaSLogCritSect + nSlot);
-          return;
+        if (pNode) {
+          continue;
         }
+
+        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(gaSLogCritSect + nSlot);
+        return;
       }
 
       /* DWORD dwFreeType for VirtualFree */ /* SIZE_T dwSize for VirtualFree */ /* LPVOID lpAddress for VirtualFree */ *ppPrevNext = pNode->pNext;

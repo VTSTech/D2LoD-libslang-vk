@@ -42,6 +42,7 @@
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Clients.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -54,6 +55,7 @@
 #include "D2Win/Src/D2WinPalette.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/D2PoolManagerStrc.h"
+#include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Storm.h"
 #include "globals/globals.h"
@@ -319,7 +321,7 @@ uint32_t __stdcall SPELLSEL_IsMouseInRect(int32_t nWidth, int32_t nHeight, int32
 int32_t __fastcall SPELLSEL_GetSkillPalette(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
     int32_t nCanUseResult = UNIT::PlrSkills::PLRSKILLS_CanUseSkillCheck(pUnit, pSkill);
     if (nCanUseResult) {
-      return (nCanUseResult != 6 ? -3 : 0) + 4;
+      return 4 + (nCanUseResult != 6 ? -3 : 0);
     }
 
     return 0;
@@ -443,8 +445,7 @@ void __thiscall SPELLSEL_DrawSkillLevel(int32_t pThis, int32_t nScreenX, int32_t
     }
 
     int32_t nTextWidth2 = 0x10;
-    char* pszLevel = _itoa(pThis, szLevelBuf, 10);
-    D2Lang::UTF8_ConvertToWideChar(wszLevelBuf, pszLevel, nTextWidth2);
+    D2Lang::UTF8_ConvertToWideChar(wszLevelBuf, _itoa(pThis, szLevelBuf, 10), nTextWidth2);
     nTextWidth2 = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszLevelBuf);
     int32_t nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszLevelBuf);
     if (nTextWidth > 0x28) {
@@ -645,11 +646,10 @@ void __fastcall SPELLSEL_DrawSkillIcon(short * pSkillId, int32_t nSlotIndex, int
     D2gfx::D2GFX::D2GFX_DrawShiftedImage(&sGfxData, nIconX, nIconY, -1, DRAW_SOLID, nGlobalPaletteShift);
     if (bIsLeftHand) {
       SPELLSEL_DrawKeyBindingsForLeftHand(nSlotIndex, pSkillId, nIconX, nIconY);
-      SPELLSEL_DrawSkillLevel(nSkillId, nIconX, nIconY);
-      return;
+    } else {
+      SPELLSEL_DrawKeyBindingsForRightHand(nSlotIndex, pSkillId, nIconX, nIconY);
     }
 
-    SPELLSEL_DrawKeyBindingsForRightHand(nSlotIndex, pSkillId, nIconX, nIconY);
     SPELLSEL_DrawSkillLevel(nSkillId, nIconX, nIconY);
 }
 
@@ -1190,6 +1190,44 @@ void __fastcall SPELLSEL_DrawSkillGrid(D2UnitStrc * pUnit, int32_t nGridStartX, 
     } while (true);
 }
 
+int __fastcall Unreferenced_004aa6b0(int param_1) {
+    int in_EAX;
+    BOOL bWeaponSwap;
+    BOOL bShowTooltips;
+    if (!gbSpellSelMouseHandFlag) {
+      int extraout_EAX;
+      bShowTooltips = 0;
+      bWeaponSwap = 0;
+      gSpellSelGridRegion.sGridIndex[0] = 0;
+      SPELLSEL_DrawSkillGrid(UNIT::Player::GetPlayerUnit_UI(), ScreenSizeX - 0x80, bWeaponSwap, bShowTooltips, param_1);
+      in_EAX = extraout_EAX;
+    }
+
+    return in_EAX;
+}
+
+int Unreferenced_004aa6e0() {
+    int in_EAX;
+    if (gbSpellSelMouseHandFlag) {
+      int extraout_EAX;
+      SPELLSEL_DrawSkillGrid(UNIT::Player::GetPlayerUnit_UI(), 0x50, 1, 1, 0);
+      in_EAX = extraout_EAX;
+    }
+
+    return in_EAX;
+}
+
+int Unreferenced_004aa710() {
+    int in_EAX;
+    if (!gbSpellSelMouseHandFlag) {
+      int extraout_EAX;
+      SPELLSEL_DrawSkillGrid(UNIT::Player::GetPlayerUnit_UI(), ScreenSizeX - 0x80, 0, 1, 0);
+      in_EAX = extraout_EAX;
+    }
+
+    return in_EAX;
+}
+
 void __fastcall SPELLSEL_CycleRightHandSkills(int32_t nSteps) {
     int bSlotValid;
     uint32_t bPlayerDead = UNIT::Player::IsPlayerDead();
@@ -1256,8 +1294,7 @@ void __stdcall SPELLSEL_RenderAllSkillGrids() {
       bShowTooltips = 0;
       bIsWeaponSwap = 0;
       gSpellSelGridRegion.sGridIndex[0] = 0;
-      nStartX = ScreenSizeX - VPRES_GetWideUiOffsetX() - 0x80; // VP: site-5, bar-anchored grid (R45: offset restored)
-      SPELLSEL_DrawSkillGrid(UNIT::Player::GetPlayerUnit_UI(), nStartX, bIsWeaponSwap, bShowTooltips, bIsLeftHand); // VP: site-5, bar-anchored grid (R45: icon pass re-paired with its tooltip pass)
+      SPELLSEL_DrawSkillGrid(UNIT::Player::GetPlayerUnit_UI(), ScreenSizeX - VPRES_GetWideUiOffsetX() - 0x80, bIsWeaponSwap, bShowTooltips, bIsLeftHand); // VP: site-5, bar-anchored grid (R45: offset restored; R123: upstream's inlined-arg shape)
       if (!gbSpellSelMouseHandFlag) {
         goto draw_right_grid_tooltips;
       }
@@ -1273,10 +1310,11 @@ void __stdcall SPELLSEL_RenderAllSkillGrids() {
 
     draw_right_grid_tooltips:
     bIsLeftHand = 0;
-    bShowTooltips = 1;
-    bIsWeaponSwap = 0;
-    nStartX = ScreenSizeX - VPRES_GetWideUiOffsetX() - 0x80; // VP: site-5, bar-anchored grid
-    SPELLSEL_DrawSkillGrid(UNIT::Player::GetPlayerUnit_UI(), nStartX, bIsWeaponSwap, bShowTooltips, bIsLeftHand);
+    SPELLSEL_DrawSkillGrid(UNIT::Player::GetPlayerUnit_UI(), ScreenSizeX - VPRES_GetWideUiOffsetX() - 0x80, 0, 1, bIsLeftHand); // VP: site-5, bar-anchored grid (R123: upstream inlines the flag writes)
+}
+
+void __stdcall SPELLSEL_ClearWaitingForSkillFlag_Unref_004aa8e0() {
+    BooleanWaitingForSkillingMaybe = 0;
 }
 
 void __stdcall SPELLSEL_ClearWaitingForSkillFlag() {
@@ -1690,6 +1728,19 @@ void __stdcall SKILLTREE_RenderSkillTree() {
     int32_t bMouseOver = 0;
     uint16_t* pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1030);
     D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(pwszTabLabel, nTooltipX, nTooltipY, bMouseOver, nShowTooltip);
+}
+
+int Unreferenced_004ab7b0() {
+    // Static local variables (originally global data)
+    static uint32_t gdwSpellSelThrottleTick; D2_STATIC_GUARD_BSS(gdwSpellSelThrottleTick, "D2Client::UI::SpellSel::Unreferenced_004ab7b0::gdwSpellSelThrottleTick");
+
+    DWORD DVar1 = GetTickCount();
+    if (DVar1 - gdwSpellSelThrottleTick > 1000) {
+      gdwSpellSelThrottleTick = DVar1;
+      return 1;
+    }
+
+    return 0;
 }
 
 void __stdcall INPUT_SkillTreeLeftClick(D2UIMouseMsgStrc * pMsg) {

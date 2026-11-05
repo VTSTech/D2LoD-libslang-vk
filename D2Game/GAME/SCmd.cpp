@@ -20,7 +20,6 @@
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/RosterPets.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/MonUnique.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/Units.h"
@@ -39,6 +38,7 @@
 #include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
+#include "D2Common/DATATBLS/ItemTbls.h"
 #include "D2Common/DATATBLS/OverlayTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
@@ -155,8 +155,8 @@ void __fastcall NET_D2GS_SERVER_Send_0x01_NEWGAME(D2ClientStrc * pClient, uint8_
     D2GSPacketSrv0x01 aPacketBuf;
     aPacketBuf.nPacketId = nPacketId;
     aPacketBuf.dwArenaFlags = Arena::ARENA_GetFlags(pGame);
-    aPacketBuf.nExpansion = pGame->bExpansion != 0;
     aPacketBuf.nDifficulty = pGame->nDifficulty;
+    aPacketBuf.nExpansion = pGame->bExpansion != 0;
     aPacketBuf.nLadder = pGame->eGameType != GAMETYPE_SINGLEPLAYER;
     SCMD_QueuePacketForClient(&aPacketBuf.nPacketId, 8, pClient);
 }
@@ -166,8 +166,8 @@ void __fastcall NET_D2GS_SERVER_Send_0x03_NEWACT(D2ClientStrc * pClient, uint8_t
     D2GSPacketSrv0x03 packet;
     packet.nAct = nAct;
     packet.nPacketId = nPacketId;
-    packet.nAutomap = nAutomap;
     packet.nMapSeed = nMapSeed;
+    packet.nAutomap = nAutomap;
     packet.nArea = nArea;
     SCMD_QueuePacketForClient(&packet.nPacketId, 0xc, pClient);
 }
@@ -192,10 +192,10 @@ void __fastcall NET_D2GS_SERVER_Send_0x5F_PortalFlags(D2ClientStrc * pClient, ui
 void __fastcall NET_D2GS_SERVER_Send_0x0C_UNITCHANGE(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nUnitType, uint32_t nUnitGUID, uint8_t nMessageType, uint8_t nHitClass, uint8_t nHpPercent) {
     D2GSPacketSrv0x0C aPacket;
     aPacket.nPacketId = nPacketId;
-    aPacket.dwUnitGUID = nUnitGUID;
     aPacket.nUnitType = nUnitType;
-    aPacket.nHitClass = nHitClass;
+    aPacket.dwUnitGUID = nUnitGUID;
     aPacket.nMessageType = nMessageType;
+    aPacket.nHitClass = nHitClass;
     aPacket.nHpPercent = nHpPercent;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 9, pClient);
 }
@@ -204,10 +204,10 @@ void __fastcall NET_D2GS_SERVER_Send_0x0C_UNITCHANGE(D2ClientStrc * pClient, uin
 void __fastcall NET_D2GS_SERVER_Send_0x0E_UNITCHANGE_ID(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nObjectType, uint32_t dwUnitGUID, uint8_t nMessageType, uint8_t bIsTargetable, uint32_t nAnimMode) {
     D2GSPacketSrv0x0E aPacket;
     aPacket.nPacketId = nPacketId;
-    aPacket.dwUnitGUID = dwUnitGUID;
     aPacket.nUnitType = nObjectType;
-    aPacket.nParam2 = bIsTargetable;
+    aPacket.dwUnitGUID = dwUnitGUID;
     aPacket.nMessageType = nMessageType;
+    aPacket.nParam2 = bIsTargetable;
     aPacket.dwParam = nAnimMode;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 0xc, pClient);
 }
@@ -235,12 +235,12 @@ void __fastcall NET_D2GS_SERVER_Send_0x0D_UNITCHANGE_XY(D2ClientStrc * pClient, 
 void __fastcall NET_D2GS_SERVER_Send_0x10_UNITCHANGE_IDPOS(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nUnitType, uint32_t dwGUID, uint8_t nMessageType, uint8_t nTargetType, uint32_t dwTargetGUID, uint16_t wX, uint16_t wY) {
     D2GSPacketSrv0x10 aPacket;
     aPacket.nPacketId = nPacketId;
-    aPacket.dwUnitGUID = dwGUID;
     aPacket.nUnitType = nUnitType;
-    aPacket.nTargetType = nTargetType;
+    aPacket.dwUnitGUID = dwGUID;
     aPacket.nMessageType = nMessageType;
-    aPacket.wX = wX;
+    aPacket.nTargetType = nTargetType;
     aPacket.dwTargetGUID = dwTargetGUID;
+    aPacket.wX = wX;
     aPacket.wY = wY;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 0x10, pClient);
 }
@@ -563,10 +563,10 @@ void __fastcall NET_D2GS_SERVER_Send_0x6D_UNITCHANGE_MONSTERNEUTRAL(D2ClientStrc
 void __fastcall NET_D2GS_SERVER_Send_0x15_WarpXY(D2ClientStrc * pClient, uint8_t nPacketId, int nUnitType, uint32_t nUnitGUID, uint16_t wX, uint16_t wY, uint8_t bWarpFade) {
     D2GSPacketSrv0x15 aPacket;
     aPacket.nPacketId = nPacketId;
-    aPacket.dwUnitGUID = nUnitGUID;
     aPacket.nUnitType = (uint8_t)nUnitType;
-    aPacket.wY = wY;
+    aPacket.dwUnitGUID = nUnitGUID;
     aPacket.wX = wX;
+    aPacket.wY = wY;
     aPacket.bWarpFade = bWarpFade;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 0xb, pClient);
 }
@@ -595,10 +595,10 @@ void __fastcall NET_D2GS_SERVER_Send_0x08_REMOVEROOM(D2ClientStrc * pClient, int
 void __fastcall NET_D2GS_SERVER_Send_0x09_NEWUNIT(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nUnitType, uint32_t dwGUID, uint8_t nClassId, uint16_t wX, uint16_t wY) {
     D2GSPacketSrv0x09 aPacket;
     aPacket.nPacketId = nPacketId;
-    aPacket.dwUnitGUID = dwGUID;
     aPacket.nUnitType = nUnitType;
-    aPacket.wX = wX;
+    aPacket.dwUnitGUID = dwGUID;
     aPacket.nClassId = nClassId;
+    aPacket.wX = wX;
     aPacket.wY = wY;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 0xb, pClient);
 }
@@ -956,8 +956,8 @@ void __fastcall NET_D2GS_SERVER_Send_0x23_SetSkill(D2ClientStrc * pClient, uint8
     D2GSPacketSrv0x23 aPacket;
     aPacket.nSkillSlot = nSkillSlot;
     aPacket.nUnitType = nUnitType;
-    aPacket.wSkillId = wSkill;
     aPacket.dwUnitGUID = dwUnitGUID;
+    aPacket.wSkillId = wSkill;
     aPacket.nPacketId = '#';
     aPacket.dwSkillOwnerGUID = dwReserved;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 0xd, pClient);
@@ -1096,9 +1096,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x27_NpcInfo(D2ClientStrc * pClient, D2GSPa
 
 void __fastcall NET_D2GS_SERVER_Send_0x53_ACTTIMEOFDAY(D2ClientStrc * pClient, D2GSPacketSrv0x53 * pPacketData) {
     D2GSPacketSrv0x53 aPacket;
-    *(uint32_t*)(char*)&aPacket = *(uint32_t*)pPacketData;
-    *(uint32_t*)((char*)&aPacket + 4) = *(uint32_t*)((uintptr_t)&pPacketData->nCycleIndex + 3);
-    *(uint16_t*)((char*)&aPacket + 8) = *(uint16_t*)((uintptr_t)&pPacketData->nTicks + 3);
+    aPacket = *pPacketData;
     SCMD_QueuePacketForClient(&aPacket.nHeader, 10, pClient);
 }
 
@@ -1678,13 +1676,13 @@ void __fastcall Send0x9DItemCopyToCursor(D2ClientStrc * pClient, D2UnitStrc * pU
 
 void __fastcall NET_D2GS_SERVER_Send_0x4D_SKILL_XY(D2ClientStrc * pClient, uint8_t attackerType, uint32_t attackerGUID, uint16_t targetX, uint16_t targetY, uint32_t skillID, uint16_t unused, uint8_t skillLevel, int32_t packetIdModifier) {
     D2GSPacketSrv0x4D aPacket;
+    aPacket.nPacketId = packetIdModifier ? 0x9a : 0x4d;
     aPacket.nUnitType = attackerType;
     aPacket.dwUnitGUID = attackerGUID;
-    aPacket.nPacketId = packetIdModifier ? 0x9a : 0x4d;
-    aPacket.wTargetY = targetY;
     aPacket.wTargetX = targetX;
-    aPacket.nSkillLevel = skillLevel;
+    aPacket.wTargetY = targetY;
     aPacket.dwSkillId = skillID;
+    aPacket.nSkillLevel = skillLevel;
     aPacket.wUnused = unused;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 0x11, pClient);
 }
@@ -1751,8 +1749,8 @@ void __fastcall NET_D2GS_SERVER_Send_0x4C_UnitCastSkill_Target_0x4D_UnitCastSkil
 void __fastcall NET_D2GS_SERVER_Send_0x28_PlayerQuestInfo(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nUpdateType, uint32_t nUnitGUID, D2BitBufferStrc * pBitBuffer, uint8_t nActionType) {
     D2GSPacketSrv0x28 sPacket0x28;
     sPacket0x28.nPacketId = nPacketId;
-    sPacket0x28.nUnitGUID = nUnitGUID;
     sPacket0x28.nUpdateType = nUpdateType;
+    sPacket0x28.nUnitGUID = nUnitGUID;
     sPacket0x28.nActionType = nActionType;
     D2Common::QuestRecord::CopyQuestBitBuffer(pBitBuffer, sPacket0x28.szQuestBits, 0x60, 0);
     SCMD_QueuePacketForClient(&sPacket0x28.nPacketId, 0x67, pClient);
@@ -1772,11 +1770,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x29_GAMEQUESTRECORD(D2ClientStrc * pClient
 
 void __fastcall NET_D2GS_SERVER_Send_0x5D_QuestState(D2ClientStrc * pClient, D2GSPacketSrv0x5D * pPacket) {
     D2GSPacketSrv0x5D aPacket;
-    aPacket.nPacketId = pPacket->nPacketId;
-    aPacket.nQuestId = pPacket->nQuestId;
-    aPacket.nAlertFlags = pPacket->nAlertFlags;
-    aPacket.nFilterStatus = pPacket->nFilterStatus;
-    aPacket.nExtra = pPacket->nExtra;
+    aPacket = *pPacket;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 6, pClient);
 }
 
@@ -1784,24 +1778,21 @@ void __fastcall NET_D2GS_SERVER_Send_0x2A_NpcTransaction(D2ClientStrc * pClient,
     D2GSPacketSrv0x2A sPacket;
     sPacket.nResult = nResult;
     sPacket.nPacketId = nPacketid;
-    sPacket.nUnitGUID = nUnitGUID;
     sPacket.nGold = nGold;
+    sPacket.nUnitGUID = nUnitGUID;
     sPacket.nTradeType = nTradeType;
     SCMD_QueuePacketForClient(&sPacket.nPacketId, 0xf, pClient);
 }
 
 void __fastcall NET_D2GS_SERVER_Send_0x2C_PlaySound(D2ClientStrc * pClient, D2GSPacketSrv0x2C * pPacket) {
     D2GSPacketSrv0x2C aPacket;
-    *(uint32_t*)(char*)&aPacket = *(uint32_t*)pPacket;
-    *(uint32_t*)((char*)&aPacket + 4) = *(uint32_t*)((uintptr_t)&pPacket->nUnitGUID + 2);
+    aPacket = *pPacket;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 8, pClient);
 }
 
 void __fastcall NET_D2GS_SERVER_Send_0x4E_ADDTOMERCENARYLIST(D2ClientStrc * pClient, D2GSPacketSrv0x4E * pPacket) {
     D2GSPacketSrv0x4E abPacketTail;
-    *(uint32_t*)(char*)&abPacketTail = *(uint32_t*)pPacket;
-    *(uint16_t*)((char*)&abPacketTail.nSeed + 1) = *(uint16_t*)((uintptr_t)&pPacket->nSeed + 1);
-    *(uint8_t*)((char*)&abPacketTail.nSeed + 3) = *(uint8_t*)((uintptr_t)&pPacket->nSeed + 3);
+    abPacketTail = *pPacket;
     SCMD_QueuePacketForClient(&abPacketTail.nPacketId, 7, pClient);
 }
 
@@ -1842,10 +1833,10 @@ void __fastcall NET_D2GS_SERVER_Send_0x11_UnitDoOverlay(D2ClientStrc * pClient, 
 void __fastcall NET_D2GS_SERVER_Send_0x57_CHANGEMONSTERUNIT(D2ClientStrc * pClient, uint32_t dwUnitGUID, uint8_t byNpcClassOrType, uint16_t wNpcCodeParam, uint16_t wUMods01, uint16_t wUMod2, uint16_t wIsChampion) {
     D2GSPacketSrv0x57 byOpcode;
     byOpcode.dwUnitGUID = dwUnitGUID;
-    byOpcode.wNameSeed = wNpcCodeParam;
     byOpcode.nParam5 = byNpcClassOrType;
-    byOpcode.wParam10 = wUMod2;
+    byOpcode.wNameSeed = wNpcCodeParam;
     byOpcode.wParam8 = wUMods01;
+    byOpcode.wParam10 = wUMod2;
     byOpcode.nPacketId = 'W';
     byOpcode.wParam12 = wIsChampion;
     SCMD_QueuePacketForClient(&byOpcode.nPacketId, 0xe, pClient);
@@ -1853,9 +1844,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x57_CHANGEMONSTERUNIT(D2ClientStrc * pClie
 
 void __fastcall NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(D2ClientStrc * pClient, D2GSPacketSrv0x58 * pPacket) {
     D2GSPacketSrv0x58 aPacket;
-    *(uint32_t*)(char*)&aPacket = *(uint32_t*)pPacket;
-    *(uint16_t*)((char*)&aPacket + 4) = *(uint16_t*)((uintptr_t)&pPacket->nUnitGUID + 3);
-    aPacket.nUIState = pPacket->nUIState;
+    aPacket = *pPacket;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 7, pClient);
 }
 
@@ -2154,8 +2143,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x89_QUESTEVENTTRIGGER(D2ClientStrc * pClie
 
 void __fastcall NET_D2GS_SERVER_Send_0x8A_NpcWantsInteract(D2ClientStrc * pClient, D2GSPacketSrv0x8A * pPacket) {
     D2GSPacketSrv0x8A aPacket;
-    *(uint32_t*)(char*)&aPacket = *(uint32_t*)pPacket;
-    *(uint16_t*)((char*)&aPacket.nUnitGUID + 2) = *(uint16_t*)((uintptr_t)&pPacket->nUnitGUID + 2);
+    aPacket = *pPacket;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 6, pClient);
 }
 
@@ -2739,7 +2727,6 @@ void __fastcall Send0x9CItemToCursor(D2ClientStrc * pClient, D2UnitStrc * pPlaye
 // EDX pPlayer: callers pass the item's owner; overwritten here before any read.
 void __fastcall Send0x9CItemHandleInShop(D2ClientStrc * pClient, D2UnitStrc * pPlayer, D2UnitStrc * pUnit, uint8_t cParam) {
     eInventoryPage eCurrentPage;
-    eInventoryPage ePreviousPage;
     int32_t iVar1;
     BOOL bIsIdentified;
     uint32_t nUnidentifiedFlag;
@@ -2761,8 +2748,7 @@ void __fastcall Send0x9CItemHandleInShop(D2ClientStrc * pClient, D2UnitStrc * pP
       case '9':
         {
           eCurrentPage = D2Common::ITEMS::Items::ITEM_GetContainingInventoryPage(pUnit);
-          ePreviousPage = D2Common::ITEMS::Items::ITEM_GetItemData_ePreviousPage(pUnit);
-          D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit, ePreviousPage);
+          D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit, D2Common::ITEMS::Items::ITEM_GetItemData_ePreviousPage(pUnit));
           NET_D2GS_SERVER_Send_0x9C_ITEMEX(pClient, pUnit, '\f', ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD), 0);
           D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit, eCurrentPage);
           return;

@@ -53,6 +53,7 @@
 #include "D2Game/Monster/Monster.h"
 #include "D2Game/Monster/MonsterRegion.h"
 #include "D2Game/Monster/Monsters.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/Quests/QUESTS.h"
 #include "D2Game/SKILLS/SkillsServer.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -137,6 +138,10 @@ void __fastcall MONSTERMODE_GetStoredPosition(int32_t pMonData, int32_t * pOutSt
     *pOutStoredFlags = *(uint8_t*)(pMonData + 0x20);
 }
 
+int __fastcall Unreferenced_005a6250(int param_1) {
+    return param_1 + 0x14;
+}
+
 void __fastcall SetCombatAndMonStats(D2MonsterPathParamStrc * pPathParam, int32_t nPathType, int32_t nVelocity, uint8_t nSteps) {
     if (nPathType) {
       pPathParam->nPathTypeOverride = nPathType;
@@ -192,7 +197,7 @@ static eD2PathTypes __stdcall GetPathCount(eD2PathTypes ePathType, uint8_t nDist
       pUnit->eUnitFlags |= UNITFLAG_DOUPDATE;
       D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 0xf);
       D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
-      ePathType = PATHTYPE_FOLLOW_WALL;
+      return PATHTYPE_FOLLOW_WALL;
     }
 
     return ePathType;
@@ -1303,7 +1308,6 @@ BOOL __fastcall thunk_FreeCombatAndChangeAnimMode_B(::SGAMEDATA * pGame, D2Monst
 BOOL __fastcall MONMODE_TryFleeFromTarget(::SGAMEDATA * pGame, D2MonsterKillStrc * pMonsterKill) {
     int32_t nMonStatsRow;
     int nClassId;
-    uint8_t nDistance;
     D2UnitStrc* pUnit = pMonsterKill->pVictim;
     if (!pUnit) {
       nClassId = -1;
@@ -1331,12 +1335,11 @@ BOOL __fastcall MONMODE_TryFleeFromTarget(::SGAMEDATA * pGame, D2MonsterKillStrc
       D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 8);
       nMonStatsRow = D2Client::UNIT::Player::TXT_MonStats_GetBaseId(pUnit);
       if (nMonStatsRow < 0 || nMonStatsRow >= sgptDataTable->nTxtMonStatsSize || nMonStatsRow != 0x4e) {
-        nDistance = 5;
+        D2Common::PATH::DynamicPath::SetDistance(pDynamicPath, 5);
       } else {
-        nDistance = 10;
+        D2Common::PATH::DynamicPath::SetDistance(pDynamicPath, 10);
       }
 
-      D2Common::PATH::DynamicPath::SetDistance(pDynamicPath, nDistance);
       D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
       UNIT::SUnit::FreeCombatAndChangeAnimMode(pGame, pUnit, 0xd);
     }
@@ -1717,15 +1720,7 @@ void __stdcall SetCurrentSkill(D2UnitStrc * pUnit, eD2MonsterAnimMode nUnitMode,
     }
 
     D2Common::Units::SetCurrentSkill(pUnit, nullptr);
-    pMonsterKill->pAttacker = 0;
-    pMonsterKill->nTargetX = 0;
-    pMonsterKill->nTargetY = 0;
-    pMonsterKill->nAnimatedMode1 = '\0';
-    pMonsterKill->nAnimatedMode2 = '\0';
-    pMonsterKill->nUnknown1 = '\0';
-    pMonsterKill->nUnknown2 = '\0';
-    pMonsterKill->nMonType1 = 0;
-    pMonsterKill->nMonType2 = 0;
+    memset(pMonsterKill, 0, sizeof(*pMonsterKill));
     pMonsterKill->nUnitMode = nUnitMode;
     pMonsterKill->pVictim = pUnit;
     uint32_t bHasSequence = MONSTER_HasAnimModeSequence(pUnit, nUnitMode);

@@ -63,6 +63,7 @@
 #include "D2Game/Monsters/Spawn.h"
 #include "D2Game/Objects/Objects.h"
 #include "D2Game/Objects/ObjectsMode.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/Quests/QUESTS.h"
 #include "D2Game/Quests/QUESTS/A5Q6.h"
 #include "D2Game/SKILLS/SkillAss.h"
@@ -907,9 +908,7 @@ void __fastcall MISSILES_SpawnAreaPattern(::SGAMEDATA * pGame, D2UnitStrc * pUni
             ptPos.y = nCurY;
             _bCollides = D2Common::Collision::TestCollision(pCollisionRoom, &ptPos, &ptOffset, 4);
             if (!_bCollides) {
-              nRowY = nCurY;
-              pRoom = D2Common::Units::UNITS_GetRoom(pOwnerUnit);
-              pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nCenterX, nRowY);
+              pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pOwnerUnit), nCenterX, nCurY);
               if (pRoom) {
                 _bCollides = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
                 if (!_bCollides) {
@@ -1293,7 +1292,7 @@ BOOL __fastcall Missiles_SrvHitFunc_AreaSplashDamage(::SGAMEDATA * pGame, D2Unit
     sDamage.wResultFlags |= pMissileTxt->ResultFlags;
     sDamage.dwHitFlags |= pMissileTxt->HitFlags;
     BVar1 = SKILLS::SkillsServer::SKILLS_ApplyAreaDamage(pGame, pOwner, nPosX, nPosY, nRadius, &sDamage, 0);
-    return (BVar1 ? -2 : 0) + 3;
+    return 3 + (BVar1 ? -2 : 0);
 }
 
 BOOL __fastcall Missiles_SrvHitFunc_WallHitDelegateToAreaDamage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
@@ -1593,8 +1592,7 @@ static BOOL __stdcall MISSILES_ApplyAreaHitEffect(::SGAMEDATA * pGame, D2UnitStr
       return 1;
     }
 
-    D2UnitStrc* pTarget = SKILLS::SkillsServer::SKILLS_FindNextUnitInAreaByGUID(pGame, pOwner, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit), nRadius, 3, -1, 0);
-    MISSILE_SetupTargetAndRange(pTarget, pUnit);
+    MISSILE_SetupTargetAndRange(SKILLS::SkillsServer::SKILLS_FindNextUnitInAreaByGUID(pGame, pOwner, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit), nRadius, 3, -1, 0), pUnit);
     return 0;
 }
 
@@ -1629,7 +1627,7 @@ BOOL __fastcall Missiles_SrvHitFunc_PierceOrExplodeOnWall(::SGAMEDATA * pGame, D
         nCurrFrame = D2Common::Units::Missile::GetCurrentFrame(pUnit);
         if (nCurrFrame <= 0) {
           bIsTown = MISSILES_ApplyAreaHitEffect(pGame, pUnit);
-          return (bIsTown ? -3 : 0) + 4;
+          return 4 + (bIsTown ? -3 : 0);
         }
 
         return (nTargetFlags & 4) != 0 ? 0x3U : 0x4U;
@@ -1766,7 +1764,7 @@ BOOL __fastcall Missiles_SrvHitFunc_AreaDamageWithDurationMod(::SGAMEDATA * pGam
     nAreaHitResult = 0;
     pDamageArg = &sDamage;
     nMissileClassId = SKILLS::SkillsServer::SKILLS_ApplyAreaDamage(pGame, UNIT::SUnit::GetOwnerUnit(pGame, pUnit), nPosX, nSkillLvl, nRadius, pDamageArg, nAreaHitResult);
-    return (nMissileClassId ? -2 : 0) + 3;
+    return 3 + (nMissileClassId ? -2 : 0);
 }
 
 // Spawns up to 18 child missiles in a fixed radial pattern around the parent missile's current position. Iterates the gaMissileOffsets_RadialPattern18 table in steps of nParam2*4 (stride to skip entries), each offset applied to the unit's X/Y center. nParam1 sets fixed lifetime (flag 0x8000). Inherits owner/skill/level from parent.
@@ -2052,7 +2050,6 @@ BOOL __fastcall Missiles_SrvHitFunc_ApplyTerrorToMonster(::SGAMEDATA * pGame, D2
 }
 
 BOOL __fastcall Missiles_SrvHitFunc_ApplyWarCryBuff(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
-    int32_t nSkillLvl;
     D2UnitStrc* pOwnerUnit = UNIT::SUnit::GetOwnerUnit(pGame, pUnit);
     if (!pOwnerUnit) {
       return 1;
@@ -2061,8 +2058,7 @@ BOOL __fastcall Missiles_SrvHitFunc_ApplyWarCryBuff(::SGAMEDATA * pGame, D2UnitS
       BOOL bCanTargetAlly;
       bCanTargetAlly = UNIT::SUnit::SKILL_CanUnitTargetAlly(pGame, pOwnerUnit, pTarget);
       if (bCanTargetAlly) {
-        nSkillLvl = D2Common::Units::Missile::GetLevel(pUnit);
-        SKILLS::SkillBar::SKILLBAR_ApplyWarCryBuff(pGame, pTarget, pOwnerUnit, D2Common::Units::Missile::GetSkillId(pUnit), nSkillLvl);
+        SKILLS::SkillBar::SKILLBAR_ApplyWarCryBuff(pGame, pTarget, pOwnerUnit, D2Common::Units::Missile::GetSkillId(pUnit), D2Common::Units::Missile::GetLevel(pUnit));
       }
     }
 
@@ -3107,10 +3103,7 @@ BOOL __fastcall Missiles_SrvHitFunc_HealTargetRandom(::SGAMEDATA * pGame, D2Unit
       return 1;
     }
 
-    int32_t nCalcType = 1;
-    eD2Skills eSkillSave = eSkill;
-    int32_t nMinHeal = nMaxHp;
-    nMinHeal = D2Common::Skills::SKILL_CalcMinDamage(UNIT::SUnit::GetOwnerUnit(pGame, pUnit), eSkillSave, nMinHeal, nCalcType);
+    int32_t nMinHeal = D2Common::Skills::SKILL_CalcMinDamage(UNIT::SUnit::GetOwnerUnit(pGame, pUnit), eSkill, nMaxHp, 1);
     nMaxHp = D2Common::Skills::SKILL_CalcMaxDamage(UNIT::SUnit::GetOwnerUnit(pGame, pUnit), eSkill, nMaxHp, 1);
     uint32_t uRandHeal = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnit->sSeed, nMaxHp - nMinHeal);
     nClassId = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pTarget, UNITSTAT_hitpoints, 0);
@@ -3130,29 +3123,28 @@ BOOL __fastcall Missiles_SrvHitFunc_HealTargetRandom(::SGAMEDATA * pGame, D2Unit
 
 BOOL __fastcall Missiles_SrvHitFunc_SpawnFixedMissileStar(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
     D2SkillArgStrc sSkillArg;
-    if (!pUnit) {
-      return 1;
+    if (pUnit) {
+      int nClassId = pUnit->nClassId;
+      D2MissilesTxt* pMissileTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nClassId : nullptr;
+      if (!(pMissileTxt && pMissileTxt->HitSubMissile1 >= 0 && pMissileTxt->sHitPar1 > 0)) {
+        return 1;
+      }
+
+      memset(&sSkillArg, 0, 0x5c);
+      sSkillArg.nFlags = 3;
+      sSkillArg.nX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
+      sSkillArg.nY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
+      sSkillArg.eSkillNo = D2Common::Units::Missile::GetSkillId(pUnit);
+      sSkillArg.pOwner = UNIT::SUnit::GetOwnerUnit(pGame, pUnit);
+      sSkillArg.nMissileTxtNo = (eMissilesId)pMissileTxt->HitSubMissile1;
+      sSkillArg.nSkillLevel = D2Common::Units::Missile::GetLevel(pUnit);
+      if (pMissileTxt->sHitPar2) {
+        sSkillArg.fpFunction = MISSILES_SetPathFromTotalFramesCallback;
+      }
+
+      SKILLS::SkillsServer::SKILLS_CreateMissileStar(pGame, pMissileTxt->sHitPar1, &sSkillArg);
     }
 
-    int nClassId = pUnit->nClassId;
-    D2MissilesTxt* pMissileTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nClassId : nullptr;
-    if (!(pMissileTxt && pMissileTxt->HitSubMissile1 >= 0 && pMissileTxt->sHitPar1 > 0)) {
-      return 1;
-    }
-
-    memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.nFlags = 3;
-    sSkillArg.nX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-    sSkillArg.nY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-    sSkillArg.eSkillNo = D2Common::Units::Missile::GetSkillId(pUnit);
-    sSkillArg.pOwner = UNIT::SUnit::GetOwnerUnit(pGame, pUnit);
-    sSkillArg.nMissileTxtNo = (eMissilesId)pMissileTxt->HitSubMissile1;
-    sSkillArg.nSkillLevel = D2Common::Units::Missile::GetLevel(pUnit);
-    if (pMissileTxt->sHitPar2) {
-      sSkillArg.fpFunction = MISSILES_SetPathFromTotalFramesCallback;
-    }
-
-    SKILLS::SkillsServer::SKILLS_CreateMissileStar(pGame, pMissileTxt->sHitPar1, &sSkillArg);
     return 1;
 }
 
@@ -3290,30 +3282,28 @@ BOOL __fastcall Missiles_SrvHitFunc_BlockHitUntilFrame(::SGAMEDATA * pGame, D2Un
 
 BOOL __fastcall Missiles_SrvHitFunc_SpawnUpToThreeSubMissiles(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
     D2SkillArgStrc sSkillArg;
-    if (!pUnit) {
-      return 1;
-    }
+    if (pUnit) {
+      int nClassId = pUnit->nClassId;
+      D2MissilesTxt* pMissileTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nClassId : nullptr;
+      if (!(pMissileTxt && pMissileTxt->HitSubMissile1 >= 0)) {
+        return 1;
+      }
 
-    int nClassId = pUnit->nClassId;
-    D2MissilesTxt* pMissileTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nClassId : nullptr;
-    if (!(pMissileTxt && pMissileTxt->HitSubMissile1 >= 0)) {
-      return 1;
-    }
-
-    memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.pOwner = UNIT::SUnit::GetOwnerUnit(pGame, pUnit);
-    sSkillArg.eSkillNo = D2Common::Units::Missile::GetSkillId(pUnit);
-    sSkillArg.nSkillLevel = D2Common::Units::Missile::GetLevel(pUnit);
-    sSkillArg.nMissileTxtNo = (eMissilesId)pMissileTxt->HitSubMissile1;
-    sSkillArg.pMissile = pUnit;
-    Missiles::CreatingMissile(pGame, &sSkillArg);
-    if (pMissileTxt->HitSubMissile2 >= 0) {
-      sSkillArg.nMissileTxtNo = (eMissilesId)pMissileTxt->HitSubMissile2;
+      memset(&sSkillArg, 0, 0x5c);
+      sSkillArg.pOwner = UNIT::SUnit::GetOwnerUnit(pGame, pUnit);
+      sSkillArg.eSkillNo = D2Common::Units::Missile::GetSkillId(pUnit);
+      sSkillArg.nSkillLevel = D2Common::Units::Missile::GetLevel(pUnit);
+      sSkillArg.pMissile = pUnit;
+      sSkillArg.nMissileTxtNo = (eMissilesId)pMissileTxt->HitSubMissile1;
       Missiles::CreatingMissile(pGame, &sSkillArg);
-    }
-    if (pMissileTxt->HitSubMissile3 >= 0) {
-      sSkillArg.nMissileTxtNo = (eMissilesId)pMissileTxt->HitSubMissile3;
-      Missiles::CreatingMissile(pGame, &sSkillArg);
+      if (pMissileTxt->HitSubMissile2 >= 0) {
+        sSkillArg.nMissileTxtNo = (eMissilesId)pMissileTxt->HitSubMissile2;
+        Missiles::CreatingMissile(pGame, &sSkillArg);
+      }
+      if (pMissileTxt->HitSubMissile3 >= 0) {
+        sSkillArg.nMissileTxtNo = (eMissilesId)pMissileTxt->HitSubMissile3;
+        Missiles::CreatingMissile(pGame, &sSkillArg);
+      }
     }
 
     return 1;
@@ -3380,8 +3370,8 @@ BOOL __fastcall Missiles_SrvHitFunc_ApplyDruidAuraWithMissile(::SGAMEDATA * pGam
       eD2Skills eSkill;
       eSkill = D2Common::Units::Missile::GetSkillId(pUnit);
       nSkillLvl = D2Common::Units::Missile::GetLevel(pUnit);
-      nExpireFrame = D2Common::Units::Missile::GetTargetX(pUnit);
-      nDuration = nExpireFrame - pGame->dwGameFrame;
+      nDuration = D2Common::Units::Missile::GetTargetX(pUnit);
+      nDuration -= pGame->dwGameFrame;
       if (nDuration < 10) {
         return 1;
       }
@@ -3642,9 +3632,7 @@ void __fastcall Missiles_SrvDmgFunc_PhysToElementalByCalc1(::SGAMEDATA * pGame, 
     }
 
     uint32_t nCalcExpr = pMissilesTxt->DmgCalc1;
-    int32_t nElemDamage = -1;
-    int32_t uConversionPct = -1;
-    uConversionPct = D2Common::Units::Missile::MISSILE_EvalMissileCalc(pUnit, UNIT::SUnit::GetOwnerUnit(pGame, pUnit), nCalcExpr, uConversionPct, nElemDamage);
+    int32_t uConversionPct = D2Common::Units::Missile::MISSILE_EvalMissileCalc(pUnit, UNIT::SUnit::GetOwnerUnit(pGame, pUnit), nCalcExpr, -1, -1);
     if (uConversionPct <= 0) {
       return;
     }
@@ -3652,7 +3640,7 @@ void __fastcall Missiles_SrvDmgFunc_PhysToElementalByCalc1(::SGAMEDATA * pGame, 
       uConversionPct = 100;
     }
 
-    nElemDamage = pDamage->dwPhysDamage;
+    int32_t nElemDamage = pDamage->dwPhysDamage;
     uConversionPct = D2Client::Stats::D2ApplyPercent(nElemDamage, uConversionPct, 100);
     if (uConversionPct >= nElemDamage) {
       uConversionPct = nElemDamage;
@@ -3674,9 +3662,7 @@ void __fastcall Missiles_SrvDmgFunc_RecalcElementalWithClear(::SGAMEDATA * pGame
     }
 
     uint32_t nCalcExpression = pMissilesTxt->DmgCalc1;
-    int32_t nElemDamage = -1;
-    int32_t nCalcResult = -1;
-    nCalcResult = D2Common::Units::Missile::MISSILE_EvalMissileCalc(pUnit, UNIT::SUnit::GetOwnerUnit(pGame, pUnit), nCalcExpression, nCalcResult, nElemDamage);
+    int32_t nCalcResult = D2Common::Units::Missile::MISSILE_EvalMissileCalc(pUnit, UNIT::SUnit::GetOwnerUnit(pGame, pUnit), nCalcExpression, -1, -1);
     if (nCalcResult <= 0) {
       return;
     }
@@ -3689,7 +3675,7 @@ void __fastcall Missiles_SrvDmgFunc_RecalcElementalWithClear(::SGAMEDATA * pGame
       nCalcResult = pDamage->dwPhysDamage;
     }
 
-    nElemDamage = MISSILES_CalculateElementalDamage(pGame, pUnit, pTarget, pDamage);
+    int32_t nElemDamage = MISSILES_CalculateElementalDamage(pGame, pUnit, pTarget, pDamage);
     MISSILES_ClearDamageStruct(pGame, pUnit, pDamage);
     MISSILES_AddElementalDamageBonus(pGame, pUnit, pTarget, pDamage, nCalcResult + nElemDamage);
 }
@@ -3859,8 +3845,8 @@ void __fastcall Missiles_SrvDmgFunc_SynergyCappedPoisonLength(::SGAMEDATA * pGam
       eD2Skills eSkillId;
       eSkillId = D2Common::Units::Missile::GetSkillId(pUnit);
       nSkillLevel = D2Common::Units::Missile::GetLevel(pUnit);
-      nExpireFrame = D2Common::Units::Missile::GetTargetX(pUnit);
-      nFrameDelta = nExpireFrame - pGame->dwGameFrame;
+      nFrameDelta = D2Common::Units::Missile::GetTargetX(pUnit);
+      nFrameDelta -= pGame->dwGameFrame;
       if (nFrameDelta >= 10) {
         nSkillLevel = D2Common::Skills::SKILLS_GetElementalLength(pOwner, eSkillId, nSkillLevel, 1);
         if (nFrameDelta <= nSkillLevel) {
@@ -4269,7 +4255,7 @@ static void __stdcall MissileSrvDo(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     if (!pRoom) {
       int32_t nPosY;
       nPosY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-      pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(nullptr, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), nPosY);
+      pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(nullptr, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), nPosY);
     }
 
     D2UnitStrc* pOwner;
@@ -5201,7 +5187,8 @@ int __fastcall MISSILESMODE_SrvDoFn13_BoneWallMaker(::SGAMEDATA * pGame, D2UnitS
           D2Common::Units::StoreOwner(pOwner, pSummonOwner);
           GAME::Targets::AddNodeToTable(pGame, pOwner, nullptr, 9);
           nRemainingMinions = D2Common::Units::Missile::GetTargetY(pUnit);
-          D2Common::Units::Missile::SetTargetY(pUnit, nRemainingMinions - 1);
+          nRemainingMinions -= 1;
+          D2Common::Units::Missile::SetTargetY(pUnit, nRemainingMinions);
         }
       }
 
@@ -5556,8 +5543,7 @@ int __fastcall MISSMODE_SrvDoFn18_TowerChestSpawner(::SGAMEDATA * pGame, D2UnitS
             nItemSpawnWidth = 1;
             pBestSpawnPos = &ptMissileCenter;
             ptSpawnCenter.y += nRandDelta - nSpawnInterval;
-            pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-            pRoom = ITEMS::Items::Drop::FindBestSpotToSpawnItem(pRoom, &ptSpawnCenter, pBestSpawnPos, nItemSpawnWidth, bySpawnFlag);
+            pRoom = ITEMS::Items::Drop::FindBestSpotToSpawnItem(D2Common::Units::UNITS_GetRoom(pUnit), &ptSpawnCenter, pBestSpawnPos, nItemSpawnWidth, bySpawnFlag);
             if (pRoom) {
               bIsExpansion = pGame->bExpansion;
               nDifficulty = pGame->nDifficulty;
@@ -5734,7 +5720,6 @@ int __fastcall MISSILESMODE_SrvDoFn25_EruptionCenter(::SGAMEDATA * pGame, D2Unit
     int32_t nSpawnCount;
     int32_t nInterval;
     D2SkillsTxt* pSkillsTxt;
-    eD2Skills eSkill_00;
     if (!pUnit) {
       return 2;
     }
@@ -5751,9 +5736,7 @@ int __fastcall MISSILESMODE_SrvDoFn25_EruptionCenter(::SGAMEDATA * pGame, D2Unit
 
       nInterval = D2Common::Units::Missile::GetLevel(pUnit);
       nMissileClassId = pSkillsTxt->calc[0];
-      eSkill_00 = eSkill;
-      nSpawnCount = nInterval;
-      nSpawnCount = D2Common::Skills::D2GetSkillCalc(UNIT::SUnit::GetOwnerUnit(pGame, pUnit), nMissileClassId, eSkill_00, nSpawnCount);
+      nSpawnCount = D2Common::Skills::D2GetSkillCalc(UNIT::SUnit::GetOwnerUnit(pGame, pUnit), nMissileClassId, eSkill, nInterval);
       nMissileClassId = pSkillsTxt->calc[1];
       nInterval = D2Common::Skills::D2GetSkillCalc(UNIT::SUnit::GetOwnerUnit(pGame, pUnit), nMissileClassId, eSkill, nInterval);
       MISSILES_SpawnPeriodicRandom(pGame, nSpawnCount, (int)pMissilesTxt->SubMissile1, 0x45, nInterval, pUnit);
@@ -5933,7 +5916,6 @@ int __fastcall MISSILESMODE_SrvDoFn29_RecyclerDelay(::SGAMEDATA * pGame, D2UnitS
     int32_t nSkillLevel;
     int32_t nMissileId;
     int nMaxHpShifted;
-    uint32_t nPctDivisor;
     short int nProgOverlay;
     if (!pUnit) {
       return 2;
@@ -5977,9 +5959,7 @@ int __fastcall MISSILESMODE_SrvDoFn29_RecyclerDelay(::SGAMEDATA * pGame, D2UnitS
           nMissileId = D2Common::Stats::StatsEx::GetTxtMaxHp(pOwner);
           nMaxHpShifted = nMissileId >> 8;
           if (nMissileClassId >> 8 < nMaxHpShifted) {
-            nPctDivisor = 100;
-            nSkillLevel = D2Common::Skills::D2GetSkillCalc(pOwner, pSkillTxt[eSkill].calc[0], eSkill, nSkillLevel);
-            nSkillLevel = D2Client::Stats::D2ApplyPercent(nMaxHpShifted, nSkillLevel, nPctDivisor);
+            nSkillLevel = D2Client::Stats::D2ApplyPercent(nMaxHpShifted, D2Common::Skills::D2GetSkillCalc(pOwner, pSkillTxt[eSkill].calc[0], eSkill, nSkillLevel), 100);
             nMissileClassId = (nMissileClassId >> 8) + nSkillLevel;
             if (nMissileClassId >= nMaxHpShifted) {
               nMissileClassId = nMaxHpShifted;
@@ -6004,7 +5984,6 @@ int __fastcall MISSILESMODE_SrvDoFn33_VineRecyclerDelay(::SGAMEDATA * pGame, D2U
     int32_t nSkillLevel;
     int32_t nMissileId;
     int nValue;
-    uint32_t n100Percent;
     short int nProgOverlay;
     if (!pUnit) {
       return 2;
@@ -6048,9 +6027,7 @@ int __fastcall MISSILESMODE_SrvDoFn33_VineRecyclerDelay(::SGAMEDATA * pGame, D2U
           nMissileId = D2Common::Stats::StatsEx::GetTxtMaxMana(pOwner);
           nValue = nMissileId >> 8;
           if (nMissileClassId >> 8 < nValue) {
-            n100Percent = 100;
-            nSkillLevel = D2Common::Skills::D2GetSkillCalc(pOwner, pSkillTxtBase[eSkill].calc[0], eSkill, nSkillLevel);
-            nSkillLevel = D2Client::Stats::D2ApplyPercent(nValue, nSkillLevel, n100Percent);
+            nSkillLevel = D2Client::Stats::D2ApplyPercent(nValue, D2Common::Skills::D2GetSkillCalc(pOwner, pSkillTxtBase[eSkill].calc[0], eSkill, nSkillLevel), 100);
             nMissileClassId = (nMissileClassId >> 8) + nSkillLevel;
             if (nMissileClassId >= nValue) {
               nMissileClassId = nValue;
@@ -6615,6 +6592,18 @@ int __fastcall MISSILESMODE_SrvDoFn37_Unused(::SGAMEDATA * pGame, D2UnitStrc * p
 // JMP thunk
 int __fastcall thunk_MISSILESMODE_SrvDoFn01_BasicMissile(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     return ::D2Game::MISSILES::MissilesMode::MISSMODE_SrvDoFn01_BasicMissile(pGame, pUnit);
+}
+
+BOOL __fastcall Missiles_SrvHitFunc_NoOp_Unref_00643880(::SGAMEDATA * pGame, D2UnitStrc * pMissile, D2UnitStrc * pTarget) {
+    return 1;
+}
+
+BOOL __fastcall Missiles_SrvHitFunc_NoOp_Unref_00646260(::SGAMEDATA * pGame, D2UnitStrc * pMissile, D2UnitStrc * pTarget) {
+    return 1;
+}
+
+BOOL __fastcall Missiles_SrvHitFunc_NoOp_Unref_00646270(::SGAMEDATA * pGame, D2UnitStrc * pMissile, D2UnitStrc * pTarget) {
+    return 1;
 }
 
 } // namespace D2Game::MISSILES::MissilesMode

@@ -12,6 +12,7 @@
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
 #include "D2Common/DATATBLS/LvlTbls.h"
+#include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgGridStrc.h"
 #include "D2Common/Drlg/D2DrlgLevelStrc.h"
 #include "D2Common/Drlg/D2DrlgOrthStrc.h"
@@ -29,7 +30,6 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgCoordsStrc.h"
 #include "D2Common/Drlg/D2DrlgStrc.h"
 #include "D2Common/Drlg/Preset.data.h"
@@ -456,7 +456,11 @@ void __fastcall DRLGROOMTILE_CompactTileDataArray(D2RoomExStrc * pRoomEx) {
 
 // Returns the warp direction byte based on the tile orientation. Returns 0x72 for orientation 0xb (special case), or 0x6c otherwise. From RoomTile.cpp.
 char __stdcall DRLGROOMTILE_GetWarpDirectionByte(int nTileType) {
-    return nTileType != 0xb ? 0x6c : 0x72;
+    if (nTileType == 0xb) {
+      return 0x72;
+    }
+
+    return 0x6c;
 }
 
 // Sets the warp tile direction by looking up the correct LvlWarp entry based on the destination direction, updating the tile link's warp data pointer.
@@ -479,7 +483,7 @@ static void __stdcall DRLGROOMTILE_SetWarpTileDirection(D2DrlgTileLinkStrc * pTi
         return;
       }
 
-      nDirection = nTileType != 0xb ? 0x6c : 0x72;
+      nDirection = nTileType == 0xb ? 0x72 : 0x6c;
       if (nCurrentDir == nDirection) {
         return;
       }
@@ -491,7 +495,7 @@ static void __stdcall DRLGROOMTILE_SetWarpTileDirection(D2DrlgTileLinkStrc * pTi
 }
 
 static BOOL __stdcall DRLGROOMTILE_CreateExitWarp(uint32_t nTileFlags, int32_t nXTileId, int32_t nX, int32_t nYTileId, D2RoomExStrc * pRoomEx) {
-    D2LvlWarpTxt* pWarpInfo = DrlgRoom::DRLGLEVEL_GetWarpsIdIfExistsAndSetup(pRoomEx->pLevel, (uint8_t)(nTileFlags >> 0x14) & 0x3f, nX != 0xb ? 0x6c : 0x72);
+    D2LvlWarpTxt* pWarpInfo = DrlgRoom::DRLGLEVEL_GetWarpsIdIfExistsAndSetup(pRoomEx->pLevel, (uint8_t)(nTileFlags >> 0x14) & 0x3f, nX == 0xb ? 0x72 : 0x6c);
     if (!pWarpInfo) {
       return 0;
     }
@@ -914,7 +918,6 @@ static void __stdcall DRLGROOMTILE_ProcessTile(eD2GridCellFlags nFlags, D2RoomEx
     D2TileLibraryEntryStrc* nTileLibEntry;
     BOOL bIsInside;
     eD2GridCellFlags nGridFlags;
-    uint32_t nBlankTileFlags;
     uint8_t nMainIndex;
     nMainIndex = (uint8_t)(nFlags >> 0x14) & 0x3f;
     if ((nOtherFlags == (CELLFLAGS_0x08 | CELLFLAGS_0x02 | CELLFLAGS_0x01) || nOtherFlags == (CELLFLAGS_0x08 | CELLFLAGS_0x02)) && nMainIndex >= 8) {
@@ -978,12 +981,10 @@ static void __stdcall DRLGROOMTILE_ProcessTile(eD2GridCellFlags nFlags, D2RoomEx
 
       nGridFlags = nFlags & ~CELLFLAGS_0x80 | CELLFLAGS_0x80000000;
       if (pRoom->pLevel->eD2LevelId != 0x4a) {
-        nBlankTileFlags = 0x1e00000;
+        nTileLibEntry = DRLG_FindHTile(pRoom, 0, 0x1e00000);
       } else {
-        nBlankTileFlags = 0x1e00100;
+        nTileLibEntry = DRLG_FindHTile(pRoom, 0, 0x1e00100);
       }
-
-      nTileLibEntry = DRLG_FindHTile(pRoom, 0, nBlankTileFlags);
     }
 
     D2DrlgTileGridStrc* pTileGrid;
@@ -1188,6 +1189,15 @@ void __fastcall DRLGROOMTILE_GrowTileDataArray(D2PoolManagerStrc * pMemory, D2Dr
 
     pTileGrid->sRoomTiles.pRoofTiles[nIndex].pNext = 0;
     pTileGrid->sRoomTiles.nRoofTilesCount += nAdditionalTiles;
+}
+
+int __fastcall Unreferenced_0066f030(int param_1) {
+    if (!param_1) {
+      return 0;
+    }
+
+    D2RoomExStrc* pDVar1 = DUNGEON::Dungeon::GetRoomExFromRoom((D2RoomStrc*)param_1);
+    return pDVar1->pRoomTiles->nShadows;
 }
 
 // NOTE: Callee-saved register params inferred (medium confidence): pPoolManagerStrc (EDI): D2PoolManagerStrc*

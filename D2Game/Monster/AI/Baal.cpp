@@ -4,9 +4,7 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/RosterPets.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
-#include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
 #include "D2Common/Collision.h"
 #include "D2Common/D2DynamicPathStrc.h"
@@ -42,6 +40,7 @@
 #include "D2Game/Monster/Monster.h"
 #include "D2Game/Monsters/Spawn.h"
 #include "D2Game/PLAYER/Player.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
@@ -178,7 +177,7 @@ static int32_t __stdcall RiskAssignmentBaal(D2UnitStrc * pUnit, D2UnitStrc * pTa
       }
     }
 
-    nPhysRes = (int)((nLifePercent >= 0x14 ? 0 : 0x64) * 3 + (nColdRes + nLightRes + (nPhysRes + nMagicRes * 2) * 4 + nFireRes) / 0xf + (nAnchorBonus + nMeleeScore) * 5 + (nSkillThreatScore / 4 + (eUnitState ? 100 : 0) * 2 + ((nPoisonMaxDam >> 8) + nColdMaxDam + nMagicMaxDam + nLightMaxDam + nFireMaxDam + nTotalMaxDam) / 2) * 2) / 0x16;
+    nPhysRes = (int)((nLifePercent < 0x14 ? 0x64 : 0) * 3 + (nColdRes + nLightRes + (nPhysRes + nMagicRes * 2) * 4 + nFireRes) / 0xf + (nAnchorBonus + nMeleeScore) * 5 + (nSkillThreatScore / 4 + (eUnitState ? 100 : 0) * 2 + ((nPoisonMaxDam >> 8) + nColdMaxDam + nMagicMaxDam + nLightMaxDam + nFireMaxDam + nTotalMaxDam) / 2) * 2) / 0x16;
     if (nPhysRes) {
       return nPhysRes;
     }
@@ -912,7 +911,7 @@ static bool __stdcall AI_Baal_SpawnClone(::SGAMEDATA * pGame, int32_t nParam, D2
 
     eD2MonsterAnimMode eSpawnAnimMode;
     eSpawnAnimMode = eD2MonsterAnimMode_ns::Neutral;
-    __frame0.nCloneClassId = sgptDataTable->nTxtMonStatsSize > 0x23a ? 0x23a : -1;
+    __frame0.nCloneClassId = sgptDataTable->nTxtMonStatsSize <= 0x23a ? -1 : 0x23a;
     D2Common::Monsters::MONSTERS::MONSTER_GetSpawnParameters(pUnit, (int*)&__frame0.nCloneClassId, &__frame1.pMemoryTmp, &__frame1.nSpawnYOut, &eSpawnAnimMode, (uint32_t)pGame->nDifficulty, nullptr);
     pTargetUnit = UNIT::SUnit::GetTargetEx(pGame, pUnit);
     if (pTargetUnit) {
@@ -960,14 +959,13 @@ static bool __stdcall AI_Baal_SpawnClone(::SGAMEDATA * pGame, int32_t nParam, D2
     pUnit->sSeed = sNewSeed;
     uint32_t nSpawnYJitter = sNewSeed.nSeedLow % 0x18 - 0xc + nPosY;
     __frame1.nSpawnYOut = nSpawnYJitter;
-    D2RoomStrc* pSpawnRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pSpawnRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pSpawnRoom, __frame1.pMemoryTmp, nSpawnYJitter);
+    D2RoomStrc* pSpawnRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), __frame1.pMemoryTmp, nSpawnYJitter);
     if (!pSpawnRoom) {
       return false;
     }
 
     nSpawnYJitter = __frame1.nSpawnYOut;
-    D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), __frame1.pMemoryTmp, nSpawnYJitter);
+    D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), __frame1.pMemoryTmp, nSpawnYJitter);
     pTargetUnit = Create::SpawnMonsterAtRoomPos(pGame, pSpawnRoom, __frame1.pMemoryTmp, __frame1.nSpawnYOut, __frame0.nCloneClassId, eSpawnAnimMode, -1, 0);
     if (!pTargetUnit) {
       return false;
@@ -1157,8 +1155,8 @@ void __fastcall BaalCrabAi_ResetInfernoAndReattach(::SGAMEDATA * pGame, D2UnitSt
     int storedCommandArg2 = 0;
     D2MonsterAiCmdStrc* pInfernoCommand = Ai::AiGeneral::FindMonsterAiCmd(pUnit, 10, 0);
     if (pInfernoCommand) {
-      storedCommandArg2 = pInfernoCommand->nCmdArg[2];
       storedCommandArg1 = pInfernoCommand->nCmdArg[1];
+      storedCommandArg2 = pInfernoCommand->nCmdArg[2];
     }
 
     BOOL currentInfernoState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_inferno);
@@ -1264,8 +1262,7 @@ void __fastcall AI_Baal_SpawnTentacle(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     aeAnimModes[0] = eD2MonsterAnimMode_ns::Neutral;
     aeAnimModes[1] = 7;
     aeAnimModes[2] = 8;
-    D2RoomStrc* pSpawnRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pSpawnRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pSpawnRoom, pSpawnPoint, nUnitSize, eCollisionFlag, bAllowNeighboorRooms);
+    D2RoomStrc* pSpawnRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(D2Common::Units::UNITS_GetRoom(pUnit), pSpawnPoint, nUnitSize, eCollisionFlag, bAllowNeighboorRooms);
     if (!pSpawnRoom) {
       return;
     }

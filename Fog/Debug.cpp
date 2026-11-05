@@ -200,7 +200,6 @@ pfnSymSetOptions pSymSetOptions = (pfnSymSetOptions)0; D2_GLOBAL_GUARD(pSymSetOp
 pfnStackWalk pStackWalk = (pfnStackWalk)0; D2_GLOBAL_GUARD(pStackWalk, "Fog::Debug::pStackWalk");
 BOOL bBetterStackCrawls = 0; D2_GLOBAL_GUARD(bBetterStackCrawls, "Fog::Debug::bBetterStackCrawls");
 } // namespace Fog::Debug
-static HMODULE hDbgHelpDll = 0; D2_STATIC_GUARD(hDbgHelpDll, "hDbgHelpDll");
 static pfnSymGetModuleInfo64 pSymGetModuleInfo64 = (pfnSymGetModuleInfo64)0; D2_STATIC_GUARD(pSymGetModuleInfo64, "pSymGetModuleInfo64");
 static pfnSymGetSymFromAddr64 pSymGetSymFromAddr64 = (pfnSymGetSymFromAddr64)0; D2_STATIC_GUARD(pSymGetSymFromAddr64, "pSymGetSymFromAddr64");
 static pfnSymSetSearchPath pSymSetSearchPath = (pfnSymSetSearchPath)0; D2_STATIC_GUARD(pSymSetSearchPath, "pSymSetSearchPath");
@@ -301,6 +300,19 @@ bool __stdcall DEBUG_LoadDbgHelp64Apis() {
     return false;
 }
 
+int Unreferenced_00401c80() {
+    int in_EAX;
+    if (bDebugSymbolsInitialized != '\0') {
+      in_EAX = 0;
+      if (hDbgHelpDll) {
+        in_EAX = FreeLibrary(hDbgHelpDll);
+        hDbgHelpDll = (HMODULE)0x0;
+      }
+    }
+
+    return in_EAX;
+}
+
 int __stdcall InitializeDebugSymbols() {
     char* pLastBackslash;
     DWORD dwProcessId;
@@ -312,7 +324,8 @@ int __stdcall InitializeDebugSymbols() {
     }
     if (hDbgHelpDll && pSymSetOptionsApi && pSymInitializeApi) {
       dwProcessId = (*pSymGetOptionsApi)();
-      (*pSymSetOptionsApi)(dwProcessId | 0x214);
+      dwProcessId |= 0x214;
+      (*pSymSetOptionsApi)(dwProcessId);
       if (szCustomSymbolSearchPath[0] == '\0') {
         /* DWORD nSize for GetModuleFileNameA */ /* LPSTR lpFilename for GetModuleFileNameA */ /* HMODULE hModule for GetModuleFileNameA */ GetModuleFileNameA((HMODULE)0x0, szSymbolPath, 0x8000);
         szSymbolPath[0x7fff] = '\0';
@@ -337,6 +350,16 @@ int __stdcall InitializeDebugSymbols() {
     }
 
     return uVar1 & -256;
+}
+
+int Unreferenced_00401dd0() {
+    int in_EAX;
+    if (bDebugSymbolsInitialized != '\0') {
+      in_EAX = (*pSymCleanupApi)(ghCurrentProcessHandle);
+      bDebugSymbolsInitialized = '\0';
+    }
+
+    return in_EAX;
 }
 
 // NOTE: Return type changed void→char (1 callers, MEDIUM confidence)
@@ -989,6 +1012,24 @@ int CompareUintDescending(LPCVOID pLeft, LPCVOID pRight) {
     return -(uint32_t)(*(uint32_t*)pRight > *(uint32_t*)pLeft);
 }
 
+int __fastcall Unreferenced_00402c30(int param_1, int param_2) {
+    int iVar1;
+    if (!param_2) {
+      uint32_t in_EAX;
+      return in_EAX & -256;
+    }
+
+    uint32_t* puVar2 = (uint32_t*)(*(int*)param_2 * 0x228 + 4 + param_2);
+    for (iVar1 = 0x8a; iVar1; iVar1--) {
+      *puVar2 = *(uint32_t*)param_1;
+      param_1 = (int)(param_1 + 4);
+      puVar2++;
+    }
+
+    (*(int*)param_2)++;
+    return (uint32_t)(*(uint32_t*)param_2 < 0x100);
+}
+
 static void FormatModuleDebugString(char * szText, D2FogDebugModuleEntryStrc * pModule) {
     char szGuidStr[40];
     char szTimeStampSuffix[16];
@@ -1242,7 +1283,6 @@ D2FogModuleNodeStrc * __stdcall EnumerateModulesPsapi(HANDLE hProcess) {
     char szModuleName[256];
     char szModulePath[260];
     D2FogModuleNodeStrc* pCurModule;
-    char* pszCopySrc;
     HANDLE hProcessLocal;
     hProcessLocal = hProcess;
     D2FogModuleNodeStrc* pModuleListHead;
@@ -1264,7 +1304,7 @@ D2FogModuleNodeStrc * __stdcall EnumerateModulesPsapi(HANDLE hProcess) {
     HANDLE hProcessLocal2;
     hProcessLocal2 = hProcessLocal;
     if (!pEnumProcessModules || !pGetModuleFileNameExA || !pGetModuleBaseNameA || !pFVar1) {
-      pszCopySrc = "Unable to load psapi library";
+      Src::LogManager::LOGMANAGER_TraceToModuleLog("", "Unable to load psapi library");
     } else {
       bCallOk = (*pEnumProcessModules)(hProcessLocal, ahModules, 0x400, (LPDWORD)&nBytesNeeded);
       if (!bCallOk) {
@@ -1337,10 +1377,9 @@ D2FogModuleNodeStrc * __stdcall EnumerateModulesPsapi(HANDLE hProcess) {
         return pModuleListHead;
       }
 
-      pszCopySrc = "PSAPI EnumProcessModules returned invalid number of modules";
+      Src::LogManager::LOGMANAGER_TraceToModuleLog("", "PSAPI EnumProcessModules returned invalid number of modules");
     }
 
-    Src::LogManager::LOGMANAGER_TraceToModuleLog("", pszCopySrc);
     error:
     /* HMODULE hLibModule for FreeLibrary */ FreeLibrary(hPsapi);
     FOG_FreeModuleList(pModuleListHead);
@@ -1536,12 +1575,13 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
         if (!nTmp && !__frame0.nSymDisplacement) {
           pEscapedStr = Src::String::FogString::SMemEscapeString(__frame1.aEscapedString, pAsciiOut, 0x50, 0);
           pBytesRemaining = "\n                           // 0x%08X - %s - %s=\'%s\'\n\n";
+          Src::LogManager::LogWithCategoryVarArgs("", "\n                           // 0x%08X - %s - %s=\'%s\'\n\n", pAsciiOut, pDVar1->szModuleName, __frame1.pBytesToDump, pEscapedStr);
         } else {
           pBytesRemaining = "\n                           // 0x%08X - %s - %s+%04X\n\n";
           pEscapedStr = __frame0.nSymDisplacement;
+          Src::LogManager::LogWithCategoryVarArgs("", "\n                           // 0x%08X - %s - %s+%04X\n\n", pAsciiOut, pDVar1->szModuleName, __frame1.pBytesToDump, pEscapedStr);
         }
 
-        Src::LogManager::LogWithCategoryVarArgs("", pBytesRemaining, pAsciiOut, pDVar1->szModuleName, __frame1.pBytesToDump, pEscapedStr);
         nLinesEmitted += 3;
         nTmp = __frame0.nValidBytes;
       }
@@ -1792,7 +1832,8 @@ int __stdcall InitializeSymbolsWithRefcount() {
 
         gnDbgSymInitRefcount++;
         dwProcessId = (*pSymGetOptions)();
-        (*pSymSetOptions)(dwProcessId | 0x10);
+        dwProcessId |= 0x10;
+        (*pSymSetOptions)(dwProcessId);
         dwProcessId = GetCurrentProcessId();
         pModuleNode = LoadSymbolsForAllModules(hProcess, dwProcessId);
         while (pModuleNode) {
@@ -2075,7 +2116,8 @@ void __fastcall FullStackWalkWithAnnotations(HANDLE hThread, CONTEXT * pContext)
     }
 
     dwSymOptions = (*pSymGetOptions)();
-    (*pSymSetOptions)(dwSymOptions | 0x10);
+    dwSymOptions |= 0x10;
+    (*pSymSetOptions)(dwSymOptions);
     dwSymOptions = GetCurrentProcessId();
     D2FogModuleNodeStrc* pModuleList = LoadSymbolsForAllModules(hDupProcess, dwSymOptions);
     CONTEXT* pContextBase = __frame0.pContextLocal;

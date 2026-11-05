@@ -102,7 +102,7 @@ typedef void (__fastcall *fnSkillUnitProc)(::SGAMEDATA * pGame, D2UnitStrc * pUn
 #endif
 
 static int gaMissileOffsets_LightningUniqueY[4] = { -0x1, 0x0, 0x1, 0x0 }; D2_STATIC_GUARD(gaMissileOffsets_LightningUniqueY, "gaMissileOffsets_LightningUniqueY");
-namespace D2Common::Monsters::MONSTERS::Umod {
+namespace D2Game::Monsters::Umod {
 fpUmodInit aUmodInitTable[43] = {
     nullptr,
     &D2Game::Monsters::Umod::MONUMOD_RollNameSeed,
@@ -147,8 +147,8 @@ fpUmodInit aUmodInitTable[43] = {
     nullptr,
     &D2Game::Monsters::Umod::MONUMOD_SetEventTimer,
     nullptr
-}; D2_GLOBAL_GUARD(aUmodInitTable, "D2Common::Monsters::MONSTERS::Umod::aUmodInitTable");
-} // namespace D2Common::Monsters::MONSTERS::Umod
+}; D2_GLOBAL_GUARD(aUmodInitTable, "D2Game::Monsters::Umod::aUmodInitTable");
+} // namespace D2Game::Monsters::Umod
 static D2MonsterUModHandlerRowStrc g_MonsterUModHandlerTable[43] = {
     {
         /* .pfnHandler0 = */ nullptr,
@@ -506,6 +506,22 @@ D2MonLvlTxt * __fastcall GetMonLvlTxt(int32_t nMonLvlId) {
     return nullptr;
 }
 
+int Unreferenced_005a0030() {
+    return sgptDataTable->nTxtMonLvlSize;
+}
+
+int __fastcall Unreferenced_005a0040(int param_1) {
+    if (param_1 >= sgptDataTable->nTxtMonUmodSize) {
+      return 0;
+    }
+
+    return (int)(sgptDataTable->pTxtMonUmod + param_1);
+}
+
+int Unreferenced_005a0060() {
+    return sgptDataTable->nTxtMonUmodSize;
+}
+
 uint32_t __fastcall MONSTER_CheckMonTypeHasFlag(D2UnitStrc * pUnit, int32_t nMonTypeFlag) {
     D2MonStatsTxt* pMonStatsTxt;
     if (!pUnit || pUnit->eUnitType != UNIT_MONSTER) {
@@ -617,9 +633,11 @@ static void __stdcall MONSTER_AddEnchantmentToList(uint8_t byEnchantId, D2UnitSt
     int nSlot = 0;
     while (pMonData->MonUModList[nSlot]) {
       nSlot++;
-      if (nSlot >= 9) {
-        return;
+      if (nSlot < 9) {
+        continue;
       }
+
+      return;
     }
 
     if (nSlot >= 9) {
@@ -1170,11 +1188,11 @@ static void __stdcall MONSTER_SpawnMinionsForBoss(D2RoomCoordListStrc * pCoordLi
 }
 
 void __fastcall UMOD_DispatchInitFunction(D2UnitStrc * pUnit, int32_t nUModId, BOOL bApply) {
-    if (!D2Common::Monsters::MONSTERS::Umod::aUmodInitTable[nUModId]) {
+    if (!Umod::aUmodInitTable[nUModId]) {
       return;
     }
 
-    (*D2Common::Monsters::MONSTERS::Umod::aUmodInitTable[nUModId])(pUnit, nUModId, bApply);
+    (*Umod::aUmodInitTable[nUModId])(pUnit, nUModId, bApply);
 }
 
 // Applies all active MonUMod enchantment init functions to a monster unit. First, if nParam2 is nonzero, spawns minions via MONSTER_SpawnMinionsForBoss. Then iterates the global gnEnchantmentEffectOffset table, calling each non-null aUmodInitTable entry and dispatching to minions via UMOD_DispatchInitFunction. Finally, iterates the unit's own MonUModList (up to 9 slots) repeating the same init + dispatch for each assigned enchantment ID.
@@ -1191,8 +1209,8 @@ static void __stdcall UMOD_ApplyEnchantmentsToMonster(int32_t nMinionCountMin, D
     do {
       void* pContext;
       pContext = (void*)*pEnchantEntry;
-      if (D2Common::Monsters::MONSTERS::Umod::aUmodInitTable[(int)pContext]) {
-        (*D2Common::Monsters::MONSTERS::Umod::aUmodInitTable[(int)pContext])(pUnit, (int32_t)pContext, 1);
+      if (Umod::aUmodInitTable[(int)pContext]) {
+        (*Umod::aUmodInitTable[(int)pContext])(pUnit, (int32_t)pContext, 1);
       }
 
       Ai::AiGeneral::CallForEachMinion(pUnit, pContext, nullptr, (pfnMinionForEachCallback)UMOD_DispatchInitFunction);
@@ -1214,8 +1232,8 @@ static void __stdcall UMOD_ApplyEnchantmentsToMonster(int32_t nMinionCountMin, D
       if (!nUmodIdUnsigned) {
         return;
       }
-      if (D2Common::Monsters::MONSTERS::Umod::aUmodInitTable[nUmodIdUnsigned]) {
-        (*D2Common::Monsters::MONSTERS::Umod::aUmodInitTable[nUmodIdUnsigned])(pUnit, nUmodIdUnsigned, 1);
+      if (Umod::aUmodInitTable[nUmodIdUnsigned]) {
+        (*Umod::aUmodInitTable[nUmodIdUnsigned])(pUnit, nUmodIdUnsigned, 1);
       }
 
       Ai::AiGeneral::CallForEachMinion(pUnit, (void*)nUmodIdUnsigned, nullptr, (pfnMinionForEachCallback)UMOD_DispatchInitFunction);
@@ -2176,9 +2194,9 @@ void __fastcall MONSTER_MissileSplitOnHit(::SGAMEDATA * pGame, D2UnitStrc * pUni
       return;
     }
 
+    D2DynamicPathStrc* pMissileDynPath = pUnit->pPath.pDynamicPath;
     D2UnitStrc* pTarget = UNIT::SUnit::GetTargetEx(pGameLocal, pOwnerUnit);
     if (!pTarget) {
-      D2DynamicPathStrc* pMissileDynPath = pUnit->pPath.pDynamicPath;
       nTargetX = D2Common::PATH::DynamicPath::GetXSP1(pMissileDynPath);
       nTargetY = D2Common::PATH::DynamicPath::GetYSP1(pMissileDynPath);
     } else {
@@ -2212,10 +2230,7 @@ void __fastcall MONSTER_MissileSplitOnHit(::SGAMEDATA * pGame, D2UnitStrc * pUni
       *pMonType |= 0x80;
     }
 
-    int32_t nMissileFlags = 0;
-    int nSpawn1Y = nTargetY + nOwnerDirSignX;
-    int nSpawn1X = nTargetX - nDirSignX;
-    SKILLS::SkillsServer::CreatingAMissile(pGameLocal, eMissileId, pOwnerUnit, D2Common::Units::Missile::GetSkillId(pMissileUnit), D2Common::Units::Missile::GetLevel(pMissileUnit), 0, 0, nSpawn1X, nSpawn1Y, nMissileFlags);
+    SKILLS::SkillsServer::CreatingAMissile(pGameLocal, eMissileId, pOwnerUnit, D2Common::Units::Missile::GetSkillId(pMissileUnit), D2Common::Units::Missile::GetLevel(pMissileUnit), 0, 0, nTargetX - nDirSignX, nTargetY + nOwnerDirSignX, 0);
     pTarget = pMissileUnit;
     int32_t bConsumeAmmo = 0;
     nOwnerDirSignX = nTargetY - nOwnerDirSignX;
@@ -2321,7 +2336,8 @@ void __fastcall MONSTER_SelfResurrect(::SGAMEDATA * pGame, D2UnitStrc * pUnit, u
     }
 
     nClassId = Ai::AiGeneral::GetAiArgument(pUnit, 1);
-    Ai::AiGeneral::SetAiArgument(pUnit, 1, nClassId + 1);
+    nClassId += 1;
+    Ai::AiGeneral::SetAiArgument(pUnit, 1, nClassId);
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_AITHINK, 0);
     GAME::Event::SetEvent(pGame, pUnit, 2, pGame->dwGameFrame + 0x33, 0, 0);
 }
@@ -2917,8 +2933,8 @@ int * __fastcall MONSTER_SpawnWithUniqueModifiers(::SGAMEDATA * pGame, D2RoomStr
     anBaseUModIds[3] = 4;
     int nUModIdx = 0;
     do {
-      if (D2Common::Monsters::MONSTERS::Umod::aUmodInitTable[anBaseUModIds[nUModIdx]]) {
-        (*D2Common::Monsters::MONSTERS::Umod::aUmodInitTable[anBaseUModIds[nUModIdx]])(pSpawnedUnit, anBaseUModIds[nUModIdx], 0);
+      if (Umod::aUmodInitTable[anBaseUModIds[nUModIdx]]) {
+        (*Umod::aUmodInitTable[anBaseUModIds[nUModIdx]])(pSpawnedUnit, anBaseUModIds[nUModIdx], 0);
       }
 
       nUModIdx++;
@@ -2926,8 +2942,8 @@ int * __fastcall MONSTER_SpawnWithUniqueModifiers(::SGAMEDATA * pGame, D2RoomStr
 
     nUModIdx = 0;
     do {
-      if (D2Common::Monsters::MONSTERS::Umod::aUmodInitTable[pUModList[nUModIdx]]) {
-        (*D2Common::Monsters::MONSTERS::Umod::aUmodInitTable[pUModList[nUModIdx]])(pSpawnedUnit, (uint32_t)pUModList[nUModIdx], 0);
+      if (Umod::aUmodInitTable[pUModList[nUModIdx]]) {
+        (*Umod::aUmodInitTable[pUModList[nUModIdx]])(pSpawnedUnit, (uint32_t)pUModList[nUModIdx], 0);
       }
 
       nUModIdx++;
@@ -2952,9 +2968,11 @@ void __fastcall InitUmods(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nInde
     int nActiveUMods = 0;
     while (pUModList[nActiveUMods]) {
       nActiveUMods++;
-      if (nActiveUMods >= 9) {
-        return;
+      if (9 > nActiveUMods) {
+        continue;
       }
+
+      return;
     }
 
     if (nActiveUMods >= 9) {
@@ -2962,11 +2980,11 @@ void __fastcall InitUmods(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nInde
     }
 
     pUModList[nActiveUMods] = (uint8_t)nIndex;
-    if (!D2Common::Monsters::MONSTERS::Umod::aUmodInitTable[nIndex]) {
+    if (!Umod::aUmodInitTable[nIndex]) {
       return;
     }
 
-    (*D2Common::Monsters::MONSTERS::Umod::aUmodInitTable[nIndex])(pUnit, nIndex, bInitType);
+    (*Umod::aUmodInitTable[nIndex])(pUnit, nIndex, bInitType);
 }
 
 void __fastcall MONSTER_AddUniqueModifier(::SGAMEDATA * pGame, D2UnitStrc * pUnit, char uMod) {
@@ -3188,8 +3206,7 @@ D2UnitStrc * __fastcall SPAWN_UniqueMonster(::SGAMEDATA * pGame, D2RoomStrc * pR
       break;
       case 0x3c:
         Ai::AiGeneral::AssignMinionOwner(pGame, pUnit, pUnit->nUnitGUID, UNIT_MONSTER, 1, 0);
-      nUModCount = 0x1c5;
-      nUModCount = D2Common::Monsters::MONSTERS::GetMonsterBaseId(D2Common::Units::UNITS_GetRoom(pUnit), nUModCount);
+      nUModCount = D2Common::Monsters::MONSTERS::GetMonsterBaseId(D2Common::Units::UNITS_GetRoom(pUnit), 0x1c5);
       Monster::Create::SpawnMinions_BySlot(pGame, pUnit, nUModCount, eD2MonsterAnimMode_ns::Neutral, 10, 0x14, 0x40);
       Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pUnit, QUESTINT_BetrayalOfHaggorath);
       InitUmods(pGame, pUnit, 0x16, 1);
@@ -3208,11 +3225,11 @@ D2UnitStrc * __fastcall SPAWN_UniqueMonster(::SGAMEDATA * pGame, D2RoomStrc * pR
 }
 
 int32_t __fastcall MONSTER_IsMonsterUnit(D2UnitStrc * pUnit) {
-    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER) {
+      return 1;
+    } else {
       return 0;
     }
-
-    return 1;
 }
 
 void __fastcall SERVER_AwardKillExperience(D2UnitStrc * pUnit, D2UnitStrc * pVictim, ::SGAMEDATA * pGame) {

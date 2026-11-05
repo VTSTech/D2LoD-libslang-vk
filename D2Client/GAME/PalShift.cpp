@@ -4,7 +4,6 @@
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -20,6 +19,7 @@
 #include "D2Common/Seed.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -110,16 +110,12 @@ void __stdcall InitPal() {
 
 // @sourcefile .\GAME\PalShift.cpp
 void __stdcall FreeGamePalShift() {
-    if (gpPalShiftEntryListHead) {
-      void* pNextEntry;
-      do {
-        pNextEntry = *(void**)((int)gpPalShiftEntryListHead + 0x1004);
-        D2_FREE_AT(gpPalShiftEntryListHead, ".\\GAME\\PalShift.cpp", 0x84);
-        gpPalShiftEntryListHead = pNextEntry;
-      } while (pNextEntry);
-
-      gpPalShiftEntryListHead = 0;
+    while (gpPalShiftEntryListHead) {
+      void* pNextEntry = *(void**)((int)gpPalShiftEntryListHead + 0x1004);
+      D2_FREE_AT(gpPalShiftEntryListHead, ".\\GAME\\PalShift.cpp", 0x84);
+      gpPalShiftEntryListHead = pNextEntry;
     }
+
     if (gpMonsterPalShiftList) {
       D2_FREE_AT(gpMonsterPalShiftList, ".\\GAME\\PalShift.cpp", 0x8a);
       gpMonsterPalShiftList = 0;

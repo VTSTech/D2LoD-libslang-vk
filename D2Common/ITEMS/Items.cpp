@@ -8,7 +8,6 @@
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/Stats.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT.h"
 #include "D2Client/UNIT/CUnitEvent.h"
 #include "D2Client/UNIT/Item.h"
@@ -46,10 +45,9 @@
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Targets.h"
-#include "D2Game/ITEMS/Items/Drop.h"
 #include "D2Game/PLAYER/Player.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
-#include "D2Game/SKILLS/Items.h"
 #include "D2Game/UNIT/PlayerList.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
@@ -63,6 +61,7 @@
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/Inv.h"
+#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/PlrSkills.h"
 #include "D2Common/D2UnitDataItemStrc.h"
 #include "D2Game/GAME/SCmd.h"
@@ -93,6 +92,14 @@ typedef void (__fastcall *pfnItemTransactionCb)(::SGAMEDATA * pGame, D2UnitStrc 
 static eD2States aSetItemsStateList[5] = { STATE_itemset1, STATE_itemset2, STATE_itemset3, STATE_itemset4, STATE_itemset5 }; D2_STATIC_GUARD(aSetItemsStateList, "aSetItemsStateList");
 
 namespace D2Common::ITEMS::Items {
+
+D2ItemTypesTxt * __fastcall ItemTypes_GetLine(int32_t nItemType) {
+    if (nItemType >= 0 && nItemType < sgptDataTable->nTxtItemTypesSize) {
+      return sgptDataTable->pTxtItemTypes + nItemType;
+    }
+
+    return nullptr;
+}
 
 uint32_t __stdcall ITEMS_SearchItemCodeTable(D2UnitStrc * pUnit, int32_t dwContext, uint32_t nOffset) {
     // Static local variables (originally global data)
@@ -992,9 +999,9 @@ int32_t __fastcall ITEMS_CalcChargedSkillPriceModifier(D2UnitStrc * pUnit, int32
           nCostTmp = nSkillLevel * nMultiplier;
           if (nCostTmp <= 0xffff || !pSkillsTxt->costmult) {
             nSkillLevel = pSkillsTxt->costmult * nSkillLevel * nMultiplier;
-            nSkillLevel = (int)((nSkillLevel >> 0x1f & 0x3ffU) + nSkillLevel) >> 10;
+            nSkillLevel = nSkillLevel / 1024;
           } else {
-            nSkillLevel = ((int)((nCostTmp >> 0x1f & 0x3ffU) + nCostTmp) >> 10) * pSkillsTxt->costmult;
+            nSkillLevel = nCostTmp / 1024 * pSkillsTxt->costmult;
           }
 
           nTotalModifier += (int)((nMaxCharges - uVar1) * (nSkillLevel + pSkillsTxt->costadd)) / nMaxCharges;
@@ -1856,9 +1863,7 @@ int32_t __stdcall ITEM_CheckItemsTxt_bTransmogrify(D2UnitStrc * pUnit) {
 // Returns a FULL 32-bit value: the only two paths are MOV EAX,0x1 at 0062a113 and XOR EAX,EAX at 0062a11c.
 int32_t __stdcall ITEM_CheckItemData_ItemQualityIsMagicOrBetter(D2UnitStrc * pUnit) {
     if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
-      eD2ItemQuality nItemQuality;
-      nItemQuality = pUnit->pUnitData.pUnitDataItem->eQuality;
-      if (3 < (int)nItemQuality && (int)nItemQuality <= 9) {
+      if ((int)pUnit->pUnitData.pUnitDataItem->eQuality >= 4 && (int)pUnit->pUnitData.pUnitDataItem->eQuality <= 9) {
         return 1;
       }
     }
@@ -2366,7 +2371,6 @@ static int __stdcall ITEMS_DeserializeItemHeader(int32_t bIsOnGround, uint32_t n
     D2PoolManagerStrc* pMemory_00;
     uint32_t dwUnitGUID;
     char* pcItemCodeOrName;
-    int32_t nSize;
     uint16_t nLayer;
     D2ItemStatCostTxt* pStatCostTxt;
     int32_t* pnItemSaveAdd;
@@ -2432,12 +2436,11 @@ static int __stdcall ITEMS_DeserializeItemHeader(int32_t bIsOnGround, uint32_t n
         uCoordOrBits = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 1);
         nLayer = 0;
         if (uCoordOrBits) {
-          nSize = 0x20;
+          uCoordOrBits = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0x20);
         } else {
-          nSize = 0xc;
+          uCoordOrBits = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xc);
         }
 
-        uCoordOrBits = Fog::BitBuffer::ReadUnsigned(pBitBuffer, nSize);
         Stats::StatsEx::STATLIST_SetUnitStat(pItem, UNITSTAT_gold, uCoordOrBits, nLayer);
       }
 
@@ -2755,6 +2758,7 @@ static void __stdcall SerializeSimpleItem(D2UnitStrc * pItem, D2BitBufferStrc * 
       }
 
       nErrLine = 0x10;
+      Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, uVal, 0x10);
     } else {
       eInventoryPage eVar1;
       no_body_loc:
@@ -2814,9 +2818,8 @@ static void __stdcall SerializeSimpleItem(D2UnitStrc * pItem, D2BitBufferStrc * 
       }
 
       nErrLine = 3;
+      Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, uVal, 3);
     }
-
-    Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, uVal, nErrLine);
     if (!pItem || pItem->eUnitType != UNIT_ITEM || !pItem->pUnitData.pUnitDataMissile) {
       eUnitType = UNIT_PLAYER;
     } else {
@@ -2866,7 +2869,7 @@ static void __stdcall SerializeSimpleItem(D2UnitStrc * pItem, D2BitBufferStrc * 
       if (nClassId) {
         nClassId = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_gold, 0);
         Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, (uint32_t)((int)nClassId >= 0x1000), 1);
-        ITEMS_WriteClampedValueToBitBuffer((int)nClassId < 0x1000 ? 0xc : 0x20, nClassId, pBitBuffer);
+        ITEMS_WriteClampedValueToBitBuffer((int)nClassId >= 0x1000 ? 0x20 : 0xc, nClassId, pBitBuffer);
         txtLine = pItemsTxtLine;
       }
     }
@@ -4179,8 +4182,8 @@ static void __stdcall ITEM_ResolvePercentStatToBaseValue(eD2UnitStat nRecipeType
       case UNITSTAT_armorclass:
         bIsType = ITEMS_IsA(pUnit, ITEMTYPE_AnyArmor);
       if (bIsType && pItemsTxt->dwMaxAc) {
-        nCurStat = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_armorclass, 0);
-        nValue = nCurStat + 1;
+        nValue = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_armorclass, 0);
+        nValue += 1;
         if (nValue <= pItemsTxt->dwMaxAc) {
           nValue = pItemsTxt->dwMaxAc + 1;
         }
@@ -4899,11 +4902,12 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
           nLayer = 0;
           if (nBitVal) {
             nClassId = 0x20;
+            nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0x20);
           } else {
             nClassId = 0xc;
+            nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xc);
           }
 
-          nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, nClassId);
           eStatId = UNITSTAT_gold;
           goto store_gold_or_durability;
         }
@@ -5564,7 +5568,7 @@ uint32_t __stdcall ITEM_CanBeRepaired(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pItemUnit);
-    D2ItemTypesTxt* pItemTypesTxt = D2Game::ITEMS::Items::Drop::ItemTypes_GetLine(eItemType);
+    D2ItemTypesTxt* pItemTypesTxt = ItemTypes_GetLine(eItemType);
     if (!pItemTypesTxt) {
       return 0;
     }
@@ -6644,7 +6648,6 @@ void __stdcall SerializeComplexItem(D2UnitStrc * pItemUnit, D2BitBufferStrc * pB
     D2StatStrc aStat[511];
     int anStatSeenValues[511];
     int i;
-    int nSetListIdx;
     char cCurChar;
     eD2States eState;
     eD2UnitType eUnitType;
@@ -6715,6 +6718,7 @@ void __stdcall SerializeComplexItem(D2UnitStrc * pItemUnit, D2BitBufferStrc * pB
       }
 
       nErrLine = 0x10;
+      Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nBitValue, 0x10);
     } else {
       eInventoryPage eVar1;
       if (pItemUnit->eUnitType == UNIT_ITEM && pItemUnit->pUnitData.pUnitDataItem) {
@@ -6803,9 +6807,8 @@ void __stdcall SerializeComplexItem(D2UnitStrc * pItemUnit, D2BitBufferStrc * pB
       }
 
       nErrLine = 3;
+      Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nBitValue, 3);
     }
-
-    Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nBitValue, nErrLine);
     if (bIncludeNorm) {
       nErrLine = IITEM_GetItemsTxt_dwNormCode(pItemUnit);
       Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nErrLine, 0x20);
@@ -7339,7 +7342,7 @@ void __stdcall SerializeComplexItem(D2UnitStrc * pItemUnit, D2BitBufferStrc * pB
 
         uTmpBits = Stats::StatsEx::STATSEX_GetCurrentStat(pItemUnit, UNITSTAT_gold, 0);
         Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, (uint32_t)((int)uTmpBits >= 0x1000), 1);
-        nBitValue = (int)uTmpBits < 0x1000 ? 0xc : 0x20;
+        nBitValue = (int)uTmpBits >= 0x1000 ? 0x20 : 0xc;
       }
 
       ITEMS_WriteClampedValueToBitBuffer(nBitValue, uTmpBits, pBitBuffer);
@@ -7420,7 +7423,13 @@ void __stdcall SerializeComplexItem(D2UnitStrc * pItemUnit, D2BitBufferStrc * pB
       nRunewordFlag = 1;
     }
 
-    for (nSetListIdx = -1; nSetListIdx < (int)bIncludeNorm; nSetListIdx++) {
+    int nSetListIdx;
+    nSetListIdx = -1;
+    if ((int)bIncludeNorm < 0) {
+      return;
+    }
+
+    do {
       if (nSetListIdx < 0) {
         eState = STATE_none;
         get_plain_stat_list:
@@ -7610,7 +7619,9 @@ void __stdcall SerializeComplexItem(D2UnitStrc * pItemUnit, D2BitBufferStrc * pB
       if (nSetListIdx < 0 || pStatListEx || nRunewordFlag) {
         Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, 0x1ff, 9);
       }
-    }
+
+      nSetListIdx++;
+    } while (nSetListIdx < (int)bIncludeNorm);
 }
 
 // Serializes a single item unit to a bit buffer for network/save transmission. Writes the 0x4d4a item header (if pStatListEx present), item flags word, then delegates to SerializeComplexItem or SerializeSimpleItem based on COMPACT flag. Recursively serializes socketed child items when bAllItems is set. bIsCrude forces the CRUDE flag.
@@ -7682,6 +7693,22 @@ int32_t __stdcall SerializeItem(D2UnitStrc * pUnit, uint8_t * pBitStream, size_t
 
     int32_t nBitsWritten = Fog::BitBuffer::GetNextPositon(&bitBuffer);
     return nBitsWritten;
+}
+
+BOOL __stdcall ReturnFalse_Unref_00648390(D2UnitStrc * pUnit, D2UnitStrc * pItem) {
+    return 0;
+}
+
+BOOL __stdcall ReturnFalse_Unref_00654e70(D2UnitStrc * pUnit, D2UnitStrc * pItem) {
+    return 0;
+}
+
+BOOL __stdcall ReturnFalse_Unref_0066a230(D2UnitStrc * pUnit, D2UnitStrc * pItem) {
+    return 0;
+}
+
+BOOL __stdcall ReturnFalse_Unref_0066a240(D2UnitStrc * pUnit, D2UnitStrc * pItem) {
+    return 0;
 }
 
 } // namespace D2Common::ITEMS::Items

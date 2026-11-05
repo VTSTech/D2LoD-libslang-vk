@@ -7,7 +7,6 @@
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/SKILLS/Skills.h"
 #include "D2Client/Stats.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
@@ -53,6 +52,7 @@
 #include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Monster/MonsterRegion.h"
 #include "D2Game/Monster/Monsters.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/Quests/QUESTS.h"
 #include "D2Game/SKILLS/SkillBar.h"
 #include "D2Game/SKILLS/SkillNec.h"
@@ -443,13 +443,11 @@ BOOL __fastcall Skills_SrvDoFunc_087_SpawnBehindTarget(::SGAMEDATA * pGame, D2Un
       return 0;
     }
 
-    int32_t nTargetY = D2Client::Units::GetYPosFromDynamicPathUnit(pTargetUnit);
-    int nSpawnX = D2Common::Units::GetDirectionToCoords(pUnit, D2Client::Units::GetXPosFromDynamicPathUnit(pTargetUnit), nTargetY);
-    uint8_t bVar1 = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nSpawnX);
+    uint8_t bVar1 = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)D2Common::Units::GetDirectionToCoords(pUnit, D2Client::Units::GetXPosFromDynamicPathUnit(pTargetUnit), D2Client::Units::GetYPosFromDynamicPathUnit(pTargetUnit)));
     uint32_t nGfxDirMasked = (int)bVar1 % 8;
     D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(BYTE_ARRAY_006e3138[(uint8_t)nGfxDirMasked], &nSkillLvl, &nOffsetY);
-    nTargetY = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-    nSpawnX = nTargetY + nSkillLvl;
+    int32_t nTargetY = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
+    int nSpawnX = nTargetY + nSkillLvl;
     nTargetY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
     pUnit->nActionFrame = 0;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
@@ -608,9 +606,7 @@ BOOL __fastcall SKILLMONST_SrvStFn47_Jump(::SGAMEDATA * pGame, D2UnitStrc * pUni
       nLeapY = nTargetYPos * 2 - nCalcTmp;
     }
 
-    uint32_t nToHit = nLeapY;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nLeapX, nToHit);
+    D2RoomStrc* pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nLeapX, nLeapY);
     if (!pRoom) {
       return 0;
     }
@@ -828,8 +824,7 @@ BOOL __fastcall SKILLMONST_SrvStFn49_NestSpawn(::SGAMEDATA * pGame, D2UnitStrc *
     D2Common::Skills::SKILL_SetParam3(pSkill, eSkill);
     D2Common::Skills::SKILL_SetParam4(pSkill, eAnimMode);
     eSkillOrig = eSkill;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nSpawnY, eSkillOrig);
+    D2RoomStrc* pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nSpawnY, eSkillOrig);
     D2Common::Collision::AddCollision_Type(pRoom, nSpawnY, eSkill, COLLISION_PATTERN_SMALL_UNIT_PRESENCE, 0x100);
     UNIT::SUnit::SetUninterruptableState(pUnit, 1);
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_ENDANIM, 0);
@@ -854,9 +849,7 @@ BOOL __fastcall Skills_SrvDoFunc_091_SpawnMinionAtCoords(::SGAMEDATA * pGame, D2
     int32_t nX = D2Common::Skills::SKILL_GetParam2(pSkill);
     int32_t nY = D2Common::Skills::SKILL_GetParam3(pSkill);
     eD2MonsterAnimMode eAnimMode = D2Common::Skills::SKILL_GetParam4(pSkill);
-    int32_t nYForRoom = nY;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nYForRoom);
+    D2RoomStrc* pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nX, nY);
     if (!(pRoom && nX && nY)) {
       return 0;
     }
@@ -913,12 +906,12 @@ BOOL __fastcall SKILLMONST_SrvDoFunc092_MeleeHitThenMissile(::SGAMEDATA * pGame,
         return 0;
       }
     }
-    if ((int)nSrvMissle >= sgptDataTable->nTxtMissilesSize) {
+    if ((int)nSrvMissle < sgptDataTable->nTxtMissilesSize) {
+      SkillsServer::CreatingAMissile(pGame, nSrvMissle, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 1);
+      return 1;
+    } else {
       return 0;
     }
-
-    SkillsServer::CreatingAMissile(pGame, nSrvMissle, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 1);
-    return 1;
 }
 
 // Server do-function for monster skill 093. Fires a leading-aim missile (srvmissilea) that predicts target movement: computes the dominant axis of displacement, steps the target position 4 frames forward along that axis, then places the missile origin 1/6 of the delta behind the caster. Sets UNITFLAG_SKSRVDOFUNC on the caster and returns 1 on success.
@@ -1446,7 +1439,7 @@ BOOL __fastcall Skills_SrvDoFunc_098_TeleportToStoredPosition(::SGAMEDATA * pGam
     uint32_t nX = D2Common::PATH::DynamicPath::GetXSP1(pUnit->pPath.pDynamicPath);
     uint32_t nY = D2Common::PATH::DynamicPath::GetYSP1(pUnit->pPath.pDynamicPath);
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nY);
+    pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nY);
     if (!pRoom) {
       D2UnitStrc* pUnit_00;
       pUnit_00 = Ai::AiGeneral::GetOwnerUnit(pUnit);
@@ -1981,7 +1974,7 @@ BOOL __fastcall Skills_SrvDoFunc_105_FireParallelMissileVolley(::SGAMEDATA * pGa
           goto fire_volley;
         }
       }
-      if (-1 < iVar1) {
+      if (iVar1 >= 0) {
         goto fire_volley;
       }
       if (nDeltaY > 0) {
@@ -2363,10 +2356,10 @@ BOOL __fastcall Skills_SrvDoFunc_148_FireMissileBodyPart10(::SGAMEDATA * pGame, 
       }
       if (*((uint8_t*)pSkillsTxt + 0x4) & (uint8_t)gadwBitMasks[1]) {
         SkillsServer::SKILLS_CreateMissileFromUnit(pGame, eFinalMissileId, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 0);
-        return 1;
+      } else {
+        SkillsServer::CreatingAMissile(pGame, eFinalMissileId, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 0);
       }
 
-      SkillsServer::CreatingAMissile(pGame, eFinalMissileId, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 0);
       return 1;
     }
 
@@ -2408,10 +2401,10 @@ BOOL __fastcall Skills_SrvDoFunc_149_FireMissileBodyPart11(::SGAMEDATA * pGame, 
       }
       if (*((uint8_t*)pSkillsTxt + 0x4) & (uint8_t)gadwBitMasks[1]) {
         SkillsServer::SKILLS_CreateMissileFromUnit(pGame, eFinalMissileId, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 0);
-        return 1;
+      } else {
+        SkillsServer::CreatingAMissile(pGame, eFinalMissileId, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 0);
       }
 
-      SkillsServer::CreatingAMissile(pGame, eFinalMissileId, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 0);
       return 1;
     }
 
@@ -2594,7 +2587,7 @@ void __fastcall SKILLMONST_SpiderLayTrail(::SGAMEDATA * pGame, D2UnitStrc * pUni
         nPosX += nOffsetX;
         nPosY += nOffsetY;
         pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-        D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nPosX, nPosY);
+        D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, nPosX, nPosY);
         memset(&sSkillArg, 0, 0x5c);
         sSkillArg.nUnitX = nPosX + nOffsetX * 2;
         sSkillArg.nUnitY = nPosY + nOffsetY * 2;

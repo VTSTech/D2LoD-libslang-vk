@@ -8,9 +8,7 @@
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/SKILLS.h"
 #include "D2Client/Stats.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
-#include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
 #include "D2Common/Collision.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -39,6 +37,7 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/MISSILES/Missiles.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/SKILLS/SkillAss.h"
 #include "D2Game/SKILLS/SkillNec.h"
 #include "D2Game/SKILLS/SkillsServer.h"
@@ -423,7 +422,7 @@ BOOL __fastcall Skills_SrvDoFunc_117_Firestorm(::SGAMEDATA * pGame, D2UnitStrc *
       int32_t nMissileIdx;
       SkillsServer::CreatingAMissile(pGame, nSrvMissle, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 0);
       nRemainingMissiles = nMissileCount - 1;
-      if (nRemainingMissiles <= 0) {
+      if (0 >= nRemainingMissiles) {
         return 1;
       }
 
@@ -655,10 +654,10 @@ BOOL __fastcall SKILLDRUID_SrvStFn56_FeralRageMaul(::SGAMEDATA * pGame, D2UnitSt
     UNIT::SUnitDmg::DAMAGE_CalculateAndApplyDamage(pGame, pUnit, pTarget, &sDamage, (uint8_t)nSkillLvl);
     if (sDamage.wResultFlags & 1U) {
       D2Common::Skills::SKILL_SetParam1(pSkill, 1);
-      return 1;
+    } else {
+      D2Common::Skills::SKILL_SetParam1(pSkill, 0);
     }
 
-    D2Common::Skills::SKILL_SetParam1(pSkill, 0);
     return 1;
 }
 
@@ -724,8 +723,8 @@ BOOL __fastcall Skills_SrvDoFunc_120_FeralRage(::SGAMEDATA * pGame, D2UnitStrc *
           nUnitGUID = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[1], eSkill, nSkillLvl);
           nFrenzyStacks = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_skill_frenzy, 0);
           if (nUnitGUID >= nFrenzyStacks + 1) {
-            nCurFrenzyStacks = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_skill_frenzy, 0);
-            nUnitGUID = nCurFrenzyStacks + 1;
+            nUnitGUID = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_skill_frenzy, 0);
+            nUnitGUID += 1;
           }
 
           D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_skill_frenzy, nUnitGUID, 0);
@@ -886,12 +885,7 @@ static void __stdcall SKILLDRUID_CreateAuraMissile(::SGAMEDATA * pGame, D2UnitSt
     }
 
     D2Common::Units::Missile::SetTargetX(pMissile, eOwnerType);
-    if (!pUnit) {
-      D2Common::Units::Missile::SetTargetY(pMissile, -1);
-      return;
-    }
-
-    D2Common::Units::Missile::SetTargetY(pMissile, pUnit->nUnitGUID);
+    D2Common::Units::Missile::SetTargetY(pMissile, !pUnit ? -1 : pUnit->nUnitGUID);
 }
 
 void __fastcall SKILLDRUID_ApplyAuraWithMissile(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit, int32_t nDuration, eD2Skills eSkill, int32_t nSkillLvl) {
@@ -1226,7 +1220,7 @@ BOOL __fastcall Skills_SrvDoFunc_146_ArmageddonTick(::SGAMEDATA * pGame, D2UnitS
                     nRandY = nRandX - nAuraRange + nTimer;
                     nRandX = D2Common::Skills::SKILLS_HasLineOfSightToUnit(nX, nRandY, pUnit, 0x805);
                     if (nRandX) {
-                      pRoomLocal = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoomLocal, nX, nRandY);
+                      pRoomLocal = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoomLocal, nX, nRandY);
                       if (pRoomLocal) {
                         eCollide = D2Common::Collision::CheckCollision_BlockPlayerMissile(pRoomLocal, nX, nRandY, COLLIDE_BLOCK_PLAYER);
                         if (eCollide == COLLIDE_NONE) {

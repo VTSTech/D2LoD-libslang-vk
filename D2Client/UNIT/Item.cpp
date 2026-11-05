@@ -23,6 +23,7 @@
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/UNIT/PlrSkills.h"
 #include "D2Client/Units.h"
+#include "D2Common/Collision.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
 #include "D2Common/D2MonStatsTxt.h"
@@ -51,6 +52,7 @@
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -62,7 +64,6 @@
 #include "D2Common/D2UnitDataItemStrc.h"
 #include "D2Game/GAME/SCmd.h"
 #include "D2Game/Monster/AI/AI.h"
-#include "D2Game/SKILLS/Items.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -264,6 +265,23 @@ static D2UnitStrc * __stdcall ITEM_CreateItemFromBodyPacket(uint16_t nItemX, uin
     return pUnit;
 }
 
+int Unreferenced_004c10c0() {
+    D2UnitStrc* in_ECX;
+    D2SkillStrc* in_EDX;
+    int32_t iVar1 = PlrSkills::PLRSKILLS_CanUseSkillCheck(in_ECX, in_EDX);
+    switch (iVar1) {
+      case 2:
+        case 7:
+          {
+            return 0;
+          }
+      default:
+        {
+          return 1;
+        }
+    }
+}
+
 int32_t __fastcall ITEM_CheckItemEquipRequirements(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     D2UnitStrc* pWeaponSlot;
     eD2ItemTypes eQuiverType;
@@ -425,7 +443,7 @@ static void __stdcall ITEM_ReequipItemOnBody(D2UnitStrc * pUnit, int32_t bApplyE
 
 // Re-evaluates and reapplies every equipped/carried item on a player (or merc-flagged unit) after a stat-affecting change. Saves the unit's skill selections, first (re)enables qualifying active charms applying their stats, then in three passes over the 11 body-location slots: disables items whose equip requirements are no longer met (removing their stats and flagging a gfx reload), iteratively re-enables items that now qualify (up to 100 passes, reapplying socketable/equip stats and updating the primary weapon/swap state), and recalculates set-quality items (quality 5). Restores skill selections, and if anything changed triggers a gfx/COF reload for players or a MonsterMessage(7) for mercs. Pure side effects on pUnit's inventory/stats; no return.
 // @sourcefile .\UNIT\Item.cpp
-static void ITEM_RecalcAllEquippedItems_EBX(D2UnitStrc * pUnit) {
+void ITEM_RecalcAllEquippedItems_EBX(D2UnitStrc * pUnit) {
     uint8_t byItemComponent;
     eD2BodyLoc eBodyLoc;
     D2UnitStrc* pEquipItem;
@@ -1147,6 +1165,21 @@ void __fastcall HandleItemToCursor(uint8_t * pBytes) {
     }
 }
 
+int __fastcall Unreferenced_004c2150(int param_1) {
+    // Static local variables (originally global data)
+    static uint32_t gnCursorInvTypeAutoOpenC[5] = { 0x0, 0x1, 0x4, 0x2, 0x6 }; D2_STATIC_GUARD(gnCursorInvTypeAutoOpenC, "D2Client::UNIT::Unreferenced_004c2150::gnCursorInvTypeAutoOpenC");
+    static uint32_t gnCursorInvTypeAutoOpenA = 0x5; D2_STATIC_GUARD(gnCursorInvTypeAutoOpenA, "D2Client::UNIT::Unreferenced_004c2150::gnCursorInvTypeAutoOpenA");
+
+    uint32_t uVar1;
+    for (uVar1 = 0; uVar1 < gnCursorInvTypeAutoOpenA; uVar1++) {
+      if (param_1 == gnCursorInvTypeAutoOpenC[uVar1]) {
+        return 4;
+      }
+    }
+
+    return 3;
+}
+
 // @sourcefile .\UNIT\Item.cpp
 void __fastcall ITEM_RemoveUninterruptableState(D2UnitStrc * pUnit) {
     if (!pUnit) {
@@ -1678,12 +1711,7 @@ void __fastcall HandleItemPutInContainer(uint8_t * pBytes) {
 
     UI::ui::UI_SendMouseMoveMessage();
     ITEM_RemoveUninterruptableState(pItem);
-    if (!pItem) {
-      UI::npcmenu::NPCMENU_OnItemPutInContainer(-1);
-      return;
-    }
-
-    UI::npcmenu::NPCMENU_OnItemPutInContainer(pItem->nUnitGUID);
+    UI::npcmenu::NPCMENU_OnItemPutInContainer(!pItem ? -1 : pItem->nUnitGUID);
 }
 
 // Client-side handler that processes a server packet removing an item from a container/inventory. Parses item details (ExtractItemDetails), resolves the owner unit and the item by GUID; verifies the item belongs to the owner's inventory (halts with ERROR_UnrecoverableInternalError on mismatch). Removes the item's stat list (unless broken), then either drops it to the ground, or on RELOAD recreates it from the body packet and places it on the cursor (ITEM_SetItemOnHand); on REMOVED it deletes the server-object-table entry and clears the cursor/plays a sound for corpse/merc pages. Notifies the NPC menu when the owner is the local player.

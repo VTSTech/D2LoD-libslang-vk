@@ -7,28 +7,23 @@
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
-#ifndef RECON_FPTD_pfnMCPGameListEntry
-#define RECON_FPTD_pfnMCPGameListEntry
-typedef void (__fastcall *pfnMCPGameListEntry)(uint32_t nEntryField0, uint32_t nEntryCount, uint32_t nEntryField2, uint32_t nListFlag, void * pEntryData);
-#endif
-#ifndef RECON_FPTD_pfnVoidNoArgCallback
-#define RECON_FPTD_pfnVoidNoArgCallback
-typedef void (__stdcall *pfnVoidNoArgCallback)();
-#endif
 #ifndef RECON_FPTD_pfnMCPMessage
 #define RECON_FPTD_pfnMCPMessage
 typedef void (__fastcall *pfnMCPMessage)(uint32_t nMessageId, uint32_t nDataLength, void * pMessageData);
 #endif
+#ifndef RECON_FPTD_pfnMCPPacketCallback
+#define RECON_FPTD_pfnMCPPacketCallback
+typedef void (__fastcall *pfnMCPPacketCallback)(uint16_t wPacketField, char * pPayload);
+#endif
 
 namespace D2Client::McpConnect {
 
-void __fastcall MCPCONNECT_SetGameListCallbacks(pfnMCPGameListEntry pfnEntryCallback, pfnVoidNoArgCallback pfnCompleteCallback) {
-    g_pfnMCPGameListCallback = pfnEntryCallback;
-    g_pfnMCPGameListCompleteCallback = pfnCompleteCallback;
+void __fastcall MCPCONNECT_SetMessageCallback_Unref_0044b1f0(pfnMCPMessage pfnCallback) {
+    g_pfnMCPCallback1 = (pfnMCPPacketCallback)pfnCallback;
 }
 
-void __fastcall MCPCONNECT_SetMessageCallback(pfnMCPMessage pfnCallback) {
-    g_pfnMCPMessageCallback = pfnCallback;
+void __fastcall MCPCONNECT_SetMessageCallback_Unref_0044b200(pfnMCPMessage pfnCallback) {
+    g_pfnMCPCallback2 = (pfnMCPPacketCallback)pfnCallback;
 }
 
 } // namespace D2Client::McpConnect

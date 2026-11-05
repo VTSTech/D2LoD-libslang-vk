@@ -13,6 +13,7 @@
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/Units.h"
+#include "D2Common/Collision.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
@@ -57,7 +58,6 @@
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
-#include "D2Game/SKILLS/Items.h"
 #include "D2Game/SKILLS/SkillItem.h"
 #include "D2Game/SKILLS/SkillsServer.h"
 #include "D2Game/UNIT/Party.h"
@@ -105,6 +105,10 @@ void __fastcall SetSavePacketList(D2ClientStrc * pClient, void * pSavePacketList
     pClient->pSavePacketList = pSavePacketList;
 }
 
+void __fastcall ITEMMODE_NullSub_Unref_00558990(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+
+}
+
 D2MonStatsTxt * __fastcall GetMonsterData(D2UnitStrc * pUnit) {
     if (pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster) {
       return pUnit->pUnitData.pUnitDataMonster->pMonStatsTxt;
@@ -140,7 +144,6 @@ void __fastcall STATSLISTEX_FunctionCallback(::SGAMEDATA * pGame, D2UnitStrc * p
     uint32_t nChargedSkillId;
     eD2States eState;
     bool bStateActivate;
-    int32_t bStateActive;
     eD2Skills fOldMaxStat;
     fOldMaxStat = eSkill;
     if (!pGame) {
@@ -381,17 +384,16 @@ void __fastcall STATSLISTEX_FunctionCallback(::SGAMEDATA * pGame, D2UnitStrc * p
           }
 
           SKILLS::SkillsServer::D2UpdateState(pUnit, eState, 0);
-          bStateActive = 1;
+          D2Common::DATATBLS::ItemStats::SetState(pUnit, eState, 1);
         } else {
           if (!eCurrentState) {
             return;
           }
 
           SKILLS::SkillsServer::D2UpdateState(pUnit, eState, 1);
-          bStateActive = 0;
+          D2Common::DATATBLS::ItemStats::SetState(pUnit, eState, 0);
         }
 
-        D2Common::DATATBLS::ItemStats::SetState(pUnit, eState, bStateActive);
         D2Common::DATATBLS::ItemStats::D2StatesTogglegfx(pUnit, eState, 1);
       }
 
@@ -446,6 +448,13 @@ void __fastcall SERVER_ITEM_SendStackableUsagePackets(D2UnitStrc * pUnit, char *
         }
       }
     }
+}
+
+int Unreferenced_0055bfe0() {
+    int extraout_EAX;
+    D2UnitStrc* in_ECX;
+    SERVER_ITEM_SendStackableUsagePackets(in_ECX, ".\\ITEMS\\ItemMode.cpp", 0x1e5);
+    return extraout_EAX;
 }
 
 // Returns the skill ID associated with a scroll or book item unit. Checks if pUnit is a scroll (returns scrollskill) or book (returns bookskill) via the books.txt lookup using the item's magic suffix; returns -1 if not a scroll/book or if no books.txt record found. In: pUnit (ESI). Out: eD2Skills or 0xFFFFFFFF.
@@ -514,8 +523,8 @@ static void __stdcall ITEMMODE_UpdateBookSkillQuantity(int32_t nQuantityDelta, D
         return;
       }
 
-      nSkillQuantity = D2Common::Skills::SKILL_GetQuantity(pSkill);
-      nQuantity = nSkillQuantity + nQuantityDelta;
+      nQuantity = D2Common::Skills::SKILL_GetQuantity(pSkill);
+      nQuantity += nQuantityDelta;
       D2Common::Skills::SKILL_SetQuantity(pSkill, nQuantity);
       nUnitGuid = pUnit->nUnitGUID;
       eUnitType = pUnit->eUnitType;
@@ -1292,6 +1301,7 @@ BOOL __fastcall SERVER_CheckIfPickable(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 
           eQuestState = QUESTSTATE_Step0x08;
           eQuest = QUEST_BladeOfTheOldReligion;
+          bQuestState = D2Common::QuestRecord::GetQuestState(Quests::QUESTS::GetQuestBitBuffer(pGame, pUnit), QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x08);
         } else {
           if (nCheckResult != 0x20327274) {
             goto check_quest_done_and_duplicates;
@@ -1306,10 +1316,8 @@ BOOL __fastcall SERVER_CheckIfPickable(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 
           eQuestState = QUESTSTATE_Step0x07;
           eQuest = QUEST_PrisonOfIce;
+          bQuestState = D2Common::QuestRecord::GetQuestState(Quests::QUESTS::GetQuestBitBuffer(pGame, pUnit), QUEST_PrisonOfIce, QUESTSTATE_Step0x07);
         }
-
-        pQuestBits = Quests::QUESTS::GetQuestBitBuffer(pGame, pUnit);
-        bQuestState = D2Common::QuestRecord::GetQuestState(pQuestBits, eQuest, eQuestState);
         if (bQuestState) {
           return 0;
         }
@@ -1902,6 +1910,10 @@ BOOL __fastcall ITEMMODE_FindBestBodyLocForItem(D2UnitStrc * pUnit, D2UnitStrc *
     }
 }
 
+void __fastcall ITEMMODE_NullSub_Unref_0055d920(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+
+}
+
 void __stdcall ITEMMODE_ReturnOne(uint32_t dwParam) {
 
 }
@@ -2060,6 +2072,22 @@ int32_t __fastcall ITEMMODE_CheckItemRequirements(D2UnitStrc * pUnit, D2UnitStrc
     return bMeetsEquipReqs;
 }
 
+int __fastcall Unreferenced_0055db80(int param_1) {
+    D2ClientStrc* pDVar1;
+    if (param_1 && !*(int*)param_1) {
+      pDVar1 = UNIT::SUnit::SUNIT_GetClient((D2UnitStrc*)param_1, ".\\ITEMS\\ItemMode.cpp", 0xa44);
+      return (int)pDVar1;
+    }
+
+    D2UnitStrc* pUnit = Ai::AiGeneral::GetOwnerUnit((D2UnitStrc*)param_1);
+    if (pUnit && pUnit->eUnitType == UNIT_PLAYER) {
+      pDVar1 = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0xa49);
+      return (int)pDVar1;
+    }
+
+    return 0;
+}
+
 // Server-side recalculation of all equipped/charm item enable states for a player (or hireling, eUnitFlags bit 9). Validates each item against the wearer's current requirements: enables qualifying active charms, disables body-slot items that fail requirements (unequipping their stats), then runs a convergence loop re-enabling items whose requirements are now met (handling primary-weapon swap and socketed/set bonuses), and re-applies set bonuses for quality-5 (set) items. Finishes by validating item quality and refreshing inventory; if bSendPacket, sends S2C 0x48 (RecalcEquippedItems2) to the owning player's client. Counterpart to the client-side 0x47/0x48 handlers.
 // @sourcefile .\ITEMS\ItemMode.cpp
 void __fastcall ITEMS_RecalcEquippedItemStates(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t bSendPacket) {
@@ -2070,6 +2098,7 @@ void __fastcall ITEMS_RecalcEquippedItemStates(::SGAMEDATA * pGame, D2UnitStrc *
     BOOL bIsBrokenOrDisabled;
     int32_t bMeetsRequirements;
     int nItemQuality;
+    D2ClientStrc* pClient;
     int aItemValidateSnapshot[7];
     int bAnyItemReenabled;
     if (!(pUnit && (pUnit->eUnitType == UNIT_PLAYER || pUnit->eUnitFlags >> 9 & 1))) {
@@ -2207,6 +2236,7 @@ void __fastcall ITEMS_RecalcEquippedItemStates(::SGAMEDATA * pGame, D2UnitStrc *
     if (pUnit->eUnitType == UNIT_PLAYER) {
       bMeetsRequirements = 0xa44;
       pCurItem = pUnit;
+      pClient = UNIT::SUnit::SUNIT_GetClient(pCurItem, ".\\ITEMS\\ItemMode.cpp", 0xa44);
     } else {
       pCurItem = Ai::AiGeneral::GetOwnerUnit(pUnit);
       if (!pCurItem) {
@@ -2217,9 +2247,8 @@ void __fastcall ITEMS_RecalcEquippedItemStates(::SGAMEDATA * pGame, D2UnitStrc *
       }
 
       bMeetsRequirements = 0xa49;
+      pClient = UNIT::SUnit::SUNIT_GetClient(pCurItem, ".\\ITEMS\\ItemMode.cpp", 0xa49);
     }
-
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pCurItem, ".\\ITEMS\\ItemMode.cpp", bMeetsRequirements);
     if (!pClient) {
       return;
     }
@@ -2445,8 +2474,8 @@ BOOL __fastcall SpecialItemsBonuses(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWO
               if (eCastSkill != ~SKILL_Attack) {
                 pSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnit, eCastSkill, -1);
                 if (pSkill) {
-                  nSkillQuantity = D2Common::Skills::SKILL_GetQuantity(pSkill);
-                  nNewSkillQuantity = nSkillQuantity - 1;
+                  nNewSkillQuantity = D2Common::Skills::SKILL_GetQuantity(pSkill);
+                  nNewSkillQuantity -= 1;
                   if (nNewSkillQuantity <= 0) {
                     pCurRightSkill = D2Common::Units::GetRightSkill(pUnit);
                     if (pCurRightSkill == pSkill) {
@@ -3130,16 +3159,16 @@ BOOL __fastcall ITEMMODE_CheckEquipRestrictions(::SGAMEDATA * pGame, D2UnitStrc 
       if (nKeyQty != 1 && -1 < nKeyQty - 1) {
         D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pKey, UNITSTAT_quantity, -1, 0);
         GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0x1605), pKey, '\x01', 0x46, D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pKey, UNITSTAT_quantity, 0), 0);
-        return 1;
+      } else {
+        ITEMMODE_ConsumeItem(pGame, pKey, pUnit);
       }
 
-      ITEMMODE_ConsumeItem(pGame, pKey, pUnit);
       return 1;
     }
 }
 
 // Maps a body location to its alternate (weapon-swap) slot. Fifty-four bytes: a pure ECX jump table writing only EAX, so EDX survives. ITEMMODE_EquipCorpseItems holds the main body item in EDX across this call and reads it back afterwards; with EDX declared killed the pointer was lost and corpse reclaim resolved the wrong item. The parameter arrives in a whole register - typing it from the single byte the body reads made the decompiler splice the indeterminate upper bytes back in as an uninitialised local.
-static int __fastcall ITEMMODE_GetAlternateBodyLoc(eD2BodyLocDWORD eBodyLoc) {
+int __fastcall ITEMMODE_GetAlternateBodyLoc(eD2BodyLocDWORD eBodyLoc) {
     switch (eBodyLoc) {
       case BODYLOC_R_ARM:
         return 5;
@@ -4930,7 +4959,6 @@ BOOL __fastcall ITEMMODE_WeaponSwap(::SGAMEDATA * pGame, D2UnitStrc * pUnit, boo
     uint32_t nLeftSkillOwner;
     D2InventoryStrc* pInventorySaved;
     int nSwapSlotIdx;
-    eD2ItemFlag eItemFlag;
     int32_t nErrorLine;
     D2InventoryStrc* pInventory;
     uint16_t wSkillId;
@@ -5044,12 +5072,11 @@ BOOL __fastcall ITEMMODE_WeaponSwap(::SGAMEDATA * pGame, D2UnitStrc * pUnit, boo
           if (*pSwapBodyLocIter == BODYLOC_R_ARM || *pSwapBodyLocIter == BODYLOC_L_ARM) {
             D2Common::INVENTORY::Inventory::INVENTORY_UpdatePrimaryWeapon(pInventorySaved, pCurItem);
             ITEMMODE_AddStatsList(pCurItem, pUnit, 0);
-            eItemFlag = ITEMFLAG_ADDED;
+            D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pCurItem, ITEMFLAG_ADDED, 1);
           } else {
-            eItemFlag = ITEMFLAG_TAKEN;
+            D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pCurItem, ITEMFLAG_TAKEN, 1);
           }
 
-          D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pCurItem, eItemFlag, 1);
           pCurItem->eUnitFlags &= ~UNITFLAG_TARGETABLE;
           D2Common::Units::SetupUpdateFlag(pCurItem, 1);
           D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pCurItem, ITEMFLAG_RELOAD, 1);
@@ -5272,9 +5299,8 @@ int __fastcall ITEMMODE_ExchangeInventoryItem(::SGAMEDATA * pGame, D2UnitStrc * 
 
 // @sourcefile .\ITEMS\ItemMode.cpp
 void __fastcall ITEMMODE_ConsumeItemAndRemove(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pItem) {
-    uint32_t eItemFlags = (uint32_t)pGame;
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0xf94);
-    eItemFlags = 0;
+    uint32_t eItemFlags = 0;
     D2Common::ITEMS::Items::ITEM_SetServerSideFlag(&eItemFlags, 0x20, 1);
     GAME::SCmd::Send0x9CItemRemoveFromBelt(pClient, pUnit, pItem, eItemFlags);
     ITEMMODE_DeleteItemFromCorpse(pGame, pUnit, pItem);
@@ -5595,8 +5621,8 @@ BOOL __fastcall SERVER_UseItemAtCoords(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
           if (eSkill != ~SKILL_Attack) {
             pSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnit, eSkill, -1);
             if (pSkill) {
-              nSkillQty = D2Common::Skills::SKILL_GetQuantity(pSkill);
-              nQuantity = nSkillQty - 1;
+              nQuantity = D2Common::Skills::SKILL_GetQuantity(pSkill);
+              nQuantity -= 1;
               if (nQuantity <= 0) {
                 pRightSkill = D2Common::Units::GetRightSkill(pUnit);
                 if (pRightSkill == pSkill) {
@@ -6707,8 +6733,7 @@ static void __stdcall ITEMMODE_RemoveItemsFromCube(::SGAMEDATA * pGame, D2UnitSt
         bSparseSearch = 1;
         dwCarriedGUID = 1;
         pNewPosition = &ptDropPos;
-        pDropRoom = D2Common::Units::UNITS_GetRoom(pUnit2);
-        pDropRoom = Items::Drop::FindBestSpotToSpawnItem(pDropRoom, &ptUnitPos, pNewPosition, dwCarriedGUID, bSparseSearch);
+        pDropRoom = Items::Drop::FindBestSpotToSpawnItem(D2Common::Units::UNITS_GetRoom(pUnit2), &ptUnitPos, pNewPosition, dwCarriedGUID, bSparseSearch);
         pCubeItem = pSavedCubeItem;
         if (pDropRoom) {
           Items::Drop::DropItem(pGame, pUnit2, pCarriedItem, pDropRoom, ptDropPos.x, ptDropPos.y);
@@ -6755,8 +6780,7 @@ void __fastcall SERVER_DropItemFromPlayer(::SGAMEDATA * pGame, D2UnitStrc * pUni
       bSparseSearch = 1;
       nSearchRadius = 1;
       pNewPosition = &ptDropPos;
-      pDropRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-      pDropRoom = Items::Drop::FindBestSpotToSpawnItem(pDropRoom, &ptUnitPos, pNewPosition, nSearchRadius, bSparseSearch);
+      pDropRoom = Items::Drop::FindBestSpotToSpawnItem(D2Common::Units::UNITS_GetRoom(pUnit), &ptUnitPos, pNewPosition, nSearchRadius, bSparseSearch);
       if (!pDropRoom) {
         return;
       }
@@ -6807,15 +6831,22 @@ BOOL __fastcall ITEMMODE_EquipItemToSwapBodyLoc(::SGAMEDATA * pGame, D2UnitStrc 
           return 0;
         }
         if (pItem->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::GetHit) {
-          if (eTargetBodyLoc != BODYLOC_L_ARM) {
-            if (eTargetBodyLoc != BODYLOC_R_ARM) {
-              *pbBadParams = 1;
-              return 0;
-            }
-
-            uSwapBodyLoc = 5;
-          } else {
-            uSwapBodyLoc = 4;
+          switch (eTargetBodyLoc) {
+            case BODYLOC_L_ARM:
+              {
+                uSwapBodyLoc = 4;
+                break;
+              }
+            default:
+              {
+                *pbBadParams = 1;
+                return 0;
+              }
+            case BODYLOC_R_ARM:
+              {
+                uSwapBodyLoc = 5;
+                break;
+              }
           }
 
           pInventory = pUnit->pInventory;
@@ -6981,6 +7012,29 @@ BOOL __fastcall Transmorgify(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc
     }
 
     return 1;
+}
+
+void __fastcall ITEMMODE_ReturnZero3_Unref_00570690(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t dwParam) {
+
+}
+
+BOOL ITEMMODE_IsSkillUsableCheck_Unref_00580260(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
+    int32_t iVar1 = D2Common::Skills::SKILLS_CanUseSkill(pUnit, pSkill);
+    switch (iVar1) {
+      case 2:
+        case 7:
+          {
+            return 0;
+          }
+      default:
+        {
+          return 1;
+        }
+    }
+}
+
+BOOL __stdcall RemoveStackItem_Unref_005e5270(uint32_t dwParam1, uint32_t dwParam2) {
+    return 0;
 }
 
 } // namespace D2Game::ITEMS::ItemMode

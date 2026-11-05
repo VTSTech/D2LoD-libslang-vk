@@ -11,6 +11,7 @@
 #include "Fog/SMem.h"
 #include "globals/globals.h"
 #include "support/d2_boot.h"
+#include "D2Glide/Renderer/Glide.data.h"
 #include "D2Win/D2WinAnimImage.h"
 #include "D2Win/Src/D2WinPalette.data.h"
 
@@ -153,18 +154,23 @@ void __fastcall D2WINPALETTE_SetPaletteIndex(int32_t bEnableGammaShift) {
       gdwPaletteShiftStartTick = GetTickCount();
       gnPaletteGammaShiftState = 2;
       gbPaletteGammaShiftEnabled = 1;
-      D2gfx::D2GFX::D2GFX_SetPalette(MostLikelyCurrentPalletePtr);
-      return;
+    } else {
+      gbGammaShiftActive = 0;
+      gbPaletteGammaShiftEnabled = 0;
     }
 
-    gbGammaShiftActive = 0;
-    gbPaletteGammaShiftEnabled = 0;
     D2gfx::D2GFX::D2GFX_SetPalette(MostLikelyCurrentPalletePtr);
 }
 
 uint8_t __stdcall D2GFX_GetColorFromCurrentPallete(uint8_t nRed, uint8_t nGreen, uint8_t nBlue) {
     uint8_t bVar1 = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete(MostLikelyCurrentPalletePtr, 0x100, (uint32_t)nRed, (uint32_t)nGreen, (uint32_t)nBlue);
     return bVar1;
+}
+
+int Unreferenced_004fb1b0() {
+    int extraout_EAX;
+    D2gfx::D2GFX::D2GFX_SetPalette(MostLikelyCurrentPalletePtr);
+    return extraout_EAX;
 }
 
 void __fastcall D2WINPAL_CopyPalette(void * pDest) {
@@ -307,11 +313,10 @@ int __stdcall LoadPalette(char * szDatFile, char * szPl2File) {
       /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szPl2FullPath, "%s\\%s", "DATA\\GLOBAL", "palette\\act1\\pal.dat");
       /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szDatFullPath, "%s\\%s", "DATA\\GLOBAL", "palette\\act1\\pal.pl2");
       D2WINPAL_LoadPaletteFiles(szPl2FullPath, szDatFullPath);
-      D2Comp::D2COMP_InitEmblemColorTables();
-      return 1;
+    } else {
+      D2WINPAL_LoadPaletteFiles(szDatFile, szPl2File);
     }
 
-    D2WINPAL_LoadPaletteFiles(szDatFile, szPl2File);
     D2Comp::D2COMP_InitEmblemColorTables();
     return 1;
 }
@@ -327,5 +332,8 @@ uint8_t * VP_GetTransposeBase() {
     return gPaletteTransposeBase;
 }
 // VP-END [fix-27]
+void __fastcall D2WINPAL_SetGammaRamp_Unref_00509660(uint32_t bCompactLineSpacingMode) {
+    gbGlidePerspectiveMode = bCompactLineSpacingMode;
+}
 
 } // namespace D2Win::Src::D2WinPalette

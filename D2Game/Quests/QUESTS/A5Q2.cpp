@@ -3,7 +3,6 @@
 #include "D2Game/Quests/QUESTS/A5Q2.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/UNIT/Player.h"
 #include "D2Common/Collision.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -426,12 +425,7 @@ void __fastcall Q32_SetCompleteForPartyMember(::SGAMEDATA * pGame, D2UnitStrc * 
 void __fastcall Q32_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     int32_t nPlayerGUID = !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID;
     QUESTGUID_RemovePlayerFromList(&pQuestData->sQuestGUID, nPlayerGUID);
-    if (!pQuestArgs->pPlayer) {
-      QUESTGUID_RemovePlayerFromList(&pQuestData->pQuestSpecificData.pA5Q2->sQuestGUID, -1);
-      return;
-    }
-
-    QUESTGUID_RemovePlayerFromList(&pQuestData->pQuestSpecificData.pA5Q2->sQuestGUID, pQuestArgs->pPlayer->nUnitGUID);
+    QUESTGUID_RemovePlayerFromList(&pQuestData->pQuestSpecificData.pA5Q2->sQuestGUID, !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID);
 }
 
 // Q32_SetCannotComplete (A5Q2 Rescue on Mount Arreat) -- per-player marker, iterated over players.
@@ -463,9 +457,10 @@ BOOL __fastcall Q32_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 // that contains its GUID, or -1 if not found. Used everywhere to map a unit back to its barricade group.
 int32_t __fastcall Q32_FindBarricadeGroup(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
     int32_t* pPrisonerGUIDSlot;
+    D2QuestDataA5Q2Strc* pA5Q2 = pQuestData->pQuestSpecificData.pA5Q2;
     int nUnitGUID = !pUnit ? -1 : pUnit->nUnitGUID;
     int nBarricadeGroupIdx = 0;
-    int32_t* pGroupGUIDRow = pQuestData->pQuestSpecificData.pA5Q2->anBarricadeGUIDs;
+    int32_t* pGroupGUIDRow = pA5Q2->anBarricadeGUIDs;
     do {
       int nPrisonerSlotIdx;
       nPrisonerSlotIdx = 0;
@@ -1032,7 +1027,7 @@ void __fastcall Q32_OnBarricadeDestroyed(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     }
 
     *pGroupBarricadeFlag = 1;
-    pIterUnit = (D2UnitStrc*)D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pPrisonerRoom, sPortalCoords.x, sPortalCoords.y);
+    pIterUnit = (D2UnitStrc*)D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pPrisonerRoom, sPortalCoords.x, sPortalCoords.y);
     D2UnitStrc* pPortalUnit;
     pPortalUnit = UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0xbd, sPortalCoords.x, sPortalCoords.y, pQuestData->pGame, (D2RoomStrc*)pIterUnit, 1, 1, nullptr);
     if (!pPortalUnit) {
@@ -1083,12 +1078,21 @@ void __fastcall Q32_OnBarricadeDestroyed(::SGAMEDATA * pGame, D2UnitStrc * pUnit
             /* SetQuestState(JustCompleted=0xd): enough barbarians freed (field_0x08 > 0xb)
                          -> quest just completed self game */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_JustCompleted);
             /* SetQuestState(RewardAwaits=1): mark reward claimable from Qual-Kehk */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_RewardAwaits);
-            if (pQuestSpecificData->nPrisonersFreed == 0xf) {
-              eSurvivalTierState = QUESTSTATE_Step0x05;
-            } else if (pQuestSpecificData->nPrisonersFreed == 0xe) {
-              eSurvivalTierState = QUESTSTATE_Step0x06;
-            } else {
-              eSurvivalTierState = QUESTSTATE_Step0x07;
+            switch (pQuestSpecificData->nPrisonersFreed) {
+              case 0xf:
+                {
+                  eSurvivalTierState = QUESTSTATE_Step0x05;
+                  break;
+                }
+              case 0xe:
+                {
+                  eSurvivalTierState = QUESTSTATE_Step0x06;
+                  break;
+                }
+              default:
+                {
+                  eSurvivalTierState = QUESTSTATE_Step0x07;
+                }
             }
 
             /* SetQuestState(Step0x05/0x06/0x07): records survival reward tier from
@@ -1136,11 +1140,10 @@ int32_t __fastcall Q32_GetRemainingPrisonersCount(D2QuestDataStrc * pQuestData) 
     }
 
     int32_t nRemainingTotal = nCount + (pSpecificData->nTotalPrisonersToFree - pSpecificData->nPrisonersFreed - pSpecificData->nPrisonersKilledByMonsters);
-    if (nRemainingTotal >= 0) {
-      return nRemainingTotal;
+    if (nRemainingTotal < 0) {
+      nRemainingTotal = 0;
     }
 
-    nRemainingTotal = 0;
     return nRemainingTotal;
 }
 

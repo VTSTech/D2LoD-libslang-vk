@@ -12,7 +12,6 @@
 #include "D2Client/SKILLS/SkillsAss.h"
 #include "D2Client/SKILLS/SkillsSor.h"
 #include "D2Client/Sound/Sound.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Missile.h"
 #include "D2Client/UNIT/Monster.h"
@@ -47,6 +46,7 @@
 #include "D2Common/Units/Missile.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -173,8 +173,8 @@ BOOL __fastcall Skills_CltDoFunc_EMon_FallingMissileWithZ(D2UnitStrc * pUnit, eD
       nTmp = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->cltcalc[0], eSkill, nSkillLvl);
       nInitPosZ = Engine::Particle::PARTICLE_GetPosZShifted(pUnit);
       pTargetUnit = (D2UnitStrc*)(nTmp + nInitPosZ);
-      nExtraFrames = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->cltcalc[1], eSkill, nSkillLvl);
-      nAnimTotalFrames = nExtraFrames + pMissileTxt->Param2;
+      nAnimTotalFrames = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->cltcalc[1], eSkill, nSkillLvl);
+      nAnimTotalFrames += pMissileTxt->Param2;
       nSkillLvl = (uint32_t)(uint8_t)pMissileTxt->AnimLen << 8;
       nZStepPerFrame = (nTmp + nInitPosZ) * -2;
       if (nAnimTotalFrames) {

@@ -21,7 +21,6 @@
 #include "D2Client/UI/Hireables.h"
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/ListBox/ListBoxWrapper.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/Text.h"
 #include "D2Client/UI/npcmenu/Merc.h"
 #include "D2Client/UI/ui.h"
@@ -51,6 +50,7 @@
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -3652,9 +3652,13 @@ BOOL bInteractingWithNpc = 0; D2_GLOBAL_GUARD(bInteractingWithNpc, "D2Client::_I
 int nCurrentInteractedNpcClassId = 0; D2_GLOBAL_GUARD(nCurrentInteractedNpcClassId, "D2Client::_Interaction::nCurrentInteractedNpcClassId");
 } // namespace D2Client::_Interaction
 uint32_t gnNpcMenuTransactionType = 0; D2_GLOBAL_GUARD(gnNpcMenuTransactionType, "gnNpcMenuTransactionType");
+static BOOL gbNpcMenuTransactionMode1 = 0; D2_STATIC_GUARD(gbNpcMenuTransactionMode1, "gbNpcMenuTransactionMode1");
+static short gbNpcMenuTransactionMode2 = 0; D2_STATIC_GUARD(gbNpcMenuTransactionMode2, "gbNpcMenuTransactionMode2");
 static uint32_t gnNpcMenuPreviousGold = 0; D2_STATIC_GUARD(gnNpcMenuPreviousGold, "gnNpcMenuPreviousGold");
 D2BitBufferStrc * gpNpcMenuBitBuffer = 0; D2_GLOBAL_GUARD(gpNpcMenuBitBuffer, "gpNpcMenuBitBuffer");
 D2BitBufferStrc * gpNpcMenuDialogOptions = 0; D2_GLOBAL_GUARD(gpNpcMenuDialogOptions, "gpNpcMenuDialogOptions");
+static int gnNpcMenuPendingUnk = 0; D2_STATIC_GUARD(gnNpcMenuPendingUnk, "gnNpcMenuPendingUnk");
+static int gnNpcMenuPendingItemCost = 0; D2_STATIC_GUARD(gnNpcMenuPendingItemCost, "gnNpcMenuPendingItemCost");
 static uint32_t gnNpcMenuCurrentNpcClassId = 0; D2_STATIC_GUARD(gnNpcMenuCurrentNpcClassId, "gnNpcMenuCurrentNpcClassId");
 static uint32_t gnNpcMenuCurrentNpcGUID = 0; D2_STATIC_GUARD(gnNpcMenuCurrentNpcGUID, "gnNpcMenuCurrentNpcGUID");
 static uint32_t gnNpcMenuLastTransactionGold = 0; D2_STATIC_GUARD(gnNpcMenuLastTransactionGold, "gnNpcMenuLastTransactionGold");
@@ -3671,7 +3675,7 @@ D2DialogStrc * gpNpcMercListDialog = 0; D2_GLOBAL_GUARD(gpNpcMercListDialog, "D2
 D2DialogStrc * gpNpcMainMenuDialog = 0; D2_GLOBAL_GUARD(gpNpcMainMenuDialog, "D2Client::UI::Dialog::gpNpcMainMenuDialog");
 } // namespace D2Client::UI::Dialog
 static uint32_t nTransactionCost = 0; D2_STATIC_GUARD(nTransactionCost, "nTransactionCost");
-ListBoxWrapper * gpNpcMenuMercListBox = 0; D2_GLOBAL_GUARD(gpNpcMenuMercListBox, "gpNpcMenuMercListBox");
+::ListBoxWrapper * gpNpcMenuMercListBox = 0; D2_GLOBAL_GUARD(gpNpcMenuMercListBox, "gpNpcMenuMercListBox");
 static D2GSPacketSrv0x2A D2GSPacketSrv0x2A_007c0d87 = {}; D2_STATIC_GUARD(D2GSPacketSrv0x2A_007c0d87, "D2GSPacketSrv0x2A_007c0d87");
 static uint32_t gnNpcMenuActiveContainer = 0; D2_STATIC_GUARD(gnNpcMenuActiveContainer, "gnNpcMenuActiveContainer");
 static short gaNpcMenuHandledMessageIds[9] = {}; D2_STATIC_GUARD(gaNpcMenuHandledMessageIds, "gaNpcMenuHandledMessageIds");
@@ -3681,6 +3685,7 @@ static uint32_t gnNpcMenuNpcSoundIndex = 0; D2_STATIC_GUARD(gnNpcMenuNpcSoundInd
 static uint32_t gnNpcMenuNpcClassId = 0; D2_STATIC_GUARD(gnNpcMenuNpcClassId, "gnNpcMenuNpcClassId");
 static uint32_t gnNpcMenuDialogX = 0; D2_STATIC_GUARD(gnNpcMenuDialogX, "gnNpcMenuDialogX");
 static uint32_t gnNpcMenuDialogY = 0; D2_STATIC_GUARD(gnNpcMenuDialogY, "gnNpcMenuDialogY");
+static uint32_t gnNpcMenuDialogWidth = 0; D2_STATIC_GUARD(gnNpcMenuDialogWidth, "gnNpcMenuDialogWidth");
 DC6 * gpNpcMenuShopInventoryDC6 = 0; D2_GLOBAL_GUARD(gpNpcMenuShopInventoryDC6, "gpNpcMenuShopInventoryDC6");
 static DC6 * gpNpcMenuShopInventoryBuffer = 0; D2_STATIC_GUARD(gpNpcMenuShopInventoryBuffer, "gpNpcMenuShopInventoryBuffer");
 namespace D2Client::Merc {
@@ -3697,6 +3702,14 @@ static unsigned int gdwNpcMenuLastClickTimestamp = {}; D2_STATIC_GUARD(gdwNpcMen
 static uint16_t gNpcMenuConfirmDialogStrings[40] = {}; D2_STATIC_GUARD(gNpcMenuConfirmDialogStrings, "gNpcMenuConfirmDialogStrings");
 
 namespace D2Client::UI::npcmenu {
+
+int __stdcall NPCMENU_EmptyDialogDrawHandler_Unref_00486e00() {
+    return 0;
+}
+
+int32_t __stdcall GetInteractedUnitClassId_Unref_004b1020() {
+    return gnMonsterSpecialType;
+}
 
 void __thiscall NPCMENU_ConvertQuestId(short * nInput, uint16_t * pResult) {
     uint16_t nConvertedId = *nInput;
@@ -3889,6 +3902,10 @@ int __fastcall NPCMENU_ScrollCompleteShowNextMessage(void * pUserParam, uint32_t
     Text::TEXT_SetScrollCompleteCallback(nullptr, pUserParam);
     NPCMENU_ReopenTalkDialog();
     return 1;
+}
+
+void Unreferenced_004b1970() {
+    gnNpcMenuScrollMessageHead = 0;
 }
 
 void __fastcall NPCMENU_AddHandledMessageId(short wMsgId) {
@@ -4182,6 +4199,10 @@ static int NPCMENU_CanItemBeRepaired(D2UnitStrc * pUnit) {
     return 1;
 }
 
+int __stdcall NPCMENU_EmptyDialogDrawHandler_Unref_004b2010() {
+    return 0;
+}
+
 // Cain's "Identify Items" (4020 NPCIdentify1) option callback: slot 1 of the Cain rows 16, 17, 18, 19 and 38 (cain2, cain5, cain3, cain4, cain6); installed by NPCMENU_InitializeMenuOptions and NPCMENU_EnableCainIdentifyOption.
 // Halts if the transaction-wait dialog (gpNpcHireMercDialog) is already open. Otherwise opens it with 3353 "Waiting for confirmation of transaction...", sets a 60 s deadline, NPC UI state 10, gnNpcMenuTransactionType = 4, and sends C->S 0x34 (NPC GUID) = identify all items. Returns 1.
 int __stdcall NPCMENU_CainIdentifyOptionCallback() {
@@ -4355,54 +4376,55 @@ void __stdcall NPCMENU_Initialize() {
     gnNpcMenuDialogY = 0;
     gnNpcMenuDialogX = 0;
     GetTickCount();
-    /* The original clears its NPC-menu state as one 352-byte span starting at
-       gbNpcMenuInitialized (007c0c68..007c0dc7, 45 globals ending at gnNpcMenuDialogWidth).
-       That span is only meaningful while those globals stay adjacent, which the rebuild does
-       not preserve - here the 352 bytes reached 348 past the first object and zeroed
-       gnTileClipYMin, collapsing the wall/roof blit clip so only a ~32px band drew. Clearing
-       each object by name is the same write set, independent of where the linker puts them.
-       Five of the original's symbols have no xref and are not emitted, so nothing can observe
-       them. */
-    ::gbNpcMenuInitialized = 0;
-    ::gnNpcMenuActiveMode = 0;
-    ::gbNpcMenuRandomDialogSeed = 0;
-    D2Client::_Interaction::geNpcUiState = (eD2NpcUiState)0;
-    ::PLAYER_CurrentGold = 0;
-    ::gnNpcMenuRepairCostGold = 0;
-    ::gnNpcMenuTradeActionGold = 0;
-    ::gnNpcMenuScrollCompleteMode = 0;
-    ::gpNpcCurrentSpeech = 0;
-    ::gnNpcMenuCainIdentifyGUID = 0;
+    /* memset(0x007c0c68, 0, 0x160): zeroes the whole NPC-menu global region
+                         007c0c68..007c0dc7
+                         (45 named globals, ending exactly at gpNpcMenuShopInventoryDC6 @007c0dc8).
+                         See the plate
+                         comment at 007c0c68 - this span is real, do not model it as one struct. */ memset(&gbNpcMenuInitialized, 0, sizeof(gbNpcMenuInitialized));
+    memset(&gnNpcMenuActiveMode, 0, sizeof(gnNpcMenuActiveMode));
+    memset(&gbNpcMenuRandomDialogSeed, 0, sizeof(gbNpcMenuRandomDialogSeed));
+    memset(&_Interaction::geNpcUiState, 0, sizeof(_Interaction::geNpcUiState));
+    memset(&PLAYER_CurrentGold, 0, sizeof(PLAYER_CurrentGold));
+    memset(&gnNpcMenuRepairCostGold, 0, sizeof(gnNpcMenuRepairCostGold));
+    memset(&gnNpcMenuTradeActionGold, 0, sizeof(gnNpcMenuTradeActionGold));
+    memset(&gnNpcMenuScrollCompleteMode, 0, sizeof(gnNpcMenuScrollCompleteMode));
+    memset(&gpNpcCurrentSpeech, 0, sizeof(gpNpcCurrentSpeech));
+    memset(&gnNpcMenuCainIdentifyGUID, 0, sizeof(gnNpcMenuCainIdentifyGUID));
     memset(&D2Client::Merc::D2MercForHire, 0, sizeof(D2Client::Merc::D2MercForHire));
-    D2Client::_Interaction::nCurrentInteractedNpcGUID = 0;
-    D2Client::_Interaction::bInteractingWithNpc = 0;
-    D2Client::_Interaction::nCurrentInteractedNpcClassId = 0;
-    ::gnNpcMenuTransactionType = 0;
-    ::gnNpcMenuPreviousGold = 0;
-    ::gpNpcMenuBitBuffer = 0;
-    ::gpNpcMenuDialogOptions = 0;
-    ::gnNpcMenuCurrentNpcClassId = 0;
-    ::gnNpcMenuCurrentNpcGUID = 0;
-    ::gnNpcMenuLastTransactionGold = 0;
-    D2Client::UI::Dialog::gpNpcTransactionConfirmDialog = 0;
-    D2Client::UI::Dialog::gpNpcTradeErrorDialog = 0;
-    D2Client::UI::Dialog::gpNpcTransactionWaitDialog = 0;
-    D2Client::UI::Dialog::gpNpcInteractionDialog = 0;
-    D2Client::UI::Dialog::gpNpcGossipDialog = 0;
-    D2Client::UI::Dialog::gpNpcActionConfirmDialog = 0;
-    D2Client::UI::Dialog::gpNpcMercListDialog = 0;
-    D2Client::UI::Dialog::gpNpcMainMenuDialog = 0;
-    ::nTransactionCost = 0;
-    ::gpNpcMenuMercListBox = 0;
-    memset(&::D2GSPacketSrv0x2A_007c0d87, 0, sizeof(::D2GSPacketSrv0x2A_007c0d87));
-    ::gnNpcMenuActiveContainer = 0;
-    memset(&::gaNpcMenuHandledMessageIds, 0, sizeof(::gaNpcMenuHandledMessageIds));
-    ::gnNpcMenuScrollMessageHead = 0;
-    ::gnNpcMenuShopMode = 0;
-    ::gnNpcMenuNpcSoundIndex = 0;
-    ::gnNpcMenuNpcClassId = 0;
-    ::gnNpcMenuDialogX = 0;
-    ::gnNpcMenuDialogY = 0;
+    memset(&_Interaction::nCurrentInteractedNpcGUID, 0, sizeof(_Interaction::nCurrentInteractedNpcGUID));
+    memset(&_Interaction::bInteractingWithNpc, 0, sizeof(_Interaction::bInteractingWithNpc));
+    memset(&_Interaction::nCurrentInteractedNpcClassId, 0, sizeof(_Interaction::nCurrentInteractedNpcClassId));
+    memset(&gnNpcMenuTransactionType, 0, sizeof(gnNpcMenuTransactionType));
+    memset(&gbNpcMenuTransactionMode1, 0, sizeof(gbNpcMenuTransactionMode1));
+    memset(&gbNpcMenuTransactionMode2, 0, sizeof(gbNpcMenuTransactionMode2));
+    memset(&gnNpcMenuPreviousGold, 0, sizeof(gnNpcMenuPreviousGold));
+    memset(&gpNpcMenuBitBuffer, 0, sizeof(gpNpcMenuBitBuffer));
+    memset(&gpNpcMenuDialogOptions, 0, sizeof(gpNpcMenuDialogOptions));
+    memset(&gnNpcMenuPendingUnk, 0, sizeof(gnNpcMenuPendingUnk));
+    memset(&gnNpcMenuPendingItemCost, 0, sizeof(gnNpcMenuPendingItemCost));
+    memset(&gnNpcMenuCurrentNpcClassId, 0, sizeof(gnNpcMenuCurrentNpcClassId));
+    memset(&gnNpcMenuCurrentNpcGUID, 0, sizeof(gnNpcMenuCurrentNpcGUID));
+    memset(&gnNpcMenuLastTransactionGold, 0, sizeof(gnNpcMenuLastTransactionGold));
+    memset(&Dialog::gpNpcTransactionConfirmDialog, 0, sizeof(Dialog::gpNpcTransactionConfirmDialog));
+    memset(&Dialog::gpNpcTradeErrorDialog, 0, sizeof(Dialog::gpNpcTradeErrorDialog));
+    memset(&Dialog::gpNpcTransactionWaitDialog, 0, sizeof(Dialog::gpNpcTransactionWaitDialog));
+    memset(&Dialog::gpNpcInteractionDialog, 0, sizeof(Dialog::gpNpcInteractionDialog));
+    memset(&Dialog::gpNpcGossipDialog, 0, sizeof(Dialog::gpNpcGossipDialog));
+    memset(&Dialog::gpNpcActionConfirmDialog, 0, sizeof(Dialog::gpNpcActionConfirmDialog));
+    memset(&Dialog::gpNpcMercListDialog, 0, sizeof(Dialog::gpNpcMercListDialog));
+    memset(&Dialog::gpNpcMainMenuDialog, 0, sizeof(Dialog::gpNpcMainMenuDialog));
+    memset(&nTransactionCost, 0, sizeof(nTransactionCost));
+    memset(&gpNpcMenuMercListBox, 0, sizeof(gpNpcMenuMercListBox));
+    memset(&D2GSPacketSrv0x2A_007c0d87, 0, sizeof(D2GSPacketSrv0x2A_007c0d87));
+    memset(&gnNpcMenuActiveContainer, 0, sizeof(gnNpcMenuActiveContainer));
+    memset(&gaNpcMenuHandledMessageIds, 0, sizeof(gaNpcMenuHandledMessageIds));
+    memset(&gnNpcMenuScrollMessageHead, 0, sizeof(gnNpcMenuScrollMessageHead));
+    memset(&gnNpcMenuShopMode, 0, sizeof(gnNpcMenuShopMode));
+    memset(&gnNpcMenuNpcSoundIndex, 0, sizeof(gnNpcMenuNpcSoundIndex));
+    memset(&gnNpcMenuNpcClassId, 0, sizeof(gnNpcMenuNpcClassId));
+    memset(&gnNpcMenuDialogX, 0, sizeof(gnNpcMenuDialogX));
+    memset(&gnNpcMenuDialogY, 0, sizeof(gnNpcMenuDialogY));
+    memset(&gnNpcMenuDialogWidth, 0, sizeof(gnNpcMenuDialogWidth));
     gpNpcMenuBitBuffer = D2Common::QuestRecord::CreateBitBuffer(nullptr);
     gpNpcMenuDialogOptions = D2Common::QuestRecord::CreateBitBuffer(nullptr);
     _Interaction::geNpcUiState = NPCUI_NONE;
@@ -4470,10 +4492,6 @@ void __stdcall NPCMENU_Cleanup() {
 }
 
 void __fastcall NPCMENU_SetTransactionMode(D2GSPacketSrv0x50 * pMsg) {
-    // Static local variables (originally global data)
-    static BOOL gbNpcMenuTransactionMode1; D2_STATIC_GUARD_BSS(gbNpcMenuTransactionMode1, "D2Client::UI::npcmenu::NPCMENU_SetTransactionMode::gbNpcMenuTransactionMode1");
-    static short gbNpcMenuTransactionMode2; D2_STATIC_GUARD_BSS(gbNpcMenuTransactionMode2, "D2Client::UI::npcmenu::NPCMENU_SetTransactionMode::gbNpcMenuTransactionMode2");
-
     if (!pMsg) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfc6);
       exit(-1);
@@ -4842,7 +4860,7 @@ BOOL __fastcall NPCMENU_CalculateItemTransactionCost(D2UnitStrc * pUnit, int32_t
           }
 
           bIsIdentified = D2Common::QuestRecord::GetQuestState(gpNpcMenuBitBuffer, QUEST_TheSearchForCain, QUESTSTATE_Completed);
-          *pInventory = (bIsIdentified ? -100 : 0) + 100;
+          *pInventory = bIsIdentified ? 0 : 100;
           nStrTableId = 0xd04;
           goto format_cost;
         }
@@ -4984,12 +5002,12 @@ int __stdcall NPCMENU_ConfirmTransactionReturn() {
     Dialog::gpNpcTransactionConfirmDialog = 0;
     if (gnNpcMenuTransactionType == 5) {
       NPCMENU_BuildMercHireMenu();
-      return 1;
+    } else {
+      Inv::INV_ReturnToShopFromRepair();
+      _Interaction::geNpcUiState = NPCUI_SHOP;
+      GAME::Select::ClearSelectedUnit();
     }
 
-    Inv::INV_ReturnToShopFromRepair();
-    _Interaction::geNpcUiState = NPCUI_SHOP;
-    GAME::Select::ClearSelectedUnit();
     return 1;
 }
 
@@ -5205,6 +5223,30 @@ void __fastcall NPCMENU_MarkNpcSpeechesUpdated(D2GSPacketSrv0x91 * pBytes) {
     } while (nMessageCount);
 }
 
+int __fastcall Unreferenced_004b3560(int param_1) {
+    *(uint32_t*)(param_1 + 0x15) = 0;
+    *(uint32_t*)(param_1 + 0x19) = 0;
+    *(uint32_t*)(param_1 + 0x1d) = 0;
+    *(uint32_t*)(param_1 + 0x21) = 0;
+    *(uint32_t*)(param_1 + 0x25) = 0;
+    *(uint32_t*)(param_1 + 0x29) = 0;
+    *(uint32_t*)(param_1 + 0x2d) = 0;
+    *(uint32_t*)(param_1 + 0x31) = 0;
+    *(uint32_t*)(param_1 + 0x35) = 0;
+    *(uint32_t*)(param_1 + 0x39) = 0;
+    *(uint32_t*)(param_1 + 0x3d) = 0;
+    *(uint32_t*)(param_1 + 0x41) = 0;
+    *(uint32_t*)(param_1 + 0x45) = 0;
+    *(uint32_t*)(param_1 + 0x49) = 0;
+    *(uint32_t*)(param_1 + 0x4d) = 0;
+    *(uint32_t*)(param_1 + 0x51) = 0;
+    *(uint32_t*)(param_1 + 0x55) = 0;
+    *(uint32_t*)(param_1 + 0x59) = 0;
+    *(uint32_t*)(param_1 + 0x5d) = 0;
+    *(uint32_t*)(param_1 + 0x61) = 0;
+    return param_1;
+}
+
 // Shared callback of the Imbue (Charsi, string 4017), Add Sockets (Larzuk, 22748) and Personalize (Anya, 22749) menu options: frees the NPC dialog, closes UI_NPCMENU, resets the cursor and hover state, sets the NPC UI state to 7 and gnNpcMenuTransactionType to 0, then opens the cube-style item panel for the current NPC (UI_OpenHoradricCubeWithNpcInteraction(nCurrentInteractedNpcGUID)). Returns 1.
 // Evidence: the only 3 references are the NPCMENU_Enable{CharsiImbue,LarzukSocket,AnyaPersonalize}Option stores; which service runs is chosen by the NPC, not here.
 int __stdcall NPCMENU_ItemServiceOptionCallback() {
@@ -5265,10 +5307,6 @@ void __fastcall NPCMENU_ClearHireListAndStopNpcSound(int32_t nNpcGuid) {
 }
 
 int __fastcall ShopAction(D2UnitStrc * pUnit, D2UnitStrc * pItem, DWORD dwSell, DWORD unk, DWORD dwItemCost, DWORD dwMode, DWORD _2, DWORD _3) {
-    // Static local variables (originally global data)
-    static int gnNpcMenuPendingUnk; D2_STATIC_GUARD_BSS(gnNpcMenuPendingUnk, "D2Client::UI::npcmenu::ShopAction::gnNpcMenuPendingUnk");
-    static int gnNpcMenuPendingItemCost; D2_STATIC_GUARD_BSS(gnNpcMenuPendingItemCost, "D2Client::UI::npcmenu::ShopAction::gnNpcMenuPendingItemCost");
-
     uint8_t bVar1;
     BOOL bGambleEnabled;
     uint32_t bIsRepairMode;
@@ -5553,10 +5591,10 @@ int __stdcall NPCMENU_OpenNpcShop() {
       GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT_INT(0x38, 2, _Interaction::nCurrentInteractedNpcGUID, 0);
       gpNpcShopOwnerUnit = UNIT::Player::GetPlayerUnit_UI();
       gbNpcMenuShopOpened = 0;
-      return 1;
+    } else {
+      NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
     }
 
-    NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
     return 1;
 }
 
@@ -5625,26 +5663,20 @@ void __fastcall CloseNPCInteract() {
       Inv::INV_ResetHoverAndContextState();
       NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
       ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
-      NPCMENU_CloseAllDialogs();
-      _Interaction::geNpcUiState = NPCUI_NONE;
-      return;
-    }
-    if ((uint32_t)(_Interaction::geNpcUiState - NPCUI_SHOP) <= 3) {
-      NPCMENU_CloseShopUI();
-      Inv::INV_ResetShopState();
-      NPCMENU_CloseAllDialogs();
-      _Interaction::geNpcUiState = NPCUI_NONE;
-      return;
-    }
-    if (_Interaction::geNpcUiState == NPCUI_ITEM_SERVICE) {
-      ui::thunk_NPCSHOP_IsRepairTabActive();
-      NPCMENU_CloseAllDialogs();
-      _Interaction::geNpcUiState = NPCUI_NONE;
-      return;
-    }
-    if (gnNpcMenuActiveMode != '\0') {
-      gnNpcMenuActiveMode = '\0';
-      NPCMENU_CloseAndResetAll();
+    } else {
+      if ((uint32_t)(_Interaction::geNpcUiState - NPCUI_SHOP) <= 3) {
+        NPCMENU_CloseShopUI();
+        Inv::INV_ResetShopState();
+      } else {
+        if (_Interaction::geNpcUiState == NPCUI_ITEM_SERVICE) {
+          ui::thunk_NPCSHOP_IsRepairTabActive();
+        } else {
+          if (gnNpcMenuActiveMode != '\0') {
+            gnNpcMenuActiveMode = '\0';
+            NPCMENU_CloseAndResetAll();
+          }
+        }
+      }
     }
 
     NPCMENU_CloseAllDialogs();
@@ -5818,21 +5850,18 @@ int __stdcall NPCMENU_TradeOptionCallback() {
       GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT_INT(0x38, 1, _Interaction::nCurrentInteractedNpcGUID, 0);
       gpNpcShopOwnerUnit = UNIT::Player::GetPlayerUnit_UI();
       gbNpcMenuShopOpened = 0;
-      return 1;
+    } else {
+      _Interaction::geNpcUiState = NPCUI_NONE;
+      Inv::INV_ResetHoverAndContextState();
+      NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
+      ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     }
 
-    _Interaction::geNpcUiState = NPCUI_NONE;
-    Inv::INV_ResetHoverAndContextState();
-    NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     return 1;
 }
 
 // EDI is not an argument: saved at 004b4464 PUSH EDI before any read.
 void DRAW_UI_NPC_INTERACTION() {
-    // Static local variables (originally global data)
-    static uint32_t gnNpcMenuDialogWidth; D2_STATIC_GUARD_BSS(gnNpcMenuDialogWidth, "D2Client::UI::npcmenu::DRAW_UI_NPC_INTERACTION::gnNpcMenuDialogWidth");
-
     D2UnitStrc* pNpcUnit;
     eD2GSGameType eD2GameType;
     uint32_t bDead = UNIT::Player::IsPlayerDead();
@@ -6983,8 +7012,7 @@ int __stdcall NPCMENU_BuildMercHireMenu() {
     nNameStringId = 0;
     eStatId = UNITSTAT_gold;
     int nGoldOnBody = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(UNIT::Player::GetPlayerUnit_UI(), eStatId, nNameStringId);
-    int32_t nTotalGold = nLoopCounter + nGoldOnBody;
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(300, wszGoldFmtBuf, D2Lang::StrTable::strtable::GetLocaleString(0xd24), nTotalGold);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(300, wszGoldFmtBuf, D2Lang::StrTable::strtable::GetLocaleString(0xd24), nLoopCounter + nGoldOnBody);
     Dialog::AddStringData(Dialog::gpNpcMercListDialog, wszGoldFmtBuf, 0x15, 0, 4, 1, nullptr, 0);
     int32_t nMercSeed = 1;
     fpDialogFunc pfnCloseCallback = NPCMENU_MercListDrawCallback;

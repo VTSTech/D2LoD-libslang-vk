@@ -4,7 +4,6 @@
 #include "D2Client/D2RosterStrc.h"
 #include "D2Client/GAME/Roster.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
@@ -23,6 +22,7 @@
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -56,14 +56,6 @@ D2RosterPetStrc * pRosterPet = 0; D2_GLOBAL_GUARD(pRosterPet, "D2Client::GAME::R
 
 namespace D2Client::GAME::RosterPets {
 
-D2PetTypeTxt * __fastcall GetPetTypeTxtById(int32_t nPetId) {
-    if (nPetId >= 0 && nPetId < sgptDataTable->nTxtPetTypeSize) {
-      return sgptDataTable->pTxtPetType + nPetId;
-    }
-
-    return nullptr;
-}
-
 // @sourcefile .\GAME\RosterPets.cpp
 void __stdcall FreeRosterPet() {
     D2RosterPetStrc* pMemoryToFree = pRosterPet;
@@ -77,14 +69,30 @@ void __stdcall FreeRosterPet() {
     pRosterPet = 0;
 }
 
+int __fastcall Unreferenced_00478a90(int param_1) {
+    D2RosterPetStrc* pDVar1 = pRosterPet;
+    while (true) {
+      if (!pDVar1) {
+        return 0;
+      }
+      if (pDVar1->nRosterGUID == param_1) {
+        break;
+      }
+
+      pDVar1 = pDVar1->pNext;
+    }
+
+    return (int)pDVar1;
+}
+
 // @sourcefile .\GAME\RosterPets.cpp
 static void __fastcall ROSTERPETS_RemoveRosterPetsBySkillID(int32_t nRosterGUID) {
     D2RosterPetStrc* pPrev = 0;
-    D2RosterPetStrc* pMemoryToFree = pRosterPet;
     if (!pRosterPet) {
       return;
     }
 
+    D2RosterPetStrc* pMemoryToFree = pRosterPet;
     while (pMemoryToFree->nSkillID != 7 || pMemoryToFree->nRosterGUID != nRosterGUID) {
       D2RosterPetStrc** ppNext;
       ppNext = &pMemoryToFree->pNext;
@@ -97,11 +105,10 @@ static void __fastcall ROSTERPETS_RemoveRosterPetsBySkillID(int32_t nRosterGUID)
 
     if (pPrev) {
       pPrev->pNext = pMemoryToFree->pNext;
-      D2_FREE_AT(pMemoryToFree, ".\\GAME\\RosterPets.cpp", 0x59);
-      return;
+    } else {
+      pRosterPet = pMemoryToFree->pNext;
     }
 
-    pRosterPet = pMemoryToFree->pNext;
     D2_FREE_AT(pMemoryToFree, ".\\GAME\\RosterPets.cpp", 0x59);
 }
 
@@ -434,15 +441,16 @@ void __stdcall ROSTER_UpdateHostileColors() {
 void __fastcall UpdateLifeAndArea(DWORD nRosterGUID, int32_t nHpPercent, uint16_t eLevel) {
     D2RosterPetStrc* pRosterPet;
     pRosterPet = RosterPets::pRosterPet;
-    if (!RosterPets::pRosterPet) {
-      return;
+    while (pRosterPet) {
+      if (pRosterPet->nRosterGUID == nRosterGUID) {
+        break;
+      }
+
+      pRosterPet = pRosterPet->pNext;
     }
 
-    while (pRosterPet->nRosterGUID != nRosterGUID) {
-      pRosterPet = pRosterPet->pNext;
-      if (!pRosterPet) {
-        return;
-      }
+    if (!pRosterPet) {
+      return;
     }
 
     pRosterPet->nHpPercent = nHpPercent;

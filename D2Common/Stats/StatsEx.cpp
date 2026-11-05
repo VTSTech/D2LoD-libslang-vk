@@ -9,7 +9,6 @@
 #include "D2Client/GAME/RosterPets.h"
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/Stats.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
@@ -33,6 +32,7 @@
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Targets.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitInactive.h"
@@ -631,8 +631,8 @@ int32_t __stdcall STATLIST_CalcStatWithPercentBonus(D2StatListExStrc * pStatList
     int nBonusPart = 0;
     if (bIncludeBonus) {
       int32_t nFullStatValue;
-      nFullStatValue = STATLIST_GetMinimalStatValueShifted(pStatList, eUnitStat, 0);
-      nBonusPart = nFullStatValue - nValue;
+      nBonusPart = STATLIST_GetMinimalStatValueShifted(pStatList, eUnitStat, 0);
+      nBonusPart -= nValue;
     }
 
     nPercentStatValue = D2Client::Stats::D2ApplyPercent(nValue, nPercentStatValue, 100);
@@ -999,7 +999,7 @@ eD2States __stdcall GetStateBitFlag(D2UnitStrc * pUnit, eD2States eState) {
     }
 
     D2StatListExStrc* pStatList = pUnit->pStatsEx;
-    if (!(pStatList && pStatList->sStatList.nFlags & 0x80000000U)) {
+    if ((pStatList && pStatList->sStatList.nFlags & 0x80000000U) == 0) {
       return STATE_none;
     }
 
@@ -1925,6 +1925,14 @@ void __stdcall FreeStatList(D2StatListStrc * pStatList) {
     FreeAnyStatList((D2StatListExStrc*)pStatList);
 }
 
+void __fastcall Unreferenced_00626cf0(int param_1) {
+    if (!(param_1 && *(uint32_t*)(param_1 + 0x10) & 0x80000000)) {
+      return;
+    }
+
+    FreeAnyStatList((D2StatListExStrc*)param_1);
+}
+
 void __stdcall STATLIST_FreeStatListMemory(D2UnitStrc * pUnit) {
     D2StatListExStrc* pPlayerStatsEx = pUnit->pStatsEx;
     if (!pPlayerStatsEx) {
@@ -2731,6 +2739,10 @@ BOOL __fastcall SKILLS_ValidateSkillDescIndex(int32_t nSkillId) {
     }
 
     return 0;
+}
+
+int Unreferenced_00627b30() {
+    return sgptDataTable->nTxtItemTypesSize;
 }
 
 // Always-zero stub used as the fnSkillCalcMethod callback where a formula context has no

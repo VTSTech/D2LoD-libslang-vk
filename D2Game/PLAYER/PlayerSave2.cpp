@@ -6,7 +6,6 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/RosterPets.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Monster.h"
@@ -33,6 +32,7 @@
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/Merc.h"
 #include "D2Common/QuestRecord.h"
+#include "D2Common/Seed.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Common/Unit.h"
@@ -87,6 +87,10 @@ namespace D2Game::PLAYER::PlayerSave2 {
 __time32_t __stdcall PLRSAVE_GetTime32(__time32_t * pTime) {
     __time32_t _Var1 = _time32(pTime);
     return _Var1;
+}
+
+int Unreferenced_00568d70() {
+    return sgptDataTable->nSkillCountMaxPerClass;
 }
 
 int32_t __fastcall FindEndOfString(char * szString, int32_t nMaxSize) {
@@ -897,12 +901,7 @@ int __fastcall CalculateGetFlags(::SGAMEDATA * pGame, uint16_t dwCharacterStatus
     }
 
     check_hardcore_and_difficulty:
-    if (!(dwCharacterStatus & 4)) {
-      eArenaFlags = GAME::Arena::ARENA_GetFlags(pGame);
-      if (eArenaFlags & ARENAFLAG_Hardcore) {
-        return 0xc;
-      }
-    } else {
+    if (dwCharacterStatus & 4) {
       if (dwCharacterStatus & 8) {
         return 10;
       }
@@ -910,6 +909,11 @@ int __fastcall CalculateGetFlags(::SGAMEDATA * pGame, uint16_t dwCharacterStatus
       eArenaFlags = GAME::Arena::ARENA_GetFlags(pGame);
       if (!(eArenaFlags & ARENAFLAG_Hardcore)) {
         return 0xb;
+      }
+    } else {
+      eArenaFlags = GAME::Arena::ARENA_GetFlags(pGame);
+      if (eArenaFlags & ARENAFLAG_Hardcore) {
+        return 0xc;
       }
     }
     uint32_t nTitleProgress = (dwCharacterStatus & 0x1f00) >> 8;

@@ -9,6 +9,7 @@
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
 #include "D2Common/COMPOSIT/Composit.h"
+#include "D2Common/Collision.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
@@ -75,6 +76,14 @@ static D2InventorySizesStrc g_InventorySizesDefaultConfig = {
 static uint32_t gaItemTypeBaseIdTable[510] = {}; D2_STATIC_GUARD(gaItemTypeBaseIdTable, "gaItemTypeBaseIdTable");
 
 namespace D2Common::INVENTORY::Inventory {
+
+void __stdcall NullSub_Unref_00611610(D2InventoryStrc * pInventory) {
+
+}
+
+void __stdcall NullSub_Unref_00611640(D2InventoryStrc * pInventory) {
+
+}
 
 // Returns the item's inventory node (&pItemData->pInventory, D2UnitDataItemStrc +0x5c), not a D2InventoryStrc; NULL when pUnit is not an item or has no item data. Provenance: 1.14d asm 0063a7f0 ADD EAX,0x5c.
 static D2ItemInventoryNodeStrc * INVENTORY_GetItemInventoryNode(D2UnitStrc * pUnit) {
@@ -237,6 +246,14 @@ static void __stdcall INVENTORY_RemoveItemFromGrid(D2UnitStrc * pItem, D2Invento
     pItemData->sInvNode.pNextItemInPage = 0;
     pItemData->sInvNode.pPrevItemInPage = 0;
     pItemData->sInvNode.eInventoryGrid = INVENTORY_GRID_BODYLOC;
+}
+
+int __fastcall Unreferenced_0063aad0(int param_1) {
+    if (param_1 && *(int*)param_1 == 4) {
+      return 1;
+    }
+
+    return 0;
 }
 
 // Removes an item unit from its owning D2InventoryStrc. Validates inventory signature (0x1020304), removes the item from its grid slot, clears the cursor-item pointer or unlinks it from the item list, zeroes the item's inventory/grid references, clears the owner's stat bonuses via STATLIST_RemoveFromOwnerAndRecalc, and clears dwPrimaryWeaponGUID if it matched. Returns 1 on success, 0 on any validation failure.
@@ -1316,6 +1333,10 @@ BOOL __stdcall INVENTORY_CheckGridOccupancy(D2InventoryStrc * pInventory, D2Unit
     return 1;
 }
 
+int __stdcall Unreferenced_0063bcb0(int param_1, int param_2, int param_3, int param_4) {
+    return 1;
+}
+
 BOOL __stdcall INVENTORY_PlaceItemAtCoords(D2InventoryStrc * pInventory, D2UnitStrc * pUnit, int32_t nGridX, int32_t nGridY, int32_t eInvPage, int32_t nUnused, uint8_t bGridIndex) {
     if (!pInventory) {
       return 0;
@@ -2295,17 +2316,14 @@ void __stdcall UpsertToUpdateList(D2InventoryStrc * pInventory, D2UnitStrc * pIt
       exit(-1);
     }
 
-    pNewUpdate->nUnitGuid = 0;
-    pNewUpdate->pNext = 0;
+    memset(pNewUpdate, 0, sizeof(*pNewUpdate));
     pNewUpdate->nUnitGuid = pItem->nUnitGUID;
     if (!pInventory->pUpdates) {
       pInventory->pUpdates = pNewUpdate;
-      pNewUpdate->pNext = 0;
-      pInventory->pUpdatesLast = pNewUpdate;
-      return;
+    } else {
+      pInventory->pUpdatesLast->pNext = pNewUpdate;
     }
 
-    pInventory->pUpdatesLast->pNext = pNewUpdate;
     pNewUpdate->pNext = 0;
     pInventory->pUpdatesLast = pNewUpdate;
 }
@@ -2808,7 +2826,7 @@ void __stdcall INVENTORY_UpdatePrimaryWeapon(D2InventoryStrc * pInventory, D2Uni
 }
 
 void __stdcall INVENTORY_SwapPrimaryWeaponOnRemoval(D2InventoryStrc * pInventory, D2UnitStrc * pUnit) {
-    int32_t nGridOffset;
+    D2UnitStrc* pOtherArmWeapon;
     if (!(pInventory && (pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_ITEM)) {
       return;
     }
@@ -2823,16 +2841,14 @@ void __stdcall INVENTORY_SwapPrimaryWeaponOnRemoval(D2InventoryStrc * pInventory
 
     int32_t eOtherArmLoc = ITEMS::Items::GetBodyLocation(pUnit);
     if (eOtherArmLoc == BODYLOC_R_ARM) {
-      nGridOffset = 5;
+      pOtherArmWeapon = INVENTORY_GetItemByGridOffset(pInventory, 5);
     } else {
       if (eOtherArmLoc != BODYLOC_L_ARM) {
         return;
       }
 
-      nGridOffset = 4;
+      pOtherArmWeapon = INVENTORY_GetItemByGridOffset(pInventory, 4);
     }
-
-    D2UnitStrc* pOtherArmWeapon = INVENTORY_GetItemByGridOffset(pInventory, nGridOffset);
     if (!pOtherArmWeapon) {
       return;
     }
@@ -2947,6 +2963,7 @@ void __stdcall INVENTORY_AddCorpse(D2InventoryStrc * pInventory, int32_t nUnitGU
       return;
     }
 
+    D2CorpseStrc* nPrevTail = pInventory->pCorpseLast;
     D2CorpseStrc* pCorpse = D2_NEW_POOL_AT(pInventory->pMemory, D2CorpseStrc, ".\\INVENTORY\\Inventory.cpp", 0xfea);
     pCorpse->eUnitType = eUnitType;
     pCorpse->nUnitGUID = nUnitGUID;
@@ -2956,7 +2973,6 @@ void __stdcall INVENTORY_AddCorpse(D2InventoryStrc * pInventory, int32_t nUnitGU
     if (!pInventory->pCorpse) {
       pInventory->pCorpse = pCorpse;
     } else {
-      D2CorpseStrc* nPrevTail = pInventory->pCorpseLast;
       nPrevTail->pNext = pCorpse;
     }
     if (pCorpse->eUnitType == UNIT_PLAYER) {
@@ -4322,9 +4338,11 @@ static uint32_t INVENTORY_GetAlternateGfxIndex(int32_t dwItemCode, int32_t dwAlt
       }
 
       nTableIdx++;
-      if (nTableIdx >= 0xff) {
-        return 0;
+      if (nTableIdx < 0xff) {
+        continue;
       }
+
+      return 0;
     }
 
     return nTableIdx;
@@ -4442,7 +4460,7 @@ static void __stdcall INVENTORY_SetEquippedItemAppearance(D2UnitStrc * pUnit, ch
 
 uint8_t __stdcall INVENTORY_CalculateSwapActionCode(int32_t nParam1, int32_t nParam2) {
     if (nParam1) {
-      return nParam2 != 0 ? 5 : 1;
+      return !nParam2 ? 0x1 : 0x5;
     }
 
     return nParam2 ? 3 : 0;
@@ -4461,7 +4479,8 @@ static BOOL INVENTORY_CanDualWieldItems(D2UnitStrc * pUnit, D2UnitStrc * pItem1,
       return 1;
     }
 
-    int32_t nCheckResult = ITEMS::Items::ITEM_GetTxtItemTypes_shoots(pItem1);
+    int32_t nCheckResult;
+    nCheckResult = ITEMS::Items::ITEM_GetTxtItemTypes_shoots(pItem1);
     if (nCheckResult) {
       uint32_t bIsOfType;
       eShootsType = ITEMS::Items::ITEM_GetTxtItemTypes_shoots(pItem1);
@@ -4471,7 +4490,8 @@ static BOOL INVENTORY_CanDualWieldItems(D2UnitStrc * pUnit, D2UnitStrc * pItem1,
       }
     }
 
-    int32_t nShootsOrQuiverCheck = ITEMS::Items::ITEM_GetTxtItemTypes_shoots(pUnit);
+    int32_t nShootsOrQuiverCheck;
+    nShootsOrQuiverCheck = ITEMS::Items::ITEM_GetTxtItemTypes_shoots(pUnit);
     if (nShootsOrQuiverCheck) {
       eShootsType = ITEMS::Items::ITEM_GetTxtItemTypes_shoots(pUnit);
       bItemTypeMatch = ITEMS::Items::ITEMS_IsA(pItem1, eShootsType);
@@ -4514,51 +4534,59 @@ static BOOL INVENTORY_CanDualWieldItems(D2UnitStrc * pUnit, D2UnitStrc * pItem1,
       }
 
       eShootsType = ITEMTYPE_Weapon;
+      LAB_0063dcec:
       bItemTypeMatch = ITEMS::Items::ITEMS_IsA(pUnit, eShootsType);
     } else {
       if (!pCharUnit) {
         return 0;
       }
-      if (pCharUnit->eUnitType == UNIT_MONSTER) {
-        nShootsOrQuiverCheck = D2Client::UNIT::Player::ValidateClassId(pCharUnit->nClassId);
-        switch (nShootsOrQuiverCheck) {
-          case 0x1a1:
-
-          case 0x1a2:
-            bItemTypeMatch = ITEMS::Items::ITEMS_IsA(pItem1, ITEMTYPE_HandtoHand);
-          if (!bItemTypeMatch) {
-            return 0;
-          }
-
-          bItemTypeMatch = ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_HandtoHand);
-          break;
-          default:
-            return 0;
-          case 0x21c:
-
-          case 0x21d:
-
-          case 0x21e:
-            return 1;
-        }
-      } else {
+      if (pCharUnit->eUnitType != UNIT_MONSTER) {
         if (pCharUnit->eUnitType != UNIT_PLAYER) {
           return 0;
         }
-        if (pCharUnit->nClassId == 4) {
-          return 1;
-        }
-        if (pCharUnit->nClassId != 6) {
-          return 0;
-        }
 
-        bItemTypeMatch = ITEMS::Items::ITEMS_IsA(pItem1, ITEMTYPE_HandtoHand);
+        switch (pCharUnit->nClassId) {
+          case 4:
+            {
+              return 1;
+            }
+          default:
+            {
+              return 0;
+            }
+          case 6:
+            {
+              bItemTypeMatch = ITEMS::Items::ITEMS_IsA(pItem1, ITEMTYPE_HandtoHand);
+              if (!bItemTypeMatch) {
+                return 0;
+              }
+
+              eShootsType = ITEMTYPE_HandtoHand;
+              goto LAB_0063dcec;
+            }
+        }
+      }
+
+      nShootsOrQuiverCheck = D2Client::UNIT::Player::ValidateClassId(pCharUnit->nClassId);
+      switch (nShootsOrQuiverCheck) {
+        case 0x1a1:
+
+        case 0x1a2:
+          bItemTypeMatch = ITEMS::Items::ITEMS_IsA(pItem1, ITEMTYPE_HandtoHand);
         if (!bItemTypeMatch) {
           return 0;
         }
 
-        eShootsType = ITEMTYPE_HandtoHand;
-        bItemTypeMatch = ITEMS::Items::ITEMS_IsA(pUnit, eShootsType);
+        bItemTypeMatch = ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_HandtoHand);
+        break;
+        default:
+          return 0;
+        case 0x21c:
+
+        case 0x21d:
+
+        case 0x21e:
+          return 1;
       }
     }
     if (bItemTypeMatch) {
@@ -5036,6 +5064,18 @@ void __stdcall SaveCharAppearance(D2UnitStrc * pUnit, char * pArray1, char * pAr
 
       pCurItem = pItemData->sInvNode.pNextItem;
     }
+}
+
+void __stdcall NullSub_Unref_00643610(D2InventoryStrc * pInventory) {
+
+}
+
+void __stdcall NullSub_Unref_006460c0(D2InventoryStrc * pInventory) {
+
+}
+
+void __stdcall NullSub_Unref_006460e0(D2InventoryStrc * pInventory) {
+
 }
 
 } // namespace D2Common::INVENTORY::Inventory

@@ -39,7 +39,6 @@
 #include "D2Client/UI/CmdTbl.h"
 #include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/Inv.h"
-#include "D2Client/UI/Panel.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/QuestLog.h"
 #include "D2Client/UI/ShowItems.h"
@@ -61,6 +60,7 @@
 #include "D2Client/Warden/WardenClient.h"
 #include "D2Common/COMPOSIT/Composit.h"
 #include "D2Common/D2SeedStrc.h"
+#include "D2Common/DATATBLS/ItemTbls.h"
 #include "D2Common/DATATBLS/MonsterTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgLevelDataList.h"
@@ -85,6 +85,7 @@
 #include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Objects/Objects.h"
 #include "D2Game/PLAYER/PlayerMsg.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/Quests/QUESTS.h"
 #include "D2Game/SKILLS/Items.h"
 #include "D2Game/SKILLS/SkillAss.h"
@@ -221,7 +222,10 @@ struct D2Game_Line0x546 {
     /* 0x04 */ int nAutomap;
 };
 struct D2GemsTxt;
+struct D2GfxDataStrc;
 struct D2GfxHelperStrc;
+struct D2GfxLightExStrc;
+struct D2GfxLightStrc;
 struct D2GfxMemoryStrc;
 struct D2GfxSettingsStrc;
 struct D2GlideVertexStrc;
@@ -282,6 +286,7 @@ struct D2MercWeaponAnimMapStrc;
 struct D2MissCalcTxt;
 struct D2Missile031SpreadStrc;
 struct D2Missile032SpreadStrc;
+struct D2Missile036SpreadStrc;
 struct D2MissileSrvDoFuncData;
 struct D2MissilesTxt;
 struct D2MonAiTxt;
@@ -367,6 +372,7 @@ struct D2RunesTxt;
 struct D2RunesTxtTableStrc;
 struct D2SFileSignatureKeyStrc;
 struct D2SLogStrc;
+struct D2SMemTablesStrc;
 struct D2SSCompDeflateBlockEntryStrc;
 struct D2SaveFileHeaderStrc;
 struct D2ScreenMessageListStrc;
@@ -383,6 +389,7 @@ struct D2SkillStrc;
 struct D2SkillsHeaderTxt;
 struct D2SkillsPerClassCounter;
 struct D2SkillsTxt;
+struct D2SmackerContextStrc;
 struct D2SoundChannelStrc;
 struct D2SoundEnvironTxt;
 struct D2SoundSmpStrc;
@@ -406,6 +413,7 @@ struct D2StringTableTblFileStrc;
 struct D2SuperUniquesTxt;
 struct D2TaskQueueSlotStrc;
 struct D2TextBoxStrc;
+struct D2TileLibraryEntryStrc;
 struct D2TileProjectStrc;
 struct D2TombCanyonPresetRegionStrc;
 struct D2TooltipTextStrc;
@@ -449,7 +457,12 @@ struct GlFloorCacheNodeStrc;
 struct GlFloorCacheStrc;
 struct GlSubtileCacheNodeStrc;
 struct GlSubtileCacheStrc;
+struct IDirect3DInterface7;
 struct IDirect3DTexture2;
+struct IDirect3DVertexBuffer;
+struct IDirect3DViewport3;
+struct IDirectDraw;
+struct IDirectDrawGammaControl;
 struct IDirectDrawSurface7;
 struct IDirectSound3DBuffer;
 struct IDirectSound;
@@ -478,6 +491,7 @@ typedef BOOL (__fastcall *D2MissileSrvHitFunc)(::SGAMEDATA * pGame, D2UnitStrc *
 typedef BOOL (__fastcall *D2NET_CLIENT_MCPtoCLT)(char * pBytes, size_t nSize);
 typedef BOOL (__fastcall *D2NET_CLIENT_SIDtoCLT)(char * pBytes, size_t nSize);
 typedef BOOL (__fastcall *D2ObjectOperateFnFunc)(D2ObjectOperateFnArg * pOperation);
+typedef BOOL (__fastcall *D2RendererFunctionsStrc_fpDrawWallTile)(D2TileLibraryEntryStrc * pTile, int nPosX, int nPosY, D2GfxLightStrc * pLight, int nScreenPanels);
 typedef BOOL (__fastcall *D2SkillCltDoFunc)(D2UnitStrc * pUnit, eD2Skills eD2Skill, int nSkillLvl);
 typedef BOOL (__fastcall *D2SkillCltStFunc)(D2UnitStrc * pUnit, eD2Skills eD2Skill, int nSkillLvl);
 typedef BOOL (__fastcall *D2SkillSrvStFunc)(::SGAMEDATA * pGame, D2UnitStrc * pAttacker, eD2Skills eD2Skill, int nSkillLvl);
@@ -489,8 +503,23 @@ typedef BOOL (__fastcall *fnSendChangeEmail)(char * szAcct, char * szOld, char *
 typedef BOOL (__fastcall *fnSendResetPassword)(char * szAcct, char * szEmail);
 typedef BOOL (__fastcall *fnWaitForChangePassword)(uint32_t * pOut);
 typedef BOOL (__fastcall *fnWaitForCreateAccount)(uint32_t * pOut);
+typedef BOOL (__fastcall *fpActivateWindow)(BOOL bActive);
+typedef BOOL (__fastcall *fpBeginScene)(BOOL bClear, BYTE nRed, BYTE nGreen, BYTE nBlue);
+typedef BOOL (__fastcall *fpCheckCutScene)();
+typedef BOOL (__fastcall *fpCreateWindow)(HWND hWnd, int nResolutionMode);
 typedef BOOL (__fastcall *fpDrawGroundTile)(int a1, int a2, int a3, int a4);
+typedef BOOL (__fastcall *fpDrawImage)(D2GfxDataStrc * pData, int nPosX, int nPosY, DWORD dwGamma, int nDrawMode, BYTE * pPalette);
+typedef BOOL (__fastcall *fpDrawShadowTile)(D2TileLibraryEntryStrc * pTile, int nPosX, int nPosY, int nDrawMode, int nScreenPanels);
+typedef BOOL (__fastcall *fpDrawTransWallTile)(D2TileLibraryEntryStrc * pTile, int nPosX, int nPosY, D2GfxLightStrc * pLight, int nScreenPanels, BYTE nAlpha);
+typedef BOOL (__fastcall *fpEndScene1)();
+typedef BOOL (__fastcall *fpEndScene2)();
+typedef BOOL (__fastcall *fpGetBackBuffer)(BYTE * pBuffer);
+typedef BOOL (__fastcall *fpInitPerspective)(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc * pHelpers);
+typedef BOOL (__fastcall *fpInitialize)(HINSTANCE hInstance);
 typedef BOOL (__fastcall *fpLevelDataEntry)(D2DrlgLevelPlacementStrc * pLevelUnknown);
+typedef BOOL (__fastcall *fpRelease)();
+typedef BOOL (__fastcall *fpResizeWindow)(HWND hWnd, BOOL bForceResize);
+typedef BOOL (__fastcall *fpSetOption)(int nOption, int nValue);
 typedef BOOL (__fastcall *pfnComCallback)(uint32_t dwCbArg1, uint32_t dwCbArg2, char * szText1, char * szText2);
 typedef BOOL (__stdcall *OnPress)(D2ControlMsg * pControlMsg);
 typedef BOOL (__stdcall *SCMDCALLBACK)(CMDPARAMS * pParams, char * szCmdLine);
@@ -499,6 +528,8 @@ typedef BOOL (__stdcall *fnDisconnect)();
 typedef BOOL (__stdcall *fnIsSocketConnected)();
 typedef BOOL (__stdcall *fnNewsShutdown)();
 typedef BOOL (__stdcall *fnWaitForLogonResponse)();
+typedef BOOL (__stdcall *fpBeginCutScene)();
+typedef BOOL (__stdcall *fpDestroyWindow)();
 typedef BOOL (__stdcall *pfnEnumerateLoadedModules64)(HANDLE hProcess, void * EnumLoadedModulesCallback, void * UserContext);
 typedef BOOL (__stdcall *pfnEscMenuItemVisible)();
 typedef BOOL (__stdcall *pfnMiniDumpWriteDump)(HANDLE hProcess, DWORD ProcessId, HANDLE hFile, DWORD DumpType, void * ExceptionParam, void * UserStreamParam, void * CallbackParam);
@@ -554,6 +585,8 @@ typedef int (__fastcall *fnSendGetChannelList)(int nProduct);
 typedef int (__fastcall *fnSendLogonRequest)(char * szUser, char * szPass);
 typedef int (__fastcall *fnSendNewsInfo)(uint32_t dw1, uint32_t dw2);
 typedef int (__fastcall *fnSendQueryAdURL)(uint32_t dwParam);
+typedef int (__fastcall *fpCheckGamma)();
+typedef int (__fastcall *fpGetScreenSize)(int * pWidth, int * pHeight);
 typedef int (__fastcall *fpMissileSrvDoFuncData)(D2UnitStrc * pUnit, void * pContext);
 typedef int (__fastcall *pfnSkillCalcOp)(int32_t nOperand1, int32_t nOperand2, uint32_t nOperand3, void * pContext);
 typedef int (__fastcall *pfnTextScrollComplete)(void * pUserParam, uint32_t nReason, void * pDismissCallback);
@@ -565,6 +598,7 @@ typedef int (__stdcall *fnSendCheckAd)();
 typedef int (__stdcall *fnSendLeaveChat)();
 typedef int (__stdcall *fnSendLeaveGame)();
 typedef int (__stdcall *pfnSFileReadError)(void * pnBytesRead, uint32_t dwLastError, int32_t nRetryCount);
+typedef int * (__fastcall *fpGetRenderStatistics)();
 typedef int32_t (__fastcall *D2MissileCltHitFunc)(D2UnitStrc * pMissile, D2UnitStrc * pTarget);
 typedef int32_t (__fastcall *D2ObjectPopulateFn)(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2DrlgRoomCoordsStrc * pRoomCoords);
 typedef int32_t (__fastcall *D2PropertyHandler_fn)(int32_t nType, D2UnitStrc * pUnit, D2UnitStrc * pItemUnit, D2SetsTxtFStrc * pProperty, eD2UnitStat eStatCode, int32_t nParam2, int32_t nParam3, uint32_t nParam, int32_t nContext);
@@ -592,6 +626,7 @@ typedef void (__fastcall *D2MissileSrvDmgFunc)(::SGAMEDATA * pGame, D2UnitStrc *
 typedef void (__fastcall *D2NET_CLIENT_D2GStoCLT)(char * pBytes);
 typedef void (__fastcall *D2NET_CLIENT_D2GStoCLT_Unit)(D2UnitStrc * pUnit, char * pBytes);
 typedef void (__fastcall *D2ObjectsInitFnFunc)(D2ObjectInitFnArg * pInitArg);
+typedef void (__fastcall *D2RendererFunctionsStrc_fpDrawGroundTile)(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc * pLight, int nPosX, int nPosY, int nWorldXpos, int nWorldYpos, BYTE nAlpha, int nScreenPanels, void * pTileData);
 typedef void (__fastcall *D2SkillDescAttackFunc)(D2UnitStrc * pUnit, D2SkillStrc * pSkill, D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t * pnMinDamage, int32_t * pnMinColor, int32_t * pnMaxDamage, int32_t * pnMaxColor);
 typedef void (__fastcall *D2StatesRemFunc)(D2UnitStrc * pUnit, eD2States eState);
 typedef void (__fastcall *D2StatesSetFunc)(D2UnitStrc * pUnit, eD2States eState);
@@ -614,27 +649,59 @@ typedef void (__fastcall *fnSetLoggingFlag)(uint32_t dwParam);
 typedef void (__fastcall *fnShrineClientOverlayUpdate)(D2UnitStrc * pUnit, D2ShrinesTxt * pShrinesTxt);
 typedef void (__fastcall *fnShrineServerActivate)(D2UnitStrc * pUnit, D2UnitStrc * pPlayer, uint32_t dwParam);
 typedef void (__fastcall *fnSpriteCacheEntryRelease)(void * pHashEntry);
+typedef void (__fastcall *fpAdjustPerspectivePosition)(int nPosX, int nPosY, int nBais, int * pXAdjust, int * pYAdjust);
 typedef void (__fastcall *fpCelAllocDecodedByFormat)(DC6 * pDCC, DC6 * pDCCDest, uint8_t * pPaletteRemapFunc, uint32_t dwColorKey);
 typedef void (__fastcall *fpCelDrawFrameByFormat)(uint8_t * pImageHeader, uint8_t * pbDecompressedOutput, int32_t nDrawX, int32_t nClipLeft, int32_t nClipRight, uint32_t nDstPitch, int32_t nStartRow, int32_t nRowCount, int32_t pLookupTable1, int32_t pBlendTable, int32_t pLookupTable2);
 typedef void (__fastcall *fpCelRemapFrameByFormat)(DC6Block * pFrame, BYTE * pPaletteRemap);
+typedef void (__fastcall *fpClearCaches)();
+typedef void (__fastcall *fpClearScreen)(BOOL bPartial);
+typedef void (__fastcall *fpCloseSmacker)(D2SmackerContextStrc * pContext);
 typedef void (__fastcall *fpD2ShrineTableHandler)(D2ObjectOperateFnArg * pArguments, D2ShrinesTxt * pTxtShrines);
+typedef void (__fastcall *fpDebugFillBackBuffer)(int nPosX, int nPosY);
+typedef void (__fastcall *fpDecodeSmacker)(char * szSmacker, D2SmackerContextStrc * pBuffer, int nVersion);
 typedef void (__fastcall *fpDrawBlendedVisTile)(int a1, int a2, int a3, int a4);
+typedef void (__fastcall *fpDrawClippedImage)(D2GfxDataStrc * pData, int nPosX, int nPosY, void * pCropRect, int nDrawMode);
+typedef void (__fastcall *fpDrawImageFast)(D2GfxDataStrc * pData, int nPosX, int nPosY, BYTE nPaletteIndex);
+typedef void (__fastcall *fpDrawLight)(DWORD * pLight, DWORD * pPlayerLight, int nPosX, int nPosY);
+typedef void (__fastcall *fpDrawLine)(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, BYTE nAlpha);
+typedef void (__fastcall *fpDrawPerspectiveImage)(D2GfxDataStrc * pData, int nPosX, int nPosY, DWORD dwGamma, int nDrawMode, int nScreenMode, BYTE * pPalette);
+typedef void (__fastcall *fpDrawRect)(RECT * pRect, BYTE nPaletteIndex);
+typedef void (__fastcall *fpDrawRectEx)(RECT * pRect, BYTE nPaletteIndex);
 typedef void (__fastcall *fpDrawRoofTile)(int a1, int a2, int a3, int a4, BYTE a5);
+typedef void (__fastcall *fpDrawShadow)(D2GfxDataStrc * pData, int nPosX, int nPosY);
+typedef void (__fastcall *fpDrawShiftedImage)(D2GfxDataStrc * pData, int nPosX, int nPosY, DWORD dwGamma, DRAWMODE nDrawMode, GLOBALPALLETE nGlobalPaletteShift);
+typedef void (__fastcall *fpDrawSolidRect)(RECT * pRect, BYTE nPaletteIndex);
+typedef void (__fastcall *fpDrawSolidRectAlpha)(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, BYTE nAlpha);
+typedef void (__fastcall *fpDrawSolidRectEx)(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, DRAWMODE nDrawMode);
+typedef void (__fastcall *fpDrawSolidSquare)(POINT * pPoint, BYTE nSize, BYTE nPaletteIndex);
+typedef void (__fastcall *fpDrawString)(int nPosX, int nPosY, char * szFormat, va_list va);
+typedef void (__fastcall *fpDrawVerticalCropImage)(D2GfxDataStrc * pData, int nPosX, int nPosY, int nSkipLines, int nDrawLines, int nDrawMode);
 typedef void (__fastcall *fpDrawVisTile)(uint8_t * pbTileData, int32_t nScreenX, int32_t nScreenY);
 typedef void (__fastcall *fpDrawWallTile)(int a1, int a2, int a3, int a4);
+typedef void (__fastcall *fpEndCutScene)(HWND hWnd, int nResolutionMode, int nWindowState);
 typedef void (__fastcall *fpFillYBufferTable)(void * ppvBits, int nWidth, int nHeight, int a4);
 typedef void (__fastcall *fpFlagOperations)(int * pFlag, int nFlag);
 typedef void (__fastcall *fpMonsterUModHandler)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t dwParam1, int32_t nParam2);
+typedef void (__fastcall *fpPerspectiveScalePosition)(int nPosX, int nPosY, int nAngle, int * pXAdjust, int * pYAdjust, BOOL bOrder);
+typedef void (__fastcall *fpPlayerSmacker)(D2SmackerContextStrc * pContext);
 typedef void (__fastcall *fpServerInitFunctions)(D2IniConfigStrc * pIni);
+typedef void (__fastcall *fpSetDefaultPerspectiveFactor)();
+typedef void (__fastcall *fpSetGamma)(int nGamma);
+typedef void (__fastcall *fpSetGlobalLight)(int nRed, int nGreen, int nBlue);
+typedef void (__fastcall *fpSetPalette)(LPPALETTEENTRY pPalette);
+typedef void (__fastcall *fpSetPaletteTable)(BYTE * * ppPaletteTable);
+typedef void (__fastcall *fpSetPerspectiveScale)(int nScaleX, int nScaleY);
 typedef void (__fastcall *fpTimerFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit);
 typedef void (__fastcall *fpTimerFunctionEx)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int nArg1, int nArg2);
 typedef void (__fastcall *fpUmodInit)(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown);
 typedef void (__fastcall *fpUnknown)(int a1, int a2, int a3, int a4);
+typedef void (__fastcall *fpUpdateScaleFactor)(int nScaleFactor);
 typedef void (__fastcall *pfnBlizzardError)(char * szMessage, char * szTitle, char * * ppszButtonText, uint32_t dwFlags, uint32_t dwErrorCode, bool bIsFatal);
 typedef void (__fastcall *pfnCelPixelDataFree)(int * pPixelData);
 typedef void (__fastcall *pfnEscMenuItemAction)(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg);
 typedef void (__fastcall *pfnLruFreeEntry)(void * pEntry);
-typedef void (__fastcall *pfnMCPPacketCallback)(uint16_t wPacketField, char * pPayload);
+typedef void (__fastcall *pfnMCPGameListEntry)(uint32_t nEntryField0, uint32_t nEntryCount, uint32_t nEntryField2, uint32_t nListFlag, void * pEntryData);
+typedef void (__fastcall *pfnMCPMessage)(uint32_t nMessageId, uint32_t nDataLength, void * pMessageData);
 typedef void (__fastcall *pfnMonUniqueModInit)(D2UnitStrc * pUnit, int32_t eModifier, int32_t bApply);
 typedef void (__fastcall *pfnNewsEntryCallback)(uint32_t dwEntryId, char * szMessage);
 typedef void (__fastcall *pfnPartyScreenAction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget, uint32_t dwArg, uint32_t dwArg2);
@@ -647,6 +714,8 @@ typedef void (__fastcall *pfnSpriteCacheValidate)(void * pCelContext, void * pCe
 typedef void (__stdcall *D2AppModeShutdownFunc)();
 typedef void (__stdcall *D2ClientQuestEventFn)();
 typedef void (__stdcall *D2WinWndHandlerFn)(D2UIMouseMsgStrc * pMsg);
+typedef void (__stdcall *fnBinkFrameCallback)();
+typedef void (__fastcall *fpPlayCutScene)(char * szFile, int nResolutionMode, fnBinkFrameCallback fpFrame);
 typedef void (__stdcall *fnD2InitUIFlagFunction)(D2UIMouseMsgStrc * param_1);
 typedef void (__stdcall *fnDecodeCDKeys)();
 typedef void (__stdcall *fnSetDownloadCancelFlag)();
@@ -1153,6 +1222,7 @@ extern char gszHeapTagOperatorNew[4];
 // lpDefault parameter of GetPrivateProfileStringA
 extern char lpDefault_006cc837[1];
 extern uint8_t gbChatDlgUpdateMarker;
+extern char gszSFileCurrentDirPrefix[3];
 extern double gdConst0_25;
 extern double gdBytesToMegabytes;
 extern float gfTwoPow32;
@@ -1270,6 +1340,12 @@ extern char * gpszExpansionStringTblPathFormat;
 extern char * gpszD2DataMpqName;
 extern char * gpszPatchD2MpqName;
 extern char * gpszD2ExpMpqName;
+extern char s_Stam_006e160c[5];
+extern char s_Life_006e161c[5];
+extern char s_Pois_006e1624[5];
+extern char s_Magc_006e1644[5];
+extern char s_Ligt_006e1654[5];
+extern char s_Dam_006e1664[4];
 extern D2PlayerModeFnPairStrc gaPlayerModeMoveFuncs[20];
 extern D2ShrinesTableEntryStrc OBJECTSHRINEFUNCTION[24];
 // Indexed by monster class id - 540. MONSTER_EquipFromClassTable 005b1c7a uses LEA ESI,[ESI*8+0x6e1bb0], a base 540 rows before the table that lands inside an unrelated string; the decompiler cannot fold that bias.
@@ -1284,6 +1360,7 @@ extern char s_HDM_006ee7c0[4];
 extern int gnAct5OuterWallGridOffsetByType[24];
 extern int gaAct5SceneryPresetTable_0[15][7];
 extern int gaAct5SceneryPresetTable_0_0__1_[15][7];
+extern int gaOutJungPresetOffsetByLevel[3];
 extern uint8_t gaWallNeighborOrientTable[256];
 extern char s_SAM_006fad3c[4];
 extern char * gaAtlRegistryRootKeys[12];
@@ -1310,6 +1387,7 @@ extern uint8_t gszIniConfigKeywordVideoDriver[336];
 extern char * gaLanguageNames_00705000[15];
 extern char * gaMonthAbbreviations[12];
 extern uint8_t gabHuffmanCodeLengths[256];
+extern uint32_t gpServerMemHeap;
 extern uint32_t gnSFileDataChunkSize;
 extern uint32_t gnSFileReadErrorMode;
 extern uint32_t gbSFileSeekOptimization;
@@ -1375,9 +1453,6 @@ extern int nSoundVolumeLeftChannel;
 extern int nSoundVolumeRightChannel;
 extern int nCashDisplayItemCount;
 extern D2UIFlagInitStrc gUIFlagMapInit[8];
-// Former interior labels: gnCursorInvTypeAutoOpenB=+0x4
-extern uint32_t gnCursorInvTypeAutoOpenC[5];
-extern uint32_t gnCursorInvTypeAutoOpenA;
 extern int gaUnitSoundIdsAmazon[11];
 extern char * gaLanguageNames_0072a300[15];
 extern char * gaLanguageNames_0072d8d8[15];
@@ -1396,6 +1471,7 @@ extern int gAmbientSoundTable[16];
 extern int gaAmbientSoundEntryTable[16];
 extern uint32_t gnAmbientSoundCount;
 extern char * gaszLanguageNames[32];
+extern char s___AUItem_NewsTable___0072ff8c[24];
 extern uint32_t CLIENT_SocketToServer;
 extern BOOL DontNoSafeGameBool;
 extern uint8_t gbQuestReconnectMode;
@@ -1422,6 +1498,7 @@ extern char gaQ33_Hell_DruidHelmCodes[5][4];
 extern char gaQ33_Hell_AssassinClawCodes[7][4];
 extern D2NPCMessageTableStrc gbQuestA5Q2Unknown[6];
 extern char * gaLanguageNames_0073c6e0[15];
+extern char * gaLanguageNames_0073d530[15];
 extern uint8_t gaSkeletonComponentsByMasteryLvl[11][9];
 extern char s___AUTCELENTRY___00741f14[16];
 extern char s___AUCELLIST___00741f2c[16];
@@ -1511,7 +1588,7 @@ extern uint8_t gabHuffmanNextTable[256];
 extern void * gpEventHashBuckets;
 extern D2IniConfigStrc * D2IniData_launcher;
 extern eOogCurrentCharSelectionMode OogCurrentCharSelectionMode;
-extern D2WinTextBox * gpWinTextBoxRealmSelect;
+extern ::D2WinTextBox * gpWinTextBoxRealmSelect;
 extern D2BNetClientCallbacksStrc * gpBNetCallbacks;
 // lpCriticalSection parameter of DeleteCriticalSection
 // lpCriticalSection parameter of InitializeCriticalSection
@@ -1528,69 +1605,69 @@ extern D2GameListEntryStrc gbLanGameListEntryNamePadding2[1000];
 // Former interior labels: gaLanGameListEntryName=+0x1 gChatBufferData3=+0x2 gChatBufferData2=+0x3 gwLanGameListEntryPortPrev=+0x31 gnLanGameListEntryPort=+0x33 gnLanGameIPAddr=+0x37 gChatBufferData1=+0x3c gSaveFileBuffer=+0xbd2c gbSaveKeyBindingsFlag=+0xc12b gbOOGUnusedFlag_797261=+0xce21 gbUnusedOOGDataFlag=+0xd029 gbOOGUnusedFlag_79746c=+0xd02c
 extern D2GameListEntryStrc gbLanGameListEntryNamePadding[1000];
 extern char gszOOGRequestedGameName[256];
-extern D2WinTextBox * gpOOGGameListTextBox;
-extern D2WinTextBox * gpOogGameListDetailsPanelControl;
+extern ::D2WinTextBox * gpOOGGameListTextBox;
+extern ::D2WinTextBox * gpOogGameListDetailsPanelControl;
 extern D2ControlStrc * gpOOGJoinGameButton;
 extern D2ControlStrc * gpCtlGameListStatus;
 extern D2ControlStrc * gpOOGLobbyControl2;
-extern D2WinEditBox * gpOogGamePasswordEditControl;
-extern D2WinEditBox * gpCtlGameListTop;
-extern D2WinTextBox * gpCtlJoinGameLabel;
-extern D2WinTextBox * pUIGameUsername;
-extern D2WinTextBox * pUIGamePassword;
-extern D2WinTextBox * pUIGamePlayers;
+extern ::D2WinEditBox * gpOogGamePasswordEditControl;
+extern ::D2WinEditBox * gpCtlGameListTop;
+extern ::D2WinTextBox * gpCtlJoinGameLabel;
+extern ::D2WinTextBox * pUIGameUsername;
+extern ::D2WinTextBox * pUIGamePassword;
+extern ::D2WinTextBox * pUIGamePlayers;
 extern D2ControlStrc * gpCtlCreateGameDlgBackground;
-extern D2WinTextBox * gpCtlCreateGameDlgTitle;
-extern D2WinTextBox * gpCtlGameNameLabelOrQueueStatus;
-extern D2WinTextBox * gpCtlCreateGamePasswordLabel;
-extern D2WinTextBox * gUIGameListServerMessageText;
-extern D2WinTextBox * gUIGameListMaxPlayersLabel;
-extern D2WinTextBox * gUIGameListLevelRestrictionLabel;
-extern D2WinTextBox * gUIGameListLevelRestrictionLevelsLabel;
+extern ::D2WinTextBox * gpCtlCreateGameDlgTitle;
+extern ::D2WinTextBox * gpCtlGameNameLabelOrQueueStatus;
+extern ::D2WinTextBox * gpCtlCreateGamePasswordLabel;
+extern ::D2WinTextBox * gUIGameListServerMessageText;
+extern ::D2WinTextBox * gUIGameListMaxPlayersLabel;
+extern ::D2WinTextBox * gUIGameListLevelRestrictionLabel;
+extern ::D2WinTextBox * gUIGameListLevelRestrictionLevelsLabel;
 extern D2ControlStrc * gUIGameListMaxPlayersInactiveImage;
 extern D2ControlStrc * gUIGameListMaxPlayersInactiveArrowButton;
 extern D2ControlStrc * gUIGameListMaxPlayersUpButton;
-extern D2WinButton * gUIGameListMaxPlayersDownButton;
+extern ::D2WinButton * gUIGameListMaxPlayersDownButton;
 extern D2ControlStrc * gUIGameListLevelRestrictionUpButton;
-extern D2WinButton * gUIGameListLevelRestrictionDownButton;
+extern ::D2WinButton * gUIGameListLevelRestrictionDownButton;
 extern D2ControlStrc * gUIGameListLevelRestrictionInactiveArrowButton;
 extern D2ControlStrc * gUIGameListCreateButton;
-extern D2WinEditBox * gpOogGameNameEditControl;
-extern D2WinEditBox * gUIGameListGameNameEditBox;
-extern D2WinEditBox * gUIGameListGamePasswordEditBox;
-extern D2WinEditBox * gUIGameListMaxPlayersEditBox;
+extern ::D2WinEditBox * gpOogGameNameEditControl;
+extern ::D2WinEditBox * gUIGameListGameNameEditBox;
+extern ::D2WinEditBox * gUIGameListGamePasswordEditBox;
+extern ::D2WinEditBox * gUIGameListMaxPlayersEditBox;
 // Edit box control handle for level restriction field in Create Game dialog (TCP/IP mode only). Populated in OOGUTIL_OpenCreateGameDialog, read by NET_MCP_CLIENT_PrepareGameCreatePacket. Part of Create Game UI state cluster at 0x00798c28-0x00798c64.
-extern D2WinEditBox * gUILevelRestrictionEditBox;
-extern D2WinButton * gUIGameListLevelRestrictionCheckbox;
+extern ::D2WinEditBox * gUILevelRestrictionEditBox;
+extern ::D2WinButton * gUIGameListLevelRestrictionCheckbox;
 extern D2ControlStrc * gUIGameListLevelRestrictionInactiveImage;
 extern D2ControlStrc * gpCtlCreateGameDlgCancelButton;
-extern D2WinButton * gUIGameListDifficultyNormalButton;
-extern D2WinButton * gUIGameListDifficultyNightmareButton;
-extern D2WinButton * gUIGameListDifficultyHellButton;
-extern D2WinTextBox * gUIGameListStatusLabel;
-extern D2WinTextBox * gUIGameListPlayerListText;
-extern D2WinTextBox * gUIGameListActLabel;
+extern ::D2WinButton * gUIGameListDifficultyNormalButton;
+extern ::D2WinButton * gUIGameListDifficultyNightmareButton;
+extern ::D2WinButton * gUIGameListDifficultyHellButton;
+extern ::D2WinTextBox * gUIGameListStatusLabel;
+extern ::D2WinTextBox * gUIGameListPlayerListText;
+extern ::D2WinTextBox * gUIGameListActLabel;
 extern D2ControlStrc * gpProfileViewBackground;
-extern D2WinTextBox * gpProfileViewAccountName;
-extern D2WinTextBox * gpProfileViewSex;
-extern D2WinTextBox * gpProfileViewLocation;
-extern D2WinTextBox * gpProfileViewDescription;
+extern ::D2WinTextBox * gpProfileViewAccountName;
+extern ::D2WinTextBox * gpProfileViewSex;
+extern ::D2WinTextBox * gpProfileViewLocation;
+extern ::D2WinTextBox * gpProfileViewDescription;
 extern D2ControlStrc * gpProfileEditBackground;
-extern D2WinTextBox * gpProfileEditAccountName;
-extern D2WinEditBox * gpProfileEditSex;
-extern D2WinEditBox * gpProfileEditLocation;
-extern D2WinEditBox * gpProfileEditDescription;
+extern ::D2WinTextBox * gpProfileEditAccountName;
+extern ::D2WinEditBox * gpProfileEditSex;
+extern ::D2WinEditBox * gpProfileEditLocation;
+extern ::D2WinEditBox * gpProfileEditDescription;
 extern D2ControlStrc * gpProfileCloseButton;
-extern D2WinTextBox * gUIPlayerProfileCharacterNameLabel;
-extern D2WinTextBox * gUIPlayerProfileCharacterLevelLabel;
-extern D2WinTextBox * gUIPlayerProfileCharacterClassLabel;
-extern D2WinTextBox * gUIPlayerProfileExperienceLabel;
+extern ::D2WinTextBox * gUIPlayerProfileCharacterNameLabel;
+extern ::D2WinTextBox * gUIPlayerProfileCharacterLevelLabel;
+extern ::D2WinTextBox * gUIPlayerProfileCharacterClassLabel;
+extern ::D2WinTextBox * gUIPlayerProfileExperienceLabel;
 extern D2ControlStrc * gpProfileOKButton;
 extern D2ControlStrc * gpProfileLadderButton;
-extern D2WinTextBox * gUIPlayerProfilePlaytimeLabel;
+extern ::D2WinTextBox * gUIPlayerProfilePlaytimeLabel;
 extern int32_t gnProfileDialogMode;
-extern D2WinTextBox * gpChatCommandsTitle;
-extern D2WinTextBox * gpChatCommandsTextBox;
+extern ::D2WinTextBox * gpChatCommandsTitle;
+extern ::D2WinTextBox * gpChatCommandsTextBox;
 extern D2ControlStrc * gpChatCommandsOKButton;
 extern D2ControlStrc * gpChatCommandsBackground;
 extern uint32_t gnGameListFilterState;
@@ -1622,10 +1699,10 @@ extern HMODULE ghLngLibrary;
 // lpLibFileName parameter of LoadLibraryExA
 extern char lpLibFileName_007a0710[260];
 extern int gnGoldDialogTransactionType;
-extern SpinnerWrapper * gpCurrentDialog;
-extern EditBoxWrapper * gpDialogDefaultActionCallback;
-extern ButtonWrapper * gpUiGoldTransactionDialog;
-extern ButtonWrapper * gpUiGoldDialogCancelButton;
+extern ::SpinnerWrapper * gpCurrentDialog;
+extern ::EditBoxWrapper * gpDialogDefaultActionCallback;
+extern ::ButtonWrapper * gpUiGoldTransactionDialog;
+extern ::ButtonWrapper * gpUiGoldDialogCancelButton;
 extern uint32_t gbKeyConfigModeActiveInDialog;
 extern D2UIFlagStrc GFX_bShowUIFlag;
 extern int gnPanelOffsetX;
@@ -1660,6 +1737,7 @@ extern uint32_t gbSuppressItemSelection;
 extern int MouseY;
 extern int MouseX;
 extern int ItemTypeOnHand;
+extern int gnCursorInitialized;
 // D2ClientLightPulseStrc (44 bytes, 0x007a742c..0x007a7457). CMD_InitKeyConfigUI (0046ae50) opens with memset(&gRoomLightPulse, 0, 0x2c) then writes bRoomLightPulseActive / nFadeInDuration / nFadeOutDuration / nHoldDuration / nTotalDuration / eLevelId - so the 44-byte clear and the field writes are one object.
 extern D2ClientLightPulseStrc gRoomLightPulse;
 extern D2MonsterCofStatusEntryStrc * g_pMonsterSpriteCofStatusTable;
@@ -1669,7 +1747,7 @@ extern int gnLightmapBufferState;
 extern D2LightMapCellStrc gaLightMapCells[2304];
 extern D2SeedStrc gAncientsCloudSeed;
 extern uint32_t gnLastLightmapUpdateFrame;
-extern uint32_t gnEngineMode;
+extern uint32_t gnCurrentEngineIndex;
 extern uint32_t fps;
 extern int gaIMECompositionBuffer;
 // wchar16[257] - the chat input line. Was typed LPCWSTR (4 bytes). Size proven three ways: CHAT_ClearInput (0047bdc0) does memset(this, 0, 0x202) = 514 bytes = 257 wide chars; CHAT_* callers pass it to WSTRING_PutWideCharIntoBuffer with a 0x100 char limit and to WideCharToMultiByte with cbMultiByte 0x100 (256 chars + terminator); INPUT_HandleChatCharInput indexes it as *(uint16_t*)(base + i*2). Next symbol gaChatHistoryBuffer is 520 bytes away, so 514 fits. Declared as 4 bytes, every keystroke in the chat box wrote past the symbol.
@@ -1683,10 +1761,8 @@ extern uint32_t gpInvItemDescPending;
 extern uint8_t gbWaypointButtonPressed;
 extern uint32_t ClickingDownOnWaypointEntry;
 extern uint32_t gnTextOverheadCounter;
-// GetTickCount of the last time the 1-second throttle at 004ab7b0 (SpellSel, no function yet) passed.
-// Provenance: asm 004ab7b0-004ab7d3: now - [0x7c0c54] > 1000 -> store now, return 1; else return 0.
-extern uint32_t gdwSpellSelThrottleTick;
 extern uint16_t gnMonsterUniqueNameBuffer[2];
+extern uint32_t gnMonsterSpecialType;
 extern uint32_t gnNpcMenuMercHireCost1;
 extern uint32_t gnNpcMenuMercHireCost2;
 // NPC-menu state region: 0x007c0c68 .. 0x007c0dc7 (0x160 bytes).
@@ -1714,6 +1790,7 @@ extern uint32_t gdwTradeThrottleTimestamp;
 extern bool gbTradeResetFlag;
 extern uint32_t gnTradeAcceptedFlags;
 extern int32_t g_nTradeWindowState;
+extern BOOL bReceivedQuestAvailabilityPacket;
 extern DC6 * gpMessageLogDC6;
 extern uint32_t nHoradricCubeUIState;
 extern int gnPlayerCashDisplay;
@@ -1736,7 +1813,7 @@ extern eD2RendererMode eRendererMode;
 extern uint32_t gnGfxOverlayMode;
 extern int RENDERER_nWindowWidth;
 extern int RENDERER_nWindowHeight;
-extern D2GfxHelperStrc * D2GfxRendereInitFunctionsStrc;
+extern ::D2GfxHelperStrc * D2GfxRendereInitFunctionsStrc;
 extern int gnTileInnerClipZMin;
 extern int gnTileClipXMax;
 extern int gnTileClipXMin;
@@ -1783,6 +1860,7 @@ extern uint32_t gbCompactLineSpacingMode;
 extern D2TooltipTextStrc DisplayedTooltip;
 extern int nD2CompItemsSize;
 extern void * pD2CompItems;
+extern uint32_t gbSmackerKeepTempFile;
 extern grDrawLine GLIDEDLL__grDrawLine_8;
 extern grDepthMask GLIDEDLL_grDepthMask_4;
 extern grDrawPoint GLIDEDLL_grDrawPoint_4;
@@ -1903,19 +1981,19 @@ extern int gnStringTableRefCount;
 extern LPDWORD lpThreadId_00882b30;
 extern int gnNetConnectionTimeoutMs;
 extern eD2GSConnectionType nD2GSConnectionType;
-extern uint32_t gnQServerListenSocket;
 extern uint32_t gptItemCodeArmor;
 extern uint32_t gptItemCodeSwordType;
 extern int gQServerClientTablesInitialized;
+extern BOOL DEBUGPRINT;
 extern D2TaskQueueSlotStrc * gaTaskQueueHeadArray[32];
 extern D2TileProjectStrc * gpTileProjectListHead;
-extern TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0> gCelCmpCacheHandler;
+extern TSExportTableSync<::CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0> gCelCmpCacheHandler;
+extern BOOL gbCodecUseFallbackDecompressor;
 // lpCriticalSection parameter of DeleteCriticalSection
 // lpCriticalSection parameter of InitializeCriticalSection
 // lpCriticalSection parameter of LeaveCriticalSection
 // lpCriticalSection parameter of EnterCriticalSection
 extern _RTL_CRITICAL_SECTION lpCriticalSection_008f03cc;
-extern unsigned int gpfnProfCoreInitCallback;
 extern D2DataTableTxtStrc sgtDataTable;
 extern D2SeedStrc gsAutoMapSeed;
 extern D2LvlTypesTxt * pTxtLvlTypes;
@@ -1933,19 +2011,24 @@ extern int nTxtLvlSubSize;
 extern _RTL_CRITICAL_SECTION lpCriticalSection_0096ca30;
 extern FILE * pLOGFILE;
 extern BOOL bLOGFILE_ENABLED;
-extern unsigned long long gpItemTypeTableContext;
 extern D2MagicAffixTableStrc gsMagicAffixTable;
 extern D2MagicAffixTableStrc pTxtMagicAffixes;
 extern D2GemsTableStrc nTxtGemsSize;
 extern D2RunesTxtTableStrc nTxtRunesSize;
 extern D2ObjectsTxt * sgpTxtObjects;
 extern int nTxtObjectsSize;
+extern unsigned int gnTreasureClassArraySize;
+extern unsigned int nTxtMonModeSize;
 extern D2BeltsTxt * pTxtBelts;
 extern D2DrlgFileCacheNodeStrc * gpDrlgFileCache;
+// lpCriticalSection parameter of LeaveCriticalSection
+// lpCriticalSection parameter of EnterCriticalSection
+extern _RTL_CRITICAL_SECTION lpCriticalSection_0096d610;
 extern D2CubeMainTxt * pTxtCubeMain;
 extern int nTxtCubeMainSize;
 extern unsigned int gdwDrlgLevelPlacementFlags;
 extern unsigned int UINT_0096d6a8;
+extern HMODULE hDbgHelpDll;
 extern uint32_t dwCurrentThreadId;
 extern uint32_t LastErrorValue;
 extern uint32_t CountOfOwnedCriticalSections;
@@ -2234,13 +2317,12 @@ extern uint8_t RTTI_Type_Descriptor;
 
 } // namespace Class::HANDLER
 
-namespace D2Client::CharScreen {
+namespace D2Launch::CharSel {
 
 extern int nSelectedCharIndex;
-extern D2CharSelStrc * D2CharSelStrcFirst;
 extern int TotalCurrentChars;
 
-} // namespace D2Client::CharScreen
+} // namespace D2Launch::CharSel
 
 namespace D2Client::UI::Automap {
 
@@ -2249,6 +2331,12 @@ extern D2AutomapLayerStrc * sgpAutomapLayerEx;
 
 } // namespace D2Client::UI::Automap
 
+namespace D2Game::GAME::Rendering {
+
+extern int CurrentRendingEngine;
+
+} // namespace D2Game::GAME::Rendering
+
 namespace D2Client::NPC {
 
 extern int D2NpcMenuOptionsCount;
@@ -2256,11 +2344,25 @@ extern struct D2NpcMenuOptions D2NpcMenuOptions[48];
 
 } // namespace D2Client::NPC
 
-namespace D2Client::UI::ui {
+namespace D2Client::Renderer {
+
+extern D2RendererFunctionsStrc GlideFunctionTable;
+extern D2RendererFunctionsStrc Direct3DFunctionTable;
+extern D2RendererFunctionsStrc WindowedFunctionTable;
+
+} // namespace D2Client::Renderer
+
+namespace D2DDraw::Renderer::DirectDraw {
+
+extern D2RendererFunctionsStrc DirectDrawFunctionTable;
+
+} // namespace D2DDraw::Renderer::DirectDraw
+
+namespace D2Lang::Unicode::UNISYS {
 
 extern uint16_t CharacterLookupTable[256];
 
-} // namespace D2Client::UI::ui
+} // namespace D2Lang::Unicode::UNISYS
 
 namespace D2Game::Quests::QUESTS::Quest40 {
 
@@ -2496,14 +2598,6 @@ extern D2NPCMessageTableStrc aNpcGossipData[8];
 
 } // namespace D2Game::Quests::QUESTS::A3Q6
 
-namespace D2Client::Waypoint {
-
-extern int32_t nWaypointSignature;
-extern D2WaypointStrc * pWaypoint;
-extern bool bNeedAllocation;
-
-} // namespace D2Client::Waypoint
-
 namespace D2Common::Drlg::DrlgGrid {
 
 extern fpFlagOperations apFlagOperations[6];
@@ -2515,12 +2609,6 @@ namespace D2Game::GameData {
 extern uint32_t gnAlwaysRun;
 
 } // namespace D2Game::GameData
-
-namespace D2Client::GAME::Record {
-
-extern WndProcB pWndProcB;
-
-} // namespace D2Client::GAME::Record
 
 namespace D2Client::UI::Dialog {
 
@@ -2546,6 +2634,14 @@ extern D2RosterStrc * gpRosterPlayers;
 
 } // namespace D2Client::GAME::Roster
 
+namespace D2Client::Waypoint {
+
+extern int32_t nWaypointSignature;
+extern D2WaypointStrc * pWaypoint;
+extern bool bNeedAllocation;
+
+} // namespace D2Client::Waypoint
+
 namespace D2Client::_Interaction {
 
 extern int nCurrentInteractedNpcGUID;
@@ -2558,31 +2654,32 @@ extern int nMercReviveCost;
 
 } // namespace D2Client::Merc
 
-namespace D2Client::Mouse {
+namespace D2Win::Src::D2WinMain {
 
 extern int nPosX;
 extern int nPosY;
-
-} // namespace D2Client::Mouse
-
-namespace D2Client::Forms {
-
 extern D2ControlStrc * pFormsList;
 extern D2ControlStrc * pFormUnknown;
 extern D2ControlStrc * pFormSecond;
-extern D2WinEditBox * pFormTextAndEditBox;
+extern ::D2WinEditBox * pFormTextAndEditBox;
 extern D2ControlStrc * pFormFourth;
 extern D2ControlStrc * pFormImage;
 
-} // namespace D2Client::Forms
+} // namespace D2Win::Src::D2WinMain
 
-namespace D2Client::_CdKey {
+namespace D2Win::D2GFX {
+
+extern ::WndProcB pWndProcB;
+
+} // namespace D2Win::D2GFX
+
+namespace Bnclient::_net_sid {
 
 extern char * KeyClassic;
 extern char * KeyExpansion;
 extern char * KeyOwner;
 
-} // namespace D2Client::_CdKey
+} // namespace Bnclient::_net_sid
 
 // =============================================================================
 // Globals recovered from multi-function body references
@@ -2590,7 +2687,6 @@ extern char * KeyOwner;
 // =============================================================================
 
 extern uint32_t nNextGUID;
-extern uint32_t dwCycleLastSecond;
 
 // =============================================================================
 // Declaration closure
@@ -2603,6 +2699,7 @@ extern uint32_t dwCycleLastSecond;
 // =============================================================================
 
 // Ghidra names for untyped data (the address is in the name)
+extern char s_14_006cc77c[];
 extern char s_207_82_87_133_0070f130[];
 extern char s_AppID_006fad8c[];
 extern char s_Assertion_Failure_006ccb6c[];
@@ -2646,6 +2743,7 @@ extern char s_FontFormal12_006dc940[];
 extern char s_FontInGameChat_006dc8d0[];
 extern char s_FontRidiculous_006dc900[];
 extern char s_Function___s__006cf274[];
+extern char s_Game_006d5b14[];
 extern char s_Gaunt_006d6b80[];
 extern char s_Halt_006ccb64[];
 extern char s_Handle___s__006cf25c[];
@@ -2673,8 +2771,10 @@ extern char s_TypeLib_006fad20[];
 extern char s_Unable_to_start_LNG_manager__006d5ec0[];
 extern char s_Unknown_Error_006ccbb8[];
 extern char s_Warning_006ccb5c[];
+extern char s___006d727c[];
 extern char s___H__006ed5a4[];
 extern char s___N__006ed59c[];
+extern char s_____006ccb30[];
 extern char s__not_xlated_call_ken_w_00730520[];
 extern char s__s_palette_act_d__s_006dc7d0[];
 extern char s_block_006e1730[];

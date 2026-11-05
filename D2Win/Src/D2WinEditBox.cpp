@@ -783,7 +783,7 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
         exit(-1);
       }
 
-      bResult = D2WINEDITBOX_CreateControl(pControlMsg, D2Client::Mouse::nPosX - pDVar1->nInsetX - pDVar1->sControl.dwPosX, pDVar1->sControl.dwSizeY - pDVar1->nInsetY - pDVar1->sControl.dwPosY + D2Client::Mouse::nPosY);
+      bResult = D2WINEDITBOX_CreateControl(pControlMsg, D2WinMain::nPosX - pDVar1->nInsetX - pDVar1->sControl.dwPosX, pDVar1->sControl.dwSizeY - pDVar1->nInsetY - pDVar1->sControl.dwPosY + D2WinMain::nPosY);
       return bResult;
     }
 }
@@ -797,8 +797,7 @@ int __stdcall D2WINEDITBOX_FilterDigitChar(uint32_t dwUnused1, uint32_t dwUnused
 }
 
 uint32_t __stdcall D2WINEDITBOX_FilterLetterChar(uint32_t dwUnused1, uint32_t dwUnused2, char * szText) {
-    char cFirstChar = *szText;
-    if (!((cFirstChar < 'a' || cFirstChar > 'z') && (cFirstChar < 'A' || cFirstChar > 'Z'))) {
+    if (!((*szText < 'a' || *szText > 'z') && (*szText < 'A' || *szText > 'Z'))) {
       return 1;
     }
 
@@ -1005,11 +1004,10 @@ static void D2WINEDITBOX_HandleDelete(::D2WinEditBox * pEditBox) {
       nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pWideZeroIter);
       if (nDelStart <= nLine) {
         pEditBox->nCursorIndex = nDelStart;
-        D2WINEDITBOX_ClearSelection(pEditBox);
-        return;
+      } else {
+        pEditBox->nCursorIndex = nLine;
       }
 
-      pEditBox->nCursorIndex = nLine;
       D2WINEDITBOX_ClearSelection(pEditBox);
       return;
     }
@@ -1848,9 +1846,9 @@ BOOL __stdcall PushFlag0x8(D2ControlMsg * pControlMsg) {
     int32_t dwErrorLineOrTick;
     OnPress pfnOnPress;
     int nMouseY;
-    nMouseY = D2Client::Mouse::nPosY;
+    nMouseY = D2WinMain::nPosY;
     int nMouseX;
-    nMouseX = D2Client::Mouse::nPosX;
+    nMouseX = D2WinMain::nPosX;
     ::D2WinEditBox* pEditBox;
     pEditBox = (::D2WinEditBox*)pControlMsg->pControl;
     if (!pEditBox) {

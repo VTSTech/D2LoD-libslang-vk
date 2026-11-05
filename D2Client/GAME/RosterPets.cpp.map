@@ -4,24 +4,6 @@
   "file": "D2Client/GAME/RosterPets.cpp",
   "functions": [
     {
-      "name": "GetPetTypeTxtById",
-      "address": "00478a20",
-      "lines": [
-        {
-          "line": 1,
-          "address": "00478a20"
-        }
-      ],
-      "namespace": "D2Client::GAME::RosterPets",
-      "calledFunctions": [
-        "GetPetTypeTxtById"
-      ],
-      "usedTypes": [
-        "D2PetTypeTxt",
-        "int32_t"
-      ]
-    },
-    {
       "name": "FreeRosterPet",
       "address": "00478a50",
       "lines": [
@@ -37,6 +19,20 @@
       ],
       "usedTypes": [
         "D2RosterPetStrc"
+      ]
+    },
+    {
+      "name": "Unreferenced_00478a90",
+      "address": "00478a90",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00478a90"
+        }
+      ],
+      "namespace": "D2Client::GAME::RosterPets",
+      "calledFunctions": [
+        "Unreferenced_00478a90"
       ]
     },
     {

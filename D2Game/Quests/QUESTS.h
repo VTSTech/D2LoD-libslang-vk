@@ -138,9 +138,12 @@ namespace D2Game::Quests::QUESTS {
 
 // Function declarations
 struct D2BitBufferStrc * __fastcall GetQuestBitBuffer(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
+int __fastcall Unreferenced_00543540(int param_1, int param_2);
+int __fastcall Unreferenced_00543560(int param_1);
 // @sourcefile .\QUESTS\QUESTS.CPP
 void __fastcall FreeQuestDataList(::SGAMEDATA * pGame, struct D2UnitQuestDataListStrc * pQuestDataList);
 struct D2QuestDataStrc * __fastcall GetQuestDataByQuestNoInternal(::SGAMEDATA * pGame, eD2QuestsInternal eQuestNoInternal);
+int __fastcall Unreferenced_00543690(int param_1, int param_2);
 // Looks up quest data by internal quest ID and attaches it to a unit. For QUESTINT_TheSearchForCain attaches to the cage object (classId 0x3d) and calls Q04_SetRescueTrigger; for QUESTINT_RadamentsLair attaches to Radament (0xe5); for QUESTINT_TheSummoner runs Q14 join noop on the Summoner (0xfa). Falls through to QUEST_AttachToUnit for all others.
 BOOL __fastcall QUEST_AttachToUnitByQuestId(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2QuestsInternal nQuestNoInternal);
 void __fastcall AddGossipMessageOnMonster(struct D2QuestDataStrc * pQuestData, struct D2GSPacketSrv0x27_TextStrc * sTextMessage, int32_t nMonStatsId, int32_t nMessageIndexMaybe);
@@ -209,7 +212,8 @@ void __fastcall QUEST_OnGoldenBirdCouncilKilled(::SGAMEDATA * pGameStrc, struct 
 void __stdcall QUEST_MarkNPCsAsIntroduced(::SGAMEDATA * pGame, int32_t pNpcIdArray, struct D2UnitStrc * pUnit, int32_t nNpcIdCount);
 // Builds and sends packet 0x91 (NpcGossip) to the player's client for a given act, listing which intro NPCs the player has already spoken with. Selects the act-specific NPC list (Acts I/II/III/V), calls INTRONPC_FillInPacketWithIntroNpcIds to populate the packet, and sends it only if at least one NPC entry needs to be communicated.
 // @sourcefile .\QUESTS\QUESTS.CPP
-BOOL __fastcall INTRONPC_FillInPacketWithIntroNpcIdsInAct(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eAct nActNo);
+// @returns void: EAX at the epilogue is leftover from the last call, and all four call sites in IterateNpcIntroUnits (void) discard it. Found by KierTaylor on the Mac twin (Redivivus proposal #1215).
+void __fastcall INTRONPC_FillInPacketWithIntroNpcIdsInAct(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eAct nActNo);
 void __fastcall QUESTGUID_AddPlayerToList(struct D2QuestGUIDStrc * pQuestGUID, int32_t nPlayerGUID);
 uint32_t __fastcall QUESTGUID_RemovePlayerFromList(struct D2QuestGUIDStrc * pQuestGUID, int32_t nPlayerGUID);
 // Returns 1 if iValue is one of the first nPlayerCount entries of
@@ -217,6 +221,7 @@ uint32_t __fastcall QUESTGUID_RemovePlayerFromList(struct D2QuestGUIDStrc * pQue
 // every caller passes a quest data block's sQuestGUID member.
 BOOL __fastcall QUESTGUID_SearchForValueInIntArray32(struct D2QuestGUIDStrc * pQuestGUID, int32_t iValue);
 BOOL __fastcall QUEST_HasPlayerParticipated(struct D2QuestDataStrc * pQuestData, int32_t nPlayerGUID);
+int __fastcall Unreferenced_005452f0(int param_1);
 void __fastcall QUESTGUID_SetPlayerCountToZero(struct D2QuestGUIDStrc * pQuestGUID);
 // @wasnamed QUESTGUID_RemovePlayerFromList - one name on two different functions.
 // @evidence Takes D2QuestDataStrc + D2QuestArgStrc, resolves the player
@@ -224,6 +229,7 @@ void __fastcall QUESTGUID_SetPlayerCountToZero(struct D2QuestGUIDStrc * pQuestGU
 void __fastcall QUESTGUID_RemovePlayerFromQuest(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // Searches outward from a candidate POINT in expanding rings (up to nSearchIterations passes, stride 2) for a map tile that passes a collision-vector check (eCollisionFlags) within nScanRadius. Steps across nearby rooms via DRLGROOM_FindBetterNearbyRoom when the search position leaves the current room. On success writes the adjusted tile coordinates back into pPoint and the containing room into *pRoomsNear; on failure sets *pRoomsNear to NULL.
 void __fastcall FindSpawnableLocation(struct D2RoomStrc * pRoom, POINT * pPoint, uint32_t nScanRadius, int32_t neCollisionFlags, struct D2RoomStrc * * pRoomsNear, int32_t nMaxTries, int32_t nSearchIterations);
+int __fastcall Unreferenced_005454e0(int param_1, int param_2);
 void __fastcall SetRewardAndFinishFlags(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // Sends quest state information to a specific unit (player). Retrieves quest control by difficulty, constructs a quest info packet, and sends to the player client.
 // @sourcefile .\QUESTS\QUESTS.CPP

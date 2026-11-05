@@ -8,7 +8,6 @@
 #include "D2Client/SKILLS/Skills.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/Stats.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Missile.h"
 #include "D2Client/UNIT/Monster.h"
@@ -45,6 +44,7 @@
 #include "D2Common/Units/Missile.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -383,8 +383,7 @@ BOOL __fastcall Skills_CltStFunc_MonSummonSpawnSetCollision(D2UnitStrc * pUnit, 
     D2Common::Skills::SKILL_SetParam2(pSkill, nSpawnY);
     D2Common::Skills::SKILL_SetParam3(pSkill, nSpawnX);
     nSummonResult = nSpawnX;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nSpawnY, nSummonResult);
+    D2RoomStrc* pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nSpawnY, nSummonResult);
     D2Common::Collision::AddCollision_Type(pRoom, nSpawnY, nSpawnX, COLLISION_PATTERN_SMALL_UNIT_PRESENCE, 0x100);
     return 1;
 }
@@ -403,9 +402,7 @@ BOOL __fastcall Skills_CltDoFunc_Mon_RemoveCollisionAtParam(D2UnitStrc * pUnit, 
 
     D2Common::Skills::SKILL_SetParam2(pSkill, 0);
     D2Common::Skills::SKILL_SetParam3(pSkill, 0);
-    int32_t nXForRoom = nY;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nXForRoom);
+    D2RoomStrc* pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nX, nY);
     if (pRoom) {
       D2Common::Collision::RemoveCollision_Type(pRoom, nX, nY, COLLISION_PATTERN_SMALL_UNIT_PRESENCE, 0x100);
       return 1;
@@ -688,7 +685,7 @@ static D2UnitStrc * __stdcall SKILLSMON_CreateMissileWithSeed(int32_t * pVelocit
     sSkillArg.nUnitY = nUnitY;
     sSkillArg.eSkillNo = eSkill;
     sSkillArg.nSkillLevel = nSkillLevel;
-    D2MissilesTxt* pMissileTxtBase = -1 < nMissileId && nMissileId < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nMissileId : nullptr;
+    D2MissilesTxt* pMissileTxtBase = nMissileId >= 0 && nMissileId < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nMissileId : nullptr;
     if (!pMissileTxtBase) {
       return nullptr;
     }
@@ -1179,6 +1176,7 @@ BOOL __fastcall Skills_CltDoFunc_Mon_ChargeAnim(D2UnitStrc * pUnit, eD2Skills eS
       D2Common::Skills::SKILL_SetFlags(pSkill, 0);
       pUnit->nFrameCount = pSkillTxt->Param[0] << 8;
       nPercent = pSkillTxt->Param[1];
+      D2Common::Units::SetSequenceFrame(pUnit, nPercent);
     } else {
       int32_t nLine;
       if (nCurrentFrame == pSkillTxt->Param[2]) {
@@ -1203,9 +1201,9 @@ BOOL __fastcall Skills_CltDoFunc_Mon_ChargeAnim(D2UnitStrc * pUnit, eD2Skills eS
 
       pUnit->nFrameCount = pSkillTxt->Param[4] << 8;
       nPercent = pSkillTxt->Param[5];
+      D2Common::Units::SetSequenceFrame(pUnit, nPercent);
     }
 
-    D2Common::Units::SetSequenceFrame(pUnit, nPercent);
     return 1;
 }
 
@@ -1288,7 +1286,7 @@ BOOL __fastcall Skills_CltDoFunc_Mon_LineMissileSpread(D2UnitStrc * pUnit, eD2Sk
           goto spawn_missile_line;
         }
       }
-      if (-1 < nRelX) {
+      if (nRelX >= 0) {
         goto spawn_missile_line;
       }
       if (nRelY > 0) {
@@ -1646,25 +1644,30 @@ BOOL __fastcall Skills_CltDoFunc_Mon_BaalTaunt_AnimCycle(D2UnitStrc * pUnit, eD2
     D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     int32_t nRepeatCount = D2Common::Skills::SKILL_GetParam1(pSkill);
     int nFrame = pUnit->nGfxCurrentFrame >> 8;
-    if (nFrame != 6) {
-      if (nFrame == 0x16) {
-        if (nRepeatCount >= 4) {
-          D2Common::Units::SetSequenceFrame(pUnit, 0x28);
-          pUnit->nFrameCount = 0x1100;
+    switch (nFrame) {
+      case 6:
+        {
+          D2Common::Units::SetSequenceFrame(pUnit, 7);
+          pUnit->nFrameCount = 0x3200;
+          break;
+        }
+      case 0x16:
+        {
+          if (nRepeatCount >= 4) {
+            D2Common::Units::SetSequenceFrame(pUnit, 0x28);
+            pUnit->nFrameCount = 0x1100;
+            return 1;
+          }
+
+          D2Common::Skills::SKILL_SetParam1(pSkill, nRepeatCount + 1);
           return 1;
         }
-
-        D2Common::Skills::SKILL_SetParam1(pSkill, nRepeatCount + 1);
-        return 1;
-      }
-      if (nFrame == 0x1e) {
-        UNIT::UnitMode::UNITMODE_SetAnimMode(pUnit, Kick);
-        UNIT::CUnit::SetDeadFlag(pUnit);
-        return 1;
-      }
-    } else {
-      D2Common::Units::SetSequenceFrame(pUnit, 7);
-      pUnit->nFrameCount = 0x3200;
+      case 0x1e:
+        {
+          UNIT::UnitMode::UNITMODE_SetAnimMode(pUnit, Kick);
+          UNIT::CUnit::SetDeadFlag(pUnit);
+          return 1;
+        }
     }
 
     return 1;
@@ -1695,13 +1698,13 @@ BOOL __fastcall Skills_CltDoFunc_Mon_CurseCenter_StreamRange(D2UnitStrc * pUnit,
 
     int32_t nAuraRange = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->aurarangecalc, eSkill, nSkillLvl);
     memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.nX = nTargetX;
     sSkillArg.nFlags = 1;
+    sSkillArg.pOwner = pUnit;
+    sSkillArg.nX = nTargetX;
     sSkillArg.nY = nTargetY;
+    sSkillArg.eSkillNo = eSkill;
     sSkillArg.nSkillLevel = nSkillLvl;
     sSkillArg.nMissileTxtNo = MISSILE_Cursecenter;
-    sSkillArg.pOwner = pUnit;
-    sSkillArg.eSkillNo = eSkill;
     D2UnitStrc* pCurseMissile = UNIT::Missile::MakeMissile(&sSkillArg);
     if (pCurseMissile) {
       D2Common::Units::Missile::SetStreamMissile(pCurseMissile, nStreamMissile);
@@ -1846,10 +1849,10 @@ BOOL __fastcall Skills_CltDoFunc_Mon_ComponentOffset_Missile_A(D2UnitStrc * pUni
       }
       if (*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[1]) {
         UNIT::Missile::MISSILE_CreateFromUnitWithOffset(pUnit, eMissileIdOffset, 0, 0, 0, 0, eSkill, nSkillLvl, 0);
-        return 1;
+      } else {
+        Skills::MakeMissileAtSkillTarget(pUnit, eMissileIdOffset, eSkill, nSkillLvl);
       }
 
-      Skills::MakeMissileAtSkillTarget(pUnit, eMissileIdOffset, eSkill, nSkillLvl);
       return 1;
     }
 
@@ -1886,10 +1889,10 @@ BOOL __fastcall Skills_CltDoFunc_Mon_ComponentOffset_Missile_B(D2UnitStrc * pUni
       }
       if (*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[1]) {
         UNIT::Missile::MISSILE_CreateFromUnitWithOffset(pUnit, eMissileIdOffset, 0, 0, 0, 0, eSkill, nSkillLvl, 0);
-        return 1;
+      } else {
+        Skills::MakeMissileAtSkillTarget(pUnit, eMissileIdOffset, eSkill, nSkillLvl);
       }
 
-      Skills::MakeMissileAtSkillTarget(pUnit, eMissileIdOffset, eSkill, nSkillLvl);
       return 1;
     }
 
@@ -1985,7 +1988,7 @@ D2UnitStrc * __fastcall SKILLSMON_CltCreateSpiderLay(D2UnitStrc * pUnit) {
       D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(nDirOffset[byDir], &nOffsetX, &nOffsetY);
       nUnitX += nOffsetX;
       nUnitY += nOffsetY;
-      pRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pStartRoom, nUnitX, nUnitY);
+      pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pStartRoom, nUnitX, nUnitY);
       bHasRoom = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
       if (!bHasRoom) {
         memset(&sSkillArg, 0, 0x5c);
@@ -2022,8 +2025,7 @@ void __fastcall SKILLSMON_SetMissilePathLinear(D2UnitStrc * pUnit, int32_t nSeed
     }
 
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
-    uint32_t nXSP1 = D2Common::PATH::DynamicPath::GetXSP1(pDynamicPath);
-    D2Common::Seed::InitSeed_Param_666(&pUnit->sSeed, nXSP1 + nSeedOffset);
+    D2Common::Seed::InitSeed_Param_666(&pUnit->sSeed, D2Common::PATH::DynamicPath::GetXSP1(pDynamicPath) + nSeedOffset);
     D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 10);
     D2Common::PATH::DynamicPath::OverwriteDistanceAndMaxDistance(pDynamicPath, (uint8_t)nTotalFrames);
     D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);

@@ -3,7 +3,6 @@
 #include "D2Common/COMPOSIT/Composit.h"
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/Engine/Gfx.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -22,6 +21,7 @@
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -136,36 +136,6 @@ uint32_t __stdcall COMPOSIT_ResolveWeaponClass(D2UnitStrc * pUnit, int32_t nUnit
     uint8_t bHasComponent;
     bHasComponent = '\0';
     switch (nUnitType) {
-      default:
-        {
-          switch (nUnitType) {
-            case 1:
-              {
-                pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassIndex);
-                if (!pMonStats2) {
-                  nHandedness = COMPOSIT_GetItemTypeIndex(0x20687468);
-                  *pnWeaponClassIndex = nHandedness;
-                  return 0x20687468;
-                }
-                if (nMode && nMode != 0xc || *((uint8_t*)pMonStats2 + 0x6) & (uint8_t)gadwBitMasks[0]) {
-                  nHandedness = COMPOSIT_GetItemTypeIndex(pMonStats2->BaseW);
-                  *pnWeaponClassIndex = nHandedness;
-                  return pMonStats2->BaseW;
-                }
-              }
-            case 2:
-              {
-                nHandedness = COMPOSIT_GetItemTypeIndex(0x20687468);
-                *pnWeaponClassIndex = nHandedness;
-                return 0x20687468;
-              }
-            default:
-              {
-                *pnWeaponClassIndex = 0;
-                return 0;
-              }
-          }
-        }
       case 0:
         {
           pEquippedItem = 0;
@@ -278,6 +248,31 @@ uint32_t __stdcall COMPOSIT_ResolveWeaponClass(D2UnitStrc * pUnit, int32_t nUnit
           nHandedness = COMPOSIT_GetItemTypeIndex(bIsWeapon);
           *pnWeaponClassIndex = nHandedness;
           return bIsWeapon;
+        }
+      case 1:
+        {
+          pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassIndex);
+          if (!pMonStats2) {
+            nHandedness = COMPOSIT_GetItemTypeIndex(0x20687468);
+            *pnWeaponClassIndex = nHandedness;
+            return 0x20687468;
+          }
+          if (nMode && nMode != 0xc || *((uint8_t*)pMonStats2 + 0x6) & (uint8_t)gadwBitMasks[0]) {
+            nHandedness = COMPOSIT_GetItemTypeIndex(pMonStats2->BaseW);
+            *pnWeaponClassIndex = nHandedness;
+            return pMonStats2->BaseW;
+          }
+        }
+      case 2:
+        {
+          nHandedness = COMPOSIT_GetItemTypeIndex(0x20687468);
+          *pnWeaponClassIndex = nHandedness;
+          return 0x20687468;
+        }
+      default:
+        {
+          *pnWeaponClassIndex = 0;
+          return 0;
         }
     }
 }

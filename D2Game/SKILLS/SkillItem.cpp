@@ -7,13 +7,10 @@
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/Seed.h"
 #include "D2Client/Stats.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Monster.h"
-#include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
 #include "D2Common/Collision.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -40,6 +37,7 @@
 #include "D2Common/Merc.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
+#include "D2Common/Seed.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Common/Units.h"
@@ -65,10 +63,10 @@
 #include "D2Game/Objects/Objects.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerModes.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
 #include "D2Game/Quests/QUESTS/A5Q5.h"
-#include "D2Game/SKILLS/Items.h"
 #include "D2Game/SKILLS/SkillNec.h"
 #include "D2Game/SKILLS/SkillsServer.h"
 #include "D2Game/UNIT/Monster.h"
@@ -870,20 +868,24 @@ BOOL __fastcall ITEM_ApplyConsumableEffects(::SGAMEDATA * pGame, D2UnitStrc * pU
         apply_stat_value:
         nStatScaled = nStatValue << D2_SHIFT_COUNT(pStatCost->valshift);
         if (nStatScaled > 0) {
-          if (eUnitStat != UNITSTAT_hitpoints) {
-            if (eUnitStat == UNITSTAT_hpregen) {
-              eUnitType = D2Client::Units::GetType(pUnit);
-              if (eUnitType == UNIT_PLAYER) {
-                nStatScaled = SkillNec::BloodGolemLifeLeech(pGame, pUnit, nStatScaled);
+          switch (eUnitStat) {
+            case UNITSTAT_hitpoints:
+              {
+                bHpModified = true;
+                LAB_005be567:
+                eUnitType = D2Client::Units::GetType(pUnit);
+                if (eUnitType == UNIT_PLAYER) {
+                  nStatScaled = SkillNec::BloodGolemLifeLeech(pGame, pUnit, nStatScaled);
+                }
+
+                break;
               }
-            }
-          } else {
-            bHpModified = true;
-            eUnitType = D2Client::Units::GetType(pUnit);
-            if (eUnitType == UNIT_PLAYER) {
-              nStatScaled = SkillNec::BloodGolemLifeLeech(pGame, pUnit, nStatScaled);
-            }
+            case UNITSTAT_hpregen:
+              {
+                goto LAB_005be567;
+              }
           }
+
           if ((int)nItemClassId <= 0) {
             nPotionDelay = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eUnitStat, 0);
             if ((int)(uint32_t)(uint16_t)pStatCost->maxstat < sgptDataTable->nTxtItemStatCostSize) {
@@ -966,15 +968,19 @@ BOOL __fastcall ITEM_ApplyConsumableEffectsSimple(::SGAMEDATA * pGame, D2UnitStr
       nItemClassId = pItem->nClassId;
     }
 
-    D2ItemsTxt* pItemTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nItemClassId);
+    D2ItemsTxt* pItemTxt;
+    pItemTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nItemClassId);
     if (!pItemTxt) {
       return 0;
     }
 
     nItemClassId = D2Common::ITEMS::Items::ITEMS_SearchItemCodeTable(pUnit, (int32_t)pItem, pItemTxt->dwLen);
-    eD2States eState = (eD2States)pItemTxt->wState;
-    D2StatListExStrc* pActiveStatList = 0;
-    int nBuffRemainingFrames = 0;
+    eD2States eState;
+    eState = (eD2States)pItemTxt->wState;
+    D2StatListExStrc* pActiveStatList;
+    pActiveStatList = 0;
+    int nBuffRemainingFrames;
+    nBuffRemainingFrames = 0;
     if ((int)nItemClassId > 0) {
       if ((int)eState <= 0) {
         return 0;
@@ -990,8 +996,10 @@ BOOL __fastcall ITEM_ApplyConsumableEffectsSimple(::SGAMEDATA * pGame, D2UnitStr
       }
     }
 
-    BOOL bApplied = 0;
-    bool bHpModified = false;
+    BOOL bApplied;
+    bApplied = 0;
+    bool bHpModified;
+    bHpModified = false;
     for (iStatEntry = 0; iStatEntry < 3; iStatEntry++) {
       eUnitStat = (eD2UnitStat)*(short int*)(pItemTxt->szSetInvFile + iStatEntry * 2 + 0x3e);
       if ((int)eUnitStat < 0 || (int)eUnitStat >= sgptDataTable->nTxtItemStatCostSize) {
@@ -1007,20 +1015,24 @@ BOOL __fastcall ITEM_ApplyConsumableEffectsSimple(::SGAMEDATA * pGame, D2UnitStr
 
         nStatScaled = nStatValue << D2_SHIFT_COUNT(pStatCost->valshift);
         if (nStatScaled > 0) {
-          if (eUnitStat != UNITSTAT_hitpoints) {
-            if (eUnitStat == UNITSTAT_hpregen) {
-              eUnitType = D2Client::Units::GetType(pUnit);
-              if (eUnitType == UNIT_PLAYER) {
-                nStatScaled = SkillNec::BloodGolemLifeLeech(pGame, pUnit, nStatScaled);
+          switch (eUnitStat) {
+            case UNITSTAT_hitpoints:
+              {
+                bHpModified = true;
+                LAB_005be8d3:
+                eUnitType = D2Client::Units::GetType(pUnit);
+                if (eUnitType == UNIT_PLAYER) {
+                  nStatScaled = SkillNec::BloodGolemLifeLeech(pGame, pUnit, nStatScaled);
+                }
+
+                break;
               }
-            }
-          } else {
-            bHpModified = true;
-            eUnitType = D2Client::Units::GetType(pUnit);
-            if (eUnitType == UNIT_PLAYER) {
-              nStatScaled = SkillNec::BloodGolemLifeLeech(pGame, pUnit, nStatScaled);
-            }
+            case UNITSTAT_hpregen:
+              {
+                goto LAB_005be8d3;
+              }
           }
+
           if ((int)nItemClassId <= 0) {
             nCurStatVal = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eUnitStat, 0);
             if ((int)(uint32_t)(uint16_t)pStatCost->maxstat < sgptDataTable->nTxtItemStatCostSize) {
@@ -1778,7 +1790,7 @@ BOOL __fastcall ITEMEVENT_CrushingBlowChance(::SGAMEDATA * pGame, uint32_t nUnit
 BOOL __fastcall ITEMEVENT_ChanceToFear(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     uint32_t _bIsUndead;
     bool bIsUndead;
-    if (!(pUnit && (pTarget ? pTarget->eUnitType : UNIT_COUNT) == UNIT_MONSTER)) {
+    if ((pUnit && (pTarget ? pTarget->eUnitType : UNIT_COUNT) == UNIT_MONSTER) == 0) {
       return 0;
     }
 
@@ -1792,7 +1804,7 @@ BOOL __fastcall ITEMEVENT_ChanceToFear(::SGAMEDATA * pGame, uint32_t nUnitEvent,
       return 0;
     }
 
-    _bIsUndead = D2Client::Seed::RNG_GetRandomInRange(&pUnit->sSeed.nSeedLow, 0x80);
+    _bIsUndead = D2Common::Seed::RNG_GetRandomInRange(&pUnit->sSeed.nSeedLow, 0x80);
     if ((int)_bIsUndead >= nChance) {
       return 0;
     }
@@ -2328,10 +2340,10 @@ BOOL __fastcall ITEMEVENT_CastOnStriking(::SGAMEDATA * pGame, uint32_t nUnitEven
       nRandRoll = D2Common::PATH::DynamicPath::GetYSP1(pUnit->pPath.pDynamicPath);
       nCastX = D2Common::PATH::DynamicPath::GetXSP1(pUnit->pPath.pDynamicPath);
       Monster::AI::MONSTERAI_CastItemEffectSkill(pUnit, eProcSkill, eSkillLevel, nCastX, nRandRoll, nProcChance);
-      return 1;
+    } else {
+      Monster::AI::SKILL_CastOnTargetUnit(pUnit, eProcSkill, eSkillLevel, pTarget, 0);
     }
 
-    Monster::AI::SKILL_CastOnTargetUnit(pUnit, eProcSkill, eSkillLevel, pTarget, 0);
     return 1;
 }
 
@@ -2360,10 +2372,10 @@ BOOL __fastcall ITEMEVENT_CastOnDeath(::SGAMEDATA * pGame, uint32_t nUnitEvent, 
       nCastY = D2Common::PATH::DynamicPath::GetYSP1(pUnit->pPath.pDynamicPath);
       nCastX = D2Common::PATH::DynamicPath::GetXSP1(pUnit->pPath.pDynamicPath);
       Monster::AI::MONSTERAI_CastItemEffectSkill(pUnit, eProcSkill, eSkillLevel, nCastX, nCastY, nProcChance);
-      return 1;
+    } else {
+      Monster::AI::SKILL_CastOnTargetUnit(pUnit, eProcSkill, eSkillLevel, pTarget, 0);
     }
 
-    Monster::AI::SKILL_CastOnTargetUnit(pUnit, eProcSkill, eSkillLevel, pTarget, 0);
     return 1;
 }
 
@@ -2404,7 +2416,7 @@ BOOL __fastcall SKILL_ReviveMonsterFromCorpse(::SGAMEDATA * pGame, uint32_t nUni
     int32_t nCorpseSpawnX = nCollY;
     int32_t nCorpseY = D2Client::Units::GetYPosFromDynamicPathUnit(pAttacker);
     D2RoomStrc* pTargetRoom = D2Common::Units::UNITS_GetRoom(pAttacker);
-    pTargetRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pTargetRoom, nCollY, nCorpseY);
+    pTargetRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pTargetRoom, nCollY, nCorpseY);
     if (!pTargetRoom) {
       return 0;
     }
@@ -2569,7 +2581,10 @@ BOOL __fastcall ITEMEVENT_ApplyHitDamage(::SGAMEDATA * pGame, uint32_t nUnitEven
     D2DamageStrc sDamage;
     short int sCltOverlay;
     D2UnitStrc* pCaster = pUnit;
-    if (!(pUnit && pTarget && (pTarget->eUnitType == UNIT_PLAYER || pTarget->eUnitType == UNIT_MONSTER))) {
+    if (!pUnit || !pTarget) {
+      return 0;
+    }
+    if (pTarget->eUnitType != UNIT_PLAYER && pTarget->eUnitType != UNIT_MONSTER) {
       return 0;
     }
 

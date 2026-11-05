@@ -4,10 +4,9 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
-#include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
+#include "D2Common/Collision.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
@@ -43,6 +42,7 @@
 #include "D2Game/ITEMS/Items/Drop.h"
 #include "D2Game/Objects/Objects.h"
 #include "D2Game/PLAYER/Player.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
 #include "D2Game/SKILLS/SkillsServer.h"
@@ -343,8 +343,7 @@ static void __stdcall Q14_SetDurielComplete(::SGAMEDATA * pQuestControl, D2UnitS
     /* SetQuestState(TheSevenTombs, 0xd=JustCompleted) — Duriel killed self game
                           */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_JustCompleted);
     /* SetQuestState(TheSevenTombs, 3=Step0x03) — Duriel-dead progress bit */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x03);
-    uint32_t nDifficulty = (uint32_t)pQuestControl->nDifficulty;
-    GAME::Clients::SetClientStatus(UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x182), 2, nDifficulty);
+    GAME::Clients::SetClientStatus(UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x182), 2, (uint32_t)pQuestControl->nDifficulty);
 }
 
 // A2Q6 "The Seven Tombs" — per-player check: if this player is standing in Duriel's Lair and their record has none of JustCompleted/Step0x03/Step0x04 set yet, stamp completion via Q14_SetDurielComplete. Iterated after Duriel dies so anyone present in the lair gets credit. Asserts the quest-data pointer is non-null.
@@ -1179,7 +1178,6 @@ uint8_t __fastcall Q14_TimerCreatePortal(::SGAMEDATA * pGame, D2QuestDataStrc * 
     int32_t nOrificeY;
     D2RoomStrc* pNearbyRoom;
     D2UnitStrc* pUnit;
-    int nSpawnY;
     D2QuestDataA2Q6Strc* pQuestSpecific = pQuestData->pQuestSpecificData.pA2Q6;
     int nObjectsReady = 0;
     if (pQuestSpecific->field_0xD == 1) {
@@ -1204,9 +1202,7 @@ uint8_t __fastcall Q14_TimerCreatePortal(::SGAMEDATA * pGame, D2QuestDataStrc * 
         if (pDVar1) {
           nOrificeX = D2Client::Units::GetXPosFromDynamicPathUnit(pDVar1);
           nOrificeY = D2Client::Units::GetYPosFromDynamicPathUnit(pDVar1);
-          nSpawnY = nOrificeY + 3;
-          pNearbyRoom = D2Common::Units::UNITS_GetRoom(pDVar1);
-          pNearbyRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pNearbyRoom, nOrificeX - 0xd, nSpawnY);
+          pNearbyRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pDVar1), nOrificeX - 0xd, nOrificeY + 3);
           if (pNearbyRoom) {
             pUnit = UNIT::SUnit::CreateUnit(UNIT_OBJECT, 100, nOrificeX - 0xd, nOrificeY + 3, pGame, pNearbyRoom, 1, 1, nullptr);
             if (pUnit) {
@@ -1519,7 +1515,7 @@ void __fastcall Q14_OnStaffUsedInOrifice(::SGAMEDATA * pGame, D2UnitStrc * pUnit
       nPosX = 0;
     }
 
-    D2RoomStrc* pRoom_00 = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nPosX - 0xd, nPosY + 3);
+    D2RoomStrc* pRoom_00 = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, nPosX - 0xd, nPosY + 3);
     D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom, 0);
     if (!pRoom_00) {
       return;

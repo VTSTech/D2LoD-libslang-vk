@@ -5,7 +5,6 @@
 #include "D2Client/Archive.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2RoomCoordListStrc.h"
 #include "D2Common/D2RoomExStrc.h"
@@ -38,6 +37,7 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Level.h"
 #include "D2Game/Objects/Objects.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -646,8 +646,8 @@ D2RoomExStrc * __fastcall DRLGROOMEX_AllocRoomEx(D2DrlgLevelStrc * pLevel, int n
     pRoomEx->pLevel = pLevel;
     pRoomEx->fRoomStatus = '\x04';
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pLevel->sSeed);
-    D2SeedStrc* pSeed = &pRoomEx->sSeed;
     pLevel->sSeed = sNewSeed;
+    D2SeedStrc* pSeed = &pRoomEx->sSeed;
     Seed::InitSeed_Param_666(pSeed, sNewSeed.nSeedLow);
     sNewSeed = D2_SEED_NEXT(*pSeed);
     pSeed->nSeedHigh = sNewSeed.nSeedHigh;
@@ -921,6 +921,7 @@ BOOL __fastcall DRLGCOORDS_IsAdjacentOrOverlapping(D2DrlgCoordsStrc * pDrlgCoord
         return 0;
       }
 
+      nDistY = nDistX - nMaxDist;
       bSignedGreater = nDistX > nMaxDist;
     }
     if (!bSignedGreater) {
@@ -980,7 +981,7 @@ BOOL __fastcall AreXYInsideCoordinates(D2DrlgCoordsStrc * pDrlgCoords, int32_t n
     }
 
     int nPosY = pDrlgCoords->WorldPosition.y;
-    if (!(nY >= nPosY && nX < pDrlgCoords->WorldSize.x + nPosX)) {
+    if ((nY >= nPosY && nX < pDrlgCoords->WorldSize.x + nPosX) == 0) {
       return 0;
     }
 
@@ -994,7 +995,7 @@ uint32_t __fastcall DRLGCOORDS_IsPointInside(D2DrlgCoordsStrc * pDrlgCoords, int
     }
 
     int nPosY = pDrlgCoords->WorldPosition.y;
-    if (!(nY >= nPosY && nX <= pDrlgCoords->WorldSize.x + nPosX)) {
+    if ((nY >= nPosY && nX <= pDrlgCoords->WorldSize.x + nPosX) == 0) {
       return 0;
     }
 
@@ -1127,9 +1128,8 @@ static void ReorderNearRoomList(int nRoomCount, D2RoomStrc * * ppRoomList) {
     int nPassRemaining;
     D2RoomStrc* pRoomCurrent;
     D2RoomStrc* pRoomNext;
-    int nListCount = nRoomCount - 1;
-    for (nPassRemaining = nListCount; nPassRemaining > 0; nPassRemaining--) {
-      for (nIndex = 0; nIndex < nListCount; nIndex++) {
+    for (nPassRemaining = nRoomCount - 1; nPassRemaining > 0; nPassRemaining--) {
+      for (nIndex = 0; nIndex < nRoomCount - 1; nIndex++) {
         pRoomNext = ppRoomList[nIndex + 1];
         pRoomCurrent = ppRoomList[nIndex];
         if (pRoomCurrent->eFlags >= (int)(pRoomNext->nLastDeadGUIDs[1] + pRoomNext->eFlags) || (int)pRoomCurrent->nLastDeadGUIDs[0] >= (int)(pRoomNext->nLastDeadGUIDs[2] + pRoomNext->nLastDeadGUIDs[0])) {
@@ -1227,9 +1227,11 @@ static void DRLGROOM_FlagRoomExBorderingTown(D2RoomExStrc * pRoomEx) {
       }
 
       nIndex++;
-      if (nIndex >= pRoomEx->nDrlgRoomsExNearCount) {
-        return;
+      if (nIndex < pRoomEx->nDrlgRoomsExNearCount) {
+        continue;
       }
+
+      return;
     }
 
     pRoomEx->eRoomExFlags |= 0x800000;
@@ -1254,11 +1256,7 @@ static void __stdcall DRLGROOMEX_ResizeArrayAndAddNewNearRoom(D2RoomExStrc * pDr
 // @sourcefile .\DRLG\DrlgRoom.cpp
 static void __stdcall DRLGROOMEX_AllocRoomTile(D2RoomExStrc * pLinkedRoomEx, uint8_t visSlot, D2RoomExStrc * pSrcRoomEx) {
     D2DrlgRoomExRoomTileNodeStrc* pTileGrid = D2_NEW_POOL_AT(pSrcRoomEx->pLevel->pDrlg->pMemoryPool, D2DrlgRoomExRoomTileNodeStrc, ".\\DRLG\\DrlgRoom.cpp", 0x322);
-    pTileGrid->pRoomTileNext = 0;
-    pTileGrid->bEnabled = 0;
-    pTileGrid->pTileListSetOnSelect = 0;
-    pTileGrid->pLvlWarpTxt = 0;
-    pTileGrid->pTileListClearedOnSelect = 0;
+    memset(pTileGrid, 0, sizeof(*pTileGrid));
     pTileGrid->pRoomEx = pLinkedRoomEx;
     D2LvlWarpTxt* pLvlWarpTxt = DRLGLEVEL_GetWarpsIdIfExistsAndSetup(pSrcRoomEx->pLevel, visSlot, 0x62);
     pTileGrid->pLvlWarpTxt = pLvlWarpTxt;
@@ -1313,9 +1311,7 @@ static BOOL __stdcall DRLGROOMEX_LinkNearRoomByDirection(uint8_t dstVisSlot, D2R
 // @sourcefile .\DRLG\DrlgRoom.cpp
 D2PresetUnitStrc * __fastcall AllocPresetUnit(D2RoomExStrc * pRoomEx, D2PoolManagerStrc * pMemory, eD2UnitType eUnitType, int32_t nMonStatsId, BOOL bUseMonStatsMaybe, int32_t nPosX, int32_t nPosY) {
     D2PresetUnitStrc* pPresetUnit = D2_NEW_POOL_AT(pMemory, D2PresetUnitStrc, ".\\DRLG\\DrlgRoom.cpp", 0x3b6);
-    pPresetUnit->pPresetUnitNext = 0;
-    pPresetUnit->pMapAI = 0;
-    pPresetUnit->nFlags = 0;
+    memset(pPresetUnit, 0, sizeof(*pPresetUnit));
     pPresetUnit->eType = eUnitType;
     pPresetUnit->nClassId = nMonStatsId;
     pPresetUnit->nMode = bUseMonStatsMaybe;
@@ -1356,6 +1352,11 @@ void __fastcall GetRGB_IntensityFromRoomEx(D2RoomExStrc * pRoomEx, char * nInten
     *nBlue = pLevelDefs->ColorInfo.Blue;
 }
 
+int __fastcall Unreferenced_0066c020(int param_1) {
+    D2LevelDefsTxt* pDVar1 = DATATBLS::LvlTbls::TXT_LevelDefs_GetLine(*(eD2LevelId*)(*(int*)(param_1 + 0x58) + 0x1d0));
+    return pDVar1->DrlgType;
+}
+
 // Retrieves the Vis array from the level definitions for the given level ID. Returns pointer to 8-entry vis array.
 int * __fastcall DRLGWARP_GetVisArrayFromLevelId(D2DrlgStrc * pDrlg, eD2LevelId eLevelId) {
     D2LevelDefsTxt* pLevelDefs;
@@ -1377,6 +1378,10 @@ int * __fastcall DRLGWARP_GetVisArrayFromLevelId(D2DrlgStrc * pDrlg, eD2LevelId 
 
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x410);
     exit(-1);
+}
+
+void __fastcall Unreferenced_0066c090(int param_1) {
+    DRLGWARP_GetVisArrayFromLevelId(*(D2DrlgStrc**)(param_1 + 0x1b4), *(eD2LevelId*)(param_1 + 0x1d0));
 }
 
 D2DrlgStrc * __fastcall GetDrlgFromRoomEx(D2RoomExStrc * pRoomEx) {

@@ -290,13 +290,10 @@ void __stdcall INPUT_HelpCloseButtonDown(D2UIMouseMsgStrc * pMsg) {
     }
     if (nRelX <= 0x20 && (uint32_t)(nMouseY - 0x18 - VPRES_GetWideUiOffsetY()) < 0x21) { // VP: [resolution site-6]
       gpHelpCloseButton = 1;
-      pMsg->bHandled = 1;
-      pMsg->dwResult = 0;
-      Storm::SMsgBreakHandlerChain(pMsg);
-      return;
+    } else {
+      GAME::Game::GAMEDATA_ClearQueuedClicks();
     }
 
-    GAME::Game::GAMEDATA_ClearQueuedClicks();
     pMsg->bHandled = 1;
     pMsg->dwResult = 0;
     Storm::SMsgBreakHandlerChain(pMsg);
@@ -1065,6 +1062,10 @@ void __fastcall HELP_SetUIVarW(eD2UIvars eUIVar, eD2UIvarsSetType eUIVarSetType,
 
     ui::SetUIFlag(UI_MINIPANEL, UI_RESET, 0);
     gbMiniPanel = 0;
+}
+
+void __stdcall HELP_MiniPanelKeyNoOp_Unref_004e4040(D2UIMouseMsgStrc * pMsg) {
+
 }
 
 } // namespace D2Client::UI::Help

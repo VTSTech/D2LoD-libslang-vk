@@ -9,7 +9,6 @@
 #include "D2Client/Engine/Particle.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/GAME/Rendering.h"
 #include "D2Client/GAME/RosterPets.h"
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/SKILLS/Skills.h"
@@ -17,7 +16,6 @@
 #include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/CmdTbl.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/CUnitEvent.h"
 #include "D2Client/UNIT/MonUnique.h"
@@ -53,9 +51,11 @@
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/Monster/MonsterMode.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
+#include "D2gfx/D2GFX.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "globals/globals.h"
 #include "D2Client/D2LightMapStrc.h"
@@ -64,7 +64,6 @@
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillAss.h"
-#include "D2gfx/D2GFX.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -678,11 +677,11 @@ void __fastcall PLRSKILLS_StateSetFn10_Redeemed(D2UnitStrc * pUnit, eD2States eS
     }
 
     memset(&sSkillArg, 0, 0x5c);
+    sSkillArg.pOwner = pUnit;
+    sSkillArg.pMissile = pUnit;
     sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[1];
     sSkillArg.eSkillNo = (eD2Skills)pDVar1->skill;
     sSkillArg.nSkillLevel = 1;
-    sSkillArg.pOwner = pUnit;
-    sSkillArg.pMissile = pUnit;
     Missile::MakeMissile(&sSkillArg);
     if (!pUnit) {
       return;
@@ -716,14 +715,12 @@ void __fastcall PLRSKILLS_StateRemFn07_Uninterruptable(D2UnitStrc * pUnit, eD2St
 
     D2Common::Skills::SKILL_SetParam2(pSkill, 0);
     D2Common::Skills::SKILL_SetParam3(pSkill, 0);
-    D2RoomStrc* pNestRoom = Player::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nX, nY);
+    D2RoomStrc* pNestRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nX, nY);
     if (!pNestRoom) {
       return;
     }
 
-    int32_t nYSaved = nY;
-    pNestRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pNestRoom = Player::DRLGROOM_FindBetterNearbyRoom(pNestRoom, nX, nYSaved);
+    pNestRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nX, nY);
     D2Common::Collision::RemoveCollision_Type(pNestRoom, nX, nY, COLLISION_PATTERN_SMALL_UNIT_PRESENCE, 0x100);
 }
 
@@ -1325,10 +1322,8 @@ void __fastcall STATES_DispatchSetFunc(D2UnitStrc * pUnit, eD2States eState) {
     if (!(pDVar1 && (!(*((uint8_t*)pDVar1 + 0x14) & (uint8_t)gadwBitMasks[7]) || (pUnit->eUnitType != UNIT_MONSTER || pUnit->eAnimMode.ePlayerMode != Kick) && (pUnit->eUnitType != UNIT_PLAYER || pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Dead)))) {
       return;
     }
-
-    short int nSetFunc = pDVar1->setfunc;
-    if (nSetFunc >= 0 && nSetFunc < 0x1f && STATESSETFUNC[nSetFunc]) {
-      (*STATESSETFUNC[nSetFunc])(pUnit, eState);
+    if (pDVar1->setfunc >= 0 && pDVar1->setfunc < 0x1f && STATESSETFUNC[pDVar1->setfunc]) {
+      (*STATESSETFUNC[pDVar1->setfunc])(pUnit, eState);
     }
     if (pDVar1->cltevent < 0) {
       return;
@@ -1384,10 +1379,8 @@ void __fastcall STATES_DispatchRemFunc(D2UnitStrc * pUnit, eD2States eState) {
     if (!pDVar1) {
       return;
     }
-
-    short int nRemFunc = pDVar1->remfunc;
-    if (nRemFunc >= 0 && nRemFunc < 0x1e && STATESREMFUNC[nRemFunc]) {
-      (*STATESREMFUNC[nRemFunc])(pUnit, eState);
+    if (pDVar1->remfunc >= 0 && pDVar1->remfunc < 0x1e && STATESREMFUNC[pDVar1->remfunc]) {
+      (*STATESREMFUNC[pDVar1->remfunc])(pUnit, eState);
     }
     if (pDVar1->cltevent < 0) {
       return;
@@ -1420,6 +1413,14 @@ int32_t __fastcall PLRSKILLS_CanUseSkillCheck(D2UnitStrc * pUnit, D2SkillStrc * 
 
     nCanUse = 0;
     return nCanUse;
+}
+
+void __fastcall PLRSKILLS_StateRemFn10_Pregnant_Unref_004da070(D2UnitStrc * pUnit) {
+    Engine::Gfx::GetParticleFromUnit(pUnit);
+}
+
+void __fastcall PLRSKILLS_StateRemFn10_Pregnant_Unref_004dca20(D2UnitStrc * pUnit) {
+    Engine::Gfx::GFX_DrawUnitShadow(pUnit);
 }
 
 } // namespace D2Client::UNIT::PlrSkills

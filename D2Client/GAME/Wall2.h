@@ -72,7 +72,11 @@ void __fastcall WALL2_BuildSceneDrawList(struct D2GameViewStrc * pGameView, uint
 int __stdcall WALL2_CollectRoomsBeyondAdjacency(struct D2RoomStrc * pCenterRoom, int nDepth,
     int nCenterX, int nCenterY, int nReach,
     struct D2RoomStrc ** apOut, int nMaxOut);
+int __fastcall Unreferenced_004dddd0(int param_1);
+void __stdcall WALL2_OnAllocGameView_NoOp_Unref_004ddde0();
 void __stdcall WALL2_OnAllocGameView_NoOp();
+void __stdcall WALL2_OnAllocGameView_NoOp_Unref_004df920();
+void __stdcall WALL2_OnAllocGameView_NoOp_Unref_004df930();
 // 11 internal functions (defined in .cpp)
 
 // Extern entries for hand-written callers (each forwards to the function of its name)

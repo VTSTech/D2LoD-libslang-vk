@@ -9,9 +9,6 @@
 #include "D2Client/D2GfxSettingsStrc.h"
 #include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Draw.h"
-#include "D2Client/GAME/View.h"
-#include "D2Client/Renderer/Glide.h"
-#include "D2Client/Renderer/Renderer.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
 #include "D2DDraw/Renderer/DirectDraw.h"
 #include "D2Direct3D/d3dFloorCache.h"
@@ -24,6 +21,7 @@
 #include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinPalette.h" // VP: fix-27 transpose-base view (buffer TU-private since 962f88d5)
 #include "D2gfx/D2GFX.h"
+#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/Source/SFile.h"
 #include "Fog/Src/DataArrays.h"
@@ -36,10 +34,12 @@
 #include "support/d2_boot.h"
 #include "globals/globals.h"
 #include "Bnclient/BNGatewayAccess.h"
+#include "D2CMP/tagPALETTEENTRY.h"
+#include "D2Client/GAME/View.data.h"
 #include "D2Client/UI/Help.data.h"
 #include "D2Direct3D/Renderer/Direct3D.data.h"
 #include "D2gfx/D2GFX.data.h"
-#include "Fog/Debug.h"
+#include "D2gfx/D2GFX.h"
 #include "Fog/Engine/Application.data.h"
 #include "Game/Main.h"
 
@@ -60,13 +60,13 @@
 static_assert(sizeof(void*) != 4 || sizeof(::D2RendererCoreStrc) == 0x18, "D2_NEW_AT(D2RendererCoreStrc): the 32-bit layout must be the 0x18 bytes 1.14d allocates");
 
 
-#ifndef RECON_FPTD_pfnEHHandlerRoutine
-#define RECON_FPTD_pfnEHHandlerRoutine
-typedef _EXCEPTION_DISPOSITION (*pfnEHHandlerRoutine)(EHExceptionRecord * pExceptionRecord, EHRegistrationNode * pRegistrationNode, _CONTEXT * pContext, void * pDispatcherContext);
-#endif
 #ifndef RECON_FPTD_DDS_Flip
 #define RECON_FPTD_DDS_Flip
 typedef HRESULT (__stdcall *DDS_Flip)(void * This, void * lpDDSurfaceTargetOverride, DWORD dwFlags);
+#endif
+#ifndef RECON_FPTD_pfnEHHandlerRoutine
+#define RECON_FPTD_pfnEHHandlerRoutine
+typedef _EXCEPTION_DISPOSITION (*pfnEHHandlerRoutine)(EHExceptionRecord * pExceptionRecord, EHRegistrationNode * pRegistrationNode, _CONTEXT * pContext, void * pDispatcherContext);
 #endif
 #ifndef RECON_FPTD_fnBinkFrameCallback
 #define RECON_FPTD_fnBinkFrameCallback
@@ -93,19 +93,19 @@ static GUID IID_IDirect3DHALDevice = {
     /* .Data3 = */ 0x11cf,
     /* .Data4 = */ { 0x81, 'o', '\x00', '\x00', 0xc0, ' ', '\x15', 'n' }
 }; D2_STATIC_GUARD(IID_IDirect3DHALDevice, "IID_IDirect3DHALDevice");
-GUID D3DGuid = {
+static GUID D3DGuid = {
     /* .Data1 = */ 0xbb223240,
     /* .Data2 = */ 0xe72b,
     /* .Data3 = */ 0x11d0,
     /* .Data4 = */ { 0xa9, 0xb4, '\x00', 0xaa, '\x00', 0xc0, 0x99, '>' }
-}; D2_GLOBAL_GUARD(D3DGuid, "D3DGuid");
-GUID IID_IDirectDraw7 = {
+}; D2_STATIC_GUARD(D3DGuid, "D3DGuid");
+static GUID IID_IDirectDraw7 = {
     /* .Data1 = */ 0x9c59509a,
     /* .Data2 = */ 0x39bd,
     /* .Data3 = */ 0x11d1,
     /* .Data4 = */ { 0x8c, 'J', '\x00', 0xc0, 'O', 0xd9, '0', 0xc5 }
-}; D2_GLOBAL_GUARD(IID_IDirectDraw7, "IID_IDirectDraw7");
-BOOL BOOL_0074c020 = 0x64; D2_GLOBAL_GUARD(BOOL_0074c020, "BOOL_0074c020");
+}; D2_STATIC_GUARD(IID_IDirectDraw7, "IID_IDirectDraw7");
+static BOOL BOOL_0074c020 = 0x64; D2_STATIC_GUARD(BOOL_0074c020, "BOOL_0074c020");
 static uint32_t gsD3DTextureDescTemplate[8] = { 0x20, 0x41, 0x0, 0x10, 0x7c00, 0x3e0, 0x1f, 0x8000 }; D2_STATIC_GUARD(gsD3DTextureDescTemplate, "gsD3DTextureDescTemplate");
 static uint16_t gaD3DPerspectiveStripIndices[22] = {
     0x0,
@@ -412,7 +412,7 @@ static D2D3DTileCornerStrc gaD3DWallCornerTable[60] = {
 namespace D2Direct3D::Renderer {
 unsigned int gnD3DTextureCapFlags = {}; D2_GLOBAL_GUARD(gnD3DTextureCapFlags, "D2Direct3D::Renderer::gnD3DTextureCapFlags");
 } // namespace D2Direct3D::Renderer
-GUID gsD3DAdapterGuid = {}; D2_GLOBAL_GUARD(gsD3DAdapterGuid, "gsD3DAdapterGuid");
+static GUID gsD3DAdapterGuid = {}; D2_STATIC_GUARD(gsD3DAdapterGuid, "gsD3DAdapterGuid");
 static unsigned int g_nVideoMemoryTotal = {}; D2_STATIC_GUARD(g_nVideoMemoryTotal, "g_nVideoMemoryTotal");
 static unsigned int g_nVideoMemoryFree = {}; D2_STATIC_GUARD(g_nVideoMemoryFree, "g_nVideoMemoryFree");
 unsigned int gnD3DTextureCacheBlockSize = {}; D2_GLOBAL_GUARD(gnD3DTextureCacheBlockSize, "gnD3DTextureCacheBlockSize");
@@ -423,52 +423,52 @@ D3DFloorCacheStrc gD3DFloorTextureCache = {}; D2_GLOBAL_GUARD(gD3DFloorTextureCa
 static uint16_t g_OriginalGammaRamp[3][256] = {}; D2_STATIC_GUARD(g_OriginalGammaRamp, "g_OriginalGammaRamp");
 int gnD3DTextureCacheCount = 0; D2_GLOBAL_GUARD(gnD3DTextureCacheCount, "gnD3DTextureCacheCount");
 uint32_t g_Palette32Bit[256] = {}; D2_GLOBAL_GUARD(g_Palette32Bit, "g_Palette32Bit");
-D2D3DDeviceSlotStrc gD3DDeviceBlock0[2] = {}; D2_GLOBAL_GUARD(gD3DDeviceBlock0, "gD3DDeviceBlock0");
-unsigned int g_bDeviceInitialized = {}; D2_GLOBAL_GUARD(g_bDeviceInitialized, "g_bDeviceInitialized");
+static D2D3DDeviceSlotStrc gD3DDeviceBlock0[2] = {}; D2_STATIC_GUARD(gD3DDeviceBlock0, "gD3DDeviceBlock0");
+static unsigned int g_bDeviceInitialized = {}; D2_STATIC_GUARD(g_bDeviceInitialized, "g_bDeviceInitialized");
 static int g_bCutsceneModeActive = 0; D2_STATIC_GUARD(g_bCutsceneModeActive, "g_bCutsceneModeActive");
 // also labelled: g_pD3DPerspectiveSurface
-BOOL g_bD3DCoreInitialized = 0; D2_GLOBAL_GUARD(g_bD3DCoreInitialized, "g_bD3DCoreInitialized");
+static BOOL g_bD3DCoreInitialized = 0; D2_STATIC_GUARD(g_bD3DCoreInitialized, "g_bD3DCoreInitialized");
 static unsigned int g_bSupportsTextureCachingInternal = {}; D2_STATIC_GUARD(g_bSupportsTextureCachingInternal, "g_bSupportsTextureCachingInternal");
 namespace D2Direct3D::Renderer {
 unsigned int g_bCutscenePlaying = {}; D2_GLOBAL_GUARD(g_bCutscenePlaying, "D2Direct3D::Renderer::g_bCutscenePlaying");
 } // namespace D2Direct3D::Renderer
-unsigned int g_nCurrentTextureOpMode = {}; D2_GLOBAL_GUARD(g_nCurrentTextureOpMode, "g_nCurrentTextureOpMode");
-unsigned int g_nCurrentAlphaBlendMode = {}; D2_GLOBAL_GUARD(g_nCurrentAlphaBlendMode, "g_nCurrentAlphaBlendMode");
-unsigned int g_nCurrentFilterMode = {}; D2_GLOBAL_GUARD(g_nCurrentFilterMode, "g_nCurrentFilterMode");
-IDirectDraw * g_pDirectDraw7 = 0; D2_GLOBAL_GUARD(g_pDirectDraw7, "g_pDirectDraw7");
-IDirect3DInterface7 * g_pDirect3D7 = 0; D2_GLOBAL_GUARD(g_pDirect3D7, "g_pDirect3D7");
+static unsigned int g_nCurrentTextureOpMode = {}; D2_STATIC_GUARD(g_nCurrentTextureOpMode, "g_nCurrentTextureOpMode");
+static unsigned int g_nCurrentAlphaBlendMode = {}; D2_STATIC_GUARD(g_nCurrentAlphaBlendMode, "g_nCurrentAlphaBlendMode");
+static unsigned int g_nCurrentFilterMode = {}; D2_STATIC_GUARD(g_nCurrentFilterMode, "g_nCurrentFilterMode");
+static IDirectDraw * g_pDirectDraw7 = 0; D2_STATIC_GUARD(g_pDirectDraw7, "g_pDirectDraw7");
+static IDirect3DInterface7 * g_pDirect3D7 = 0; D2_STATIC_GUARD(g_pDirect3D7, "g_pDirect3D7");
 IDirectDrawSurface7 * g_pD3DSurfaceBackbuffer = 0; D2_GLOBAL_GUARD(g_pD3DSurfaceBackbuffer, "g_pD3DSurfaceBackbuffer");
-IDirectDrawSurface7 * D3DSurfaceSecondary = 0; D2_GLOBAL_GUARD(D3DSurfaceSecondary, "D3DSurfaceSecondary");
-IDirectDrawGammaControl * g_pDDGammaControl = 0; D2_GLOBAL_GUARD(g_pDDGammaControl, "g_pDDGammaControl");
+static IDirectDrawSurface7 * D3DSurfaceSecondary = 0; D2_STATIC_GUARD(D3DSurfaceSecondary, "D3DSurfaceSecondary");
+static IDirectDrawGammaControl * g_pDDGammaControl = 0; D2_STATIC_GUARD(g_pDDGammaControl, "g_pDDGammaControl");
 IDirect3DDevice * g_pD3DDevice = 0; D2_GLOBAL_GUARD(g_pD3DDevice, "g_pD3DDevice");
-IDirect3DViewport3 * g_pD3DViewport = 0; D2_GLOBAL_GUARD(g_pD3DViewport, "g_pD3DViewport");
+static IDirect3DViewport3 * g_pD3DViewport = 0; D2_STATIC_GUARD(g_pD3DViewport, "g_pD3DViewport");
 unsigned int g_nBytesPerPixel = {}; D2_GLOBAL_GUARD(g_nBytesPerPixel, "g_nBytesPerPixel");
 static HWND ghD3DEnumWindowHandle = 0; D2_STATIC_GUARD(ghD3DEnumWindowHandle, "ghD3DEnumWindowHandle");
 static int gnDirect3DDeviceCount = 0; D2_STATIC_GUARD(gnDirect3DDeviceCount, "gnDirect3DDeviceCount");
-static unsigned int g_bPerspectiveMode = {}; D2_STATIC_GUARD(g_bPerspectiveMode, "g_bPerspectiveMode");
-D3DTextureCacheSetStrc gD3DGenericTextureCache = {}; D2_GLOBAL_GUARD(gD3DGenericTextureCache, "gD3DGenericTextureCache");
+unsigned int g_bPerspectiveMode = {}; D2_GLOBAL_GUARD(g_bPerspectiveMode, "g_bPerspectiveMode");
+static D3DTextureCacheSetStrc gD3DGenericTextureCache = {}; D2_STATIC_GUARD(gD3DGenericTextureCache, "gD3DGenericTextureCache");
 static void * gpD3DTextureSpritePoolMemory0 = 0; D2_STATIC_GUARD(gpD3DTextureSpritePoolMemory0, "gpD3DTextureSpritePoolMemory0");
 static void * gpD3DTextureSpritePoolMemory1 = 0; D2_STATIC_GUARD(gpD3DTextureSpritePoolMemory1, "gpD3DTextureSpritePoolMemory1");
-IDirect3DVertexBuffer * g_pD3DSpriteQuadVB = 0; D2_GLOBAL_GUARD(g_pD3DSpriteQuadVB, "g_pD3DSpriteQuadVB");
-int gd3dVertexBufferOffset = 0; D2_GLOBAL_GUARD(gd3dVertexBufferOffset, "gd3dVertexBufferOffset");
+static IDirect3DVertexBuffer * g_pD3DSpriteQuadVB = 0; D2_STATIC_GUARD(g_pD3DSpriteQuadVB, "g_pD3DSpriteQuadVB");
+static int gd3dVertexBufferOffset = 0; D2_STATIC_GUARD(gd3dVertexBufferOffset, "gd3dVertexBufferOffset");
 static D2D3DVertexStrc gD3DFontVertex0[4] = {}; D2_STATIC_GUARD(gD3DFontVertex0, "gD3DFontVertex0");
 static void * g_pFontTextureBuffer[96] = {}; D2_STATIC_GUARD(g_pFontTextureBuffer, "g_pFontTextureBuffer");
 static void * g_pFontTextureSurface[96] = {}; D2_STATIC_GUARD(g_pFontTextureSurface, "g_pFontTextureSurface");
 static void * g_pFontTextureHandle[96] = {}; D2_STATIC_GUARD(g_pFontTextureHandle, "g_pFontTextureHandle");
 static D2D3DVertexStrc gaD3DPerspectiveStripVertices[15] = {}; D2_STATIC_GUARD(gaD3DPerspectiveStripVertices, "gaD3DPerspectiveStripVertices");
 static D2D3DVertexStrc gaD3DPerspectiveVertices[4] = {}; D2_STATIC_GUARD(gaD3DPerspectiveVertices, "gaD3DPerspectiveVertices");
-uint16_t gpD3DGroundTileVertexBuffer[65] = {}; D2_GLOBAL_GUARD(gpD3DGroundTileVertexBuffer, "gpD3DGroundTileVertexBuffer");
-IDirect3DVertexBuffer * g_pD3DGroundTileVB = 0; D2_GLOBAL_GUARD(g_pD3DGroundTileVB, "g_pD3DGroundTileVB");
-uint8_t GlobalGreen = 0; D2_GLOBAL_GUARD(GlobalGreen, "GlobalGreen");
-uint8_t GlobalBlue = 0; D2_GLOBAL_GUARD(GlobalBlue, "GlobalBlue");
-uint8_t GlobalRed = 0; D2_GLOBAL_GUARD(GlobalRed, "GlobalRed");
+static uint16_t gpD3DGroundTileVertexBuffer[65] = {}; D2_STATIC_GUARD(gpD3DGroundTileVertexBuffer, "gpD3DGroundTileVertexBuffer");
+static IDirect3DVertexBuffer * g_pD3DGroundTileVB = 0; D2_STATIC_GUARD(g_pD3DGroundTileVB, "g_pD3DGroundTileVB");
+static uint8_t GlobalGreen = 0; D2_STATIC_GUARD(GlobalGreen, "GlobalGreen");
+static uint8_t GlobalBlue = 0; D2_STATIC_GUARD(GlobalBlue, "GlobalBlue");
+static uint8_t GlobalRed = 0; D2_STATIC_GUARD(GlobalRed, "GlobalRed");
 uint8_t g_aLightingTable[65536] = {}; D2_GLOBAL_GUARD(g_aLightingTable, "g_aLightingTable");
-int gnPerspectiveScaleY = 0; D2_GLOBAL_GUARD(gnPerspectiveScaleY, "gnPerspectiveScaleY");
-int gnPerspectiveScaleZ = 0; D2_GLOBAL_GUARD(gnPerspectiveScaleZ, "gnPerspectiveScaleZ");
+static int gnPerspectiveScaleY = 0; D2_STATIC_GUARD(gnPerspectiveScaleY, "gnPerspectiveScaleY");
+static int gnPerspectiveScaleZ = 0; D2_STATIC_GUARD(gnPerspectiveScaleZ, "gnPerspectiveScaleZ");
 uint32_t g_aPerspectiveZDivisionTable[8192] = {}; D2_GLOBAL_GUARD(g_aPerspectiveZDivisionTable, "g_aPerspectiveZDivisionTable");
-uint32_t g_aSmackerSurfaceArray = 0; D2_GLOBAL_GUARD(g_aSmackerSurfaceArray, "g_aSmackerSurfaceArray");
+static uint32_t g_aSmackerSurfaceArray = 0; D2_STATIC_GUARD(g_aSmackerSurfaceArray, "g_aSmackerSurfaceArray");
 static D2D3DVertexStrc gaD3DSmackerVertices[4] = {}; D2_STATIC_GUARD(gaD3DSmackerVertices, "gaD3DSmackerVertices");
-void * pSmackerDecodeBuffer = 0; D2_GLOBAL_GUARD(pSmackerDecodeBuffer, "pSmackerDecodeBuffer");
+static void * pSmackerDecodeBuffer = 0; D2_STATIC_GUARD(pSmackerDecodeBuffer, "pSmackerDecodeBuffer");
 static IDirectDrawSurface7 * gpD3DSmackerSystemSurface0[2] = {}; D2_STATIC_GUARD(gpD3DSmackerSystemSurface0, "gpD3DSmackerSystemSurface0");
 static IDirect3DTexture2 * gpD3DSmackerSystemTexture0[2] = {}; D2_STATIC_GUARD(gpD3DSmackerSystemTexture0, "gpD3DSmackerSystemTexture0");
 static IDirectDrawSurface7 * gpD3DSmackerVideoSurface0[2] = {}; D2_STATIC_GUARD(gpD3DSmackerVideoSurface0, "gpD3DSmackerVideoSurface0");
@@ -502,8 +502,103 @@ void __fastcall ClearCaches() {
     d3dTextureCache::D3DTEXCACHE_Free(gD3DGenericTextureCache.aCaches + 2, 0);
 }
 
+BOOL __fastcall CheckCutScene() {
+    return g_bCutscenePlaying;
+}
+
+void __fastcall UpdateScaleFactor(int nScaleFactor) {
+    nScaleFactor = nScaleFactor;
+}
+
+int __fastcall CheckGamma() {
+    return gadwBitMasks[4] & gnD3DTextureCapFlags;
+}
+
+BOOL __fastcall EndScene2() {
+    // VP [vpres stretch / R112]: hosted stops (driver lacks the exact mode,
+    // frame stretched over the listed host) present by the renderer's
+    // stretch-Blt instead of the retail Flip - see VPRES3D_PresentHostedFrame.
+    // FALSE falls through to the retail Flip, byte-identical on every
+    // true-exclusive stop. [R123: function refiled here from
+    // D2Client/Renderer/Direct3D.cpp by upstream's file-symbols round; the
+    // hook rides along, gate "stretch: endscene2 guard" re-pinned to this TU.]
+    if (VPRES3D_PresentHostedFrame()) {
+      return 1;
+    }
+
+    DDS_Flip pDVar1 = g_pD3DSurfaceBackbuffer->lpVtbl->Flip;
+    if (pD2GFXRenderedDataStrc->bVSync) {
+      (*pDVar1)(g_pD3DSurfaceBackbuffer, nullptr, 1);
+    } else {
+      (*pDVar1)(g_pD3DSurfaceBackbuffer, nullptr, 9);
+    }
+
+    return 1;
+}
+
+int __fastcall GetScreenSize(int * pWidth, int * pHeight) {
+    int nWidth = RENDERER_nWindowWidth;
+    *pWidth = RENDERER_nWindowWidth;
+    *pHeight = RENDERER_nWindowHeight;
+    return nWidth;
+}
+
+void __fastcall SetPalette(LPPALETTEENTRY pPalette) {
+    uint16_t wGreen5;
+    uint16_t uVar1;
+    uint8_t byBlue5;
+    uint8_t byRed5;
+    uint16_t* pPal16Bit = g_Palette16Bit;
+    uint32_t* pDst32 = g_Palette32Bit;
+    uint8_t* pSrcEntry = &pPalette->peBlue;
+    do {
+      uint16_t wRed5;
+      *pDst32 = ((((tagPALETTEENTRY*)(pSrcEntry - 2))->peRed | -256) << 8 | (uint32_t)pSrcEntry[-1]) << 8 | (uint32_t)*pSrcEntry;
+      byRed5 = ((tagPALETTEENTRY*)(pSrcEntry - 2))->peRed >> 3;
+      wRed5 = (uint16_t)byRed5;
+      byBlue5 = *pSrcEntry >> 3;
+      uVar1 = (uint16_t)byBlue5;
+      wGreen5 = (uint16_t)(pSrcEntry[-1] >> 3);
+      if (byRed5 < 0x1f && (((tagPALETTEENTRY*)(pSrcEntry - 2))->peRed & 7) >= 4) {
+        wRed5++;
+      }
+      if (byBlue5 < 0x1f && (*pSrcEntry & 7) >= 4) {
+        uVar1 = byBlue5 + 1;
+      }
+      if (pSrcEntry[-1] >> 3 < 0x1f && (pSrcEntry[-1] & 7) >= 4) {
+        wGreen5++;
+      }
+
+      *pPal16Bit = ((wRed5 | 0xffe0) << 5 | wGreen5) << 5 | uVar1;
+      if (!((tagPALETTEENTRY*)(pSrcEntry - 2))->peRed && !pSrcEntry[-1] && !*pSrcEntry) {
+        *pDst32 = 0;
+        *pPal16Bit = 0;
+      }
+
+      pDst32++;
+      pPal16Bit++;
+      pSrcEntry += 4;
+    } while ((int)pDst32 < (intptr_t)((char*)&g_Palette32Bit + sizeof(g_Palette32Bit)));
+}
+
 uint32_t __fastcall PALETTE_GetColorByIndex(int nPaletteIndex) {
     return g_Palette32Bit[nPaletteIndex];
+}
+
+void __fastcall SetPaletteTable(BYTE * * ppPaletteTable) {
+    // Static local variables (originally global data)
+    // also labelled: gpGlidePaletteTable
+static BYTE * gaGlidePaletteTable[72] = {}; D2_STATIC_GUARD(gaGlidePaletteTable, "D2Direct3D::Renderer::SetPaletteTable::gaGlidePaletteTable");
+
+    int nEntriesRemaining;
+    uint8_t** pDestPaletteEntry = gaGlidePaletteTable;
+    for (nEntriesRemaining = 0x48; nEntriesRemaining; nEntriesRemaining--) {
+      *pDestPaletteEntry = *ppPaletteTable;
+      ppPaletteTable++;
+      pDestPaletteEntry++;
+    }
+
+    gpPaletteTable = gaGlidePaletteTable;
 }
 
 void __fastcall RENDERER_D3D_ConvertPalettedTo16Bit(uint8_t * pSrc8Bit, uint16_t * pDest16Bit, int nWidth, int nHeight, int nDestPitchInPixels, uint32_t dwUnused) {
@@ -618,6 +713,23 @@ void __fastcall RENDERER_D3D_SetTextureFilterMode(int nFilterMode) {
 
     g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, 0x11, dwValue);
     g_nCurrentFilterMode = nFilterMode;
+}
+
+int * __fastcall GetRenderStatistics() {
+    return &gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes;
+}
+
+BOOL __fastcall ActivateWindow() {
+    return 0;
+}
+
+BOOL __fastcall SetOption(int nOption, int nValue) {
+    if (nOption != 0xb) {
+      return 0;
+    }
+
+    BOOL_0074c020 = nValue;
+    return 1;
 }
 
 void __fastcall DIRECTD3D_LogError(char * szErrorMessage, DWORD nResult) {
@@ -996,7 +1108,8 @@ void __fastcall RENDERER_D3D_SaveDeviceConfigToRegistry(uint32_t nRenderMode, in
     }
 
     int nNameLen = lstrlenA(lpData);
-    /* DWORD cbData for RegSetValueExA */ /* BYTE * lpData for RegSetValueExA */ /* DWORD dwType for RegSetValueExA */ /* DWORD Reserved for RegSetValueExA */ /* LPCSTR lpValueName for RegSetValueExA */ /* HKEY hKey for RegSetValueExA */ RegSetValueExA(hKey, szDeviceNameKey, 0, 1, (uint8_t*)lpData, nNameLen + 1);
+    nNameLen += 1;
+    /* DWORD cbData for RegSetValueExA */ /* BYTE * lpData for RegSetValueExA */ /* DWORD dwType for RegSetValueExA */ /* DWORD Reserved for RegSetValueExA */ /* LPCSTR lpValueName for RegSetValueExA */ /* HKEY hKey for RegSetValueExA */ RegSetValueExA(hKey, szDeviceNameKey, 0, 1, (uint8_t*)lpData, nNameLen);
     dwRegValue = gdwD3DDeviceFlags[nDeviceIndex].dwFlags;
     /* DWORD cbData for RegSetValueExA */ /* BYTE * lpData for RegSetValueExA */ /* DWORD dwType for RegSetValueExA */ /* DWORD Reserved for RegSetValueExA */ /* LPCSTR lpValueName for RegSetValueExA */ /* HKEY hKey for RegSetValueExA */ RegSetValueExA(hKey, szFlagsKey, 0, 4, (uint8_t*)&dwRegValue, 4);
     /* DWORD cbData for RegSetValueExA */ /* BYTE * lpData for RegSetValueExA */ /* DWORD dwType for RegSetValueExA */ /* DWORD Reserved for RegSetValueExA */ /* LPCSTR lpValueName for RegSetValueExA */ /* HKEY hKey for RegSetValueExA */ RegSetValueExA(hKey, szGuidKey, 0, 3, (uint8_t*)&gdwD3DDeviceFlags[nDeviceIndex].guid, 0x10);
@@ -1305,14 +1418,9 @@ int32_t __fastcall RENDERER_D3D_CreateSystemMemoryTexture(IDirectDrawSurface7 * 
     ddSurfaceDesc.dwCaps = 0x840;
     uint32_t* pSrcTemplate = gsD3DTextureDescTemplate;
     DWORD* pDstPixelFormat = ddSurfaceDesc.ddpfPixelFormat;
-    for (nCopyCount = 8; nCopyCount; nCopyCount--) {
-      *pDstPixelFormat = *pSrcTemplate;
-      pSrcTemplate++;
-      pDstPixelFormat++;
-    }
-
-    ddSurfaceDesc.dwHeight = nHeight;
+    memcpy(pDstPixelFormat, pSrcTemplate, 32);
     ddSurfaceDesc.dwWidth = nWidth;
+    ddSurfaceDesc.dwHeight = nHeight;
     DWORD dwResult = g_pDirectDraw7->lpVtbl->CreateSurface(g_pDirectDraw7, &ddSurfaceDesc, (void**)ppSurface, nullptr);
     if (dwResult) {
       DIRECTD3D_LogError("CreateSurface (memory surface)", dwResult);
@@ -1749,7 +1857,7 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
     uint32_t nExceptionState;
     nExceptionState = -1;
     pfnEHHandlerRoutine pfnSehHandler;
-    pfnSehHandler = D2Client::Renderer::SehHandler_6ca520;
+    pfnSehHandler = SehHandler_6ca520;
     __frame0.pPrevExceptionRecord = ExceptionList;
     __frame0.pDirectDraw1 = 0;
     nDDCapsSize.dwSize = 0x17c;
@@ -1947,15 +2055,15 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                       gD3DDeviceBlock0[nEnumDeviceIdx].nVideoMemTotal = nDDCapsSize.dwVidMemTotal;
                       gD3DDeviceBlock0[nEnumDeviceIdx].dwVideoMemFree = nDDCapsSize.dwVidMemFree;
                       if ((int)nDDCapsSize.dwVidMemFree < 0) {
-                        fFreeBytes += 4.2949673e+09;
+                        fFreeBytes += 4294967296.0;
                       }
 
                       fTotalBytes = (float)(int)nDDCapsSize.dwVidMemTotal;
                       if ((int)nDDCapsSize.dwVidMemTotal < 0) {
-                        fTotalBytes += 4.2949673e+09;
+                        fTotalBytes += 4294967296.0;
                       }
 
-                      Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tVideo Memory Total= %2.3f MB, Free= %2.3f MB", (double)(fTotalBytes * 9.536743e-07), (double)(fFreeBytes * 9.536743e-07));
+                      Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tVideo Memory Total= %2.3f MB, Free= %2.3f MB", (double)(fTotalBytes * 9.5367431640625e-7), (double)(fFreeBytes * 9.5367431640625e-7));
                       pdwTotalMemOut = &gD3DDeviceBlock0[nEnumDeviceIdx].dwTextureMemFree;
                       DDSCAPS2 dwMemCapsFlags = {0};
                       ppMemInterface = &gD3DDeviceBlock0[nEnumDeviceIdx].dwTextureMemTotal;
@@ -1966,15 +2074,15 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                       } else {
                         fFreeBytes = (float)(int)*pdwTotalMemOut;
                         if ((int)*pdwTotalMemOut < 0) {
-                          fFreeBytes += 4.2949673e+09;
+                          fFreeBytes += 4294967296.0;
                         }
 
                         fTotalBytes = (float)(int)*ppMemInterface;
                         if ((int)*ppMemInterface < 0) {
-                          fTotalBytes += 4.2949673e+09;
+                          fTotalBytes += 4294967296.0;
                         }
 
-                        Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tTexture Memory Total= %2.3f MB, Free= %2.3f MB", (double)(fTotalBytes * 9.536743e-07), (double)(fFreeBytes * 9.536743e-07));
+                        Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tTexture Memory Total= %2.3f MB, Free= %2.3f MB", (double)(fTotalBytes * 9.5367431640625e-7), (double)(fFreeBytes * 9.5367431640625e-7));
                         pdwTotalMemOut = &gD3DDeviceBlock0[nEnumDeviceIdx].dwLocalMemFree;
                         dwMemCapsFlags.dwCaps2 = 0;
                         dwMemCapsFlags.dwCaps3 = 0;
@@ -1985,15 +2093,15 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                         if (!hResult) {
                           fFreeBytes = (float)(int)*pdwTotalMemOut;
                           if ((int)*pdwTotalMemOut < 0) {
-                            fFreeBytes += 4.2949673e+09;
+                            fFreeBytes += 4294967296.0;
                           }
 
                           fTotalBytes = (float)(int)*ppMemInterface;
                           if ((int)*ppMemInterface < 0) {
-                            fTotalBytes += 4.2949673e+09;
+                            fTotalBytes += 4294967296.0;
                           }
 
-                          Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\t\tLocal Total= %2.3f MB, Free= %2.3f MB", (double)(fTotalBytes * 9.536743e-07), (double)(fFreeBytes * 9.536743e-07));
+                          Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\t\tLocal Total= %2.3f MB, Free= %2.3f MB", (double)(fTotalBytes * 9.5367431640625e-7), (double)(fFreeBytes * 9.5367431640625e-7));
                           if (!(nDDCapsSize.dwCaps2 & 0x200) || !(sD3DHalDevDesc.dwDevCaps & 0x1000)) {
                             Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\t\tDoes not support texturing from AGP memory.");
                           } else {
@@ -2010,15 +2118,15 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                             } else {
                               fFreeBytes = (float)(int)*pdwTotalMemOut;
                               if ((int)*pdwTotalMemOut < 0) {
-                                fFreeBytes += 4.2949673e+09;
+                                fFreeBytes += 4294967296.0;
                               }
 
                               fTotalBytes = (float)(int)*ppMemInterface;
                               if ((int)*ppMemInterface < 0) {
-                                fTotalBytes += 4.2949673e+09;
+                                fTotalBytes += 4294967296.0;
                               }
 
-                              Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\t\tAGP Total= %2.3f MB, Free= %2.3f MB", (double)(fTotalBytes * 9.536743e-07), (double)(fFreeBytes * 9.536743e-07));
+                              Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\t\tAGP Total= %2.3f MB, Free= %2.3f MB", (double)(fTotalBytes * 9.5367431640625e-7), (double)(fFreeBytes * 9.5367431640625e-7));
                             }
                           }
 
@@ -2124,10 +2232,10 @@ void * __stdcall Catch_All_006b4c42() {
     Fog::Src::LogManager::LOGFILE_WriteStringToFile(" ** Caught a failure in sEnumerateD3DDevices ** ");
     if (!gnDirect3DDeviceCount) {
       gdwD3DDeviceFlags[2].nBytesPerPixel = 0;
-      return (void*)0x6b43ef;
-    }
-    if (gnDirect3DDeviceCount == 1) {
-      gdwD3DDeviceFlags[3].nBytesPerPixel = 0;
+    } else {
+      if (gnDirect3DDeviceCount == 1) {
+        gdwD3DDeviceFlags[3].nBytesPerPixel = 0;
+      }
     }
 
     return (void*)0x6b43ef;
@@ -2140,7 +2248,7 @@ void * __stdcall Catch_All_006b4c73() {
 }
 int __stdcall BootDirect3d(HINSTANCE hInstance) {
     DWORD dwLastError;
-    pfnEHHandlerRoutine pfnSehHandler = D2Client::Renderer::SehHandler_6ca530;
+    pfnEHHandlerRoutine pfnSehHandler = SehHandler_6ca530;
     void* pPrevExceptionRegistration = ExceptionList;
     uint8_t* pExceptHandlerFrame;
     uint32_t nSehState = 0;
@@ -2927,6 +3035,19 @@ static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWn
     return 0;
 }
 
+int Unreferenced_006b5520() {
+    HRESULT HVar2;
+    RENDERER_D3D_ClearBackbuffer();
+    DDS_Flip pDVar1 = g_pD3DSurfaceBackbuffer->lpVtbl->Flip;
+    if (pD2GFXRenderedDataStrc->bVSync) {
+      HVar2 = (*pDVar1)(g_pD3DSurfaceBackbuffer, nullptr, 1);
+      return HVar2;
+    }
+
+    HVar2 = (*pDVar1)(g_pD3DSurfaceBackbuffer, nullptr, 9);
+    return HVar2;
+}
+
 // @sourcefile .\Src\d3dCore.cpp
 BOOL Release() {
     if (g_bD3DCoreInitialized) {
@@ -3007,10 +3128,10 @@ void __fastcall PlayCutScene(char * szFile, int nResolutionMode, void * fpFrame)
 
     g_bCutscenePlaying = 1;
     RENDERER_D3D_ClearBackbuffer();
-    if (!pD2GFXRenderedDataStrc->bVSync) {
-      dwFlags = 9;
-    } else {
+    if (pD2GFXRenderedDataStrc->bVSync) {
       dwFlags = 1;
+    } else {
+      dwFlags = 9;
     }
 
     // VP [vpres stretch / R112]: hosted stops stretch-present the cleared
@@ -3101,15 +3222,10 @@ BOOL __fastcall RENDERER_D3D_CreateSurfaceWithTexture(IDirectDrawSurface7 * * pp
     ddsdSize.ddsCapsRest[0] = 0x80;
     uint32_t* pDstPixelFmt = gsD3DTextureDescTemplate;
     DWORD* pSrcTemplate = ddsdSize.ddpfPixelFormat;
-    for (iLoop = 8; iLoop; iLoop--) {
-      *pSrcTemplate = *pDstPixelFmt;
-      pDstPixelFmt++;
-      pSrcTemplate++;
-    }
-
-    ddsdSize.dwHeight = nHeight;
+    memcpy(pSrcTemplate, pDstPixelFmt, 32);
     ddsdSize.dwWidth = nWidth;
-    ddsdSize.dwCaps = (g_bSupportsTextureCachingInternal ? -268435456 : 0) + 0x10005000;
+    ddsdSize.dwHeight = nHeight;
+    ddsdSize.dwCaps = g_bSupportsTextureCachingInternal ? 0x5000 : 0x10005000;
     DWORD dwHResult = g_pDirectDraw7->lpVtbl->CreateSurface(g_pDirectDraw7, &ddsdSize, (void**)ppSurface, nullptr);
     if (dwHResult) {
       if (dwHResult != 0x8876017c) {
@@ -3136,7 +3252,7 @@ BOOL thunk_Release() {
 
 BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc * pHelpers) {
     DWORD DVar1;
-    DDDEVICEIDENTIFIER2 ddDeviceIdentifier;
+    uint8_t ddDeviceIdentifier[2128];
     IDirectDraw1* lpDD = 0;
     if (g_bD3DCoreInitialized) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x687);
@@ -3170,7 +3286,7 @@ BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc
       return 0;
     }
 
-    DVar1 = g_pDirectDraw7->lpVtbl->GetDeviceIdentifier(g_pDirectDraw7, &ddDeviceIdentifier, 0);
+    DVar1 = g_pDirectDraw7->lpVtbl->GetDeviceIdentifier(g_pDirectDraw7, ddDeviceIdentifier, 0);
     if (DVar1) {
       DIRECTD3D_LogError("Failed to get device identifier interface!", DVar1);
     }
@@ -3304,7 +3420,7 @@ static BOOL __stdcall RENDERER_D3D_ExtractSpriteInfo(D2GfxDataStrc * pSprite, D2
 static void __stdcall RENDERER_D3D_CalculateTextureSize(D2D3DSpriteInfoStrc * pStruct) {
     int nWidth = pStruct->nWidth;
     int nTexDim = 0x20;
-    if (nWidth < 0x21 && pStruct->nHeight < 0x21 || (nTexDim = 0x80 , nWidth < 0x81 && pStruct->nHeight < 0x81) || (nTexDim = 0x100 , nWidth < 0x101 && pStruct->nHeight < 0x101)) {
+    if (nWidth <= 0x20 && pStruct->nHeight <= 0x20 || (nTexDim = 0x80 , nWidth <= 0x80 && pStruct->nHeight <= 0x80) || (nTexDim = 0x100 , nWidth <= 0x100 && pStruct->nHeight <= 0x100)) {
       pStruct->nTexWidth = nTexDim;
       pStruct->nTexHeight = nTexDim;
     }
@@ -3416,6 +3532,10 @@ static uint32_t RENDERER_D3D_ComputeLutFamilyStamp() {
 }
 
 static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode) {
+    // Static local variables (originally global data)
+    static uint8_t DAT_00970eac; D2_STATIC_GUARD_BSS(DAT_00970eac, "D2Direct3D::Renderer::RENDERER_DIRECT3D_UploadTextureToCache::DAT_00970eac");
+    static int INT_00970ec4; D2_STATIC_GUARD_BSS(INT_00970ec4, "D2Direct3D::Renderer::RENDERER_DIRECT3D_UploadTextureToCache::INT_00970ec4");
+
     DWORD dwHResult;
     int iCacheNodeIdx;
     uint8_t* pbOutlinePixel;
@@ -3503,7 +3623,7 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
     }
     if (*pnCacheNodeIdx && (*(uint8_t**)(*pnCacheNodeIdx * 0x20 - 0x14 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7]) == pPalette || nMode == 4)) {
       d3dTextureCache::D3DTEXCACHE_InvalidateByIndex(pCache, *pnCacheNodeIdx);
-      dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)(*pnCacheNodeIdx * 0x20 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7] - 0xc));
+      dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)(*pnCacheNodeIdx * 0x20 + (&INT_00970ec4)[iMipLevel * 7] - 0xc));
       if (!dwHResult) {
         return 1;
       }
@@ -3532,8 +3652,8 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
       exit(-1);
     } else {
       iCacheNodeIdx = *pnCacheNodeIdx * 0x20;
-      nTmp = *(int*)(iCacheNodeIdx - 0x10 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7]);
-      iMipLevel = iCacheNodeIdx - 0x20 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7];
+      nTmp = *(int*)(iCacheNodeIdx - 0x10 + (&INT_00970ec4)[iMipLevel * 7]);
+      iMipLevel = iCacheNodeIdx - 0x20 + (&INT_00970ec4)[iMipLevel * 7];
       pbPixelData = (uint8_t*)gpD3DTextureSpritePoolMemory0;
       *(int*)(iMipLevel + 4) = pbSrcPixel;
       *(int*)(iMipLevel + 8) = nMipIdx;
@@ -4032,19 +4152,19 @@ void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int nPosX, int nPos
       nRemainingLines = spriteInfo.nTexHeight - nSkipLines;
       fV0Texels = (float)(nRemainingLines - nDrawLines);
       if (nRemainingLines - nDrawLines < 0) {
-        fV0Texels += 4.2949673e+09;
+        fV0Texels += 4294967296.0;
       }
 
       fV1Texels = (float)nRemainingLines;
       if (nRemainingLines < 0) {
-        fV1Texels += 4.2949673e+09;
+        fV1Texels += 4294967296.0;
       }
 
       spriteInfo.fV1 = fV1Texels * (1.0 / (float)spriteInfo.nTexHeight);
     } else {
       fV0Texels = (float)(spriteInfo.nTexHeight - nDrawLines);
       if (spriteInfo.nTexHeight - nDrawLines < 0) {
-        fV0Texels += 4.2949673e+09;
+        fV0Texels += 4294967296.0;
       }
     }
 
@@ -4382,6 +4502,33 @@ void __stdcall RENDERER_D3D_CreateFontTextures() {
     exit(-1);
 }
 
+int __fastcall Unreferenced_006b74f0(int param_1) {
+    int in_EAX;
+    DWORD nResult;
+    int extraout_EAX;
+    if (!param_1) {
+      return in_EAX;
+    }
+
+    void** ppvVar2 = g_pFontTextureSurface;
+    do {
+      int* piVar1;
+      piVar1 = (int*)*ppvVar2;
+      if (piVar1) {
+        nResult = (**(code**)((char*)*(void**)(uintptr_t)piVar1 + 124))(piVar1, param_1);
+        if (nResult) {
+          DIRECTD3D_LogError("SetPalette (debug font surface)", nResult);
+          return extraout_EAX;
+        }
+      }
+
+      in_EAX = 0;
+      ppvVar2++;
+    } while ((int)ppvVar2 < (intptr_t)((char*)&g_pFontTextureSurface + sizeof(g_pFontTextureSurface)));
+
+    return in_EAX;
+}
+
 static int __stdcall RENDERER_D3D_DrawGlyph(char cGlyph, int nPosX, int nPosY) {
     if (0x280 < nPosX) {
       return 0;
@@ -4532,8 +4679,8 @@ void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, 
     fV0x[2].fY = fV0x[1].fY;
     fV0x[3].fX = fV0x[2].fX;
     fV0x[3].fY = fV0x[0].fY;
-    uint32_t dwPaletteColor = PALETTE_GetColorByIndex((uint32_t)dwColor);
-    nClampedRight = dwPaletteColor & 0xffffff;
+    nClampedRight = PALETTE_GetColorByIndex((uint32_t)dwColor);
+    nClampedRight &= 0xffffff;
     switch (nDrawMode) {
       case 0:
         {
@@ -4988,25 +5135,30 @@ int32_t __fastcall RENDERER_D3D_BuildShadowTileVertices(D2TileLibraryEntryStrc *
     _bRendered = 0;
     int nPanelWidth = RENDERER_nWindowWidth;
     int nPanelXOffset = -0x20;
-    if (nScreenSplitIndex != 1) {
-      if (nScreenSplitIndex == 2) {
-        // VP: [issue #26 / R93] wide-UI layouts keep the outer strip: the
-        // 800-class panel floats 240 px inboard at 1280x720, so the retail
-        // left-half cut (the open panel reaches the screen edge at
-        // 640x480/800x600) blacked out the visible margin beyond it. The
-        // panel art overdraws its own rect afterwards, so the full-width
-        // clip is safe.
-        nPanelXOffset = RENDERER_nWindowWidth / 2 - 0x20;
-        if (RENDERER_D3D_IsWideUiLayout()) {
-          nPanelXOffset = -0x20;
+    switch (nScreenSplitIndex) {
+      case 1:
+        {
+          // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
+          nPanelWidth = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+          if (RENDERER_D3D_IsWideUiLayout()) {
+            nPanelWidth = RENDERER_nWindowWidth;
+          }
+          break;
         }
-      }
-    } else {
-      // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
-      nPanelWidth = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
-      if (RENDERER_D3D_IsWideUiLayout()) {
-        nPanelWidth = RENDERER_nWindowWidth;
-      }
+      case 2:
+        {
+          // VP: [issue #26 / R93] wide-UI layouts keep the outer strip: the
+          // 800-class panel floats 240 px inboard at 1280x720, so the retail
+          // left-half cut (the open panel reaches the screen edge at
+          // 640x480/800x600) blacked out the visible margin beyond it. The
+          // panel art overdraws its own rect afterwards, so the full-width
+          // clip is safe.
+          nPanelXOffset = RENDERER_nWindowWidth / 2 - 0x20;
+          if (RENDERER_D3D_IsWideUiLayout()) {
+            nPanelXOffset = -0x20;
+          }
+          break;
+        }
     }
 
     nScreenSplitIndex = 0;
@@ -5583,8 +5735,6 @@ void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
     }
 
     DWORD DVar2;
-    uint16_t* lpwIndices;
-    DWORD dwIndexCount;
     uint8_t byLightIntensity;
     BOOL BVar1;
     BVar1 = d3dFloorCache::D3D_RenderFloorTileToTexture(pTile);
@@ -5641,9 +5791,8 @@ void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
         return;
       }
 
-      dwIndexCount = 4;
-      lpwIndices = gdwRendererMode;
       DVar2 = 6;
+      g_pD3DDevice->lpVtbl->DrawIndexedPrimitiveVB(g_pD3DDevice, 6, g_pD3DGroundTileVB, gdwRendererMode, 4, 0x1c);
     } else {
       uint8_t* pLightCursor;
       DVar2 = (*pVBLockFn)(g_pD3DGroundTileVB, 0x21, (void**)&nAlpha, nullptr);
@@ -5700,12 +5849,9 @@ void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
         goto unlock_failed;
       }
 
-      dwIndexCount = 0x41;
-      lpwIndices = gpD3DGroundTileVertexBuffer;
       DVar2 = 5;
+      g_pD3DDevice->lpVtbl->DrawIndexedPrimitiveVB(g_pD3DDevice, 5, g_pD3DGroundTileVB, gpD3DGroundTileVertexBuffer, 0x41, 0x1c);
     }
-
-    g_pD3DDevice->lpVtbl->DrawIndexedPrimitiveVB(g_pD3DDevice, DVar2, g_pD3DGroundTileVB, lpwIndices, dwIndexCount, 0x1c);
 }
 
 // Builds 256x256 lighting lookup table at 0x00971740 for color modulation. Each entry[row][col] = clamp((row+col) / 255, 0, 255). Used by RENDERER_D3D_ApplyShadowTextureCoords and RENDERER_D3D_SetTextureStageColor to apply dynamic lighting to vertices. Total table size: 64KB.
@@ -6172,6 +6318,16 @@ void __fastcall PlayerSmacker(D2SmackerContextStrc * pContext) {
         RENDERER_D3D_BlitSmackerFrame(*(int*)((int)pSmackHandle + 4), pContext, *(int*)((int)pSmackHandle + 8));
       }
     }
+}
+
+// compiler-generated C++ EH handler; its frame is never registered with the OS
+_EXCEPTION_DISPOSITION SehHandler_6ca520(EHExceptionRecord * pExceptionRecord, EHRegistrationNode * pRegistrationNode, _CONTEXT * pContext, void * pDispatcherContext) {
+    return ExceptionContinueSearch;
+}
+
+// compiler-generated C++ EH handler; its frame is never registered with the OS
+_EXCEPTION_DISPOSITION SehHandler_6ca530(EHExceptionRecord * pExceptionRecord, EHRegistrationNode * pRegistrationNode, _CONTEXT * pContext, void * pDispatcherContext) {
+    return ExceptionContinueSearch;
 }
 
 } // namespace D2Direct3D::Renderer

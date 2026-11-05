@@ -17,6 +17,7 @@
 #include "D2Client/UNIT/Object.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
+#include "D2Common/Collision.h"
 #include "D2Common/D2DynamicPathStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2RoomExStrc.h"
@@ -54,7 +55,10 @@ void __fastcall ConfirmTarget(D2UnitStrc * pUnit) {
     D2UnitStrc* pSetTargetUnit;
     int32_t nUnitGUID;
     eD2UnitType eUnitType;
-    if (pUnit) {
+    if (!pUnit) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x26);
+      exit(-1);
+    } else {
       {
         D2DynamicPathStrc* pDynamicPath;
         pDynamicPath = pUnit->pPath.pDynamicPath;
@@ -79,9 +83,6 @@ void __fastcall ConfirmTarget(D2UnitStrc * pUnit) {
         return;
       }
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x26);
-    exit(-1);
 }
 
 void __fastcall thunk_PATH_SnapPositionToTile(D2UnitStrc * pUnit) {
@@ -93,6 +94,11 @@ uint32_t __fastcall PATH_SetTargetAndCalculate(D2UnitStrc * pUnit, int16_t nTarg
     D2Common::PATH::DynamicPath::SetSP1(pDynamicPath, nTargetX, nTargetY);
     uint32_t nResult = D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, pUnit->eUnitFlags >> 0x15 & 1);
     return nResult;
+}
+
+int Unreferenced_004804d0() {
+    uint32_t uVar1 = GAME::Game::GetPing();
+    return uVar1 + 0x32 >> 7;
 }
 
 // Client-side: requests a unit to move toward a clicked subtile (nX,nY low words), with eMoveType selecting an arrival threshold (1=walk:10, 2=run:0, else ping-scaled for the local player, or per-monster-anim for others). Records the click coords on the unit. Suppresses the move if already within the threshold or (for eMoveType 0) the previous target is closer than the click and the endpoints are on-screen. Otherwise finds the destination room (nearby or by subtile) and either: for the local player sends move packet 0x5f with current X/Y; for other players warps and continues the move; else updates the dynamic path collision flags. No return.
@@ -202,7 +208,7 @@ void __fastcall PATH_MoveUnitToPoint(D2UnitStrc * pUnit, uint16_t nX, int32_t nY
       }
     }
 
-    pRoom = Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nSendX, nClickY);
+    pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, nSendX, nClickY);
     if (!(pRoom || (pRoom = D2Common::DUNGEON::Dungeon::FindRoomBySubtileCoordinates(sgpDrlgAct, nSendX, nClickY) , pRoom != 0))) {
       return;
     }

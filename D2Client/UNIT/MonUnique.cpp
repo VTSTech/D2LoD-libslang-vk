@@ -13,7 +13,6 @@
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/UI/Inv.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Missile.h"
 #include "D2Client/UNIT/Monster.h"
@@ -50,6 +49,7 @@
 #include "D2Game/ITEMS/Items/Drop.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/PLAYER/Player.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/UNIT/PlayerList.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -78,6 +78,16 @@ uint8_t * __fastcall GetMonUModList(D2UnitStrc * pUnit) {
     }
 
     return (uint8_t*)pUnit->pUnitData.pUnitDataPlayer->pWaypoint;
+}
+
+int __fastcall Unreferenced_004ac760(int param_1) {
+    uint32_t in_EAX;
+    uint16_t uVar1 = (uint16_t)((uint32_t)in_EAX >> 0x10);
+    if (!(param_1 && *(int*)param_1 == 1 ? *(int*)(param_1 + 0x14) : 0)) {
+      return (uint32_t)uVar1 << 0x10;
+    }
+
+    return (uint32_t)((uint32_t)(uint16_t)uVar1 << 16 | (uint32_t)(uint16_t)*(uint16_t*)(*(int*)(param_1 + 0x14) + 0x14));
 }
 
 void __fastcall SetNameSeed(D2UnitStrc * pUnit, uint16_t nNameSeed) {
@@ -566,23 +576,8 @@ void __fastcall MONUNIQUE_ApplyModifierEffects(D2UnitStrc * pUnit) {
 
     int i = 0;
     do {
-      // GUARD, not a reproduction: pTmp is the unit's MonUMod list, decoded from the 0xAC
-      // packet's bit stream, and it indexes a 44-entry dispatch table. An id past the end
-      // calls through whatever follows the table. Retire it when the 0xAC bit decode is
-      // verified - NOT with the gaMonUniqueBaseModIds array fix, which is a different
-      // defect in the loop above.
-      //
-      // Measured, so the next reader does not have to guess: over two 220s runs the loop
-      // executes and this test rejects NOTHING (seen>=1, rejected=0). So it is a net, not
-      // a repair - it has never been observed to fire, and it should not be credited with
-      // fixing the jump to address 0x2 seen once before it was restored. That run also
-      // had PlayerMessage handing SKILLS_CltStartSkillCast an uninitialised pDVar1, which
-      // is the likelier cause; both were changed together and the evidence cannot
-      // separate them.
-      uint32_t nModId = (uint32_t)pTmp[i];
-      if (nModId >= (uint32_t)(sizeof(gapMonUniqueModInitFuncs) / sizeof(gapMonUniqueModInitFuncs[0]))) {
-      } else if (gapMonUniqueModInitFuncs[nModId]) {
-        (*gapMonUniqueModInitFuncs[nModId])(pUnit, nModId, bApply);
+      if (gapMonUniqueModInitFuncs[pTmp[i]]) {
+        (*gapMonUniqueModInitFuncs[pTmp[i]])(pUnit, (uint32_t)pTmp[i], bApply);
       }
 
       i++;
@@ -858,9 +853,9 @@ void __fastcall MONUNIQUE_ApplyModifierNihlathak(D2UnitStrc * pUnit, int32_t nUM
       return;
     }
 
+    D2DynamicPathStrc* pMissilePath = pUnit->pPath.pDynamicPath;
     D2UnitStrc* pTargetUnit = CUnit::GetConfirmedTargetUnit(pOwnerUnit);
     if (!pTargetUnit) {
-      D2DynamicPathStrc* pMissilePath = pUnit->pPath.pDynamicPath;
       nMissileTargetX = D2Common::PATH::DynamicPath::GetXSP1(pMissilePath);
       nMissileTargetY = D2Common::PATH::DynamicPath::GetYSP1(pMissilePath);
     } else {
@@ -1028,6 +1023,14 @@ void __fastcall MONUNIQUE_PregnantCorpseBurst(D2UnitStrc * pUnit) {
     Missile::CastAttack(pUnit, MISSILE_Monstercorpseexplode, nPosX, nPosY, SKILL_Attack, 1);
     Missile::CastAttack(pUnit, MISSILE_PainWormAppear, nPosX, nPosY, SKILL_Attack, 1);
     Sound::SOUND_PlaySound(SOUND_NECROMANCER_NEEDMANA_1, pUnit, 0, 0, 0);
+}
+
+void __fastcall SetNameSeed_Unref_005a0160(D2UnitStrc * pUnit, uint16_t nNameSeed) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+      return;
+    }
+
+    pUnit->pUnitData.pUnitDataMonster->nNameSeed = nNameSeed;
 }
 
 } // namespace D2Client::UNIT::MonUnique

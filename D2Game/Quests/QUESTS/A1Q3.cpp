@@ -400,12 +400,7 @@ void __fastcall Q03_Callback09_PlayerDroppedWithQuestItem(D2QuestDataStrc * pQue
 
 // Q03_Callback_10 (A1Q3) — player-leaves-game hook (handler slot 10). Removes the leaving player (by nUnitGUID, or -1 if none) from the quest's participant GUID list (sQuestGUID +5). No quest-record writes.
 void __fastcall Q03_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if (!pQuestArgs->pPlayer) {
-      QUESTGUID_RemovePlayerFromList(&pQuestData->pQuestSpecificData.pA1Q3->sQuestGUID, -1);
-      return;
-    }
-
-    QUESTGUID_RemovePlayerFromList(&pQuestData->pQuestSpecificData.pA1Q3->sQuestGUID, pQuestArgs->pPlayer->nUnitGUID);
+    QUESTGUID_RemovePlayerFromList(&pQuestData->pQuestSpecificData.pA1Q3->sQuestGUID, !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID);
 }
 
 // Q03_Callback_06 (A1Q3) — handler slot 6; another Malus-count decrement path. If in-progress: decrement nQuestItemCount; when it reaches 0 and nMalusMode==2, call MallusHandler (which advances nStateFlag to 3 and broadcasts RewardAwaits). No direct quest-record writes.
@@ -446,54 +441,52 @@ BOOL __fastcall OBJOP_A1Q3_UseMalus(D2ObjectOperateFnArg * pOperation) {
       UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
       return 0;
     }
-    if (ePlayerAnimMode != eD2ObjectAnimMode_ns::Neutral) {
-      return 0;
-    }
-
-    ::SGAMEDATA* pGame = pOperation->sArg.pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pOperation->pAttacker);
-    D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
-    BOOL bQuestStateSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_ToolsOfTheTrade, QUESTSTATE_Completed);
-    /* GetQuestState(RewardAwaits=1) — don't drop Malus if reward already pending
+    if (ePlayerAnimMode == eD2ObjectAnimMode_ns::Neutral) {
+      ::SGAMEDATA* pGame = pOperation->sArg.pGame;
+      D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pOperation->pAttacker);
+      D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
+      BOOL bQuestStateSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_ToolsOfTheTrade, QUESTSTATE_Completed);
+      /* GetQuestState(RewardAwaits=1) — don't drop Malus if reward already pending
                           */ if (bQuestStateSet == 1) {
-      return 0;
-    }
-
-    bQuestStateSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_ToolsOfTheTrade, QUESTSTATE_RewardAwaits);
-    if (bQuestStateSet == 1) {
-      return 0;
-    }
-
-    int32_t nPlayerLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pOperation->pAttacker, UNITSTAT_level, 0);
-    if (nPlayerLevel < 8) {
-      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
-      return 0;
-    }
-
-    pOperation->sArg.pVictim->dwDropItemCode = 0x206d6468;
-    pDVar1 = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_Shield, (int32_t*)&pOperationLocal, nullptr, -1, 0);
-    if (pDVar1) {
-      int32_t nUnitGUID;
-      D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
-      pA1Q3Data = pQuestData->pQuestSpecificData.pA1Q3;
-      pA1Q3Data->bMalusTaken = '\x01';
-      pA1Q3Data->nMalusMode = 2;
-      pDVar1 = pOperation->sArg.pVictim;
-      if (!pDVar1) {
-        nUnitGUID = -1;
-      } else {
-        nUnitGUID = pDVar1->nUnitGUID;
+        return 0;
       }
 
-      pA1Q3Data->nQuestItemCount++;
-      pA1Q3Data->nMalusGUID = nUnitGUID;
-      if (pQuestData->nStateFlag != 4) {
-        QUEST_SetStateFlag(pQuestData, 4, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q3.cpp", 0x2c2);
-        UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q03_SyncQuestProgress);
+      bQuestStateSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_ToolsOfTheTrade, QUESTSTATE_RewardAwaits);
+      if (bQuestStateSet == 1) {
+        return 0;
       }
-      if (pQuestData->nStateFlagPrev != 1) {
-        pQuestData->nQuestPacketFlags = '\0';
-        QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q03_NpcGossipHandler, 0);
+
+      int32_t nPlayerLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pOperation->pAttacker, UNITSTAT_level, 0);
+      if (nPlayerLevel < 8) {
+        UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
+        return 0;
+      }
+
+      pOperation->sArg.pVictim->dwDropItemCode = 0x206d6468;
+      pDVar1 = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_Shield, (int32_t*)&pOperationLocal, nullptr, -1, 0);
+      if (pDVar1) {
+        int32_t nUnitGUID;
+        D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
+        pA1Q3Data = pQuestData->pQuestSpecificData.pA1Q3;
+        pA1Q3Data->bMalusTaken = '\x01';
+        pA1Q3Data->nMalusMode = 2;
+        pDVar1 = pOperation->sArg.pVictim;
+        if (!pDVar1) {
+          nUnitGUID = -1;
+        } else {
+          nUnitGUID = pDVar1->nUnitGUID;
+        }
+
+        pA1Q3Data->nQuestItemCount++;
+        pA1Q3Data->nMalusGUID = nUnitGUID;
+        if (pQuestData->nStateFlag != 4) {
+          QUEST_SetStateFlag(pQuestData, 4, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q3.cpp", 0x2c2);
+          UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q03_SyncQuestProgress);
+        }
+        if (pQuestData->nStateFlagPrev != 1) {
+          pQuestData->nQuestPacketFlags = '\0';
+          QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q03_NpcGossipHandler, 0);
+        }
       }
     }
 
@@ -603,7 +596,7 @@ bool __fastcall Q03_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
         nRecordState = QUEST_GetQuestRecordState(pQuestData->pGame, QUEST_ToolsOfTheTrade, 0xd);
         if (nRecordState) {
           nCompletionState = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
-          *pbyStatusCode = nCompletionState >= 8 ? 12 : 4;
+          *pbyStatusCode = nCompletionState < 8 ? 0x4 : 0xc;
         }
       }
     }

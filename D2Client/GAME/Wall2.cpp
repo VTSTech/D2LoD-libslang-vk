@@ -52,25 +52,11 @@
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "Bnclient/BNGatewayAccess.h"
 #include "D2Client/GAME/PalShift.h"
-#include "D2Client/GAME/Sound.h"
-#include "D2Client/UNIT/Item.h"
-#include "D2Common/D2DynamicPathStrc.h"
-#include "D2Common/Drlg/D2DrlgRoomCoordsStrc.h"
-#include "D2Common/Drlg/DrlgRoom.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Common/Unit.h"
-#include "D2Common/Units/MissileStream.h"
-#include "D2Game/Objects/Objects.h"
-#include "D2Game/Objects/ObjectsRgn.h"
-#include "D2Game/UNIT/SUNITNPC.h"
-#include "D2Game/UNIT/SUnit.h"
-#include "D2Gdi/Renderer/Windowed.h"
-#include "D2Launch/MainMenus.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Win/Src/D2WinFont.h"
-#include "Game/Main.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -249,7 +235,6 @@ static uint32_t __stdcall DRAW_WORLD_IsUnitInLineOfSight(D2UnitStrc * pOtherUnit
       }
 
       pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
-      return 1;
     }
 
     return 1;
@@ -712,10 +697,8 @@ static void WALL2_InsertUnitDrawBelow(D2Wall2DrawListStrc * pDrawList, D2UnitStr
       return;
     }
 
-    D2Wall2DrawEntryStrc* pNextDrawNode = pDVar2->pNext;
-    while (pNextDrawNode) {
+    while (pDVar2->pNext) {
       pDVar2 = pDVar2->pNext;
-      pNextDrawNode = pDVar2->pNext;
     }
 
     pDVar2->pNext = pDVar1;
@@ -1009,7 +992,6 @@ static void __stdcall WALL2_AddRoofTile(D2Wall2DrawListStrc * pDrawList, D2Wall2
 static void __stdcall WALL2_AddShadowPassTile(D2Wall2CellStrc * pWall2Cell, D2RoomStrc * pRoom, D2DrlgTileDataStrc * pTileData, D2Wall2DrawListStrc * pDrawList) {
     D2DrlgRoomCoordsStrc roomCoords;
     D2Wall2DrawEntryStrc* pCurNode;
-    D2Wall2DrawEntryStrc* pNextNode;
     uint32_t nEntryIdx = pDrawList->nWall2EntryCount;
     pDrawList->nWall2EntryCount = nEntryIdx + 1;
     if (nEntryIdx >= 3000) {
@@ -1030,10 +1012,8 @@ static void __stdcall WALL2_AddShadowPassTile(D2Wall2CellStrc * pWall2Cell, D2Ro
       return;
     }
 
-    pNextNode = pCurNode->pNext;
-    while (pNextNode) {
+    while (pCurNode->pNext) {
       pCurNode = pCurNode->pNext;
-      pNextNode = pCurNode->pNext;
     }
 
     pCurNode->pNext = pDVar1;
@@ -1097,7 +1077,6 @@ static void __stdcall WALL2_InsertUnitDraw(D2Wall2CellStrc * pWall2Cell, D2UnitS
 static void __stdcall WALL2_InsertUnitShadowDraw(D2Wall2CellStrc * pWall2Cell, D2UnitStrc * pUnit, D2Wall2DrawListStrc * pDrawList) {
     D2Wall2DrawEntryStrc* pDVar2;
     int nUnitPos;
-    D2Wall2DrawEntryStrc* pNextNode;
     uint32_t nEntryIdx = pDrawList->nWall2EntryCount;
     pDrawList->nWall2EntryCount = nEntryIdx + 1;
     if (nEntryIdx >= 3000) {
@@ -1135,10 +1114,8 @@ static void __stdcall WALL2_InsertUnitShadowDraw(D2Wall2CellStrc * pWall2Cell, D
       return;
     }
 
-    pNextNode = pDVar2->pNext;
-    while (pNextNode) {
+    while (pDVar2->pNext) {
       pDVar2 = pDVar2->pNext;
-      pNextNode = pDVar2->pNext;
     }
 
     pDVar2->pNext = pDVar1;
@@ -1548,7 +1525,25 @@ void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nT
     }
 }
 
+int __fastcall Unreferenced_004dddd0(int param_1) {
+    *(uint32_t*)(param_1 + 0x14) = 0;
+    *(uint32_t*)(param_1 + 0x18) = 0;
+    return param_1;
+}
+
+void __stdcall WALL2_OnAllocGameView_NoOp_Unref_004ddde0() {
+
+}
+
 void __stdcall WALL2_OnAllocGameView_NoOp() {
+
+}
+
+void __stdcall WALL2_OnAllocGameView_NoOp_Unref_004df920() {
+
+}
+
+void __stdcall WALL2_OnAllocGameView_NoOp_Unref_004df930() {
 
 }
 

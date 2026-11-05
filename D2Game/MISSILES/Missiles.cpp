@@ -5,11 +5,9 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GSPacketSrv0x73.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT.h"
 #include "D2Client/UNIT/Missile.h"
 #include "D2Client/UNIT/Monster.h"
-#include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
 #include "D2Common/Collision.h"
 #include "D2Common/D2DynamicPathStrc.h"
@@ -43,6 +41,7 @@
 #include "D2Game/ITEMS/Items/Drop.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/PLAYER/Player.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/SKILLS/SkillsServer.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
@@ -149,6 +148,7 @@ static void __stdcall CalculatePierce(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
 D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pArgs) {
     int nPosY;
     D2StatListExStrc* pStatList;
+    int nTmpY;
     int32_t nOwnerX;
     int32_t nTargetUnitX;
     int nDeltaX;
@@ -189,9 +189,7 @@ D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pA
       nPosY = D2Client::Units::GetYPosFromDynamicPathUnit(pArgs->pMissile);
     }
 
-    int nTmpY = nPosY;
-    D2RoomStrc* pSpawnRoom = D2Common::Units::UNITS_GetRoom(pArgs->pOwner);
-    pSpawnRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pSpawnRoom, nPosX, nTmpY);
+    D2RoomStrc* pSpawnRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pArgs->pOwner), nPosX, nPosY);
     if (!pSpawnRoom) {
       return nullptr;
     }
@@ -321,11 +319,12 @@ D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pA
     }
     if (pMissileTxt->Collision != '\0') {
       nOwnerX = 0x40;
+      D2Common::PATH::DynamicPath::PATH_ChangeCollisionType(pDynamicPath, 0x40);
     } else {
       nOwnerX = 0;
+      D2Common::PATH::DynamicPath::PATH_ChangeCollisionType(pDynamicPath, 0);
     }
 
-    D2Common::PATH::DynamicPath::PATH_ChangeCollisionType(pDynamicPath, nOwnerX);
     D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pDynamicPath, gaMissileSrvDoFuncTable[pMissileTxt->CollideType].nFlags);
     if (*((uint8_t*)pMissileTxt + 0x4) & (uint8_t)gadwBitMasks[4]) {
       pUnit->eUnitFlags |= UNITFLAG_CANBEATTACKED;
@@ -368,7 +367,8 @@ D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pA
     }
     if (pArgs->nFlags & 0x10000U) {
       dwFlags = D2Common::Units::Missile::GetFlags(pUnit);
-      D2Common::Units::Missile::SetFlags(pUnit, dwFlags | 2);
+      dwFlags |= 2;
+      D2Common::Units::Missile::SetFlags(pUnit, dwFlags);
     }
 
     Monsters::MONSTER_DispatchUModOnSkill(pGame, pArgs->pOwner, pUnit);

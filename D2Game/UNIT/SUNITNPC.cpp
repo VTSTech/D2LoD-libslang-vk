@@ -7,7 +7,7 @@
 #include "D2Client/D2GSPacketSrv0x4E.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/UI/SkillDesc.h"
+#include "D2Client/UI/npcmenu.h"
 #include "D2Client/UI/npcmenu/Merc.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Monster.h"
@@ -604,8 +604,8 @@ void __fastcall SUNITNPC_FillNpcStore(::SGAMEDATA * pGame, D2UnitStrc * pPlayer,
               if (bIsStackable == 1 && (int)(uint32_t)*(uint8_t*)(nTradeListOffset + 8 + (int)pTradeState->pTradeList1) <= nStoreItemLevel) {
                 nScrollCountBonus = 1;
                 if (nStoreItemLevel >= 0x19) {
-                  nRolledMax = D2Client::SEED_RollRange(pNpcControl, 1, 3);
-                  nScrollCountBonus = nRolledMax + 1;
+                  nScrollCountBonus = D2Client::SEED_RollRange(pNpcControl, 1, 3);
+                  nScrollCountBonus += 1;
                 }
 
                 pvVar1 = pGameNpc->sTrade.pTradeList1;
@@ -692,9 +692,11 @@ void __fastcall SUNITNPC_RepairAllItems(D2UnitStrc * pPlayer, D2InventoryStrc * 
 
 // Picks a random item code from the NPC's trade list 1. Finds the D2GameNpcStrc for pUnit (00535f10). If the list (sTrade +0xc, count +0x10) is non-empty it takes RANDOM_RandomNumberSelector(pSeed, nTradeList1), advances pSeed, resolves the 12-byte entry's code at +4 to its ItemsTxt line, writes the code to *pdwOutItemCode and returns 1. An empty list writes 0 to *pdwOutItemCode and returns 0. *pdwReservedOut is written back with its own entry value. No repair cost is computed.
 // Halts: line 0x389 if the NPC is not found, 0x383 if its trade block is null, 0x384 if trade byte +3 is 0.
+// Plain __fastcall: ECX/EDX pass straight through to GetGameNpcByUnit, RET 0x10 pops four stack args, and EDI is only saved (00576caf PUSH EDI) then overwritten (00576cb0), never read, so it is not a parameter. Storage fix prompted by Nugwa628 (redivivus issue #99).
 // Provenance: 1.14d asm 00576c90..00576d85.
-static int __stdcall SUNITNPC_RollTradeListItemCode(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2SeedStrc * pSeed, uint32_t dwReserved, uint32_t * pdwOutItemCode, uint32_t * pdwReservedOut, uint32_t nErrorLine) {
+int __fastcall SUNITNPC_RollTradeListItemCode(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2SeedStrc * pSeed, uint32_t dwReserved, uint32_t * pdwOutItemCode, uint32_t * pdwReservedOut) {
     uint32_t nModulo;
+    int32_t unaff_EDI;
     int nNpcIndex;
     uint8_t bHasStore;
     int nTradeOffset;
@@ -720,10 +722,10 @@ static int __stdcall SUNITNPC_RollTradeListItemCode(::SGAMEDATA * pGame, D2UnitS
         }
       }
     } else {
-      nErrorLine = 0x389;
+      unaff_EDI = 0x389;
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), unaff_EDI);
     exit(-1);
 }
 
@@ -765,7 +767,7 @@ BOOL __fastcall CheckIfPlayerCanAffordCost(::SGAMEDATA * pGame, D2UnitStrc * pUn
 // @sourcefile .\UNIT\SUNITNPC.CPP
 void __fastcall SUNITNPC_ApplyScrollSkill(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nQuantityUsed) {
     int nUnitGUID;
-    eD2UnitType eUnitType;
+    int eUnitType;
     if ((int)eSkill < 0) {
       return;
     }
@@ -1794,8 +1796,7 @@ void __fastcall SUNITNPC_ProcessGamble(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     }
 
     nChargedSkillResult = pNpcUnit->nClassId;
-    nCost = 3;
-    nCost = D2Common::ITEMS::Items::CalculateTransactionCost_Thunk(pUnit, pItemUnit, (uint32_t)pGame->nDifficulty, Quests::QUESTS::GetQuestBitBuffer(pGame, pUnit), nChargedSkillResult, nCost);
+    nCost = D2Common::ITEMS::Items::CalculateTransactionCost_Thunk(pUnit, pItemUnit, (uint32_t)pGame->nDifficulty, Quests::QUESTS::GetQuestBitBuffer(pGame, pUnit), nChargedSkillResult, 3);
     bCanAfford = CheckIfPlayerCanAffordCost(pGame, pUnit, nCost);
     if (!bCanAfford) {
       nItemGUID = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_gold, 0);
@@ -2477,7 +2478,7 @@ BOOL __fastcall SUNITNPC_DiscardTradeListRolls(::SGAMEDATA * pGame, D2UnitStrc *
         return 0;
       }
 
-      bSuccess = SUNITNPC_RollTradeListItemCode(pGame, pUnit, pNpcControl, nLevel, &dwItemCode, &dwTradeEntryValue, (uint32_t)pUnit);
+      bSuccess = SUNITNPC_RollTradeListItemCode(pGame, pUnit, pNpcControl, nLevel, &dwItemCode, &dwTradeEntryValue);
       if (!bSuccess) {
         break;
       }

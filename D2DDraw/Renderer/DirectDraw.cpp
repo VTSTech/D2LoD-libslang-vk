@@ -11,13 +11,9 @@
 #include "D2Client/D2GfxSettingsStrc.h"
 #include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Draw.h"
-#include "D2Client/GAME/View.h"
 #include "D2Client/Message.h"
-#include "D2Client/Renderer/Glide.h"
-#include "D2Client/Renderer/Renderer.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
 #include "D2Direct3D/Renderer/Direct3D.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Multi/OOGUtilities.h"
 #include "D2Sound/Src/D2SoundSmp.h"
 #include "D2Win/DC6.h"
@@ -96,6 +92,14 @@ static uint32_t gnBinkDDrawSurfaceType = 0; D2_STATIC_GUARD(gnBinkDDrawSurfaceTy
 static uint32_t g_bBinkDDrawVideoQuitRequested = 0; D2_STATIC_GUARD(g_bBinkDDrawVideoQuitRequested, "g_bBinkDDrawVideoQuitRequested");
 
 namespace D2DDraw::Renderer::DirectDraw {
+
+void __fastcall DrawImageFast_Unref_0045f7a0(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, BYTE nPaletteIndex) {
+
+}
+
+void __fastcall PerspectiveScalePosition_Unref_005043d0(int32_t nPosX, int32_t nPosY, int32_t nAngle, int * pXAdjust, int * pYAdjust, BOOL bOrder) {
+
+}
 
 BOOL __fastcall Initialize(HINSTANCE hInstance) {
     // Static local variables (originally global data)
@@ -2050,24 +2054,29 @@ BOOL __fastcall DrawShadowTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, in
     int iVar1 = RENDERER_nWindowHeight + 0x20;
     int nClipLeft = -0x20;
     int nClipRight = RENDERER_nWindowWidth;
-    if (nScreenPanels != 1) {
-      if (nScreenPanels == 2) {
-        // VP: [issue #26 / R93] wide-UI layouts keep the outer strip: the
-        // 800-class panel floats 240 px inboard at 1280x720, so the retail
-        // half cut (edge-hugging panels at 640x480/800x600) blacked out the
-        // visible margin beyond the open panel. The panel art overdraws its
-        // own rect afterwards, so the full-width clip is safe.
-        nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
-        if (RENDERER_DDRAW_IsWideUiLayout()) {
-          nClipLeft = -0x20;
+    switch (nScreenPanels) {
+      case 1:
+        {
+          // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
+          nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+          if (RENDERER_DDRAW_IsWideUiLayout()) {
+            nClipRight = RENDERER_nWindowWidth;
+          }
+          break;
         }
-      }
-    } else {
-      // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
-      nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
-      if (RENDERER_DDRAW_IsWideUiLayout()) {
-        nClipRight = RENDERER_nWindowWidth;
-      }
+      case 2:
+        {
+          // VP: [issue #26 / R93] wide-UI layouts keep the outer strip: the
+          // 800-class panel floats 240 px inboard at 1280x720, so the retail
+          // half cut (edge-hugging panels at 640x480/800x600) blacked out the
+          // visible margin beyond the open panel. The panel art overdraws its
+          // own rect afterwards, so the full-width clip is safe.
+          nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
+          if (RENDERER_DDRAW_IsWideUiLayout()) {
+            nClipLeft = -0x20;
+          }
+          break;
+        }
     }
 
     int nSubtileIndex = 0;
@@ -2110,21 +2119,26 @@ BOOL __fastcall DrawTransWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX,
       iVar1 = RENDERER_nWindowHeight + 0x20;
       nClipLeft = -0x20;
       nClipRight = RENDERER_nWindowWidth;
-      if (nScreenPanels != 1) {
-        if (nScreenPanels == 2) {
-          // VP: [issue #26 / R93] wide-UI layouts keep the left strip (see
-          // DrawShadowTile above for the geometry note).
-          nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
-          if (RENDERER_DDRAW_IsWideUiLayout()) {
-            nClipLeft = -0x20;
+      switch (nScreenPanels) {
+        case 1:
+          {
+            // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
+            nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+            if (RENDERER_DDRAW_IsWideUiLayout()) {
+              nClipRight = RENDERER_nWindowWidth;
+            }
+            break;
           }
-        }
-      } else {
-        // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
-        nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
-        if (RENDERER_DDRAW_IsWideUiLayout()) {
-          nClipRight = RENDERER_nWindowWidth;
-        }
+        case 2:
+          {
+            // VP: [issue #26 / R93] wide-UI layouts keep the left strip (see
+            // DrawShadowTile above for the geometry note).
+            nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
+            if (RENDERER_DDRAW_IsWideUiLayout()) {
+              nClipLeft = -0x20;
+            }
+            break;
+          }
       }
 
       nScreenPanels = 0;
@@ -2165,21 +2179,26 @@ BOOL __fastcall DrawWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int3
     int iVar1 = RENDERER_nWindowHeight + 0x20;
     int nClipLeft = -0x20;
     int nClipRight = RENDERER_nWindowWidth;
-    if (nScreenPanels != 1) {
-      if (nScreenPanels == 2) {
-        // VP: [issue #26 / R93] wide-UI layouts keep the left strip (see
-        // DrawShadowTile above for the geometry note).
-        nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
-        if (RENDERER_DDRAW_IsWideUiLayout()) {
-          nClipLeft = -0x20;
+    switch (nScreenPanels) {
+      case 1:
+        {
+          // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
+          nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+          if (RENDERER_DDRAW_IsWideUiLayout()) {
+            nClipRight = RENDERER_nWindowWidth;
+          }
+          break;
         }
-      }
-    } else {
-      // VP: [issue #26 / R93] mirror - keep the right strip on wide layouts.
-      nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
-      if (RENDERER_DDRAW_IsWideUiLayout()) {
-        nClipRight = RENDERER_nWindowWidth;
-      }
+      case 2:
+        {
+          // VP: [issue #26 / R93] wide-UI layouts keep the left strip (see
+          // DrawShadowTile above for the geometry note).
+          nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
+          if (RENDERER_DDRAW_IsWideUiLayout()) {
+            nClipLeft = -0x20;
+          }
+          break;
+        }
     }
 
     nScreenPanels = 0;
@@ -2541,6 +2560,18 @@ void __fastcall BINK_PlayVideoFile(char * szFileName, int32_t nParam, fnBinkFram
 
     BinkClose(gpBinkVideoDirectDraw);
     gpBinkVideoDirectDraw = 0;
+}
+
+BOOL __fastcall ActivateWindow_Unref_00513b80() {
+    return 0;
+}
+
+void __fastcall SetDefaultPerspectiveFactor_Unref_00514040() {
+
+}
+
+void __fastcall SetDefaultPerspectiveFactor_Unref_00514050() {
+
 }
 
 } // namespace D2DDraw::Renderer::DirectDraw

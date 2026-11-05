@@ -3,7 +3,7 @@
 #include "D2Game/Quests/QUESTS/A1Q5.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/UNIT/Player.h"
+#include "D2Common/Collision.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2RoomExStrc.h"
@@ -628,10 +628,10 @@ int __fastcall Q05_OnTowerComplete(::SGAMEDATA * pGame, D2QuestDataStrc * pQuest
     D2QuestDataA1Q5Strc* pDVar1 = pQuestData->pQuestSpecificData.pA1Q5;
     if (!pQuestData->pQuestSpecificData.pA1Q5->nPlayersForRewardCount) {
       pQuestData->bIsActive = '\0';
-      return (int)pDVar1;
+    } else {
+      pQuestData->sStateFunctions.fpQuestStateHandler[10] = Q05_Callback10_PlayerLeavesGame;
     }
 
-    pQuestData->sStateFunctions.fpQuestStateHandler[10] = Q05_Callback10_PlayerLeavesGame;
     return (int)pDVar1;
 }
 
@@ -770,11 +770,15 @@ bool __fastcall Q05_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     int32_t* pBufferElement = pQuestData->pQuestSpecificData.pA1Q5->aPlayersForRewardGUIDs;
     do {
       /* If the character GUID is in the buffer at offset 52 (0x34) */ if (*pBufferElement == iCharacterGuid) {
-        /* If target is Wariv; inactive */ if (nTargetClassId == 0x9b) {
-          return false;
-        }
-        /* If target is Gheed: inactive */ if (nTargetClassId == 0x93) {
-          return false;
+        /* If target is Wariv; inactive */ switch (nTargetClassId) {
+          case 0x9b:
+            {
+              return false;
+            }
+          case 0x93:
+            {
+              return false;
+            }
         }
 
         /* Otherwise active */ return true;
@@ -917,15 +921,13 @@ void __stdcall Q05_SpawnCountessDeathEffect(D2QuestDataStrc * pQuestData, D2Ques
         nY = pA1Q5Data->ptCountessDeath.y;
         sCountessKillPos.y = nY;
         if (!pCountessDeathActor) {
-          pNearbyRoom = D2Common::Units::UNITS_GetRoom(pChestUnit);
-          pNearbyRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pNearbyRoom, sCountessKillPos.x, nY);
+          pNearbyRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pChestUnit), sCountessKillPos.x, nY);
           if (!pNearbyRoom || (pCountessDeathActor = Monster::Create::SpawnMonsterAtRoomPos(pQuestData->pGame, pNearbyRoom, sCountessKillPos.x, sCountessKillPos.y, 0x146, eD2MonsterAnimMode_ns::Dead, -1, 8) , !pCountessDeathActor)) {
             D2Common::Units::GetCoords(pChestUnit, &sCountessKillPos);
             sCountessKillPos.x += 5;
             nFallbackPosY = sCountessKillPos.y + 5;
             sCountessKillPos.y = nFallbackPosY;
-            pNearbyRoom = D2Common::Units::UNITS_GetRoom(pChestUnit);
-            pNearbyRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pNearbyRoom, sCountessKillPos.x, nFallbackPosY);
+            pNearbyRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pChestUnit), sCountessKillPos.x, nFallbackPosY);
             pCountessDeathActor = Monster::Create::SpawnMonsterAtRoomPos(pQuestData->pGame, pNearbyRoom, sCountessKillPos.x, sCountessKillPos.y, 0x146, eD2MonsterAnimMode_ns::Dead, -1, 8);
             if (!pCountessDeathActor) {
               goto next_chest;

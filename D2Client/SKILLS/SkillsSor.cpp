@@ -12,12 +12,12 @@
 #include "D2Client/SKILLS/Skills.h"
 #include "D2Client/SKILLS/SkillsAss.h"
 #include "D2Client/Sound/Sound.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Missile.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
+#include "D2Common/Collision.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
 #include "D2Common/D2MonStatsTxt.h"
@@ -42,6 +42,7 @@
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -138,12 +139,12 @@ BOOL __fastcall Skills_CltStFunc_ApplyInfernoState(D2UnitStrc * pUnit, eD2Skills
       D2Common::Stats::StatsEx::STATLIST_SetExpireFunction(pStatList, SKILLSSOR_StatExpireCallback_ClearState);
       D2Common::Stats::StatsEx::SetState(pStatList, STATE_inferno);
       D2Common::DATATBLS::ItemStats::SetState(pUnit, STATE_inferno, 1);
-      return 1;
+    } else {
+      D2Common::Units::SetSequenceFrame(pUnit, 8);
+      pUnit->nFrameCount = 0x500;
+      D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pStatList, 7);
     }
 
-    D2Common::Units::SetSequenceFrame(pUnit, 8);
-    pUnit->nFrameCount = 0x500;
-    D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pStatList, 7);
     return 1;
 }
 
@@ -357,7 +358,7 @@ BOOL __fastcall Skills_CltDoFunc_Sor_FrostNova(D2UnitStrc * pUnit, eD2Skills eSk
       return 0;
     }
 
-    pRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nCoordsX, nTargetPosX);
+    pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, nCoordsX, nTargetPosX);
     if (!(*((uint8_t*)pSkillTxt + 0x5) & (uint8_t)gadwBitMasks[0])) {
       bGotCoords = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
       if (bGotCoords) {
@@ -506,7 +507,7 @@ BOOL __fastcall Skills_CltStFunc_CheckCasterHasRoomNotInTown(D2UnitStrc * pUnit,
       return 0;
     }
 
-    pRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nPosX, nPosY);
+    pRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, nPosX, nPosY);
     if (!(pRoom && (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
       return 0;
     }

@@ -42,7 +42,6 @@
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/MiniPanel.h"
 #include "D2Client/UI/QuestLog.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/SpellSel.h"
 #include "D2Client/UI/Text.h"
 #include "D2Client/UI/Trade.h"
@@ -97,6 +96,7 @@
 #include "D2Game/GAME/SCmd.h"
 #include "D2Game/GAME/Server.h"
 #include "D2Game/PLAYER/PlayerMsg.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/Quests/QUESTS/A4Q2.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
@@ -1031,6 +1031,14 @@ static size_t nD2PacketsClientBufferSize = 0; D2_STATIC_GUARD(nD2PacketsClientBu
 
 namespace D2Client::GAME::SCmd {
 
+void __fastcall SCMD_Rcv_IgnoreShared_Unref_0045b090(char * pBytes) {
+
+}
+
+void __fastcall SCMD_Rcv_IgnoreShared_Unref_0045b0a0(char * pBytes) {
+
+}
+
 void __fastcall SCMD_SetOrClearBitFlag(D2UnitStrc * pUnit, uint32_t dwFlagMask, int32_t bSet) {
     if (!pUnit) {
       return;
@@ -1064,6 +1072,10 @@ D2SkillsTxt * __fastcall TXT_Skills_GetLine(eD2Skills eSkill) {
     }
 
     return nullptr;
+}
+
+int Unreferenced_0045c4e0() {
+    return sgptDataTable->nTxtSkillsCount;
 }
 
 D2ItemStatCostTxt * __fastcall TXT_ItemStatCost_GetLine(eD2UnitStat eUnitStat) {
@@ -1367,8 +1379,8 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x06_ENDGAME(char * pBytes) {
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x07_NEWROOM(char * pBytes) {
     D2RoomStrc* pRoomCache;
-    uint16_t nY = *(uint16_t*)(pBytes + 3);
     uint16_t nX = *(uint16_t*)(pBytes + 1);
+    uint16_t nY = *(uint16_t*)(pBytes + 3);
     if (!sgpDrlgAct) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x58a);
       exit(-1);
@@ -1436,8 +1448,6 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x0A_RemoveObject(D2GSPacketSrv0x0A * pB
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x0B_UNITCTRL(char * pBytes) {
     D2UnitStrc* pUnit = UNIT::Player::UNITS_FindClientSideUnit(*(int32_t*)(pBytes + 2), (eD2UnitType)(uint8_t)pBytes[1]);
-    D2TraceFmt("HANDSHAKE id=%08X type=%u -> unit=%08X",
-               (unsigned)*(int32_t*)(pBytes + 2), (unsigned)(byte)pBytes[1], (unsigned)(uintptr_t)pUnit);
     if (pUnit) {
       UNIT::Player::HANDSHAKE_SetClientPlayerUnit(pUnit);
     }
@@ -1476,8 +1486,8 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x0E_UNITCHANGE_ID(D2UnitStrc * pUnit, D
 void __fastcall NET_D2GS_CLIENT_Incoming0x0F_UNITCHANGE_XYPOS(D2UnitStrc * pUnit, D2GSPacketSrv0x0F * pBytes) {
     D2ServerMessageHandleStrc msg;
     msg.nSkillId = (uint32_t)pBytes->wX;
-    msg.nTargetUnitType = (uint32_t)pBytes->nHitClass;
     msg.nItemId = (uint32_t)pBytes->wY;
+    msg.nTargetUnitType = (uint32_t)pBytes->nHitClass;
     UNIT::Path::PATH_MoveUnitToPoint(pUnit, pBytes->wX2, (uint32_t)pBytes->wY2, 0, 0, 0);
     UNIT::UnitMode::HandleMessage((uint32_t)pBytes->nMessageType, pUnit, &msg, 1);
 }
@@ -2234,8 +2244,8 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x22_SETSKILLITEMREFS(D2GSPacketSrv0x22_
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x23_SETSKILL(D2GSPacketSrv0x23 * pBytes) {
-    uint32_t nItemGUID = pBytes->dwSkillOwnerGUID;
     uint16_t nSkill = pBytes->wSkillId;
+    uint32_t nItemGUID = pBytes->dwSkillOwnerGUID;
     D2UnitStrc* pUnit = UNIT::Player::UNITS_FindClientSideUnit(pBytes->dwUnitGUID, UNIT_PLAYER);
     if (!pUnit) {
       return;
@@ -2324,8 +2334,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x26_CHATSTART(D2GSPacketSrv0x26 * pByte
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x76(D2GSPacketSrv0x76 * pBytes) {
     D2GSPacketSrv0x76 packet;
-    *(uint32_t*)(char*)&packet = *(uint32_t*)pBytes;
-    *(uint16_t*)((char*)&packet.nUnitGUID + 2) = *(uint16_t*)((uintptr_t)&pBytes->nUnitGUID + 2);
+    packet = *pBytes;
     UI::Text::TEXT_ClearUnitHoverText(&packet);
 }
 
@@ -2419,17 +2428,13 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x3E_ITEMUPDATESTAT(char * pBytes) {
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x3F(D2GSPacketSrv0x3F * pBytes) {
     D2GSPacketSrv0x3F sPacket;
-    *(uint32_t*)(char*)&sPacket = *(uint32_t*)pBytes;
-    *(uint32_t*)((char*)&sPacket + 4) = *(uint32_t*)((uintptr_t)&pBytes->nUnitGUID + 2);
+    sPacket = *pBytes;
     UNIT::ITEM_HandleItemCursorAssign(&sPacket);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x40(D2GSPacketSrv0x40 * pBytes) {
     D2GSPacketSrv0x40 sPacket;
-    *(uint32_t*)(char*)&sPacket = *(uint32_t*)pBytes;
-    *(uint32_t*)((char*)&sPacket + 4) = *(uint32_t*)((uintptr_t)&pBytes->dwItemGUID + 3);
-    *(uint32_t*)((char*)&sPacket + 8) = *(uint32_t*)((uintptr_t)&pBytes->eItemFlag + 3);
-    *(uint8_t*)((char*)&sPacket.bSet + 3) = *(uint8_t*)((uintptr_t)&pBytes->bSet + 3);
+    sPacket = *pBytes;
     UNIT::ITEM_HandleItemFlagEditPacket(&sPacket);
 }
 
@@ -2509,9 +2514,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x4F(char * pBytes) {
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x4E_ADDTOMERCENARYLIST(D2GSPacketSrv0x4E * pBytes) {
     D2GSPacketSrv0x4E packet;
-    *(uint32_t*)(char*)&packet = *(uint32_t*)pBytes;
-    *(uint16_t*)((char*)&packet.nSeed + 1) = *(uint16_t*)((uintptr_t)&pBytes->nSeed + 1);
-    *(uint8_t*)((char*)&packet.nSeed + 3) = *(uint8_t*)((uintptr_t)&pBytes->nSeed + 3);
+    packet = *pBytes;
     UI::npcmenu::Merc::AddMercForHireToGlobalList(&packet);
 }
 
@@ -2742,9 +2745,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x73_CreateMissile(D2GSPacketSrv0x73 * p
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x74(D2GSPacketSrv0x74 * pBytes) {
     D2GSPacketSrv0x74 sPacket;
-    *(uint32_t*)(char*)&sPacket = *(uint32_t*)pBytes;
-    *(uint32_t*)((char*)&sPacket + 4) = *(uint32_t*)((uintptr_t)&pBytes->dwPlayerGUID + 2);
-    *(uint16_t*)((char*)&sPacket.dwCorpseGUID + 2) = *(uint16_t*)((uintptr_t)&pBytes->dwCorpseGUID + 2);
+    sPacket = *pBytes;
     UNIT::Player::PLAYER_HandlePlayerDeath(&sPacket);
 }
 
@@ -2807,11 +2808,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x7C_SETITEMUNUSED(char * pBytes) {
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x7D(D2GSPacketSrv0x7D * pBytes) {
     D2GSPacketSrv0x7D sPacket;
-    *(uint32_t*)(char*)&sPacket = *(uint32_t*)pBytes;
-    *(uint32_t*)((char*)&sPacket + 4) = *(uint32_t*)((uintptr_t)&pBytes->dwOwnerGUID + 2);
-    *(uint32_t*)((char*)&sPacket + 8) = *(uint32_t*)((uintptr_t)&pBytes->dwItemGUID + 2);
-    *(uint32_t*)((char*)&sPacket + 12) = *(uint32_t*)((uintptr_t)&pBytes->dwItemState + 2);
-    *(uint16_t*)((char*)&sPacket.dwBrokenFlag + 2) = *(uint16_t*)((uintptr_t)&pBytes->dwBrokenFlag + 2);
+    sPacket = *pBytes;
     UNIT::ITEM_HandleItemRepairBreak(&sPacket);
 }
 
@@ -3380,8 +3377,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAC(char * pPacketData) {
     Engine::Gfx::ANIM_ResetMonsterFrameCache(pUnit);
     nReadBits = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pUnit);
     if (nReadBits) {
-      nSignedBits = 1;
-      nSignedBits = RosterPets::GetRosterPetGUID(UNIT::Player::GetPlayerUnit_UI(), 7, nSignedBits);
+      nSignedBits = RosterPets::GetRosterPetGUID(UNIT::Player::GetPlayerUnit_UI(), 7, 1);
       if (nPacketUnitGUID == nSignedBits) {
         goto finish_unit_setup;
       }

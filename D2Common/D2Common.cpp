@@ -50,7 +50,7 @@ int __fastcall ITEMTBLS_CalcExpr_ParseTokenType(char * szKey) {
     }
 
     nCmpResult = Storm::Source::SSTR::SStrCmpI(szKey, "stat", 0x20);
-    return (nCmpResult ? -4 : 0) + 3;
+    return nCmpResult ? -1 : 3;
 }
 
 int __fastcall ITEMTBLS_CalcExpr_GetConstTwo(int nFunctionIndex) {
@@ -120,9 +120,11 @@ int32_t __stdcall DRLGPRESET_GetObjectTableActCount(uint8_t nActNo) {
       nStride += 6;
       pObjectEntry += 6;
       nCount += 6;
-      if (nStride >= 0x96) {
-        return nCount;
+      if (nStride < 0x96) {
+        continue;
       }
+
+      return nCount;
     }
 
     return nCount + 3;

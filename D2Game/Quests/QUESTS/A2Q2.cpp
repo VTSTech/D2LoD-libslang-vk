@@ -554,6 +554,13 @@ void __fastcall Q10_AdjustStaffPieceCount(int pQuestArg, int nCountDelta) {
     pQuestData->pQuestSpecificData.pA2Q2->nVipCount += nCountDelta;
 }
 
+int Unreferenced_00599bf0() {
+    ::SGAMEDATA* in_ECX;
+    D2UnitStrc* in_EDX;
+    D2UnitStrc* pDVar1 = ITEMS::Items::Drop::HasQuestItem(in_ECX, in_EDX, 0x20747368);
+    return (uint32_t)!pDVar1;
+}
+
 // OBJOP_A2Q2_ArcaneSanctuaryPortalAndDrop2. Object-operate fn for the Tomb-chest /
 // portal object that yields the Book of Skill scroll ('rt1 '). Activates the portal,
 // sets victim dropItemCode='rt1 ', counts eligible players via Q10_OnScrollPickup,
@@ -803,7 +810,7 @@ bool __fastcall Q10_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
           return true;
         }
 
-        *pbyStatusCode = !BVar2 * '\x02' + '\x02';
+        *pbyStatusCode = BVar2 ? 0x2 : 0x4;
         return true;
       }
       if (pItemTsh) {
@@ -840,7 +847,7 @@ bool __fastcall Q10_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
       }
 
       BVar2 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_JustCompleted);
-      *pbyStatusCode = BVar2 != 0 ? 13 : 11;
+      *pbyStatusCode = !BVar2 ? 0xb : 0xd;
     }
 
     return true;

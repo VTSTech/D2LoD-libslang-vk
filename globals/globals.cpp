@@ -6,14 +6,18 @@
 #include "globals/globals.h"
 #include "D2Multi/ChatDlg.data.h"
 #include "Fog/Source/SFile.data.h"
+#include "D2Client/GAME/Game/Game.h"
+#include "D2Client/GAME/Sound.h"
 #include "D2Client/Renderer/Glide.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/Logging/ProfCore.h"
 #include "D2Common/Merc.h"
 #include "D2Game/D2QuestDataStrc.h"
+#include "D2Game/PLAYER/PlayerPets.h"
+#include "D2Glide/Renderer/Glide.h"
 #include "D2Win/D2WinAnimImage.h"
+#include "D2gfx/D2GFX.h"
 #include "Storm/H/stpl.h"
 #include "Storm/Storm.h"
 
@@ -26,6 +30,7 @@
 // content and agrees with it only by accident.
 // =============================================================================
 
+char s_14_006cc77c[] = "14"; D2_GLOBAL_GUARD(s_14_006cc77c, "s_14_006cc77c");
 char s_207_82_87_133_0070f130[] = "207.82.87.133"; D2_GLOBAL_GUARD(s_207_82_87_133_0070f130, "s_207_82_87_133_0070f130");
 char s_AppID_006fad8c[] = "AppID"; D2_GLOBAL_GUARD(s_AppID_006fad8c, "s_AppID_006fad8c");
 char s_Assertion_Failure_006ccb6c[] = "Assertion Failure"; D2_GLOBAL_GUARD(s_Assertion_Failure_006ccb6c, "s_Assertion_Failure_006ccb6c");
@@ -69,6 +74,7 @@ char s_FontFormal12_006dc940[] = "FontFormal12"; D2_GLOBAL_GUARD(s_FontFormal12_
 char s_FontInGameChat_006dc8d0[] = "FontInGameChat"; D2_GLOBAL_GUARD(s_FontInGameChat_006dc8d0, "s_FontInGameChat_006dc8d0");
 char s_FontRidiculous_006dc900[] = "FontRidiculous"; D2_GLOBAL_GUARD(s_FontRidiculous_006dc900, "s_FontRidiculous_006dc900");
 char s_Function___s__006cf274[] = "Function:\011%s\012"; D2_GLOBAL_GUARD(s_Function___s__006cf274, "s_Function___s__006cf274");
+char s_Game_006d5b14[] = "Game"; D2_GLOBAL_GUARD(s_Game_006d5b14, "s_Game_006d5b14");
 char s_Gaunt_006d6b80[] = "Gaunt"; D2_GLOBAL_GUARD(s_Gaunt_006d6b80, "s_Gaunt_006d6b80");
 char s_Halt_006ccb64[] = "Halt"; D2_GLOBAL_GUARD(s_Halt_006ccb64, "s_Halt_006ccb64");
 char s_Handle___s__006cf25c[] = "Handle:\011%s\012"; D2_GLOBAL_GUARD(s_Handle___s__006cf25c, "s_Handle___s__006cf25c");
@@ -96,8 +102,10 @@ char s_TypeLib_006fad20[] = "TypeLib"; D2_GLOBAL_GUARD(s_TypeLib_006fad20, "s_Ty
 char s_Unable_to_start_LNG_manager__006d5ec0[] = "Unable to start LNG manager."; D2_GLOBAL_GUARD(s_Unable_to_start_LNG_manager__006d5ec0, "s_Unable_to_start_LNG_manager__006d5ec0");
 char s_Unknown_Error_006ccbb8[] = "Unknown Error"; D2_GLOBAL_GUARD(s_Unknown_Error_006ccbb8, "s_Unknown_Error_006ccbb8");
 char s_Warning_006ccb5c[] = "Warning"; D2_GLOBAL_GUARD(s_Warning_006ccb5c, "s_Warning_006ccb5c");
+char s___006d727c[] = "@"; D2_GLOBAL_GUARD(s___006d727c, "s___006d727c");
 char s___H__006ed5a4[] = " (H)"; D2_GLOBAL_GUARD(s___H__006ed5a4, "s___H__006ed5a4");
 char s___N__006ed59c[] = " (N)"; D2_GLOBAL_GUARD(s___N__006ed59c, "s___N__006ed59c");
+char s_____006ccb30[] = "\?\?\?"; D2_GLOBAL_GUARD(s_____006ccb30, "s_____006ccb30");
 char s__not_xlated_call_ken_w_00730520[] = " -not xlated call ken w"; D2_GLOBAL_GUARD(s__not_xlated_call_ken_w_00730520, "s__not_xlated_call_ken_w_00730520");
 char s__s_palette_act_d__s_006dc7d0[] = "%s\\palette\\act%d\\%s"; D2_GLOBAL_GUARD(s__s_palette_act_d__s_006dc7d0, "s__s_palette_act_d__s_006dc7d0");
 char s_block_006e1730[] = "block"; D2_GLOBAL_GUARD(s_block_006e1730, "s_block_006e1730");
@@ -1138,6 +1146,18 @@ uint8_t gaNetSidSubstitutionBox[480] = {
     0x8
 }; D2_GLOBAL_GUARD(gaNetSidSubstitutionBox, "gaNetSidSubstitutionBox");
 
+char s_Stam_006e160c[5] = { 'S', 't', 'a', 'm', '\x00' }; D2_GLOBAL_GUARD(s_Stam_006e160c, "s_Stam_006e160c");
+
+char s_Life_006e161c[5] = { 'L', 'i', 'f', 'e', '\x00' }; D2_GLOBAL_GUARD(s_Life_006e161c, "s_Life_006e161c");
+
+char s_Pois_006e1624[5] = { 'P', 'o', 'i', 's', '\x00' }; D2_GLOBAL_GUARD(s_Pois_006e1624, "s_Pois_006e1624");
+
+char s_Magc_006e1644[5] = { 'M', 'a', 'g', 'c', '\x00' }; D2_GLOBAL_GUARD(s_Magc_006e1644, "s_Magc_006e1644");
+
+char s_Ligt_006e1654[5] = { 'L', 'i', 'g', 't', '\x00' }; D2_GLOBAL_GUARD(s_Ligt_006e1654, "s_Ligt_006e1654");
+
+char s_Dam_006e1664[4] = { 'D', 'a', 'm', '\x00' }; D2_GLOBAL_GUARD(s_Dam_006e1664, "s_Dam_006e1664");
+
 D2MonsterEquipEntryStrc gaMonsterEquipTable[12] = {
     {
         /* .szItemCode = */ { 'b', 's', 'd', ' ' },
@@ -1419,6 +1439,8 @@ uint32_t gaCelCmpDataBlock_006e36a0[224] = {
 char s_C_006ed5b4[2] = { 'C', '\x00' }; D2_GLOBAL_GUARD(s_C_006ed5b4, "s_C_006ed5b4");
 
 char s_HDM_006ee7c0[4] = { 'H', 'D', 'M', '\x00' }; D2_GLOBAL_GUARD(s_HDM_006ee7c0, "s_HDM_006ee7c0");
+
+int gaOutJungPresetOffsetByLevel[3] = { 0x0, 0xa, 0x14 }; D2_GLOBAL_GUARD(gaOutJungPresetOffsetByLevel, "gaOutJungPresetOffsetByLevel");
 
 uint8_t gaWallNeighborOrientTable[256] = {
     0x0,
@@ -2820,7 +2842,7 @@ char * gaLanguageNames_00705000[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_00705000, "gaLanguageNames_00705000");
 
 char * gaMonthAbbreviations[12] = {
@@ -3045,7 +3067,7 @@ char * gaLanguageNames_00711d04[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_00711d04, "gaLanguageNames_00711d04");
 
 char * gaLanguageNames_00722414[15] = {
@@ -3063,7 +3085,7 @@ char * gaLanguageNames_00722414[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_00722414, "gaLanguageNames_00722414");
 
 char * gaLanguageNames_00722470[15] = {
@@ -3081,7 +3103,7 @@ char * gaLanguageNames_00722470[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_00722470, "gaLanguageNames_00722470");
 
 uint16_t gaQuestDescData_DenOfEvil[32] = {
@@ -3484,10 +3506,8 @@ char * gaLanguageNames_007273a8[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_007273a8, "gaLanguageNames_007273a8");
-
-uint32_t gnCursorInvTypeAutoOpenC[5] = { 0x0, 0x1, 0x4, 0x2, 0x6 }; D2_GLOBAL_GUARD(gnCursorInvTypeAutoOpenC, "gnCursorInvTypeAutoOpenC");
 
 int gaUnitSoundIdsAmazon[11] = {
     0xb3e,
@@ -3518,7 +3538,7 @@ char * gaLanguageNames_0072a300[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_0072a300, "gaLanguageNames_0072a300");
 
 char * gaLanguageNames_0072d8d8[15] = {
@@ -3536,7 +3556,7 @@ char * gaLanguageNames_0072d8d8[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_0072d8d8, "gaLanguageNames_0072d8d8");
 
 char * gaLanguageNames_0072d914[15] = {
@@ -3554,7 +3574,7 @@ char * gaLanguageNames_0072d914[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_0072d914, "gaLanguageNames_0072d914");
 
 char * gaLanguageNames_0072d950[15] = {
@@ -3572,7 +3592,7 @@ char * gaLanguageNames_0072d950[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_0072d950, "gaLanguageNames_0072d950");
 
 char * gaLanguageNames_0072d994[15] = {
@@ -3590,7 +3610,7 @@ char * gaLanguageNames_0072d994[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_0072d994, "gaLanguageNames_0072d994");
 
 char * gaLanguageNames_0072d9d0[15] = {
@@ -3608,7 +3628,7 @@ char * gaLanguageNames_0072d9d0[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_0072d9d0, "gaLanguageNames_0072d9d0");
 
 char * gaLanguageNames_0072da0c[15] = {
@@ -3626,7 +3646,7 @@ char * gaLanguageNames_0072da0c[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_0072da0c, "gaLanguageNames_0072da0c");
 
 char * gaszLanguageNames[32] = {
@@ -3644,7 +3664,7 @@ char * gaszLanguageNames[32] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c,
+    s_14_006cc77c,
     nullptr,
     s_English_006cc81c,
     s_Spanish_006cc814,
@@ -3660,9 +3680,36 @@ char * gaszLanguageNames[32] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c,
+    s_14_006cc77c,
     nullptr
 }; D2_GLOBAL_GUARD(gaszLanguageNames, "gaszLanguageNames");
+
+char s___AUItem_NewsTable___0072ff8c[24] = {
+    '.',
+    '?',
+    'A',
+    'U',
+    'I',
+    't',
+    'e',
+    'm',
+    '@',
+    'N',
+    'e',
+    'w',
+    's',
+    'T',
+    'a',
+    'b',
+    'l',
+    'e',
+    '@',
+    '@',
+    '\x00',
+    '\x00',
+    '\x00',
+    '\x00'
+}; D2_GLOBAL_GUARD(s___AUItem_NewsTable___0072ff8c, "s___AUItem_NewsTable___0072ff8c");
 
 char gaQ33_Normal_AmazonBowCodes[5][4] = {
     { 'a', 'm', '1', ' ' },
@@ -3853,8 +3900,26 @@ char * gaLanguageNames_0073c6e0[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_0073c6e0, "gaLanguageNames_0073c6e0");
+
+char * gaLanguageNames_0073d530[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    s_14_006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_0073d530, "gaLanguageNames_0073d530");
 
 uint8_t gaSkeletonComponentsByMasteryLvl[11][9] = {
     {},
@@ -4291,7 +4356,7 @@ char * gaLanguageNames_007443a8[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_007443a8, "gaLanguageNames_007443a8");
 
 char * gaLanguageNames_007444c8[15] = {
@@ -4309,7 +4374,7 @@ char * gaLanguageNames_007444c8[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_007444c8, "gaLanguageNames_007444c8");
 
 char * gaLanguageNames_00744508[15] = {
@@ -4327,7 +4392,7 @@ char * gaLanguageNames_00744508[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_00744508, "gaLanguageNames_00744508");
 
 char * gaLanguageNames_00744588[15] = {
@@ -4345,7 +4410,7 @@ char * gaLanguageNames_00744588[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_00744588, "gaLanguageNames_00744588");
 
 char * gaLanguageNames_007445c4[15] = {
@@ -4363,7 +4428,7 @@ char * gaLanguageNames_007445c4[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_007445c4, "gaLanguageNames_007445c4");
 
 char * gaLanguageNames_00744600[15] = {
@@ -4381,7 +4446,7 @@ char * gaLanguageNames_00744600[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_00744600, "gaLanguageNames_00744600");
 
 char * gaLanguageNames_00745648[15] = {
@@ -4399,7 +4464,7 @@ char * gaLanguageNames_00745648[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_00745648, "gaLanguageNames_00745648");
 
 char * gaLanguageNames_00745684[15] = {
@@ -4417,7 +4482,7 @@ char * gaLanguageNames_00745684[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_00745684, "gaLanguageNames_00745684");
 
 char * gaLanguageNames_007456c0[15] = {
@@ -4435,7 +4500,7 @@ char * gaLanguageNames_007456c0[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_007456c0, "gaLanguageNames_007456c0");
 
 char * gaLanguageNames_007456fc[15] = {
@@ -4453,7 +4518,7 @@ char * gaLanguageNames_007456fc[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_007456fc, "gaLanguageNames_007456fc");
 
 char * gaLanguageNames_00745738[15] = {
@@ -4471,7 +4536,7 @@ char * gaLanguageNames_00745738[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_00745738, "gaLanguageNames_00745738");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_007466dc[7] = {
@@ -9980,7 +10045,7 @@ char * gaLanguageNames_00748a58[16] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c,
+    s_14_006cc77c,
     nullptr
 }; D2_GLOBAL_GUARD(gaLanguageNames_00748a58, "gaLanguageNames_00748a58");
 
@@ -9999,7 +10064,7 @@ char * gaLanguageNames_00748a98[15] = {
     s_Russian_006cc7a4,
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
-    (char*)0x006cc77c
+    s_14_006cc77c
 }; D2_GLOBAL_GUARD(gaLanguageNames_00748a98, "gaLanguageNames_00748a98");
 
 double DOUBLE_0074adb4 = 1; D2_GLOBAL_GUARD(DOUBLE_0074adb4, "DOUBLE_0074adb4");
@@ -10023,11 +10088,13 @@ uint8_t gabyFxamClassOffset[16] = {
     0x8
 }; D2_GLOBAL_GUARD(gabyFxamClassOffset, "gabyFxamClassOffset");
 
+_RTL_CRITICAL_SECTION lpCriticalSection_0077ae28 = {}; D2_GLOBAL_GUARD(lpCriticalSection_0077ae28, "lpCriticalSection_0077ae28");
+
 D2SeedStrc gAncientsCloudSeed = D2SeedStrc(); D2_GLOBAL_GUARD(gAncientsCloudSeed, "gAncientsCloudSeed");
 
 D2DataTableTxtStrc sgtDataTable = {}; D2_GLOBAL_GUARD(sgtDataTable, "sgtDataTable");
 
-unsigned long long gpItemTypeTableContext = 0; D2_GLOBAL_GUARD(gpItemTypeTableContext, "gpItemTypeTableContext");
+_RTL_CRITICAL_SECTION lpCriticalSection_0096d610 = {}; D2_GLOBAL_GUARD(lpCriticalSection_0096d610, "lpCriticalSection_0096d610");
 
 uint32_t User32Reserved[26] = {}; D2_GLOBAL_GUARD(User32Reserved, "User32Reserved");
 
@@ -10820,7 +10887,7 @@ GUID ActivityId = {0x00000000, 0x0000, 0x0000, {0x00, 0x00, 0x00, 0x00, 0x00, 0x
 
 uint8_t IMAGE_DOS_HEADER__00400000[128] = {}; D2_GLOBAL_GUARD(IMAGE_DOS_HEADER__00400000, "IMAGE_DOS_HEADER__00400000");
 uint8_t gbChatDlgUpdateMarker = 0x2d; D2_GLOBAL_GUARD(gbChatDlgUpdateMarker, "gbChatDlgUpdateMarker");
-float gfTwoPow32 = 4.294967E+9; D2_GLOBAL_GUARD(gfTwoPow32, "gfTwoPow32");
+float gfTwoPow32 = 4294967296.0; D2_GLOBAL_GUARD(gfTwoPow32, "gfTwoPow32");
 uint8_t gbFloatConstantBase = 0x0; D2_GLOBAL_GUARD(gbFloatConstantBase, "gbFloatConstantBase");
 char szOOGPasswordDialogTimeFmt = '\x0d'; D2_GLOBAL_GUARD(szOOGPasswordDialogTimeFmt, "szOOGPasswordDialogTimeFmt");
 uint8_t gbExpansionInitialized = 0x30; D2_GLOBAL_GUARD(gbExpansionInitialized, "gbExpansionInitialized");
@@ -10843,18 +10910,16 @@ char * gpszExpansionStringTblPathFormat = s_data_local_lng__s_expansionstring_00
 char * gpszD2DataMpqName = s_d2data_mpq_006dc770; D2_GLOBAL_GUARD(gpszD2DataMpqName, "gpszD2DataMpqName");
 char * gpszPatchD2MpqName = s_patch_d2_mpq_006dc728; D2_GLOBAL_GUARD(gpszPatchD2MpqName, "gpszPatchD2MpqName");
 char * gpszD2ExpMpqName = s_d2exp_mpq_006cd3a0; D2_GLOBAL_GUARD(gpszD2ExpMpqName, "gpszD2ExpMpqName");
-uint32_t gaScreenResolutionTableIndexArray = 0x40; D2_GLOBAL_GUARD(gaScreenResolutionTableIndexArray, "gaScreenResolutionTableIndexArray");
-uint32_t gaScreenResolutionModeArray = 0x1; D2_GLOBAL_GUARD(gaScreenResolutionModeArray, "gaScreenResolutionModeArray");
-uint32_t gnCursorInvTypeAutoOpenA = 0x5; D2_GLOBAL_GUARD(gnCursorInvTypeAutoOpenA, "gnCursorInvTypeAutoOpenA");
+uint32_t gpServerMemHeap = 0x1; D2_GLOBAL_GUARD(gpServerMemHeap, "gpServerMemHeap");
+uint32_t gbLightmapColorEnabled = 0x1; D2_GLOBAL_GUARD(gbLightmapColorEnabled, "gbLightmapColorEnabled");
 D2NPCMessageTableStrc gbQuestA5Q2Unknown[6] = {}; D2_GLOBAL_GUARD(gbQuestA5Q2Unknown, "gbQuestA5Q2Unknown");
 char * gaLanguageNames_0074430c_11[15] = {}; D2_GLOBAL_GUARD(gaLanguageNames_0074430c_11, "gaLanguageNames_0074430c_11");
 uint32_t DWORD_007467b0 = 0x5070000; D2_GLOBAL_GUARD(DWORD_007467b0, "DWORD_007467b0");
 uint32_t DEFAULT_SECURITY_COOKIE = 0xbb40e64e; D2_GLOBAL_GUARD(DEFAULT_SECURITY_COOKIE, "DEFAULT_SECURITY_COOKIE");
 unsigned int gaCRT_FPremData_3 = 0x6a9a24; D2_GLOBAL_GUARD(gaCRT_FPremData_3, "gaCRT_FPremData_3");
 int TokenHashMapBucketSize = 0x10; D2_GLOBAL_GUARD(TokenHashMapBucketSize, "TokenHashMapBucketSize");
-uint32_t gnEngineMode = 0; D2_GLOBAL_GUARD(gnEngineMode, "gnEngineMode");
-uint32_t gdwSpellSelThrottleTick = 0; D2_GLOBAL_GUARD(gdwSpellSelThrottleTick, "gdwSpellSelThrottleTick");
-int gnTileClipLeft = 0; D2_GLOBAL_GUARD(gnTileClipLeft, "gnTileClipLeft");
+D2BNetClientCallbacksStrc * gpBNetCallbacks = 0; D2_GLOBAL_GUARD(gpBNetCallbacks, "gpBNetCallbacks");
+uint32_t gbSmackerKeepTempFile = 0; D2_GLOBAL_GUARD(gbSmackerKeepTempFile, "gbSmackerKeepTempFile");
 grDrawLine GLIDEDLL__grDrawLine_8 = (grDrawLine)0; D2_GLOBAL_GUARD(GLIDEDLL__grDrawLine_8, "GLIDEDLL__grDrawLine_8");
 grDepthMask GLIDEDLL_grDepthMask_4 = (grDepthMask)0; D2_GLOBAL_GUARD(GLIDEDLL_grDepthMask_4, "GLIDEDLL_grDepthMask_4");
 grDrawPoint GLIDEDLL_grDrawPoint_4 = (grDrawPoint)0; D2_GLOBAL_GUARD(GLIDEDLL_grDrawPoint_4, "GLIDEDLL_grDrawPoint_4");
@@ -10877,9 +10942,9 @@ grTexMaxAddress GLIDEDLL_grTexMaxAddress_4 = (grTexMaxAddress)0; D2_GLOBAL_GUARD
 grBufferClear GLIDEDLL_grBufferClear_12 = (grBufferClear)0; D2_GLOBAL_GUARD(GLIDEDLL_grBufferClear_12, "GLIDEDLL_grBufferClear_12");
 grChromakeyMode GLIDEDLL_grChromakeyMode_4 = (grChromakeyMode)0; D2_GLOBAL_GUARD(GLIDEDLL_grChromakeyMode_4, "GLIDEDLL_grChromakeyMode_4");
 grBufferSwap GLIDEDLL_grBufferSwap_4 = (grBufferSwap)0; D2_GLOBAL_GUARD(GLIDEDLL_grBufferSwap_4, "GLIDEDLL_grBufferSwap_4");
-uint32_t gnQServerListenSocket = 0; D2_GLOBAL_GUARD(gnQServerListenSocket, "gnQServerListenSocket");
-unsigned int gpfnProfCoreInitCallback = {}; D2_GLOBAL_GUARD(gpfnProfCoreInitCallback, "gpfnProfCoreInitCallback");
+BOOL gbCodecUseFallbackDecompressor = 0; D2_GLOBAL_GUARD(gbCodecUseFallbackDecompressor, "gbCodecUseFallbackDecompressor");
 unsigned int UINT_0096d6a8 = {}; D2_GLOBAL_GUARD(UINT_0096d6a8, "UINT_0096d6a8");
+HMODULE hDbgHelpDll = 0; D2_GLOBAL_GUARD(hDbgHelpDll, "hDbgHelpDll");
 uint32_t dwCurrentThreadId = 0; D2_GLOBAL_GUARD(dwCurrentThreadId, "dwCurrentThreadId");
 uint32_t LastErrorValue = 0x0; D2_GLOBAL_GUARD(LastErrorValue, "LastErrorValue");
 uint32_t CountOfOwnedCriticalSections = 0x0; D2_GLOBAL_GUARD(CountOfOwnedCriticalSections, "CountOfOwnedCriticalSections");
@@ -11242,11 +11307,84 @@ uint8_t RTTI_Type_Descriptor; D2_GLOBAL_GUARD_BSS(RTTI_Type_Descriptor, "Class::
 
 } // namespace Class::HANDLER
 
-namespace D2Client::CharScreen {
+namespace D2Launch::CharSel {
 
-} // namespace D2Client::CharScreen
+} // namespace D2Launch::CharSel
 
-namespace D2Client::UI::ui {
+namespace D2Game::GAME::Rendering {
+
+} // namespace D2Game::GAME::Rendering
+
+namespace D2Client::Renderer {
+
+// =============================================================================
+// Initialized data (arrays, structs, tables)
+// =============================================================================
+
+D2RendererFunctionsStrc GlideFunctionTable = {
+    /* .nfpInitialize = */ &D2Client::Renderer::Glide::Initialize,
+    /* .nfpInitPerspective = */ &D2Glide::Renderer::Glide::InitPerspective,
+    /* .nfpRelease = */ (fpRelease)&D2Glide::Renderer::Glide::Release,
+    /* .nfpCreateWindow = */ (fpCreateWindow)&D2Glide::Renderer::Glide::CreateWindow,
+    /* .nfpDestroyWindow = */ &D2Glide::Renderer::Glide::RENDERER_GLIDE_DestroyWindow,
+    /* .nfpEndCutScene = */ (fpEndCutScene)&D2Glide::Renderer::Glide::EndCutScene,
+    /* .nfpBeginScene = */ &D2Glide::Renderer::Glide::BeginScene,
+    /* .fpEndScene1 = */ &D2Glide::Renderer::Glide::EndScene1,
+    /* .fpEndScene2 = */ &D2Glide::Renderer::Glide::EndScene2,
+    /* .nfpResizeWindow = */ &D2Glide::Renderer::Glide::ResizeWindow,
+    /* .nfpGetBackBuffer = */ &D2Glide::Renderer::Glide::GetBackBuffer,
+    /* .nfpActivateWindow = */ (fpActivateWindow)&D2Glide::Renderer::Glide::ActivateWindow,
+    /* .nfpSetOption = */ (fpSetOption)&D2Glide::Renderer::Glide::SetOption,
+    /* .nfpBeginCutScene = */ &D2Glide::Renderer::Glide::BeginCutScene,
+    /* .nfpPlayCutScene = */ (fpPlayCutScene)&D2Glide::Renderer::Glide::PlayCutScene,
+    /* .nfpCheckCutScene = */ &D2Glide::Renderer::Glide::CheckCutScene,
+    /* .nfpDecodeSmacker = */ (fpDecodeSmacker)&D2Glide::Renderer::Glide::DecodeSmacker,
+    /* .nfpPlayerSmacker = */ &D2Glide::Renderer::Glide::PlayerSmacker,
+    /* .nfpCloseSmacker = */ &D2Glide::Renderer::Glide::CloseSmacker,
+    /* .nfpGetRenderStatistics = */ &D2Glide::Renderer::Glide::GetRenderStatistics,
+    /* .nfpGetScreenSize = */ (fpGetScreenSize)&D2Glide::Renderer::Glide::GetScreenSize,
+    /* .nfpUpdateScaleFactor = */ (fpUpdateScaleFactor)&D2Glide::Renderer::Glide::UpdateScaleFactor,
+    /* .nfpSetGamma = */ (fpSetGamma)&D2Glide::Renderer::Glide::SetGamma,
+    /* .nfpCheckGamma = */ (fpCheckGamma)&D2Glide::Renderer::Glide::CheckGamma,
+    /* .nfpSetPerspectiveScale = */ (fpSetPerspectiveScale)&D2Glide::Renderer::Glide::SetPerspectiveScale,
+    /* .nfpAdjustPerspectivePosition = */ (fpAdjustPerspectivePosition)&D2Glide::Renderer::Glide::AdjustPerspectivePosition,
+    /* .nfpPerspectiveScalePosition = */ (fpPerspectiveScalePosition)&D2Glide::Renderer::Glide::PerspectiveScalePosition,
+    /* .nfpSetDefaultPerspectiveFactor = */ &D2Glide::Renderer::Glide::SetDefaultPerspectiveFactor,
+    /* .nfpSetPalette = */ &D2Glide::Renderer::Glide::SetPalette,
+    /* .nfpSetPaletteTable = */ &D2Glide::Renderer::Glide::SetPaletteTable,
+    /* .nfpSetGlobalLight = */ &D2Glide::Renderer::Glide::SetGlobalLight,
+    /* .nfpDrawGroundTile = */ (D2RendererFunctionsStrc_fpDrawGroundTile)&D2Glide::Renderer::Glide::DrawGroundTile,
+    /* .nfpDrawPerspectiveImage = */ (fpDrawPerspectiveImage)&D2Glide::Renderer::Glide::DrawPerspectiveImage,
+    /* .nfpDrawImage = */ (fpDrawImage)&D2Glide::Renderer::Glide::DrawImage,
+    /* .nfpDrawShiftedImage = */ (fpDrawShiftedImage)&D2Glide::Renderer::Glide::DrawShiftedImage,
+    /* .nfpDrawVerticalCropImage = */ (fpDrawVerticalCropImage)&D2Glide::Renderer::Glide::DrawVerticalCropImage,
+    /* .nfpDrawShadow = */ (fpDrawShadow)&D2Glide::Renderer::Glide::DrawShadow,
+    /* .nfpDrawImageFast = */ (fpDrawImageFast)&D2Glide::Renderer::Glide::DrawImageFast,
+    /* .nfpDrawClippedImage = */ (fpDrawClippedImage)&D2Glide::Renderer::Glide::DrawClippedImage,
+    /* .nfpDrawWallTile = */ (D2RendererFunctionsStrc_fpDrawWallTile)&D2Glide::Renderer::Glide::DrawWallTile,
+    /* .nfpDrawTransWallTile = */ (fpDrawTransWallTile)&D2Glide::Renderer::Glide::DrawTransWallTile,
+    /* .nfpDrawShadowTile = */ (fpDrawShadowTile)&D2Glide::Renderer::Glide::DrawShadowTile,
+    /* .nfpDrawRect = */ (fpDrawRect)&D2Glide::Renderer::Glide::DrawRect,
+    /* .nfpDrawRectEx = */ (fpDrawRectEx)&D2Glide::Renderer::Glide::DrawRectEx,
+    /* .nfpDrawSolidRect = */ &D2Glide::Renderer::Glide::DrawSolidRect,
+    /* .nfpDrawSolidSquare = */ (fpDrawSolidSquare)&D2Glide::Renderer::Glide::DrawSolidSquare,
+    /* .nfpDrawSolidRectEx = */ (fpDrawSolidRectEx)&D2Glide::Renderer::Glide::DrawSolidRectEx,
+    /* .nfpDrawSolidRectAlpha = */ (fpDrawSolidRectAlpha)&D2Glide::Renderer::Glide::DrawSolidRectAlpha,
+    /* .nfpDrawLine = */ (fpDrawLine)&D2Glide::Renderer::Glide::DrawLine,
+    /* .nfpClearScreen = */ &D2Glide::Renderer::Glide::ClearScreen,
+    /* .nfpDrawString = */ (fpDrawString)&D2Glide::Renderer::Glide::DrawString,
+    /* .nfpDrawLight = */ (fpDrawLight)&D2Glide::Renderer::Glide::DrawLight,
+    /* .nfpDebugFillBackBuffer = */ (fpDebugFillBackBuffer)&D2Glide::Renderer::Glide::DebugFillBackBuffer,
+    /* .nfpClearCaches = */ &D2Glide::Renderer::Glide::ClearCaches
+}; D2_GLOBAL_GUARD(GlideFunctionTable, "D2Client::Renderer::GlideFunctionTable");
+
+} // namespace D2Client::Renderer
+
+namespace D2DDraw::Renderer::DirectDraw {
+
+} // namespace D2DDraw::Renderer::DirectDraw
+
+namespace D2Lang::Unicode::UNISYS {
 
 // =============================================================================
 // Initialized data (arrays, structs, tables)
@@ -11509,9 +11647,9 @@ uint16_t CharacterLookupTable[256] = {
     0xdd,
     0xde,
     0x9f
-}; D2_GLOBAL_GUARD(CharacterLookupTable, "D2Client::UI::ui::CharacterLookupTable");
+}; D2_GLOBAL_GUARD(CharacterLookupTable, "D2Lang::Unicode::UNISYS::CharacterLookupTable");
 
-} // namespace D2Client::UI::ui
+} // namespace D2Lang::Unicode::UNISYS
 
 namespace D2Game::Quests::QUESTS::Quest40 {
 
@@ -11681,14 +11819,10 @@ namespace D2Client::Draw::LightMap {
 
 } // namespace D2Client::Draw::LightMap
 
-namespace D2Client::Mouse {
+namespace D2Win::Src::D2WinMain {
 
-} // namespace D2Client::Mouse
+} // namespace D2Win::Src::D2WinMain
 
-namespace D2Client::Forms {
+namespace D2Win::D2GFX {
 
-} // namespace D2Client::Forms
-
-namespace D2Client::GAME::Record {
-
-} // namespace D2Client::GAME::Record
+} // namespace D2Win::D2GFX

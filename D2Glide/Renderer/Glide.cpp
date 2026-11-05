@@ -10,10 +10,9 @@
 #include "D2Client/D2GfxSettingsStrc.h"
 #include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Draw.h"
-#include "D2Client/GAME/View.h"
 #include "D2Client/Renderer/Glide.h"
-#include "D2Client/Renderer/Renderer.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
+#include "D2DDraw/Renderer/DirectDraw.h"
 #include "D2Direct3D/Renderer/Direct3D.h"
 #include "D2Glide/glBlocks.h"
 #include "D2Glide/glFloorCache.h"
@@ -32,6 +31,7 @@
 #include "Storm/Source/SMem.h"
 #include "globals/globals.h"
 #include "D2CMP/tagPALETTEENTRY.h"
+#include "D2Client/GAME/View.data.h"
 #include "D2Client/Renderer/Glide.data.h"
 #include "D2Client/UI/Help.data.h"
 #include "D2Glide/Renderer/Glide.data.h"
@@ -420,7 +420,7 @@ uint32_t gnGlideColorCombineMode = 0; D2_GLOBAL_GUARD(gnGlideColorCombineMode, "
 uint32_t gnGlideAlphaBlendMode = 0; D2_GLOBAL_GUARD(gnGlideAlphaBlendMode, "gnGlideAlphaBlendMode");
 uint32_t gnGlideTextureFilteringMode = 0; D2_GLOBAL_GUARD(gnGlideTextureFilteringMode, "gnGlideTextureFilteringMode");
 uint32_t gbGlideInScene = 0; D2_GLOBAL_GUARD(gbGlideInScene, "gbGlideInScene");
-static uint32_t gbGlidePerspectiveMode = 0; D2_STATIC_GUARD(gbGlidePerspectiveMode, "gbGlidePerspectiveMode");
+uint32_t gbGlidePerspectiveMode = 0; D2_GLOBAL_GUARD(gbGlidePerspectiveMode, "gbGlidePerspectiveMode");
 static uint32_t gnGlideSpriteSecondaryTMUEnabled = 0; D2_STATIC_GUARD(gnGlideSpriteSecondaryTMUEnabled, "gnGlideSpriteSecondaryTMUEnabled");
 static uint32_t gnGlideTMUIndex = 0; D2_STATIC_GUARD(gnGlideTMUIndex, "gnGlideTMUIndex");
 D2GlideVertexTexCacheBlockStrc gGlideVertex0 = {}; D2_GLOBAL_GUARD(gGlideVertex0, "gGlideVertex0");
@@ -436,6 +436,10 @@ void __fastcall ClearCaches() {
     glTextureCache::GLTEXCACHE_Destroy(gGlideVertex0.aTextureCache, nullptr);
     glTextureCache::GLTEXCACHE_Destroy(gGlideVertex0.aTextureCache + 1, nullptr);
     glTextureCache::GLTEXCACHE_Destroy(gGlideVertex0.aTextureCache + 2, nullptr);
+}
+
+BOOL __fastcall CheckCutScene() {
+    return gbPlayingCutScene;
 }
 
 BOOL __fastcall BeginScene(BOOL bClear, BYTE nRed, BYTE nGreen, BYTE nBlue) {
@@ -460,6 +464,10 @@ BOOL __fastcall BeginScene(BOOL bClear, BYTE nRed, BYTE nGreen, BYTE nBlue) {
     (*GLIDEDLL_grChromakeyMode_4)(1);
     Glide::SetGlobalLight(0xff, 0xff, 0xff);
     return 1;
+}
+
+void __fastcall UpdateScaleFactor(int32_t nScaleFactor) {
+    nScaleFactor = nScaleFactor;
 }
 
 BOOL __fastcall SetGamma(int32_t nGamma) {
@@ -541,10 +549,10 @@ BOOL __fastcall EndScene1() {
 BOOL __fastcall EndScene2() {
     if (pD2GFXRenderedDataStrc->bVSync) {
       (*GLIDEDLL_grBufferSwap_4)(1);
-      return 1;
+    } else {
+      (*GLIDEDLL_grBufferSwap_4)(0);
     }
 
-    (*GLIDEDLL_grBufferSwap_4)(0);
     return 1;
 }
 
@@ -805,7 +813,7 @@ BOOL __stdcall RENDERER_GLIDE_InitTextureMemory() {
     nMaskTmp = gnGlideTexMemBaseAddress[0];
     float fTotalTexMemBytes = (float)nCacheEnd;
     if (nCacheEnd < 0) {
-      fTotalTexMemBytes += 4.2949673e+09;
+      fTotalTexMemBytes += 4294967296.0;
     }
     if (!(3670016.0 <= fTotalTexMemBytes)) {
       Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tDoesn\'t have enough video memory (3.5 MB) to adequately run Diablo II!\n");
@@ -890,6 +898,16 @@ BOOL __stdcall RENDERER_GLIDE_InitTextureMemory() {
     return 1;
 }
 
+void Unreferenced_00509a70() {
+    (*GLIDEDLL_grBufferClear_12)(0, '\0', 0);
+    if (pD2GFXRenderedDataStrc->bVSync) {
+      (*GLIDEDLL_grBufferSwap_4)(1);
+      return;
+    }
+
+    (*GLIDEDLL_grBufferSwap_4)(0);
+}
+
 BOOL __stdcall RENDERER_GLIDE_DestroyWindow() {
     int nCloseAttempt;
     if (!ghGlideWindow) {
@@ -928,7 +946,12 @@ void __fastcall PlayCutScene(char * szFile, int32_t nResolutionMode, void * fpFr
     }
 
     (*GLIDEDLL_grBufferClear_12)(0, '\0', 0);
-    (*GLIDEDLL_grBufferSwap_4)((uint32_t)(uint8_t)(pD2GFXRenderedDataStrc->bVSync != 0));
+    if (pD2GFXRenderedDataStrc->bVSync) {
+      (*GLIDEDLL_grBufferSwap_4)(1);
+    } else {
+      (*GLIDEDLL_grBufferSwap_4)(0);
+    }
+
     gbPlayingCutScene = 1;
     glBlocks::GLBLOCKS_PlayBinkVideo(szFile, nResolutionMode, (fnBinkFrameCallback)fpFrame);
     gbPlayingCutScene = 0;
@@ -1119,12 +1142,11 @@ void __fastcall EndCutScene(HWND hWnd, int32_t nResolutionMode, int32_t nWindowS
     if (nWindowState) {
       RENDERER_GLIDE_DestroyWindow();
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ gnRenderState = 1;
-      LeaveCriticalSection(&RENDERER_SelectedRendererCore->sLock);
-      return;
+    } else {
+      Glide::CreateWindow(hWnd, nResolutionMode);
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ gnRenderState = 0;
     }
 
-    Glide::CreateWindow(hWnd, nResolutionMode);
-    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ gnRenderState = 0;
     LeaveCriticalSection(&RENDERER_SelectedRendererCore->sLock);
 }
 
@@ -1141,10 +1163,10 @@ BOOL __fastcall ResizeWindow(HWND hWnd, BOOL bForceResize) {
     (*GLIDEDLL_grBufferClear_12)(0, '\0', 0);
     if (pD2GFXRenderedDataStrc->bVSync) {
       (*GLIDEDLL_grBufferSwap_4)(1);
-      return 1;
+    } else {
+      (*GLIDEDLL_grBufferSwap_4)(0);
     }
 
-    (*GLIDEDLL_grBufferSwap_4)(0);
     return 1;
 }
 
@@ -1875,13 +1897,13 @@ void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int32_t nPosX, int3
         nSpriteResult = texSizeBuf.nHeight - nSkipLines - nDrawLines;
         fTmp = (float)nSpriteResult;
         if (nSpriteResult < 0) {
-          fTmp += 4.2949673e+09;
+          fTmp += 4294967296.0;
         }
 
         texSizeBuf.fTexT0 += fInvTexHeight * fTmp;
         fTmp = (float)nSkipLines;
         if (nSkipLines < 0) {
-          fTmp += 4.2949673e+09;
+          fTmp += 4294967296.0;
         }
 
         texSizeBuf.nHeight = nDrawLines;
@@ -1889,7 +1911,7 @@ void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int32_t nPosX, int3
       } else {
         fTmp = (float)(texSizeBuf.nHeight - nDrawLines);
         if (texSizeBuf.nHeight - nDrawLines < 0) {
-          fTmp += 4.2949673e+09;
+          fTmp += 4294967296.0;
         }
 
         texSizeBuf.nHeight = nDrawLines;
@@ -1901,19 +1923,19 @@ void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int32_t nPosX, int3
         nSpriteResult = texSizeBuf.nTexHeight - nSkipLines;
         texSizeBuf.fTexT0 = (float)(nSpriteResult - nDrawLines);
         if (nSpriteResult - nDrawLines < 0) {
-          texSizeBuf.fTexT0 += 4.2949673e+09;
+          texSizeBuf.fTexT0 += 4294967296.0;
         }
 
         texSizeBuf.fTexS1 = (float)nSpriteResult;
         if (nSpriteResult < 0) {
-          texSizeBuf.fTexS1 += 4.2949673e+09;
+          texSizeBuf.fTexS1 += 4294967296.0;
         }
 
         texSizeBuf.fTexS1 *= fInvTexHeight;
       } else {
         texSizeBuf.fTexT0 = (float)(texSizeBuf.nTexHeight - nDrawLines);
         if (texSizeBuf.nTexHeight - nDrawLines < 0) {
-          texSizeBuf.fTexT0 += 4.2949673e+09;
+          texSizeBuf.fTexT0 += 4294967296.0;
         }
       }
 
@@ -2620,21 +2642,20 @@ void __fastcall DrawLine(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_
       fV0X[1].fS = 0.0;
       fV0X[1].fT = 0.0;
       (*GLIDEDLL_grDrawPoint_4)(fV0X + 1);
-      (*GLIDEDLL_grChromakeyMode_4)(1);
-      return;
+    } else {
+      fV0X[0].fX = (float)nXStart;
+      fV0X[0].fY = (float)nYStart;
+      fV0X[0].fOOW = 1.0;
+      fV0X[0].fS = 0.0;
+      fV0X[0].fT = 0.0;
+      fV0X[1].fX = (float)nXEnd;
+      fV0X[1].fY = (float)nYEnd;
+      fV0X[1].fOOW = 1.0;
+      fV0X[1].fS = 0.0;
+      fV0X[1].fT = 0.0;
+      (*GLIDEDLL__grDrawLine_8)(fV0X, fV0X + 1);
     }
 
-    fV0X[0].fX = (float)nXStart;
-    fV0X[0].fY = (float)nYStart;
-    fV0X[0].fOOW = 1.0;
-    fV0X[0].fS = 0.0;
-    fV0X[0].fT = 0.0;
-    fV0X[1].fX = (float)nXEnd;
-    fV0X[1].fY = (float)nYEnd;
-    fV0X[1].fOOW = 1.0;
-    fV0X[1].fS = 0.0;
-    fV0X[1].fT = 0.0;
-    (*GLIDEDLL__grDrawLine_8)(fV0X, fV0X + 1);
     (*GLIDEDLL_grChromakeyMode_4)(1);
 }
 
@@ -3898,48 +3919,55 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
 }
 
 void __fastcall PlayerSmacker(D2SmackerContextStrc * pContext) {
+    int bWaiting;
     void* hSmack;
-    if (pContext->eMode != 'p') {
-      int bWaiting;
-      if (pContext->eMode != 's') {
-        return;
-      }
-
-      hSmack = pContext->hSmack;
-      if (!hSmack) {
-        return;
-      }
-
-      bWaiting = SmackWait(hSmack);
-      if (!bWaiting) {
-        if (!gnGlideWindowHandle) {
+    switch (pContext->eMode) {
+      default:
+        {
           return;
         }
+      case 's':
+        {
+          hSmack = pContext->hSmack;
+          if (!hSmack) {
+            return;
+          }
 
-        SmackDoFrame(hSmack);
-        if (*(int*)((int)hSmack + 0x374) == *(int*)((int)hSmack + 0xc)) {
-          Glide::CloseSmacker(pContext);
-        } else {
-          SmackNextFrame(hSmack);
+          bWaiting = SmackWait(hSmack);
+          if (!bWaiting) {
+            if (!gnGlideWindowHandle) {
+              return;
+            }
+
+            SmackDoFrame(hSmack);
+            if (*(int*)((int)hSmack + 0x374) == *(int*)((int)hSmack + 0xc)) {
+              Glide::CloseSmacker(pContext);
+            } else {
+              SmackNextFrame(hSmack);
+            }
+            if (gnRenderState) {
+              return;
+            }
+
+            GLSMACK_ConvertPaletteToRGB565((uint8_t*)((int)hSmack + 0x6c));
+            GLSMACK_UploadTextures();
+          }
+          if (gnRenderState) {
+            return;
+          }
+
+          GLSMACK_DrawSmackerQuad(pContext, *(int32_t*)((int)hSmack + 8), *(int32_t*)((int)hSmack + 4));
         }
-        if (gnRenderState) {
+      case 'p':
+        {
+          if (gnRenderState) {
+            return;
+          }
+
+          GLSMACK_DrawSmackerQuad(pContext, 0x3c, 0x1d4);
           return;
         }
-
-        GLSMACK_ConvertPaletteToRGB565((uint8_t*)((int)hSmack + 0x6c));
-        GLSMACK_UploadTextures();
-      }
-      if (gnRenderState) {
-        return;
-      }
-
-      GLSMACK_DrawSmackerQuad(pContext, *(int32_t*)((int)hSmack + 8), *(int32_t*)((int)hSmack + 4));
     }
-    if (gnRenderState) {
-      return;
-    }
-
-    GLSMACK_DrawSmackerQuad(pContext, 0x3c, 0x1d4);
 }
 
 // VP-BEGIN [shadow-diag]: the sprite-cache buffer went TU-private in upstream's

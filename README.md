@@ -191,20 +191,27 @@ Two checks stand behind every release:
   decompilation itself: where the code comes out identical, the decompiled function was
   read correctly. Current counts live in its README and below.
 
-At this commit, generated from version 1908 of the Ghidra database:
+At this commit, generated from version 1948 of the Ghidra database:
 
 |Measure|Identical machine code|
 |-|-|
-|Functions|6,733 of 14,626 (46.0%)|
-|Code|568,175 of 2,598,518 bytes (21.87%)|
-|Instructions|1,791,778 of 2,598,518 bytes (69.0%), counting identical instructions in functions that still differ|
+|Functions|7,648 of 14,626 (52.3%)|
+|Functions without placeholders|7,081 of 14,626 (48.4%), not counting the 567 identical functions that are placeholders (below)|
+|Code|623,380 of 2,598,518 bytes (23.99%)|
+|Instructions|1,814,591 of 2,598,518 bytes (69.8%), counting identical instructions in functions that still differ|
+
+Of the 7,648 identical functions, 567 are recovered unreferenced functions: code in
+1.14d that nothing calls by a direct reference and that Ghidra never defined as a function. They
+are in the tree as placeholders named `Unreferenced_<address>`, or `<twin>_Unref_<address>` where
+the bytes repeat a named function. They count among the original functions either way, so the
+second row leaves them out of the identical count only.
 
 These leave out the C runtime that Visual C++ 2005 linked in statically (libcmt): the
 rebuild links a runtime instead of reconstructing it. Code the compiler generates for C++
 exceptions is left out as well, and so is the PKWARE compression library, linked into the
 original as a prebuilt 1997 library that no Visual C++ 2005 compile produced. Over the whole binary, runtime
-included: 7,290 of 15,711 functions (46.4%), 666,880 of
-2,748,975 bytes (24.26%).
+included: 8,208 of 15,711 functions (52.2%), 722,355 of
+2,748,975 bytes (26.28%).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="asm_matching/msvc8/evidence/byte-match-dark.svg">

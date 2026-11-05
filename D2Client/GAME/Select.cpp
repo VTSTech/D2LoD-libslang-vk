@@ -36,6 +36,7 @@
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
+#include "D2Common/Seed.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Unit.h"
 #include "D2Common/Units.h"
@@ -237,12 +238,14 @@ static BOOL __stdcall SELECT_IsWarpDoubleClicked(uint32_t dwUnused, int32_t nCli
     uint32_t uDeadline = Game::GAME_GetSyncTickCount();
     if (uTickCount < uDeadline) {
       uTickCount = Game::GAMEDATA_GetGlobalTickCount();
-      Game::GAME_SetSyncTickCount(uTickCount + 500);
+      uTickCount += 500;
+      Game::GAME_SetSyncTickCount(uTickCount);
       return 1;
     }
     if (!*pnDoubleClickState) {
       uTickCount = Game::GAMEDATA_GetGlobalTickCount();
-      Game::GAME_SetSyncTickCount(uTickCount + 500);
+      uTickCount += 500;
+      Game::GAME_SetSyncTickCount(uTickCount);
       *pnDoubleClickState = 1;
     }
 
@@ -256,7 +259,7 @@ static void __stdcall SELECT_ScreenToWorldCoords(int * pnX, int * pnY) {
       int nAdjustedY;
       nAdjustedY = *pnY - *pnY / 0x28;
       *pnY = nAdjustedY;
-      *pnX = (0x28 - ((int)((nAdjustedY >> 0x1f & 3U) + nAdjustedY) >> 2)) * (*pnX - ScreenSizeX / 2) / (ScreenSizeX / 2) + *pnX;
+      *pnX = (0x28 - nAdjustedY / 4) * (*pnX - ScreenSizeX / 2) / (ScreenSizeX / 2) + *pnX;
       nWorldOffset = UI::Path::DRAW_GetWorldOffsetX();
       *pnX += nWorldOffset;
       nWorldOffset = UI::Path::DRAW_GetWorldOffsetY();
@@ -408,6 +411,10 @@ static int32_t SELECT_GetDistanceSquared(D2UnitStrc * pUnit, D2UnitStrc * pUnit2
     int32_t nY2 = D2Common::Units::GetTargetY(pUnit2);
     int32_t nY1 = D2Common::Units::GetTargetY(pUnit);
     return (nY2 - nY1) * (nY2 - nY1) + (nX2 - nX1) * (nX2 - nX1);
+}
+
+int __stdcall SELECT_GetConstant13_Y_Unref_00467400() {
+    return _Selection::bHasSelectedUnit;
 }
 
 void __fastcall SELECT_SetPetSeedTimestamp(int32_t bEnabled, D2UnitStrc * pUnit, int32_t nTimestamp) {

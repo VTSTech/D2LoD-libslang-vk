@@ -167,6 +167,9 @@ int __fastcall PLRSAVE_RestoreItemsFromStream(::SGAMEDATA * pGame, struct D2Unit
 int __fastcall PLRSAVE_LoadItemListFromStream(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem, uint32_t eItemFormat, int32_t nStreamEnd, int32_t bUsePageHandler, short * * ppnBytesConsumed);
 int __fastcall PLRSAVE_DispatchItemLoadByFormat(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pItemData, uint32_t eFormat, int32_t nStreamEnd, int32_t bUsePageHandler, short * * ppnShort);
 int32_t __fastcall _oldSaveGameLoadingPart7(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, short * pCorpseHeader, uint32_t nFormat, uint32_t nSize, uint32_t * pnBytesConsumed);
+int __fastcall Unreferenced_00533a60(int param_1, int param_2);
+// Lookup table function: given a character class index (wParam, 0x00–0x1b) and a character level (nParam), returns the base experience-point threshold (or similar save-load scalar) for that class/level bracket. All paths return a constant or one of two bracket constants selected by level comparison. Part of the old save-game loading path (PlayerSave), used when reconstructing character progression data from .d2s files.
+int32_t __fastcall _oldSaveGameLoadingPart8_part1_part1(uint16_t wHirelingId, int32_t nLevel);
 uint32_t __fastcall _oldSaveGameLoadingPart8_part1(::SGAMEDATA * pGame, uint16_t wHirelingId, uint32_t dwExperience);
 // Restores skill hotkeys and active left/right skill assignments from a legacy save stream. Reads up to 8 hotkey entries (indices 8-15) from pbParam, remapping raw skill byte values (0x9C-0xD8 range shifted +0x41, 0xFF → -1) via SetGotkeyInfo. If stream is long enough also restores shift-left/right skill slots. Outputs bytes consumed in *pnParam.
 // @sourcefile .\PLAYER\PlrSave.cpp
@@ -177,6 +180,7 @@ int32_t __fastcall SERVER_LoadPlayerFromSaveFile(::SGAMEDATA * pGame, struct D2C
 // Loads player from save or creates new character. Dispatches to disk loader (SP/LAN), network loader (BNet), or fresh character creator based on game type and bLoadFromSave. After unit creation, updates passive skills and returns status. Called during join flow before placing unit in world.
 BOOL __fastcall CLIENT_LoadOrCreatePlayerUnit(::SGAMEDATA * pGame, struct D2ClientStrc * pClient, char * pClientCharName, BOOL bLoadFromSave, struct D2UnitStrc * * ppUnitOut, struct D2RoomStrc * pRoomOrNull, uint32_t nX, uint32_t nY);
 void __stdcall WapperSaveGameAllGameTypes(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, char * szText);
-// 13 internal functions (defined in .cpp)
+uint32_t __fastcall CRC32_Calculate(uint8_t * pbData, int nLen);
+// 12 internal functions (defined in .cpp)
 
 } // namespace D2Game::PLAYER::PlayerSave

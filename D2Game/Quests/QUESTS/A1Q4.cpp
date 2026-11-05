@@ -5,8 +5,8 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
+#include "D2Common/Collision.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2RoomExStrc.h"
@@ -56,7 +56,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
-#include "D2Client/UI/QuestLog.h"
 #include "D2Game/D2QuestGUIDStrc.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Monster/Monsters.h"
@@ -319,14 +318,21 @@ void __fastcall Q04_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     nRewardLevel = 7;
     eD2ItemQuality eQuality;
     eQuality = QUALITY_MAGIC;
-    if (nDifficulty != 1) {
-      if (nDifficulty != 2) {
-        goto give_ring_reward;
-      }
-
-      nRewardLevel = 0x3c;
-    } else {
-      nRewardLevel = 0x1e;
+    switch (nDifficulty) {
+      case 1:
+        {
+          nRewardLevel = 0x1e;
+          break;
+        }
+      default:
+        {
+          goto give_ring_reward;
+        }
+      case 2:
+        {
+          nRewardLevel = 0x3c;
+          break;
+        }
     }
 
     eQuality = QUALITY_RARE;
@@ -553,8 +559,8 @@ void __fastcall Q04_SendQuestStatePacket(D2UnitStrc * pUnit) {
     D2GSPacketSrv0x5D abyPacketBuf;
     memset(&abyPacketBuf, 0, sizeof(abyPacketBuf));
     abyPacketBuf.nPacketId = ']';
-    abyPacketBuf.nQuestId = '\x04';
     abyPacketBuf.nAlertFlags = '\x01';
+    abyPacketBuf.nQuestId = '\x04';
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q4.cpp", 0x265);
     GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, &abyPacketBuf);
 }
@@ -579,14 +585,13 @@ BOOL __fastcall Q04_DespawnRogueGuards(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     BOOL bHasAiSub = Monster::MonsterAI::HasAiSub(pMonsterAi);
     if (bHasAiSub) {
       Monster::MonsterAI::ClearAISub(pGame, pUnit, Q04_SendQuestStatePacket, false);
-      return 1;
-    }
-
-    Monster::MonsterMode::SetCurrentSkill(pUnit, Death, &sKill);
-    Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKill, 1);
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSearchForCain);
-    if (pQuestData) {
-      pQuestData->pQuestSpecificData.pA1Q4->sSub.bPortalArmed = '\x01';
+    } else {
+      Monster::MonsterMode::SetCurrentSkill(pUnit, Death, &sKill);
+      Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKill, 1);
+      D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSearchForCain);
+      if (pQuestData) {
+        pQuestData->pQuestSpecificData.pA1Q4->sSub.bPortalArmed = '\x01';
+      }
     }
 
     return 1;
@@ -641,7 +646,7 @@ static void __stdcall Q04_SpawnDeckardCainNpc(D2RoomStrc * pRoom, ::SGAMEDATA * 
       do {
         ptCainSpawnPos.y++;
         ptCainSpawnPos.x++;
-        pSpawnRoomOut = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pSpawnRoomOut, ptCainSpawnPos.x, ptCainSpawnPos.y);
+        pSpawnRoomOut = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pSpawnRoomOut, ptCainSpawnPos.x, ptCainSpawnPos.y);
         if (!pSpawnRoomOut) {
           ptCainSpawnPos.x = nX;
           ptCainSpawnPos.y = nY;
@@ -792,12 +797,7 @@ void __fastcall Q04_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2
     }
 
     QUESTGUID_RemovePlayerFromList(&pDVar1->sQuestGUID1, nPlayerGUID);
-    if (!pQuestArgs->pPlayer) {
-      QUESTGUID_RemovePlayerFromList(&pDVar1->sQuestGUID2, -1);
-      return;
-    }
-
-    QUESTGUID_RemovePlayerFromList(&pDVar1->sQuestGUID2, pQuestArgs->pPlayer->nUnitGUID);
+    QUESTGUID_RemovePlayerFromList(&pDVar1->sQuestGUID2, !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID);
 }
 
 // A1Q4 — Q04_SpawnTristramPortal: opens the red Tristram portal at the Cairn Stones.
@@ -1751,7 +1751,6 @@ BOOL __fastcall Q04_SetSecretCowLevelDiscovered(::SGAMEDATA * pGame, D2UnitStrc 
 void __fastcall Q04_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     BOOL BVar1;
     D2BitBufferStrc* pBitBuffer;
-    eD2Quests nQuestId;
     ::SGAMEDATA* pGame;
     D2QuestDataStrc* pQuestDataTmp = pQuestData;
     if (pQuestArgs->pPlayer) {
@@ -1767,14 +1766,12 @@ void __fastcall Q04_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
       if (pGame->bExpansion) {
         pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
         pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
-        nQuestId = QUEST_EveOfDestruction;
+        BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_Completed);
       } else {
         pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
         pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
-        nQuestId = QUEST_TerrorsEnd;
+        BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TerrorsEnd, QUESTSTATE_Completed);
       }
-
-      BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, nQuestId, QUESTSTATE_Completed);
       if (!BVar1) {
         return;
       }
@@ -1871,24 +1868,14 @@ void __fastcall Q04_InitializeCainGibbetObject(D2QuestDataStrc * pQuestData, D2O
     D2QuestDataA5Q5Strc* nQuestSpecific = pQuestData->pQuestSpecificData.pA5Q5;
     D2Common::Units::SetupUpdateFlag(pInitArg->pObject, nQuestSpecific->nPlayersOnSummit);
     nQuestSpecific->bAncientsSpawned = 1;
-    if (!pInitArg->pObject) {
-      nQuestSpecific->anStatueMode[1] = -1;
-      return;
-    }
-
-    nQuestSpecific->anStatueMode[1] = pInitArg->pObject->nUnitGUID;
+    nQuestSpecific->anStatueMode[1] = !pInitArg->pObject ? -1 : pInitArg->pObject->nUnitGUID;
 }
 
 // A1Q4 — Q04_RemovePlayerFromList (per-player iterate callback): removes a player
 // (by GUID, or -1) from quest list1. Bookkeeping only.
 void __fastcall Q04_RemovePlayerFromList(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSearchForCain);
-    if (!pUnit) {
-      QUESTGUID_RemovePlayerFromList(&pQuestData->pQuestSpecificData.pA1Q4->sQuestGUID1, -1);
-      return;
-    }
-
-    QUESTGUID_RemovePlayerFromList(&pQuestData->pQuestSpecificData.pA1Q4->sQuestGUID1, pUnit->nUnitGUID);
+    QUESTGUID_RemovePlayerFromList(&pQuestData->pQuestSpecificData.pA1Q4->sQuestGUID1, !pUnit ? -1 : pUnit->nUnitGUID);
 }
 
 // A1Q4 — Objects_InitFn54: init callback for the Cain-cage object. Records its GUID
@@ -2105,8 +2092,7 @@ BOOL __fastcall Q04_SpawnCainCage(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     }
 
     LONG nY = pDVar2->ptCainPos.y;
-    D2RoomStrc* pSpawnRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pSpawnRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pSpawnRoom, pDVar2->ptCainPos.x, nY);
+    D2RoomStrc* pSpawnRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), pDVar2->ptCainPos.x, nY);
     if (!pSpawnRoom) {
       pDVar2->ptCainPos.x += 3;
       pDVar2->ptCainPos.y += 3;
@@ -2133,11 +2119,11 @@ BOOL __fastcall Q04_GetCainPosition(::SGAMEDATA * pGame, D2UnitStrc * pUnit, POI
     D2QuestDataA1Q4Strc* pQuestSpecific = pQuestData->pQuestSpecificData.pA1Q4;
     if (*(char*)((uintptr_t)&pQuestSpecific->sSub.field_0x7C + 1) == '\0') {
       D2Common::Units::GetCoords(pUnit, pPoint);
-      return 1;
+    } else {
+      pPoint->x = pQuestSpecific->ptCainPos.x;
+      pPoint->y = pQuestSpecific->ptCainPos.y;
     }
 
-    pPoint->x = pQuestSpecific->ptCainPos.x;
-    pPoint->y = pQuestSpecific->ptCainPos.y;
     return 1;
 }
 
@@ -2200,8 +2186,7 @@ void __fastcall Q04_InitializeTristramObjects(::SGAMEDATA * pGame, D2UnitStrc * 
 
     D2Common::Units::GetCoords(pFoundUnit, &sCairnPos);
     LONG nCairnPosY = sCairnPos.y;
-    D2RoomStrc* pCageRoom = D2Common::Units::UNITS_GetRoom(pFoundUnit);
-    pCageRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pCageRoom, sCairnPos.x, nCairnPosY);
+    D2RoomStrc* pCageRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pFoundUnit), sCairnPos.x, nCairnPosY);
     if (!pCageRoom) {
       return;
     }

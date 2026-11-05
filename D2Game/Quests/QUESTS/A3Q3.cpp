@@ -45,7 +45,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
-#include "D2Client/UI/QuestLog.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Game/D2QuestGUIDStrc.h"
 #include "D2Game/Quests/QUESTS/A1Q2.h"
@@ -183,7 +182,7 @@ bool __fastcall Q20_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
     if (bQuestState) {
       /* GetQuestState JustCompleted(0xd): if fresh, +2 -> display code 0x0d
                          (completion glow) else 0x0b */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_BladeOfTheOldReligion, QUESTSTATE_JustCompleted);
-      *pbyStatusCode = bQuestState != 0 ? 13 : 11;
+      *pbyStatusCode = !bQuestState ? 0xb : 0xd;
       return true;
     }
 
@@ -251,7 +250,6 @@ bool __fastcall Q20_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
         return true;
       }
     } else {
-      eD2QuestState eQuestState;
       if (nTargetClassId == 0xff) {
         pQuestItem = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x20333367);
         if (pQuestItem) {
@@ -263,7 +261,7 @@ bool __fastcall Q20_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
           return false;
         }
 
-        eQuestState = QUESTSTATE_Step0x08;
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x08);
       } else {
         if (nTargetClassId != 0xfc) {
           return false;
@@ -274,10 +272,8 @@ bool __fastcall Q20_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
           return false;
         }
 
-        eQuestState = QUESTSTATE_Step0x07;
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x07);
       }
-
-      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, eQuestState);
       if (!bQuestState) {
         return true;
       }
@@ -1044,6 +1040,18 @@ bool __fastcall Q20_GetSerpentKillerGUID(::SGAMEDATA * pGame, int * pnPlayerGUID
     }
 
     return false;
+}
+
+int __fastcall Unreferenced_005b9c80(int param_1, int param_2) {
+    int iVar1 = *(int*)(param_1 + 0x18);
+    if (*(char*)(iVar1 + 2) == '\x01') {
+      int iVar2 = !param_2 ? -1 : *(int*)(param_2 + 0xc);
+      if (*(int*)(iVar1 + 0x24) == iVar2) {
+        *(uint8_t*)(iVar1 + 2) = 0;
+      }
+    }
+
+    return iVar1;
 }
 
 // A3Q3 "Khalim's Will" — accessor: when the serpent/orb-object "pending" flag (field_0x06) is set,

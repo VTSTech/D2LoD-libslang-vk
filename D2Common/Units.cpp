@@ -11,7 +11,6 @@
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/Stats.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/CUnitEvent.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Monster.h"
@@ -58,6 +57,7 @@
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/Objects/Objects.h"
 #include "D2Game/PLAYER/Player.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/UNIT/PlayerList.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -368,6 +368,10 @@ static int gaAnimTableExpansion[80] = {
 }; D2_STATIC_GUARD(gaAnimTableExpansion, "gaAnimTableExpansion");
 
 namespace D2Common::Units {
+
+void __stdcall Return_Unref_005fe100(D2UnitStrc * pUnit, int32_t nParam) {
+
+}
 
 uint8_t __stdcall GetDirection(D2UnitStrc * pUnit) {
     uint8_t byDirection;
@@ -767,12 +771,12 @@ short __stdcall GetCoords(D2UnitStrc * pUnit, POINT * pPoint) {
 
       pPoint->x = 0;
       pPoint->y = 0;
-      return (short int)(uintptr_t)pPoint;
+    } else {
+      D2StaticPathStrc* pDVar1 = pUnit->pPath.pStaticPath;
+      pPoint->x = pDVar1->nPosX;
+      pPoint->y = pDVar1->nPosY;
     }
 
-    D2StaticPathStrc* pDVar1 = pUnit->pPath.pStaticPath;
-    pPoint->x = pDVar1->nPosX;
-    pPoint->y = pDVar1->nPosY;
     return (short int)(uintptr_t)pPoint;
 }
 
@@ -1491,29 +1495,37 @@ static BOOL HasSequenceTransition(D2UnitStrc * pUnit, int32_t nAnimMode, eD2Unit
       }
     } else {
       D2SkillStrc* pSkill;
-      if (nAnimMode != 10) {
-        if (nAnimMode != 0x12) {
-          return 0;
-        }
-        if (!pUnit) {
-          return 0;
-        }
+      switch (nAnimMode) {
+        default:
+          {
+            return 0;
+          }
+        case 0x12:
+          {
+            if (!pUnit) {
+              return 0;
+            }
 
-        pSkill = D2Common::Units::GetCurrentSkill(pUnit);
-        if (!pSkill) {
-          return 0;
-        }
+            pSkill = D2Common::Units::GetCurrentSkill(pUnit);
+            if (!pSkill) {
+              return 0;
+            }
 
-        eSkill = Skills::GetSkillId(pSkill, ".\\UNITS\\Units.cpp", 0xc48);
-        pSkillsTxt = D2Client::GAME::SCmd::TXT_Skills_GetLine(eSkill);
-        if (!pSkillsTxt) {
-          return 0;
-        }
-        if (pSkillsTxt->seqtrans == '\n') {
-          return 1;
-        }
+            eSkill = Skills::GetSkillId(pSkill, ".\\UNITS\\Units.cpp", 0xc48);
+            pSkillsTxt = D2Client::GAME::SCmd::TXT_Skills_GetLine(eSkill);
+            if (!pSkillsTxt) {
+              return 0;
+            }
+            if (pSkillsTxt->seqtrans == '\n') {
+              return 1;
+            }
 
-        return 0;
+            return 0;
+          }
+        case 10:
+          {
+            break;
+          }
       }
     }
 
@@ -2386,11 +2398,13 @@ D2UnitStrc * __stdcall GetEquippedWeapon(D2UnitStrc * pUnit) {
     if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return nullptr;
     }
-    if (!pUnit->pInventory) {
+
+    struct D2InventoryStrc* tmp1 = pUnit->pInventory;
+    if (!tmp1) {
       return nullptr;
     }
 
-    BOOL bHasWeapon = INVENTORY::Inventory::INVENTORY_GetEquippedWeaponInfo(pUnit->pInventory, &pUnit, &nBodyLoc, &bSwitch);
+    BOOL bHasWeapon = INVENTORY::Inventory::INVENTORY_GetEquippedWeaponInfo(tmp1, &pUnit, &nBodyLoc, &bSwitch);
     return bHasWeapon ? (D2UnitStrc*)pUnit : nullptr;
 }
 
@@ -2409,7 +2423,7 @@ int32_t __stdcall GetMeleeRange(D2UnitStrc * pUnit) {
       if (pUnit->eUnitType == UNIT_MONSTER && (pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pUnit->nClassId) , pMonStats2 != 0)) {
         if (pMonStats2->MeleeRng == 0xff) {
           COMPOSIT::Composit::COMPOSIT_GetWeaponClassWithTransform(pUnit_00, pUnit_00->pInventory, (uint32_t*)&pUnit, -1, 1);
-          return pUnit != (D2UnitStrc*)0x6 ? 0 : 0x2;
+          return pUnit == (D2UnitStrc*)0x6 ? 0x2 : 0;
         }
 
         return (uint32_t)pMonStats2->MeleeRng;
@@ -4062,8 +4076,8 @@ void __stdcall InitAnimMode(D2UnitStrc * pUnitArg) {
               return;
             }
 
-            dwStatFlag = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnit_00->sSeed, (int)wFrameDelta >> 3);
-            nRandomSpeed = dwStatFlag + ((int)wFrameDelta - (int)(wFrameDelta >> 4));
+            nRandomSpeed = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnit_00->sSeed, (int)wFrameDelta >> 3);
+            nRandomSpeed += (int)wFrameDelta - (int)(wFrameDelta >> 4);
             nRandomSpeed = (int)nRandomSpeed <= 0 ? 0 : nRandomSpeed;
             if ((int)nRandomSpeed >= 0x7fff) {
               nRandomSpeed = 0x7fff;

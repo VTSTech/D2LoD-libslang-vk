@@ -28,7 +28,6 @@
 #include "D2Client/UI/Panel.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/QuestLog.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/SpellSel.h"
 #include "D2Client/UI/Text.h"
 #include "D2Client/UI/UseItem.h"
@@ -68,6 +67,7 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/Objects/Objects.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/SKILLS/SkillsServer.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
@@ -109,6 +109,7 @@
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/Unit.h"
 #include "D2Game/GAME/Arena.h"
+#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -133,10 +134,13 @@ static uint8_t gbLoggerStateInactive = 0; D2_STATIC_GUARD(gbLoggerStateInactive,
 static uint8_t gbItemDescDirtyFlag = 0; D2_STATIC_GUARD(gbItemDescDirtyFlag, "gbItemDescDirtyFlag");
 static uint8_t geCutsceneCurrentSoundId = 0; D2_STATIC_GUARD(geCutsceneCurrentSoundId, "geCutsceneCurrentSoundId");
 static uint8_t aQuestAvailabilityPacket[37] = {}; D2_STATIC_GUARD(aQuestAvailabilityPacket, "aQuestAvailabilityPacket");
-static BOOL bReceivedQuestAvailabilityPacket = 0; D2_STATIC_GUARD(bReceivedQuestAvailabilityPacket, "bReceivedQuestAvailabilityPacket");
 static uint32_t gdwWarpFadeExpireTime = 0; D2_STATIC_GUARD(gdwWarpFadeExpireTime, "gdwWarpFadeExpireTime");
 
 namespace D2Client {
+
+void __stdcall CMD_AutomapCenterOnPlayer_Unref_0040d530() {
+    Fog::Debug::CleanupSymbolsWithRefcount(1);
+}
 
 // @sourcefile .\CORE\WINMAIN.CPP
 BOOL __stdcall WINMAIN_TestMemoryAccess(CMDPARAMS * pParams, char * szCmdLine) {
@@ -905,6 +909,18 @@ uint32_t __stdcall ROSTER_GetArenaKillCountGlobal() {
     return gaChattablePlayers;
 }
 
+int Unreferenced_0047a9e0() {
+    return CLIENT_ArenaFlags & 0x40;
+}
+
+int Unreferenced_0047a9f0() {
+    return CLIENT_ArenaFlags & 0x80;
+}
+
+int Unreferenced_0047aa00() {
+    return CLIENT_ArenaFlags & 0x200;
+}
+
 void __fastcall ROSTER_SetArenaKillCountGlobal(eD2PlayerClassIDDWORD dwValue) {
     eD2PlayerClassIDDWORD_00712f00 = dwValue;
 }
@@ -917,6 +933,16 @@ eD2PlayerClassIDDWORD __stdcall CLIENT_GetDefaultCharClass() {
 // Returns 1 if arena mode is active (bit 8 of CLIENT_ArenaFlags is set), indicating the game session is running in arena/PvP mode.
 uint32_t __stdcall CLIENT_IsArenaMode() {
     return CLIENT_ArenaFlags >> 8 & 1;
+}
+
+int __fastcall Unreferenced_0047aa40(int param_1) {
+    if (*(uint16_t*)param_1 < 0x100) {
+      int iVar1;
+      iVar1 = isspace((uint32_t)*(uint16_t*)param_1);
+      return iVar1;
+    }
+
+    return 0;
 }
 
 void __stdcall INPUT_HandleIMEComposition(D2UIMouseMsgStrc * pMsg) {
@@ -1012,13 +1038,10 @@ void __stdcall INPUT_HandleIMEStartComposition(D2UIMouseMsgStrc * pMsg) {
     gwcImeCompositionBuffer[0] = L'\0';
     if (gaIMECompositionBuffer == 9) {
       gnIMEInputMode = 4;
-      pMsg->bHandled = 1;
-      pMsg->dwResult = 0;
-      Storm::SMsgBreakHandlerChain(pMsg);
-      return;
-    }
-    if (gaIMECompositionBuffer == 8) {
-      gnIMEInputMode = 5;
+    } else {
+      if (gaIMECompositionBuffer == 8) {
+        gnIMEInputMode = 5;
+      }
     }
 
     pMsg->bHandled = 1;
@@ -1525,6 +1548,10 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x5E_QUESTPICKS(char * pBytes) {
     bReceivedQuestAvailabilityPacket = 1;
 }
 
+int __stdcall Unreferenced_004b92d0(int param_1) {
+    return bReceivedQuestAvailabilityPacket;
+}
+
 uint32_t __stdcall GetQuestAvailabilityByIndex(int32_t nUnused, int32_t nQuestIndex) {
     if (!bReceivedQuestAvailabilityPacket) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x60);
@@ -1666,6 +1693,10 @@ void __stdcall TEXT_SetUnknownFlag(D2UIMouseMsgStrc * pMsg) {
     }
 
     UI::Inv::INV_HandleInventoryMouseMove(pMsg);
+}
+
+int __stdcall TEXT_EmptyCallback_Unref_004c2530() {
+    return 0;
 }
 
 void __stdcall SOUND_ClearGlobalState() {

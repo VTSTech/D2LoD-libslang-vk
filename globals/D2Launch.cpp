@@ -13,8 +13,7 @@
 
 char * gpszPaletteSkyDat[4] = {}; D2_GLOBAL_GUARD(gpszPaletteSkyDat, "gpszPaletteSkyDat");
 char * gpszPaletteSkyPl2[4] = {}; D2_GLOBAL_GUARD(gpszPaletteSkyPl2, "gpszPaletteSkyPl2");
-D2WinTextBox * gpWinTextBoxRealmSelect = 0; D2_GLOBAL_GUARD(gpWinTextBoxRealmSelect, "gpWinTextBoxRealmSelect");
-D2BNetClientCallbacksStrc * gpBNetCallbacks = 0; D2_GLOBAL_GUARD(gpBNetCallbacks, "gpBNetCallbacks");
+::D2WinTextBox * gpWinTextBoxRealmSelect = 0; D2_GLOBAL_GUARD(gpWinTextBoxRealmSelect, "gpWinTextBoxRealmSelect");
 
 namespace D2Common::Drlg::Maze {
 
@@ -124,19 +123,31 @@ namespace Class::HANDLER {
 
 } // namespace Class::HANDLER
 
-namespace D2Client::CharScreen {
+namespace D2Launch::CharSel {
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-int nSelectedCharIndex = -0x1; D2_GLOBAL_GUARD(nSelectedCharIndex, "D2Client::CharScreen::nSelectedCharIndex");
+int nSelectedCharIndex = -0x1; D2_GLOBAL_GUARD(nSelectedCharIndex, "D2Launch::CharSel::nSelectedCharIndex");
 
-} // namespace D2Client::CharScreen
+} // namespace D2Launch::CharSel
 
-namespace D2Client::UI::ui {
+namespace D2Game::GAME::Rendering {
 
-} // namespace D2Client::UI::ui
+} // namespace D2Game::GAME::Rendering
+
+namespace D2Client::Renderer {
+
+} // namespace D2Client::Renderer
+
+namespace D2DDraw::Renderer::DirectDraw {
+
+} // namespace D2DDraw::Renderer::DirectDraw
+
+namespace D2Lang::Unicode::UNISYS {
+
+} // namespace D2Lang::Unicode::UNISYS
 
 namespace D2Game::Quests::QUESTS::Quest40 {
 
@@ -305,20 +316,11 @@ namespace D2Client::UI::Dialog {
 namespace D2Client::Draw::LightMap {
 
 } // namespace D2Client::Draw::LightMap
-// 0x0070cc4c and 0x0077abf4. Their only reader is ShowOogErrorDialog 0043b9f0, whose
-// OOG_ERROR_BNET_ACCOUNT_CHECK arm was one of the arms the generator dropped, so the
-// globals were never emitted either. gnBnetAccountLoginFailCount starts at 1 in the image.
-int gnBnetAccountLoginFailCount = 1;
-char gszOogLastIniStringCache[16] = {};
 
-namespace D2Client::Mouse {
+namespace D2Win::Src::D2WinMain {
 
-} // namespace D2Client::Mouse
+} // namespace D2Win::Src::D2WinMain
 
-namespace D2Client::Forms {
+namespace D2Win::D2GFX {
 
-} // namespace D2Client::Forms
-
-namespace D2Client::GAME::Record {
-
-} // namespace D2Client::GAME::Record
+} // namespace D2Win::D2GFX

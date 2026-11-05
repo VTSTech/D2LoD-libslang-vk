@@ -38,7 +38,7 @@ typedef BOOL (__fastcall *Draw)(D2ControlStrc * pControl);
 typedef BOOL (__fastcall *DrawEx)(D2ControlStrc * pControl);
 #endif
 
-static D2WinPopup * gpD2WinPopupControl = 0; D2_STATIC_GUARD(gpD2WinPopupControl, "gpD2WinPopupControl");
+static ::D2WinPopup * gpD2WinPopupControl = 0; D2_STATIC_GUARD(gpD2WinPopupControl, "gpD2WinPopupControl");
 
 namespace D2Win::Src::D2WinPopup {
 
@@ -127,7 +127,6 @@ BOOL __stdcall D2WINPOPUP_HandleClick(D2UIMouseMsgStrc * pMsg) {
 BOOL __fastcall DrawEx(::D2WinPopup * pPopup) {
     int nRelMouseX;
     int nRelX;
-    int nSizeY;
     if (pPopup->sControl.neD2FormType != FORM_Popup) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa6);
       exit(-1);
@@ -135,11 +134,10 @@ BOOL __fastcall DrawEx(::D2WinPopup * pPopup) {
 
     uint32_t uVar1 = pPopup->sControl.dwState;
     if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
-      nSizeY = pPopup->sControl.dwSizeY;
       pPopup->bCentered = -1;
-      nRelMouseX = D2Client::Mouse::nPosX - pPopup->sControl.dwPosX;
-      nRelX = nSizeY - pPopup->sControl.dwPosY + D2Client::Mouse::nPosY;
-      if (nRelMouseX >= 0 && nRelMouseX <= pPopup->sControl.dwSizeX && nRelX >= 0 && nRelX <= nSizeY) {
+      nRelMouseX = D2WinMain::nPosX - pPopup->sControl.dwPosX;
+      nRelX = pPopup->sControl.dwSizeY - pPopup->sControl.dwPosY + D2WinMain::nPosY;
+      if (nRelMouseX >= 0 && nRelMouseX <= pPopup->sControl.dwSizeX && nRelX >= 0 && nRelX <= pPopup->sControl.dwSizeY) {
         pPopup->bCentered = nRelX / 0x14;
       }
 
@@ -182,7 +180,7 @@ BOOL __fastcall Draw(::D2WinPopup * pPopup) {
       wMessage = pPopup->wszMessages;
       nMsgCount = 0;
       do {
-        D2WinFont::DRAW_text(wMessage->wszText, pPopup->sControl.dwPosX, pPopup->sControl.dwPosY + (nMsgCount - nMsgIdx + 1) * 0x14, nMsgCount != pPopup->bCentered ? 0 : 0x3, 0);
+        D2WinFont::DRAW_text(wMessage->wszText, pPopup->sControl.dwPosX, pPopup->sControl.dwPosY + (nMsgCount - nMsgIdx + 1) * 0x14, nMsgCount == pPopup->bCentered ? 0x3 : 0, 0);
         nMsgIdx = pPopup->nMessageCount;
         nMsgCount++;
         wMessage++;
@@ -208,8 +206,8 @@ void __stdcall D2WinPopup() {
     uVar1 = pNewPopup->sControl.dwState | gadwBitMasks[2];
     pNewPopup->sControl.dwState = uVar1;
     pNewPopup->sControl.dwState = uVar1 | gadwBitMasks[3];
-    pNewPopup->sControl.dwPosX = D2Client::Mouse::nPosX;
-    pNewPopup->sControl.dwPosY = D2Client::Mouse::nPosY;
+    pNewPopup->sControl.dwPosX = D2WinMain::nPosX;
+    pNewPopup->sControl.dwPosY = D2WinMain::nPosY;
     pNewPopup->sControl.fpDraw = (::Draw)(BOOL (__fastcall *)(::D2WinPopup*))D2WinPopup::Draw;
     pNewPopup->sControl.fpDrawEx = (::DrawEx)(BOOL (__fastcall *)(::D2WinPopup*))D2WinPopup::DrawEx;
     pNewPopup->sControl.pNext = 0;

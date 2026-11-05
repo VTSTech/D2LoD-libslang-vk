@@ -20,7 +20,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Help.data.h"
-#include "D2Client/UI/Panel.h"
 #include "D2Win/Src/D2WinFont.data.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -1220,6 +1219,17 @@ D2TextLineStrc * __fastcall D2WINFONT_WordWrapString(uint16_t * wszText, int * p
     goto append_line_node;
 }
 
+int __fastcall Unreferenced_00502c40(int param_1) {
+    int iVar1;
+    uint32_t* puVar2 = (uint32_t*)param_1;
+    for (iVar1 = 0x200; iVar1; iVar1--) {
+      *puVar2 = 0;
+      puVar2++;
+    }
+
+    return param_1;
+}
+
 void __stdcall D2WINFONT_InitFontSystem() {
     char szFontPath[80];
     uint32_t nLangCode;
@@ -1388,8 +1398,8 @@ void __stdcall Draw_UnitNameUnderCursor() {
     }
 
     while (true) {
-      nStrLen = TEXT_CalculateTextWidth(DisplayedTooltip.wszString);
-      nWidth = nStrLen + 8;
+      nWidth = TEXT_CalculateTextWidth(DisplayedTooltip.wszString);
+      nWidth += 8;
       nCalcTextHeight = TEXT_CalculateTextHeight(DisplayedTooltip.wszString);
       nDrawX = DisplayedTooltip.nX;
       if (DisplayedTooltip.nCenterFlag == 1) {

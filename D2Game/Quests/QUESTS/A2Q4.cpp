@@ -3,6 +3,7 @@
 #include "D2Game/Quests/QUESTS/A2Q4.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
+#include "D2Common/Collision.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2RoomExStrc.h"
@@ -559,6 +560,8 @@ void __fastcall Q12_OnHoradricStaffAssembled(::SGAMEDATA * pGame) {
     if (!pQuestContext) {
       return;
     }
+
+    D2QuestDataA2Q4Strc* pQuestData = pQuestContext->pQuestSpecificData.pA2Q4;
     if (pQuestContext->bIsNotIntroduction != '\0') {
       if (!pQuestContext->nStateFlag) {
         QUEST_SetStateFlag(pQuestContext, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q4.cpp", 0x3bf);
@@ -569,7 +572,7 @@ void __fastcall Q12_OnHoradricStaffAssembled(::SGAMEDATA * pGame) {
         return;
       }
     } else {
-      Q12_OnJournalActivate(pQuestContext->pQuestSpecificData.pA2Q4, pQuestContext);
+      Q12_OnJournalActivate(pQuestData, pQuestContext);
     }
 }
 
@@ -673,12 +676,7 @@ BOOL __fastcall Q14_CheckDurielProximity(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     uint32_t nDist = Monster::AI::MONSTERAI_GetDistanceToCoords(pUnit, pA2Q4Data->nHaremBlockerX, pA2Q4Data->nHaremBlockerY);
     if (nDist <= 0x1e) {
       pA2Q4Data->bDurielProximity = 1;
-      if (!pUnit) {
-        pA2Q4Data->nDurielProximityPlayerGUID = -1;
-        return 1;
-      }
-
-      pA2Q4Data->nDurielProximityPlayerGUID = pUnit->nUnitGUID;
+      pA2Q4Data->nDurielProximityPlayerGUID = !pUnit ? -1 : pUnit->nUnitGUID;
       return 1;
     }
 

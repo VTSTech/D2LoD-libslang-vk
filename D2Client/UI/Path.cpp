@@ -33,7 +33,6 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/UI/Panel.h"
 #include "D2Client/UI/VanillaPlusCore.h" // VP: [issue #26 / R92] wide-layout guards
 #include "D2Common/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
@@ -47,6 +46,14 @@ static uint32_t gnBorderType = 0; D2_STATIC_GUARD(gnBorderType, "gnBorderType");
 static uint32_t MouseYRelatedB = 0; D2_STATIC_GUARD(MouseYRelatedB, "MouseYRelatedB");
 
 namespace D2Client::UI::Path {
+
+uint32_t __stdcall DRAW_GetTypeOfBorder_Unref_0045ae60() {
+    return gaScreenResolutionTableIndexArray;
+}
+
+uint32_t __stdcall DRAW_GetTypeOfBorder_Unref_0045ae80() {
+    return gaScreenResolutionModeArray;
+}
 
 uint32_t __stdcall DRAW_GetTypeOfBorder() {
     return gnBorderType;
@@ -71,7 +78,7 @@ void __fastcall TypeOfUiOverlayOverWorld(uint32_t eBorderType) {
 
     gnBorderType = eBorderType;
     D2gfx::D2GFX::D2GFX_SetOverlayMode(MouseYRelatedB);
-    int nViewOffsetX = (int)((WindowSizeX >> 0x1f & 3U) + WindowSizeX) >> 2;
+    int nViewOffsetX = WindowSizeX / 4;
     switch (eBorderType) {
       case 0:
         GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
@@ -162,7 +169,7 @@ void __fastcall ConvertCoordToPerspectiveView(int * pX, int * pY) {
     if (bPerspective) {
       int nDiv;
       nY += nY / -40;
-      nX += (0x28 - ((int)((nY >> 0x1f & 3U) + nY) >> 2)) * (nX - ScreenSizeX / 2) / (ScreenSizeX / 2);
+      nX += (0x28 - nY / 4) * (nX - ScreenSizeX / 2) / (ScreenSizeX / 2);
     }
 
     nY += MouseYOffset;
@@ -188,8 +195,8 @@ void __fastcall DRAW_DrawRoomUnits(D2RoomStrc * pRoom) {
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &ppAdjacentRooms, (int*)&nRoomCount);
     for (i = 0; i < nRoomCount; i++) {
       for (pUnit = pRoom->pUnitList; pUnit; pUnit = pUnit->pRoomNext) {
-        nCoord = D2Common::Units::GetTargetX(pUnit);
-        nScreenX = nCoord - MouseXOffset;
+        nScreenX = D2Common::Units::GetTargetX(pUnit);
+        nScreenX -= MouseXOffset;
         nCoord = D2Common::Units::GetTargetY(pUnit);
         D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nScreenX, nCoord - MouseYOffset, nScreenX + 4, nCoord - MouseYOffset + 4, 0xff, DRAW_SOLID);
         if (pUnit && pUnit->eUnitType == UNIT_WARP) {
@@ -198,8 +205,8 @@ void __fastcall DRAW_DrawRoomUnits(D2RoomStrc * pRoom) {
             nScreenX = *(int*)pGfxInfo->nComponentFlags - MouseXOffset;
             nLineAlpha = 0xff;
             nColor_lcl = 0xff;
-            nCoord = D2Common::Units::GetTargetY(pUnit);
-            nYStart = nCoord - MouseYOffset;
+            nYStart = D2Common::Units::GetTargetY(pUnit);
+            nYStart -= MouseYOffset;
             nCoord = D2Common::Units::GetTargetX(pUnit);
             D2gfx::D2GFX::D2GFX_DrawLine(nCoord - MouseXOffset, nYStart, nScreenX, nYEnd, nColor_lcl, nLineAlpha);
           }

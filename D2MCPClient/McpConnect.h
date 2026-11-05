@@ -13,6 +13,18 @@ struct D2CharSelStrc;
 struct D2McpGameInfoStrc;
 struct MCPPacketSrv0x04;
 struct mcp0x03data;
+#ifndef RECON_FPTD_pfnMCPGameListEntry
+#define RECON_FPTD_pfnMCPGameListEntry
+typedef void (__fastcall *pfnMCPGameListEntry)(uint32_t nEntryField0, uint32_t nEntryCount, uint32_t nEntryField2, uint32_t nListFlag, void * pEntryData);
+#endif
+#ifndef RECON_FPTD_pfnMCPMessage
+#define RECON_FPTD_pfnMCPMessage
+typedef void (__fastcall *pfnMCPMessage)(uint32_t nMessageId, uint32_t nDataLength, void * pMessageData);
+#endif
+#ifndef RECON_FPTD_pfnVoidNoArgCallback
+#define RECON_FPTD_pfnVoidNoArgCallback
+typedef void (__stdcall *pfnVoidNoArgCallback)();
+#endif
 
 // Data types
 struct __attribute__((packed)) MCP_CHARCREATE {
@@ -64,6 +76,10 @@ struct __attribute__((packed)) MCPPacketCltStr {
 namespace D2MCPClient::McpConnect {
 
 // Function declarations
+int16_t __stdcall GetD2GSRequestId_Unref_004166f0();
+BOOL __fastcall NET_MCP_CLIENT_IncomingReturn_Unref_0043f840(char * pBytes, size_t nSize);
+BOOL __fastcall NET_MCP_CLIENT_IncomingReturn_Unref_004473f0(char * pBytes, size_t nSize);
+BOOL __fastcall NET_MCP_CLIENT_IncomingReturn_Unref_004476f0(char * pBytes, size_t nSize);
 void __stdcall FreeMCP();
 int32_t __stdcall HasPeerName();
 BOOL __stdcall NET_MCP_CLIENT_ReadAndParsePacket();
@@ -81,13 +97,18 @@ void __stdcall MCPSTATE_SetJoinGameSuccess(BOOL bSuccess);
 BOOL __stdcall MCPSTATE_GetCreateGameSuccess();
 void __stdcall MCPSTATE_SetCreateGameSuccess(BOOL bSuccess);
 void __stdcall MCPSTATE_SetListGameSuccess(uint32_t bSuccess);
+BOOL __stdcall MCPSTATE_GetCreateGameSuccess_Unref_00449ca0();
+BOOL __stdcall MCPSTATE_GetCreateGameSuccess_Unref_00449cb0();
 void __stdcall MCPSTATE_SetCharDeleteSuccess(uint32_t bSuccess);
 uint32_t __stdcall MCPCONNECT_GetGameNameAndPassword(int32_t pGameNameOut, int32_t pPasswordOut);
 void __stdcall MCPCONNECT_SetGameNameAndPassword(uint32_t nDifficulty, char * szGameName, char * szPassword);
 struct D2McpGameInfoStrc * __stdcall MCPCONNECT_GetCharSelectBuffer();
 void __stdcall MCPCONNECT_ClearCharSelectBuffer();
+uint32_t __stdcall MCPCONNECT_GetD2GSGameHash_Unref_00449d80();
 void __stdcall MCPSTATE_SetCharUpgradeSuccess(uint32_t bSuccess);
+uint32_t __stdcall MCPCONNECT_GetD2GSGameHash_Unref_00449da0();
 void __stdcall MCPSTATE_SetCharCreateSuccess(uint32_t bSuccess);
+uint32_t __stdcall MCPCONNECT_GetD2GSGameHash_Unref_00449dc0();
 void __stdcall MCPSTATE_SetD2GSConnectReady(uint32_t bReady);
 uint32_t __stdcall MCPCONNECT_GetD2GSGameHash();
 void __stdcall MCPCONNECT_SendCharCreate(char * szCharName, uint32_t dwArg1, uint32_t dwArg2);
@@ -152,6 +173,9 @@ BOOL __fastcall NET_MCP_CLIENT_Incoming0x19(char * pBytes, size_t nSize);
 // Packet format: Size(2, LE) | Data(...) - first byte of data is packet type
 // Validates *pBytes <= 0x19, calls handler from pointer table.
 BOOL __fastcall HandleIncomingPacket(char * pBytes, size_t nSize);
+BOOL __fastcall MCPCONNECT_SocketCallback_Dispatch(uint8_t * pPacketBuf, int nPacketSize, void * pContext);
+void __fastcall MCPCONNECT_SetGameListCallbacks(pfnMCPGameListEntry pfnEntryCallback, pfnVoidNoArgCallback pfnCompleteCallback);
+void __fastcall MCPCONNECT_SetMessageCallback(pfnMCPMessage pfnCallback);
 void __stdcall MCPCONNECT_SanitizeWideString(uint16_t * wszText);
 // MCP 0x05 reply handler = REALM GAMELIST entry (one game per packet) AND join-info.
 // Stores into g_CharSelectBuffer struct (base 0x799108); JoinOrCreateGame polls it and

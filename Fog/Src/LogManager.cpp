@@ -372,7 +372,7 @@ int __stdcall DetectCpuVendor() {
     }
 
     bMatch = !strcmp(szCpuVendor, "CyrixInstead");
-    return !bMatch ? 0 : 0x3;
+    return bMatch ? 0x3 : 0;
 }
 
 static void __stdcall DecodeCpuModelName(uint32_t nModel, int32_t nBrandId, char * pOutName, int32_t nVendor, int32_t nFamily, int32_t nType) {
@@ -775,6 +775,10 @@ void __stdcall LOGMANAGER_UnwindDestructor_NoOp() {
 
 }
 
+int __fastcall Unreferenced_0040eb40(int param_1) {
+    return param_1 + 8;
+}
+
 // Element ctor/dtor for the eh-vector iterator over aTaskQueueCriticalSections.
 // The element is a CRITICAL_SECTION, but the iterator's callback slots are void (*)(void*),
 // so the parameter is void* - the specific type cannot be carried through the generic helper.
@@ -806,7 +810,7 @@ FILE * __fastcall OpenLogFileWithTimestamp(char * szFilePrefix, LPSYSTEMTIME pSy
     FILE* pFile;
     char szLogFilePath[260];
     /* LPSYSTEMTIME lpSystemTime for GetLocalTime */ GetLocalTime(pSystemTime);
-    Storm::Source::SSTR::SStrPrintf(szLogFilePath, 0x104, "%s%s%02d%02d%02d.txt", gszLogFilePath, szFilePrefix, (uint32_t)pSystemTime->wYear % 100, (uint32_t)pSystemTime->wMonth, (uint32_t)pSystemTime->wDay);
+    Storm::Source::SSTR::SStrPrintf(szLogFilePath, 0x104, "%s%s%02d%02d%02d.txt", gszLogFilePath, szFilePrefix, (uint32_t)(pSystemTime->wYear % 100), (uint32_t)pSystemTime->wMonth, (uint32_t)pSystemTime->wDay);
     if (szOutPath) {
       Storm::Source::SSTR::SStrCopy(szOutPath, szLogFilePath, nOutPathLen);
     }
@@ -1212,6 +1216,17 @@ uint32_t __thiscall ComputeAbsoluteFromRelative(int * pNode, int * pBase) {
     return nOffset + (int)pBase;
 }
 
+int __fastcall Unreferenced_0040f520(int param_1) {
+    return (int)*(uint32_t*)(param_1 + 4) <= 0 ? 0 : *(uint32_t*)(param_1 + 4);
+}
+
+int __fastcall Unreferenced_0040f580(int param_1) {
+    uint32_t uVar1 = param_1 + 4;
+    *(uint32_t*)uVar1 = uVar1;
+    *(uint32_t*)(param_1 + 8) = ~uVar1;
+    return ~uVar1;
+}
+
 void __fastcall FILETOOLS_SetLogFilePathWithoutDateAndExtension2(char * szSuffix) {
     char szLogsFolder[260];
     FILETOOLS_GetUserMyDocumentsDiabloIIGameLogsFolder(szLogsFolder, 0x104);
@@ -1281,6 +1296,12 @@ void __fastcall LogToFile(uint32_t pLogRecord) {
     gLogFileLastAccessTimeArray[nSlot] = dwNow;
 }
 
+int __fastcall Unreferenced_0040f810(int param_1) {
+    *(uint32_t*)param_1 = 0;
+    *(uint32_t*)(param_1 + 4) = 0;
+    return param_1;
+}
+
 void __fastcall UnlinkListNode(int * pNode) {
     int* pPrev;
     int pNext = *pNode;
@@ -1324,8 +1345,8 @@ void __stdcall ExitOrCrashCleanup() {
       }
 
       /* DWORD dwMilliseconds for Sleep */ Sleep(10);
-      dwTickCountC = GetTickCount();
-      uElapsed = dwTickCountC - dwTickCountA;
+      uElapsed = GetTickCount();
+      uElapsed -= dwTickCountA;
     }
 
     FILE** openFileHandleArray = globalOpenFileHandleArray;
@@ -2019,13 +2040,7 @@ void __stdcall GetFreeDiskSpaceForSavePath() {
 }
 
 void GetGlobalMemoryStatus(LPMEMORYSTATUS pMemoryStatus) {
-    pMemoryStatus->dwMemoryLoad = 0;
-    pMemoryStatus->dwTotalPhys = 0;
-    pMemoryStatus->dwAvailPhys = 0;
-    pMemoryStatus->dwTotalPageFile = 0;
-    pMemoryStatus->dwAvailPageFile = 0;
-    pMemoryStatus->dwTotalVirtual = 0;
-    pMemoryStatus->dwAvailVirtual = 0;
+    memset(pMemoryStatus, 0, sizeof(*pMemoryStatus));
     /* LPMEMORYSTATUS lpBuffer for GlobalMemoryStatus */ pMemoryStatus->dwLength = 0x20;
     GlobalMemoryStatus(pMemoryStatus);
 }
@@ -2083,6 +2098,26 @@ uint32_t LOGMGR_GetHighResolutionTime() {
     }
 
     return (dwNowTick - tBase.dwTick) / 1000 + tBase.nSeconds;
+}
+
+void __stdcall LOGMANAGER_UnwindDestructor_NoOp_Unref_00413740() {
+
+}
+
+void __stdcall LOGMANAGER_UnwindDestructor_NoOp_Unref_00416750() {
+
+}
+
+void __stdcall LOGMANAGER_UnwindDestructor_NoOp_Unref_00416760() {
+
+}
+
+void StaticFini_gLogMessageQueueCS_Unref_00665930() {
+    EnterCriticalSection(&lpCriticalSection_0096d610);
+}
+
+void StaticFini_gLogMessageQueueCS_Unref_00665940() {
+    LeaveCriticalSection(&lpCriticalSection_0096d610);
 }
 
 // compiler-generated C++ EH handler; its frame is never registered with the OS

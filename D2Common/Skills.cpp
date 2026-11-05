@@ -49,6 +49,7 @@
 #include "D2Common/Units/Missile.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -162,6 +163,22 @@ int32_t __fastcall SKILLS_CalcSkillParam(eD2Skills eSkill, int32_t nSkillLevel) 
     }
 
     return (nSkillLevel - 1) * pSkillsTxt->Param[7] + pSkillsTxt->Param[6];
+}
+
+int Unreferenced_006435c0() {
+    return sgptDataTable->nPassiveSkillsCount;
+}
+
+int __fastcall Unreferenced_006435d0(int param_1) {
+    D2DataTableTxtStrc* in_EAX;
+    if (param_1 >= 0) {
+      in_EAX = sgptDataTable;
+      if (param_1 < sgptDataTable->nPassiveSkillsCount) {
+        return (uint32_t)((uint32_t)(uint16_t)(short int)((uint32_t)sgptDataTable->pPassiveSkillsPerClassStrc >> 0x10) << 16 | (uint32_t)(uint16_t)sgptDataTable->pPassiveSkillsPerClassStrc[param_1].nSkillId);
+      }
+    }
+
+    return (uint32_t)((uint32_t)(uint16_t)(short int)((uint32_t)in_EAX >> 0x10) << 16 | (uint32_t)(uint16_t)0xffff);
 }
 
 // Gets or allocates a stat list associated with a given state on a unit. If arg1 is nonzero and no stat list exists for the state, allocates one and attaches it. If arg1 is zero, frees the existing stat list for that state.
@@ -326,11 +343,7 @@ int32_t __stdcall SKILLS_GetSkillsTxtField0x14(int * pSkill) {
 // @sourcefile .\SKILLS\Skills.cpp
 D2SkillListStrc * __stdcall STRUCT_CreateSkillsList(D2PoolManagerStrc * pMemory) {
     D2SkillListStrc* pPlayerSkills = D2_NEW_POOL_AT(pMemory, D2SkillListStrc, ".\\SKILLS\\Skills.cpp", 0x37f);
-    pPlayerSkills->pFirstSkill = 0;
-    pPlayerSkills->pLeftSkill = 0;
-    pPlayerSkills->pRightSkill = 0;
-    pPlayerSkills->pCurrentSkill = 0;
-    pPlayerSkills->pLight = 0;
+    memset(pPlayerSkills, 0, sizeof(*pPlayerSkills));
     pPlayerSkills->pMemory = pMemory;
     return pPlayerSkills;
 }
@@ -2106,8 +2119,8 @@ int32_t __stdcall SKILLS_GetItemBonusDamage(D2UnitStrc * pUnit, D2UnitStrc * pIt
 uint32_t __stdcall SKILLS_HasLineOfSight(LONG nSrcX, LONG nSrcY, LONG nDestX, LONG nDestY, D2RoomStrc * pRoom, int32_t eCollisionFlag) {
     POINT ptSrc;
     POINT ptDest;
-    ptSrc.y = nSrcY;
     ptSrc.x = nSrcX;
+    ptSrc.y = nSrcY;
     ptDest.x = nDestX;
     ptDest.y = nDestY;
     BOOL bCollisionResult = Collision::TestCollision(pRoom, &ptSrc, &ptDest, eCollisionFlag);
@@ -2157,11 +2170,10 @@ int32_t __stdcall SKILLS_CalculateManaCostShifted(int32_t eSkillId, int32_t nSki
     }
 
     nLine = (int)pSkillsTxt->lvlmana * (nSkillLevel - 1) + (int)pSkillsTxt->mana << D2_SHIFT_COUNT(pSkillsTxt->manashift) >> 8;
-    if (nLine >= 0) {
-      return nLine;
+    if (nLine < 0) {
+      nLine = 0;
     }
 
-    nLine = 0;
     return nLine;
 }
 
@@ -2259,7 +2271,7 @@ static BOOL __stdcall SKILLS_IsCoordInTown(int32_t nX, int32_t nY, D2UnitStrc * 
       return 0;
     }
 
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nY);
+    pRoom = Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nY);
     if (!pRoom) {
       return 0;
     }
@@ -2393,30 +2405,37 @@ int __stdcall SKILL_GetArrowModifierSkill(D2UnitStrc * pUnit, int * pnStatLevel)
     if (pUnit->eUnitType == UNIT_PLAYER) {
       uint32_t nWeaponClass;
       nWeaponClass = Units::GetWeaponClass(pUnit);
-      if (nWeaponClass != 1) {
-        if (nWeaponClass == 7) {
-          nStatLevel = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_magicarrow, 0);
-          if (nStatLevel <= 0) {
-            nExplosiveArrowLevel = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_explosivearrow, 0);
-            if (nExplosiveArrowLevel <= 0) {
-              return 0x1f;
-            }
-            if (!pnStatLevel) {
+      switch (nWeaponClass) {
+        default:
+          {
+            return -1;
+          }
+        case 7:
+          {
+            nStatLevel = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_magicarrow, 0);
+            if (nStatLevel <= 0) {
+              nExplosiveArrowLevel = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_explosivearrow, 0);
+              if (nExplosiveArrowLevel <= 0) {
+                return 0x1f;
+              }
+              if (!pnStatLevel) {
+                return 0x29;
+              }
+
+              *pnStatLevel = nExplosiveArrowLevel;
               return 0x29;
             }
+            if (!pnStatLevel) {
+              return 0x1b;
+            }
 
-            *pnStatLevel = nExplosiveArrowLevel;
-            return 0x29;
-          }
-          if (!pnStatLevel) {
+            *pnStatLevel = nStatLevel;
             return 0x1b;
           }
-
-          *pnStatLevel = nStatLevel;
-          return 0x1b;
-        }
-
-        return -1;
+        case 1:
+          {
+            break;
+          }
       }
     }
 
@@ -3285,18 +3304,15 @@ D2SkillStrc * __stdcall AllocSkill(D2UnitStrc * pUnit, eD2Skills eSkill) {
     pNewSkill->pNext = 0;
     D2SkillStrc* pLastSkill = pSkillsList->pFirstSkill;
     if (pLastSkill) {
-      D2SkillStrc* pNextSkill = pLastSkill->pNext;
-      while (pNextSkill) {
+      while (pLastSkill->pNext) {
         pLastSkill = pLastSkill->pNext;
-        pNextSkill = pLastSkill->pNext;
       }
 
       pLastSkill->pNext = pNewSkill;
-      SKILLS_UpdatePassiveSkillStats(pUnit, eSkill);
-      return pNewSkill;
+    } else {
+      pSkillsList->pFirstSkill = pNewSkill;
     }
 
-    pSkillsList->pFirstSkill = pNewSkill;
     SKILLS_UpdatePassiveSkillStats(pUnit, eSkill);
     return pNewSkill;
 }
@@ -3747,7 +3763,7 @@ int32_t __stdcall SKILLS_CanUseSkill(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
     }
 
     bCheckFlag = SKILL_IsDelayExpired(pSkill, pUnit);
-    return (bCheckFlag ? -8 : 0) + 8;
+    return bCheckFlag ? 0 : 8;
 }
 
 // Sets the nLevelBonus field on a unit's skill entry for item-granted skill bonuses (nOwnerGUID == -1). If the skill doesn't exist yet and the bonus is positive, allocates it via AllocSkill and initialises its level to 0. Ignores non-item-owned skills (nOwnerGUID != -1). Calls SKILLS_UpdatePassiveSkillStats after any change to propagate passive stat recalculations.

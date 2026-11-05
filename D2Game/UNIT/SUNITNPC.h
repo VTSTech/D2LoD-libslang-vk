@@ -67,6 +67,11 @@ eD2ItemQuality __thiscall SUNITNPC_RollStoreItemQuality(struct D2SeedStrc * pSee
 void __fastcall SUNITNPC_FillNpcStore(::SGAMEDATA * pGame, struct D2UnitStrc * pPlayer, struct D2UnitStrc * pNpcUnit, struct D2NpcTradeStateStrc * pTradeState);
 // @sourcefile .\UNIT\SUNITNPC.CPP
 void __fastcall SUNITNPC_RepairAllItems(struct D2UnitStrc * pPlayer, struct D2InventoryStrc * pInventory);
+// Picks a random item code from the NPC's trade list 1. Finds the D2GameNpcStrc for pUnit (00535f10). If the list (sTrade +0xc, count +0x10) is non-empty it takes RANDOM_RandomNumberSelector(pSeed, nTradeList1), advances pSeed, resolves the 12-byte entry's code at +4 to its ItemsTxt line, writes the code to *pdwOutItemCode and returns 1. An empty list writes 0 to *pdwOutItemCode and returns 0. *pdwReservedOut is written back with its own entry value. No repair cost is computed.
+// Halts: line 0x389 if the NPC is not found, 0x383 if its trade block is null, 0x384 if trade byte +3 is 0.
+// Plain __fastcall: ECX/EDX pass straight through to GetGameNpcByUnit, RET 0x10 pops four stack args, and EDI is only saved (00576caf PUSH EDI) then overwritten (00576cb0), never read, so it is not a parameter. Storage fix prompted by Nugwa628 (redivivus issue #99).
+// Provenance: 1.14d asm 00576c90..00576d85.
+int __fastcall SUNITNPC_RollTradeListItemCode(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2SeedStrc * pSeed, uint32_t dwReserved, uint32_t * pdwOutItemCode, uint32_t * pdwReservedOut);
 BOOL __fastcall CheckIfPlayerCanAffordCost(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nCost);
 // @sourcefile .\UNIT\SUNITNPC.CPP
 void __fastcall SUNITNPC_ApplyScrollSkill(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nQuantityUsed);
@@ -144,6 +149,6 @@ void __fastcall SUNITNPC_HandleSellAction(::SGAMEDATA * pGame, struct D2UnitStrc
 // Server-side NPC "use/talk" dispatcher: given the interacted NPC monster GUID and quest-state selector, performs the right NPC menu action and replies with a 0x58 OpenUI packet. Validates the monster (monstats interact flag, UNIT_MONSTER, has AI) then branches: trade-reward states route to NpcState_MoveState1To2 + SUNITNPC_HandleTradeAction for the appropriate vendor set; mercenary state sends the for-hire list. Handles act-specific quest actions by NPC class: Charsi imbue (A1Q3 ToolsOfTheTrade), Akara respec/skill-clear (A1Q1 Respec), Larzuk socketing (A5Q1), Anya personalize (A5Q4), and travel NPCs (Warriv/Meshif/Tyrael/Cain) loading the destination act level and enabling its waypoint. The imbue/socket/personalize branches create the reward item, place it in inventory or drop it at FindBestSpotToSpawnItem, and send OpenUI menu code 6 (success) or 7 (fail/drop). __fastcall: pGame(ECX), pUnit(EDX); pQState, item GUID, target-item GUID on stack.
 // @sourcefile .\UNIT\SUNITNPC.CPP
 int __fastcall UseMenu(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2QuestState pQState, DWORD guid, DWORD nGuid);
-// 3 internal functions (defined in .cpp)
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Game::UNIT::SUNITNPC

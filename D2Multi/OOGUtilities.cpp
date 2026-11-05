@@ -3,7 +3,6 @@
 #include "D2Multi/OOGUtilities.h"
 #include "D2Client/D2ControlStrc.h"
 #include "D2Client/D2IniConfigStrc.h"
-#include "D2Client/McpConnect.h"
 #include "D2Client/mcp0x03data.h"
 #include "D2Common/Chat/Ignorelist.h"
 #include "D2Common/Chat/Ignorelist/IgnoreList.h"
@@ -120,8 +119,7 @@ int __stdcall OOG_DisableControlCallback(uint32_t dwParam) {
 
 int __stdcall OOG_WaitMCPThreadDonePump(int nFrameIndex) {
     DWORD DVar1 = 0;
-    HANDLE hHandle = McpConnect::GetMCPThread();
-    DVar1 = WaitForSingleObject(hHandle, DVar1);
+    DVar1 = WaitForSingleObject(McpConnect::GetMCPThread(), DVar1);
     if (!DVar1 || gnMCPConnectionRestoreResult) {
       D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
     }
@@ -329,19 +327,19 @@ int __stdcall OOGUTIL_JoinDefaultChannel(D2ControlMsg * pControlMsg) {
       uint16_t* wszTitle;
       wszTitle = D2Lang::StrTable::strtable::GetLocaleString(0x14e7);
       ChatDlg::UIMENU_DrawTitleOnCenterSmaller(wszTitle, OOG::OOGUTIL_DrawCallback_SetModeAndClearMsgLoop);
-      return 1;
+    } else {
+      pNetworkUnknown->pfnNewsShutdown();
+      ChatDlg::CHATDLG_EnqueueClearMessage();
+      ChatDlg::CHATDLG_CreateAllForms();
+      int32_t bRegLoaded = Storm::Source::SReg::SRegLoadString("Diablo II", "Default Channel", 0, szDefaultChannel, 0x20);
+      char* szChannelName = szDefaultChannel;
+      if (!bRegLoaded) {
+        szChannelName = "";
+      }
+
+      OOGUTIL_JoinChannelAndDestroyForms(szChannelName);
     }
 
-    pNetworkUnknown->pfnNewsShutdown();
-    ChatDlg::CHATDLG_EnqueueClearMessage();
-    ChatDlg::CHATDLG_CreateAllForms();
-    int32_t bRegLoaded = Storm::Source::SReg::SRegLoadString("Diablo II", "Default Channel", 0, szDefaultChannel, 0x20);
-    char* szChannelName = szDefaultChannel;
-    if (!bRegLoaded) {
-      szChannelName = "";
-    }
-
-    OOGUTIL_JoinChannelAndDestroyForms(szChannelName);
     return 1;
 }
 
@@ -411,6 +409,28 @@ void __stdcall AbleToJoinGameOrBanned(int32_t bBanned) {
         D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&pGameListCache->sControl, 1);
       }
     }
+}
+
+int Unreferenced_004414c0() {
+    uint32_t extraout_EAX;
+    int32_t bBanned;
+    eD2PlayerStatus eVar1 = D2IniData_multiplayer->eCTEMP_eD2PlayerStatus;
+    uint32_t uVar2 = (uint32_t)eVar1;
+    if (!(eVar1 & PLAYERSTATUS_Died) || !(eVar1 & PLAYERSTATUS_Hardcore)) {
+      int32_t iVar3;
+      bBanned = 0;
+      if (D2IniData_multiplayer->szCharacterRealm[0] != '\0') {
+        iVar3 = D2MCPClient::McpConnect::HasPeerName();
+        if (!iVar3) {
+          bBanned = 1;
+        }
+      }
+
+      AbleToJoinGameOrBanned(bBanned);
+      uVar2 = extraout_EAX;
+    }
+
+    return uVar2;
 }
 
 int __stdcall JoinOrCreateGame(DWORD dwUnused) {
@@ -812,7 +832,7 @@ int __fastcall CHATDLG_RunChatLobbyScreen(D2IniConfigStrc * pD2IniConfig) {
     D2ControlStrc* pGameListForm = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x18);
     ghWndGameNameEditBox = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x19);
     pGameListCache = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x1a);
-    D2Client::McpConnect::MCPCONNECT_SetMessageCallback(ChatDlg::CHATDLG_StorePlayerName);
+    D2MCPClient::McpConnect::MCPCONNECT_SetMessageCallback(ChatDlg::CHATDLG_StorePlayerName);
     D2MCPClient::McpConnect::NET_MCP_CLIENT_Send_0x12_MOTD();
     ChatDlg::CHATDLG_RefreshGameNameDisplay();
     D2ControlStrc* pGameInfoForm = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x1b);
@@ -1296,6 +1316,12 @@ int __stdcall OOGUTIL_SendChatMessageWide(uint16_t * wszText) {
     return nCopyIndex;
 }
 
+int __fastcall Unreferenced_00442a70(int param_1, int param_2) {
+    uint32_t uVar1 = *(uint32_t*)param_1 & -28673 | param_2 << 0xc;
+    *(uint32_t*)param_1 = uVar1;
+    return uVar1;
+}
+
 char * __fastcall OOGUTIL_GetStringEnd(char * szText) {
     if (!szText) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xad);
@@ -1736,8 +1762,7 @@ BOOL __stdcall OOGUTIL_OnPressLevelRestrictionDown(D2ControlMsg * pControlMsg) {
 }
 
 BOOL __stdcall OOGUTIL_SendPasswordPacket(DWORD dwParam1, DWORD dwParam2, char * szText) {
-    char cVar1 = *szText;
-    switch (cVar1) {
+    switch (*szText) {
       case ' ':
 
       case '\'':
@@ -1748,13 +1773,13 @@ BOOL __stdcall OOGUTIL_SendPasswordPacket(DWORD dwParam1, DWORD dwParam2, char *
         return 1;
     }
 
-    if (cVar1 >= '0' && cVar1 <= '9') {
+    if (*szText >= '0' && *szText <= '9') {
       return 1;
     }
-    if (cVar1 >= 'A' && cVar1 <= 'Z') {
+    if (*szText >= 'A' && *szText <= 'Z') {
       return 1;
     }
-    if (cVar1 >= 'a' && cVar1 <= 'z') {
+    if (*szText >= 'a' && *szText <= 'z') {
       return 1;
     }
 
@@ -2873,13 +2898,12 @@ void __stdcall OOGUTIL_LoadLevelRestrictionSetting() {
     szLevelBuf[3] = '\0';
     if (nLevelRestriction == 0x29a) {
       D2Win::Src::D2WinButton::D2WINBUTTON_SetPressed(gUIGameListLevelRestrictionCheckbox, 0);
-      OOGUTIL_UpdateLevelRestrictionControls();
-      return;
+    } else {
+      Storm::Source::SSTR::SStrPrintf(szLevelBuf, 4, "%d", nLevelRestriction);
+      D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetTextFromAnsi(gUILevelRestrictionEditBox, szLevelBuf);
+      D2Win::Src::D2WinButton::D2WINBUTTON_SetPressed(gUIGameListLevelRestrictionCheckbox, 1);
     }
 
-    Storm::Source::SSTR::SStrPrintf(szLevelBuf, 4, "%d", nLevelRestriction);
-    D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetTextFromAnsi(gUILevelRestrictionEditBox, szLevelBuf);
-    D2Win::Src::D2WinButton::D2WINBUTTON_SetPressed(gUIGameListLevelRestrictionCheckbox, 1);
     OOGUTIL_UpdateLevelRestrictionControls();
 }
 

@@ -5,7 +5,6 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Monster.h"
@@ -1723,9 +1722,7 @@ void __fastcall TRADE_RestoreInventoryFromBackup(::SGAMEDATA * pGame, D2UnitStrc
 void __fastcall SendEventMsg(D2UnitStrc * pUnit, uint8_t nMessageType, char * szName) {
     int nReturnValue;
     D2Packet0x5aEventStructure sEventPacket;
-    sEventPacket.nArgTypes = '\0';
-    memset(sEventPacket.szName1, 0, 16 * sizeof(sEventPacket.szName1[0]));
-    memset(sEventPacket.szName2, 0, 16 * sizeof(sEventPacket.szName2[0]));
+    memset(&sEventPacket, 0, sizeof(sEventPacket));
     sEventPacket.nPacketId = 'Z';
     sEventPacket.nMessageType = nMessageType;
     sEventPacket.nColor = '\0';

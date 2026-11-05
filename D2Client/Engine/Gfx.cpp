@@ -15,14 +15,12 @@
 #include "D2Client/Engine/Particle.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/PalShift.h"
-#include "D2Client/GAME/Rendering.h"
 #include "D2Client/GAME/Select.h"
 #include "D2Client/GAME/Wall2.h"
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/UI/VanillaPlusCore.h" // VP: PANELSHIFT_BorderForWorld unit-sprite call sites
 #include "D2Client/UI/Draw.h"
 #include "D2Client/UI/Path.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT.h"
 #include "D2Client/UNIT/CUnit.h"
@@ -55,6 +53,7 @@
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/Objects/Objects.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -72,6 +71,8 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
+#include "D2Client/Draw/Weather.data.h"
+#include "D2Client/GAME/Rendering.h"
 #include "D2Client/UI/Help.data.h"
 #include "D2Client/UNIT/PlrSkills.h"
 #include "D2Common/ITEMS/ItemMods.h"
@@ -754,9 +755,6 @@ D2GfxInfoUnkStrc * __fastcall GFX_FindGfxInfoByModeAndWeapon(D2UnitStrc * pUnit,
       nAnimMode = Source::ClientEngine::CLIENT_GetEffectiveAnimMode(pUnit);
     }
 
-    if ((uintptr_t)pGfxInfo < 0x10000u || ((uintptr_t)pGfxInfo & 3u)) {
-      return nullptr;
-    }
     D2GfxInfoUnkStrc* pCur = pGfxInfo->pGfxInfoUnk;
     while (true) {
       if (!pCur) {
@@ -800,10 +798,10 @@ static BOOL GFX_FreeGfxInfoEntry(D2UnitStrc * pUnit, D2GfxInfoUnkStrc * pGfxInfo
     D2_FREE_AT(pMemoryToFree, ".\\ENGINE\\Gfx.cpp", 0x3d0);
     if (!pPrev) {
       pGfxInfo->pGfxInfoUnk = pCur;
-      return 1;
+    } else {
+      pPrev->pNext = pCur;
     }
 
-    pPrev->pNext = pCur;
     return 1;
 }
 
@@ -902,11 +900,7 @@ static int __stdcall GFX_LoadCompositCof(int * pnOutCofData, uint32_t nAnimMode,
         exit(-1);
       }
 
-      pNewEntry->nAnimMode = 0;
-      pNewEntry->nWeaponParam = 0;
-      pNewEntry->pCofDataArray = 0;
-      pNewEntry->nCofDataCount = 0;
-      pNewEntry->pNext = 0;
+      memset(pNewEntry, 0, sizeof(*pNewEntry));
       eUnitType = Source::ClientEngine::CLIENT_GetEffectiveUnitType(pUnit);
       pTextureCache = &gPlayerCofCache;
       if (eUnitType != UNIT_PLAYER) {
@@ -3108,8 +3102,8 @@ BOOL __fastcall GFX_DrawUnitShadow(D2UnitStrc * pUnit) {
     nDrawX = nDrawX + nTargetX + (nOffsetX - nWorldOffsetX);
     int32_t nWorldOffsetY = UI::Path::DRAW_GetWorldOffsetY();
     nOffsetX = nOffsetY - nWorldOffsetY;
-    int32_t nTargetY = D2Common::Units::GetTargetY(pUnit);
-    nOffsetY = nTargetY + nOffsetX;
+    nOffsetY = D2Common::Units::GetTargetY(pUnit);
+    nOffsetY += nOffsetX;
     int32_t nParticleY = Particle::PARTICLE_GetPosYShifted(pUnit);
     int32_t nShadowY = nParticleY + nOffsetY;
     if (bPerspective) {
@@ -3830,6 +3824,10 @@ BOOL __fastcall DRAW_WORLD_Unit_1(D2UnitStrc * pUnit, uint32_t nGamma, uint32_t 
     }
 
     return 1;
+}
+
+int __stdcall GFX_GetGfxSystemFlags_Unref_004723f0() {
+    return gnWeatherCurrentTransitionState;
 }
 
 } // namespace D2Client::Engine::Gfx

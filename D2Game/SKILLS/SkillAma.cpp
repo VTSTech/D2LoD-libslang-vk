@@ -8,7 +8,6 @@
 #include "D2Client/SKILLS/Skills.h"
 #include "D2Client/SKILLS/SkillsAma.h"
 #include "D2Client/Stats.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/Units.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -41,6 +40,7 @@
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerModes.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/SKILLS/SkillAss.h"
 #include "D2Game/SKILLS/SkillNec.h"
 #include "D2Game/SKILLS/SkillPal.h"
@@ -603,7 +603,8 @@ void __fastcall SKILLS_AmazonDamagePercentCallback(D2UnitStrc * pUnit, int nDama
     }
 
     int nCurDamagePercent = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_damagepercent, 0);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_damagepercent, nCurDamagePercent + nDamagePercent, 0);
+    nCurDamagePercent += nDamagePercent;
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_damagepercent, nCurDamagePercent, 0);
 }
 
 // Server SrvDoFunc for Guided Arrow (skill 010). Sets UNITFLAG_SKSRVDOFUNC on the caster, selects srvmissilea or srvmissileb depending on weapon class, then spawns the Guided Arrow missile. If a damage-percent calc value is present, attaches the AmazonDamagePercentCallback. Encodes the direction delta (cursor minus caster position) into the missile's TargetY field for homing.
@@ -658,11 +659,12 @@ BOOL __fastcall Skills_SrvDoFunc_010_GuidedArrowLaunch(::SGAMEDATA * pGame, D2Un
       if (pDamagePctMissile) {
         if (pInitTarget) {
           nUnitX = 1;
+          D2Common::Units::Missile::SetTargetX(pDamagePctMissile, 1);
         } else {
           nUnitX = 2;
+          D2Common::Units::Missile::SetTargetX(pDamagePctMissile, 2);
         }
 
-        D2Common::Units::Missile::SetTargetX(pDamagePctMissile, nUnitX);
         nUnitX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
         nUnitY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
         D2Common::Units::Missile::SetTargetY(pDamagePctMissile, (short int)((short int)nCursorY - (short int)nUnitY) * 0x10000 + (int)(short int)((short int)nCursorX - (short int)nUnitX));

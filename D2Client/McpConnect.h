@@ -9,23 +9,15 @@
 #include "d2_platform.h"
 
 // Forward declarations
-#ifndef RECON_FPTD_pfnMCPGameListEntry
-#define RECON_FPTD_pfnMCPGameListEntry
-typedef void (__fastcall *pfnMCPGameListEntry)(uint32_t nEntryField0, uint32_t nEntryCount, uint32_t nEntryField2, uint32_t nListFlag, void * pEntryData);
-#endif
 #ifndef RECON_FPTD_pfnMCPMessage
 #define RECON_FPTD_pfnMCPMessage
 typedef void (__fastcall *pfnMCPMessage)(uint32_t nMessageId, uint32_t nDataLength, void * pMessageData);
-#endif
-#ifndef RECON_FPTD_pfnVoidNoArgCallback
-#define RECON_FPTD_pfnVoidNoArgCallback
-typedef void (__stdcall *pfnVoidNoArgCallback)();
 #endif
 
 namespace D2Client::McpConnect {
 
 // Function declarations
-void __fastcall MCPCONNECT_SetGameListCallbacks(pfnMCPGameListEntry pfnEntryCallback, pfnVoidNoArgCallback pfnCompleteCallback);
-void __fastcall MCPCONNECT_SetMessageCallback(pfnMCPMessage pfnCallback);
+void __fastcall MCPCONNECT_SetMessageCallback_Unref_0044b1f0(pfnMCPMessage pfnCallback);
+void __fastcall MCPCONNECT_SetMessageCallback_Unref_0044b200(pfnMCPMessage pfnCallback);
 
 } // namespace D2Client::McpConnect

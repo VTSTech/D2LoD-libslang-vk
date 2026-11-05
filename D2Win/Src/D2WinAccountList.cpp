@@ -153,7 +153,7 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
 
       nEntryIdx = 0;
       do {
-        if (nEntryIdx == (D2Client::Mouse::nPosX - pAccountList->sControl.dwPosX) / 0x78 + (pAccountList->sControl.dwSizeY - pAccountList->sControl.dwPosY + 4 + D2Client::Mouse::nPosY) / 0x14 * 6) {
+        if (nEntryIdx == (D2WinMain::nPosX - pAccountList->sControl.dwPosX) / 0x78 + (pAccountList->sControl.dwSizeY - pAccountList->sControl.dwPosY + 4 + D2WinMain::nPosY) / 0x14 * 6) {
           pAccountList->pSelectedEntry = pCurEntry;
           return 1;
         }
@@ -257,12 +257,11 @@ BOOL __fastcall Draw(::D2WinAccountList * pAccountList) {
     if (pdwFontData) {
       pNewList->nFontId = *pdwFontData;
       pNewList->nFontData1 = pdwFontData[1];
-      D2WinMain::FORMS_AddControlToGlobalList(&pNewList->sControl);
-      return pNewList;
+    } else {
+      pNewList->nFontId = 1;
+      pNewList->nFontData1 = 0;
     }
 
-    pNewList->nFontId = 1;
-    pNewList->nFontData1 = 0;
     D2WinMain::FORMS_AddControlToGlobalList(&pNewList->sControl);
     return pNewList;
 }

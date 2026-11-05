@@ -28,7 +28,6 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/Path.h"
-#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/Text.h"
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT.h"
@@ -88,6 +87,7 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/Objects/Objects.h"
+#include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
@@ -359,16 +359,14 @@ static uint32_t SKILL_CheckActiveSkillSelectProc(D2UnitStrc * pUnit, D2UnitStrc 
 
     int32_t nErrorLine = 0x68a;
     char* szSrcFile = ".\\UNIT\\CUnit.cpp";
-    eD2Skills eSkillId = D2Common::Skills::GetSkillId(D2Common::Units::GetLeftSkill(pUnit), szSrcFile, nErrorLine);
-    uint32_t nProcResult = SKILL_ExecuteSelectProc(pUnit, eSkillId, pTargetUnit);
+    uint32_t nProcResult = SKILL_ExecuteSelectProc(pUnit, D2Common::Skills::GetSkillId(D2Common::Units::GetLeftSkill(pUnit), szSrcFile, nErrorLine), pTargetUnit);
     if (nProcResult) {
       return 1;
     }
 
     int32_t nRightSkillLine = 0x68e;
     szSrcFile = ".\\UNIT\\CUnit.cpp";
-    eSkillId = D2Common::Skills::GetSkillId(D2Common::Units::GetRightSkill(pUnit), szSrcFile, nRightSkillLine);
-    uint32_t nRightProcResult = SKILL_ExecuteSelectProc(pUnit, eSkillId, pTargetUnit);
+    uint32_t nRightProcResult = SKILL_ExecuteSelectProc(pUnit, D2Common::Skills::GetSkillId(D2Common::Units::GetRightSkill(pUnit), szSrcFile, nRightSkillLine), pTargetUnit);
     return (uint32_t)(nRightProcResult != 0);
 }
 
@@ -550,14 +548,19 @@ BOOL __fastcall PlayerCanBeInterrupted(D2UnitStrc * pUnit, D2SkillStrc * pSkill)
 
       case eD2PlayerAnimMode_ns::Skill4:
         nClassId = pUnit->nClassId;
-      if (nClassId == CLASS_BARBARIAN) {
-        return 0;
-      }
-      if (nClassId == CLASS_ASSASSIN) {
-        return 0;
-      }
-      if (nClassId == CLASS_DRUID) {
-        return 0;
+      switch (nClassId) {
+        case CLASS_BARBARIAN:
+          {
+            return 0;
+          }
+        case CLASS_ASSASSIN:
+          {
+            return 0;
+          }
+        case CLASS_DRUID:
+          {
+            return 0;
+          }
       }
 
       return 1;
@@ -988,8 +991,8 @@ static uint32_t __stdcall CUNIT_IsItemInAnyInventory(D2UnitStrc * pExcludeUnit, 
         nBucket++;
       } while (nBucket < 0x80);
 
-      nTable++;
       ppUnitTable = (D2UnitStrc* (*)[128])((char*)&ServerSideUnitHashTables + 512);
+      nTable++;
     } while (nTable < 2);
 
     return 0;
@@ -1140,7 +1143,7 @@ void __fastcall CLIENT_SyncPathFromServer(D2UnitStrc * pDynamicPath) {
     uint32_t nSkillFlagsLocal;
     nSkillFlagsLocal = (uint32_t)(uint16_t)pLocalPath->Coords.tSubtile.nPosY;
     if (nX != (uint16_t)pCurPath->Coords.tSubtile.nPosX || nSkillFlagsLocal != (uint16_t)pCurPath->Coords.tSubtile.nPosY) {
-      pBetterRoom = Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nSkillFlagsLocal);
+      pBetterRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nSkillFlagsLocal);
       if (!pBetterRoom) {
         return;
       }
@@ -1346,7 +1349,7 @@ D2RoomStrc * __fastcall FindRoom(int32_t nX, int32_t nY) {
       D2RoomStrc* pBetterRoom;
       if (pPlayerUnit) {
         pUnitRoom = D2Common::Units::UNITS_GetRoom(pPlayerUnit);
-        pBetterRoom = Player::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nX, nY);
+        pBetterRoom = D2Common::Collision::DRLGROOM_FindBetterNearbyRoom(pUnitRoom, nX, nY);
         if (pBetterRoom) {
           return pBetterRoom;
         }
@@ -1647,8 +1650,8 @@ void __stdcall FreeAllUnits() {
           pNextUnit = pUnit->pListNext;
           FreeAny(pUnit);
           nTableOffset = *pFreeOrder * 0x80;
-          ServerSideUnitHashTables[*pFreeOrder][nBucket] = pNextUnit;
           pUnit = pNextUnit;
+          ServerSideUnitHashTables[*pFreeOrder][nBucket] = pNextUnit;
         }
 
         nBucket++;
@@ -1667,8 +1670,8 @@ void __stdcall FreeAllUnits() {
           pNextUnit = pUnit->pListNext;
           FreeAny(pUnit);
           nTableOffset = *pFreeOrder * 0x80;
-          ClientSideUnitHashTables[*pFreeOrder][nBucket] = pNextUnit;
           pUnit = pNextUnit;
+          ClientSideUnitHashTables[*pFreeOrder][nBucket] = pNextUnit;
         }
 
         nBucket++;
@@ -1843,11 +1846,15 @@ uint32_t __fastcall CanInteractWith(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
         }
       }
       if (eUnitType1 == UNIT_PLAYER) {
-        if (eUnitType2 == UNIT_ITEM) {
-          return 1;
-        }
-        if (eUnitType2 == UNIT_OBJECT) {
-          return 1;
+        switch (eUnitType2) {
+          case UNIT_ITEM:
+            {
+              return 1;
+            }
+          case UNIT_OBJECT:
+            {
+              return 1;
+            }
         }
       }
 

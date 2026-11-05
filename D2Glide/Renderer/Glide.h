@@ -19,12 +19,6 @@ struct D2SmackerContextStrc;
 struct D2TileLibraryEntryStrc;
 
 // Data types
-#ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
-
-typedef unsigned long COLORREF;
-
-#endif // _WIN32
-
 struct D2GlideGroundVertexCursorStrc {
     /* 0x00 */ float fY;
     /* 0x04 */ uint32_t dwColor; // packed ARGB, integer store
@@ -63,7 +57,9 @@ namespace D2Glide::Renderer::Glide {
 
 // Function declarations
 void __fastcall ClearCaches();
+BOOL __fastcall CheckCutScene();
 BOOL __fastcall BeginScene(BOOL bClear, BYTE nRed, BYTE nGreen, BYTE nBlue);
+void __fastcall UpdateScaleFactor(int32_t nScaleFactor);
 BOOL __fastcall SetGamma(int32_t nGamma);
 int32_t __fastcall CheckGamma();
 BOOL __fastcall EndScene1();
@@ -82,6 +78,7 @@ void __fastcall RENDERER_GLIDE_SetTextureFiltering(int32_t nFilteringMode);
 int * __fastcall GetRenderStatistics();
 BOOL __stdcall RENDERER_GLIDE_IsPerspectiveMode();
 BOOL __stdcall RENDERER_GLIDE_InitTextureMemory();
+void Unreferenced_00509a70();
 BOOL __stdcall RENDERER_GLIDE_DestroyWindow();
 void __fastcall PlayCutScene(char * szFile, int32_t nResolutionMode, void * fpFrame);
 BOOL Release();

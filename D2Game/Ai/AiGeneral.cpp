@@ -58,9 +58,9 @@ namespace D2Game::Ai::AiGeneral {
 D2AiGeneralStrc * __fastcall AllocAiGeneral(::SGAMEDATA * pGame) {
     D2AiGeneralStrc* pAiGeneral = D2_NEW_POOL_AT(pGame->pMemoryPool, D2AiGeneralStrc, ".\\Ai\\AiGeneral.cpp", 0x1b);
     memset(pAiGeneral, 0, 0x40);
+    pAiGeneral->nOwnerGUIDEx = -1;
     pAiGeneral->eOwnerTypeEx = UNIT_MONSTER;
     pAiGeneral->eOwnerType = UNIT_MONSTER;
-    pAiGeneral->nOwnerGUIDEx = -1;
     pAiGeneral->nOwnerGUID = -1;
     return pAiGeneral;
 }
@@ -133,9 +133,7 @@ D2MonsterAiCmdStrc * __fastcall CreateAiCmdStrc(::SGAMEDATA * pGame, D2UnitStrc 
     }
 
     D2MonsterAiCmdStrc* pAiCmd = D2_NEW_POOL_AT(pGame->pMemoryPool, D2MonsterAiCmdStrc, ".\\Ai\\AiGeneral.cpp", 0x65);
-    pAiCmd->pNext = 0;
-    pAiCmd->pPrev = 0;
-    memset(pAiCmd->nCmdArg, 0, 5 * sizeof(pAiCmd->nCmdArg[0]));
+    memset(pAiCmd, 0, sizeof(*pAiCmd));
     if (!pGeneralStrc->pCmdLast) {
       pGeneralStrc->pCmdLast = pAiCmd;
       pGeneralStrc->pCmdCurrent = pAiCmd;
@@ -450,8 +448,7 @@ void __fastcall AddMinionToList(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitS
     }
 
     D2MonsterDataMinionList* pNewNode = D2_NEW_POOL_AT(pGame->pMemoryPool, D2MonsterDataMinionList, ".\\Ai\\AiGeneral.cpp", 499);
-    pNewNode->nMinionGUID = 0;
-    pNewNode->pNext = 0;
+    memset(pNewNode, 0, sizeof(*pNewNode));
     if (!pMinion) {
       nMinionGUID = -1;
     } else {
