@@ -32354,8 +32354,8 @@ static D2EscMenuItemStrc gaEscMenuDeleteCharTable[8] = {
         /* .fpVisibilityCheck = */ nullptr,
         /* .fpClickCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_ApplyResolution,
         /* .fpInitCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_LoadAndApplyResolution,
-        /* .fpDrawCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_DrawResolutionValue, // VP: 720p stop label (no MPQ asset)
-        /* .nSubImageCount = */ 0x2, // VP: keep 2 - the loader needs an MPQ DC6 per stop; stop 2 is attached at runtime
+        /* .fpDrawCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_DrawResolutionValue, // VP: 720p/1344x700 stop labels (no MPQ assets)
+        /* .nSubImageCount = */ 0x2, // VP: keep 2 - the loader needs an MPQ DC6 per stop; stops 2/3 are attached at runtime
         /* .nImageIndex = */ 0x0,
         /* .bSelected = */ 0x0,
         /* .szSubImage1Path = */ {
@@ -58811,14 +58811,18 @@ void __fastcall UI_SLIDER_InitBlendedShadows(D2EscMenuItemStrc * pItem, D2UIMous
 }
 
 // VP: the registry value is the slider POSITION (0 = 640x480, 1 = 800x600,
-// 2 = 1280x720 - the third stop is attached at runtime by the row's init
-// callback, see Storm/_unnamespaced.cpp); position -> screen mode mapping
+// 2 = 1280x720, 3 = 1344x700 - the third and fourth stops are attached at
+// runtime by the row's init callback); position -> screen mode mapping
 // mirrors CLIENT_SetScreenResolution (ClientModeInGame.cpp).
 void __fastcall UI_SLIDER_ApplyResolution(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     Storm::Source::SReg::SRegSaveValue("Diablo II", "Resolution", 0, pItem->nImageIndex);
     DWORD RequestedScreenModeMaybe = 2;
     if (!pItem->nImageIndex) {
       RequestedScreenModeMaybe = 0;
+    } else if (pItem->nImageIndex == 3) {
+      // Vanilla Plus: dormant 1344x700 (screen mode 3) - test before the
+      // >= 2 arm, which would fold it into 720p
+      RequestedScreenModeMaybe = 3;
     } else if (pItem->nImageIndex >= 2) {
       // Vanilla Plus: 1280x720 (screen mode 4)
       RequestedScreenModeMaybe = 4;
@@ -58827,10 +58831,11 @@ void __fastcall UI_SLIDER_ApplyResolution(D2EscMenuItemStrc * pItem, D2UIMouseMs
     ClientModeInGame::CLIENT_SetScreenResolution(RequestedScreenModeMaybe);
 }
 
-// VP: value label for the 720p stop (stop 2). Retail ships label DC6s only
-// for stops 0/1 ("640x480"/"800x600"); stop 2's slot holds the Route-B blank
-// placeholder (attached by the init callback) and the visible label is drawn
-// here through the retail font path, sized to match the neighboring retail
+// VP: value labels for the runtime-attached stops (2 = 1280x720,
+// 3 = 1344x700). Retail ships label DC6s only for stops 0/1
+// ("640x480"/"800x600"); the VP slots hold Route-B blank placeholders
+// (attached by the init callback) and the visible labels are drawn here
+// through the retail font path, sized to match the neighboring retail
 // value images. Runs every frame from DRAW_EscMenu BEFORE the row's image
 // draw; the blank drawn after is fully transparent, so the text survives.
 // The row band is recomputed with DRAW_EscMenu's per-item formula
@@ -58839,7 +58844,9 @@ void __fastcall UI_SLIDER_ApplyResolution(D2EscMenuItemStrc * pItem, D2UIMouseMs
 // anchor and rides the neighbor images' ink line (issue #23).
 void __fastcall UI_SLIDER_DrawResolutionValue(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     (void)pMsg;
-    if (!pItem || pItem->nImageIndex != 2) {
+    // VP: per-stop label table for the runtime stops (R109). Stops 0/1 keep
+    // their retail value images; the early return keeps foreign rows dark.
+    if (!pItem || (pItem->nImageIndex != 2 && pItem->nImageIndex != 3)) {
       return;
     }
 
@@ -58872,7 +58879,12 @@ void __fastcall UI_SLIDER_DrawResolutionValue(D2EscMenuItemStrc * pItem, D2UIMou
     const int nRowBottom = nRowTop + gaEscMenuHeaderDeleteChar.nRowHeight;
 
     // Font: match the retail "800x600" value image of this same row (slot 1).
-    static const wchar_t gwszLabel[] = L"1280x720";
+    // Label table: one entry per runtime stop, picked by the current position;
+    // the geometry below is label-agnostic (issue #23 math, both stops).
+    static const wchar_t gwszLabel720[] = L"1280x720";
+    static const wchar_t gwszLabel1344[] = L"1344x700";
+    const wchar_t* gwszLabel =
+        (pItem->nImageIndex == 3) ? gwszLabel1344 : gwszLabel720;
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(
         VPRES_PickFontMatchingDC6(pItem->pDC6SubImages[1]));
 
@@ -58905,13 +58917,24 @@ void __fastcall UI_SLIDER_LoadAndApplyResolution(D2EscMenuItemStrc * pItem, D2UI
       *pnOut = 1;
     }
 
-    // VP: attach the Route-B blank placeholder into the third stop's label
-    // slot (no "1280x720" DC6 asset exists in the MPQs; see VanillaPlusCore.h)
+    // VP: attach the Route-B blank placeholders into the runtime stops' label
+    // slots (no "1280x720"/"1344x700" DC6 assets exist in the MPQs; see
+    // VanillaPlusCore.h). Count-check guards keep re-inits from stacking.
     if (pItem->nSubImageCount == 2) {
       DC6* pBlank = nullptr;
       if (VPRES_BuildBlankPlaceholder(&pBlank)) {
         pItem->pDC6SubImages[2] = pBlank;
         pItem->nSubImageCount = 3; // Vanilla Plus: 640x480 / 800x600 / 1280x720
+      }
+    }
+    // VP: fourth stop (dormant 1344x700) gets its own blank; its label is
+    // drawn by UI_SLIDER_DrawResolutionValue. A failed attach leaves the
+    // count at 3 and the clamp below folds position 3 back to the 720p stop.
+    if (pItem->nSubImageCount == 3) {
+      DC6* pBlank = nullptr;
+      if (VPRES_BuildBlankPlaceholder(&pBlank)) {
+        pItem->pDC6SubImages[3] = pBlank;
+        pItem->nSubImageCount = 4; // Vanilla Plus: ... / 1280x720 / 1344x700
       }
     }
     if (*pnOut < 0 || *pnOut > pItem->nSubImageCount - 1) {
@@ -58921,6 +58944,8 @@ void __fastcall UI_SLIDER_LoadAndApplyResolution(D2EscMenuItemStrc * pItem, D2UI
     DWORD RequestedScreenModeMaybe = 2;
     if (!*pnOut) {
       RequestedScreenModeMaybe = 0;
+    } else if (*pnOut == 3) {
+      RequestedScreenModeMaybe = 3; // Vanilla Plus: dormant 1344x700
     } else if (*pnOut >= 2) {
       RequestedScreenModeMaybe = 4; // Vanilla Plus: 1280x720
     }

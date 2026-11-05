@@ -473,6 +473,17 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
           nScreenMode = 1;
           break;
         }
+      case 3:
+        {
+          // Vanilla Plus: retail's dormant 1344x700 (mode 3) - the size
+          // tables carried it all along (D2GFX case 3 = 0x540 x 700); this
+          // stop is what never shipped. Downstream flow (WindowSize, border,
+          // automap recenter) is the same retail path case 4 rides.
+          ScreenSizeX = 1344;
+          ScreenSizeY = 700;
+          nScreenMode = 1;
+          break;
+        }
       case 4:
         {
           // Vanilla Plus: 1280x720

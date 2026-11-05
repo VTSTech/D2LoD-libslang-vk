@@ -80,7 +80,7 @@ void __fastcall ClearCaches() {
 
 }
 
-// Allocates the GDI DIB section for windowed software rendering. Maps resolution mode (0=640×480, 1/2=800×600, 3=1360×700) to window dimensions, creates BITMAPINFO header with 8-bit indexed color, calls CreateDIBSection to allocate shared bitmap memory. Stores HBITMAP handle in RENDERER_WINDOWED_hDIBitmap global and pixel buffer pointer in ppvBits_007c9154. Initializes Y-buffer table via fpFillYBufferTable callback.
+// Allocates the GDI DIB section for windowed software rendering. Maps resolution mode (0=640×480, 1/2=800×600, 3=1344×700, 4=1280x720) to window dimensions, creates BITMAPINFO header with 8-bit indexed color, calls CreateDIBSection to allocate shared bitmap memory. Stores HBITMAP handle in RENDERER_WINDOWED_hDIBitmap global and pixel buffer pointer in ppvBits_007c9154. Initializes Y-buffer table via fpFillYBufferTable callback.
 static void __stdcall RENDERER_WINDOWED_AllocateDIBSection(int nResolutionMode) {
     int nHeight;
     int nWidth;

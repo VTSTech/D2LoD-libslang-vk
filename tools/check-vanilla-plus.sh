@@ -266,9 +266,10 @@ gate "sound: ClampAttenuation divisor decoded"        D2Sound/Src/D2SoundSmp.cpp
 gate "sound: no raw IEEE-754 volume literals left"    D2Sound/Src/D2SoundSmp.cpp '\(double\)(0x3f1a36e2e0000000|-0x3f3c780000000000|0x409f400000000000|-0x3f60c00000000000)' 0
 
 # ---- resolution-mode (1280x720 slider stop) --------------------------------
-# The registry value is the slider POSITION (0/1/2); stop 2 is attached at
-# runtime by the Resolution row's init callback because no MPQ label asset
-# exists for it. EscMenu.cpp mapping: 0 -> mode 0, 1 -> mode 2, 2 -> mode 4.
+# The registry value is the slider POSITION (0/1/2/3); stops 2/3 are attached
+# at runtime by the Resolution row's init callback because no MPQ label assets
+# exist for them. EscMenu.cpp mapping: 0 -> mode 0, 1 -> mode 2, 2 -> mode 4,
+# 3 -> mode 3 (R109; stop 3 tested BEFORE the >= 2 arm).
 gate "resolution: draw callback wired (row)" D2Client/UI/EscMenu.cpp    'fpDrawCallback = \*/ &D2Client::UI::EscMenu::UI_SLIDER_DrawResolutionValue' 1
 gate "resolution: draw fn defined"           D2Client/UI/EscMenu.cpp     '__fastcall UI_SLIDER_DrawResolutionValue' 1
 # Both resolution callbacks (Apply + LoadAndApply) live in EscMenu.cpp on the
@@ -277,8 +278,8 @@ gate "resolution: draw fn defined"           D2Client/UI/EscMenu.cpp     '__fast
 # new D2Hell module (the old UI include pin on it retired with the move).
 gate "resolution: apply maps mode 4"         D2Client/UI/EscMenu.cpp     'RequestedScreenModeMaybe = 4' 2
 gate "resolution: decl in EscMenu.h"         D2Client/UI/EscMenu.h       'UI_SLIDER_DrawResolutionValue' 1
-gate "resolution: init attach"                  D2Client/UI/EscMenu.cpp     'VPRES_BuildBlankPlaceholder|nSubImageCount = 3' 2
-gate "resolution: minipanel clamp + mode 4"  D2Client/UI/MiniPanel.cpp   'nResolution > 2|nScreenMode_lcl = 4' 2
+gate "resolution: init attach"                  D2Client/UI/EscMenu.cpp     'VPRES_BuildBlankPlaceholder|nSubImageCount = 3' 3
+gate "resolution: minipanel clamp + mode 4"  D2Client/UI/MiniPanel.cpp   'nResolution > 3|nScreenMode_lcl = 4' 2
 gate "resolution: core blank builder"        D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_BuildBlankPlaceholder' 1
 gate "resolution: core font pick"            D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_PickFontMatchingDC6' 1
 gate "resolution: self-check wiring"         D2Client/UI/VanillaPlusCore.cpp 'UI_SLIDER_DrawResolutionValue' 1
@@ -288,6 +289,21 @@ gate "resolution: self-check wiring"         D2Client/UI/VanillaPlusCore.cpp 'UI
 # bottom, the value DC6s bake ~4 px of padding under their ink).
 gate "resolution: label right-align (#23)"   D2Client/UI/EscMenu.cpp     'ScreenSizeX / 2 \+ 0xe6 - nLabelWidth' 1
 gate "resolution: label descender comp (#23)" D2Client/UI/EscMenu.cpp    'RESLABEL_DESCENDER_COMP' 2
+
+# ---- resolution-mode 3 (1344x700 dormant retail stop, R109) -----------------
+# The third stop activates retail's own dormant mode 3: D2GFX case 3 = 0x540 x
+# 700 and the renderer-side mode-3 branches were always in the binaries (GDI
+# DIB + scale, DDraw table slot, Glide wrapper enum 17) - only the UI stop and
+# the two client-side mappings were missing. Plan: 1344x700-PLAN.md (Gap A =
+# the mode-set case, Gap B = the slider stop + label, Gap C = the mini-panel
+# re-apply that runs at every game-enter and cutscene-exit).
+gate "res3: mode-set case 3"              D2Client/ClientModeInGame.cpp  "Vanilla Plus: retail's dormant 1344x700" 1
+gate "res3: d2gfx size-table case 3"      D2gfx/D2GFX.cpp                '\*nWidth = 0x540' 1
+gate "res3: init attach stop 4"           D2Client/UI/EscMenu.cpp        'nSubImageCount = 4' 1
+gate "res3: per-stop label 1344x700"      D2Client/UI/EscMenu.cpp        'L"1344x700"' 1
+gate "res3: draw covers both stops"       D2Client/UI/EscMenu.cpp        'nImageIndex != 2 && pItem->nImageIndex != 3' 1
+gate "res3: mappings to mode 3"           D2Client/UI/EscMenu.cpp        'RequestedScreenModeMaybe = 3' 2
+gate "res3: minipanel maps mode 3"        D2Client/UI/MiniPanel.cpp      'nScreenMode_lcl = 3' 1
 gate "fork-api include in EscMenu.cpp"       D2Client/UI/EscMenu.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
 # 1839 merge: D2FILE_CreateProcess moved to the new D2Hell module; the
 # [d2boot] CreateProcess marks re-planted there (merge-tripwire against a
@@ -733,7 +749,9 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # R108: string bumped R107 -> R108 (the options-page row round; R107 was the
 # owner-corrected landing of the R106 fix and re-pinned nothing - the gate ran
 # stale until this round)
-gate "res: self-id 0.0.7-R108"                Game/Main.cpp                    'Vanilla\+0\.0\.7-R108' 1
+# R109: string bumped R108 -> R109 (the 1344x700 dormant-mode round: slider
+# stop 3 + the client-side mode-set/mini-panel mappings)
+gate "res: self-id 0.0.7-R109"                Game/Main.cpp                    'Vanilla\+0\.0\.7-R109' 1
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the
