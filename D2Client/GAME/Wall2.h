@@ -56,8 +56,11 @@ void __fastcall WALL2_BuildSceneDrawList(struct D2GameViewStrc * pGameView, uint
 // VP-BEGIN [R118]: wide-view room walk. BFSes the room-neighbor graph
 // (DRLGROOM_GetAdjacentRoomsList) from pCenterRoom out to nDepth hops,
 // skipping hop<=1 (the retail draw set: the player's room + its direct
-// neighbors) and rooms whose subtile rect lies fully outside the world-space
-// view square (nCenterSubtileX/Y +- nReachSubtiles). Dedupes via a seen
+// neighbors) and rooms whose rect lies fully outside the world-space view
+// square (nCenterX/Y +- nReach; DRLG room-coord space = game coords, 5 per
+// subtile - [R119] renamed from nCenterSubtileX/nReachSubtiles and the call
+// sites' reach rescaled x5 into coords: the subtile-scaled reach under-
+// covered the wide screens 5x, the R118 "half fix"). Dedupes via a seen
 // scan; writes surviving rooms to apOut (nMaxOut cap) and returns the count.
 // The DRLG materializes rooms three RoomEx-hops out (InitNearRooms recursion:
 // hop-2 rooms get DRLGROOMEX_ActivateRoomEx), so rooms the wide screen can
@@ -67,7 +70,7 @@ void __fastcall WALL2_BuildSceneDrawList(struct D2GameViewStrc * pGameView, uint
 // scene pass (Wall2.cpp) so floors, walls, roofs, units and shadows extend
 // together.
 int __stdcall WALL2_CollectRoomsBeyondAdjacency(struct D2RoomStrc * pCenterRoom, int nDepth,
-    int nCenterSubtileX, int nCenterSubtileY, int nReachSubtiles,
+    int nCenterX, int nCenterY, int nReach,
     struct D2RoomStrc ** apOut, int nMaxOut);
 void __stdcall WALL2_OnAllocGameView_NoOp();
 // 11 internal functions (defined in .cpp)

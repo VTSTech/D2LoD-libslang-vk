@@ -860,15 +860,15 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
     // open-bound tests to fire at real level boundaries instead of the 3x3
     // block edge. Wide stops only: 640x480/800x600 never reach this.
     if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
-      D2RoomStrc* apWideRooms[96];
+      D2RoomStrc* apWideRooms[256];
       D2DrlgRoomCoordsStrc sWideCenterCoords;
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &sWideCenterCoords);
       int nWideCenterX = (int)(sWideCenterCoords.dwXStart + sWideCenterCoords.dwXSize / 2);
       int nWideCenterY = (int)(sWideCenterCoords.dwYStart + sWideCenterCoords.dwYSize / 2);
       int nWideRooms = Wall2::WALL2_CollectRoomsBeyondAdjacency(pRoom, 3,
           nWideCenterX, nWideCenterY,
-          ScreenSizeX / 32 + ScreenSizeY / 16 + 10 + 80,
-          apWideRooms, 96);
+          ScreenSizeX * 5 / 32 + ScreenSizeY * 5 / 16 + 450, // [R119] game coords - was 5x-short subtile scaling
+          apWideRooms, 256);
       int nWideIdx = 0;
       while (nWideIdx < nWideRooms) {
         DRAW_DrawWideViewRoomFloors(pDrawFloor, apWideRooms[nWideIdx], bNoFilter);
@@ -934,6 +934,10 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
     int nFillReach = ScreenSizeX / 32 + ScreenSizeY / 16 + 10; // subtiles
     int nFillDepth = nFillReach / 5 + 1;                       // tiles past an open bound
     int nFillSpan = nFillReach * 2 / 5 + 1;                    // tiles each way along it
+    int nFillReachCoords = nFillReach * 5;                     // [R119] same reach in game coords - the four
+                                                               // bound triggers below compare coord-space deltas
+                                                               // (player/path coords vs dwXStart-space bounds), so the
+                                                               // subtile-scaled reach under-fired 5x past 43 subtiles
     int nAnchorXRaw = (int)pGameView;
     int nAnchorYRaw = nPlayerY;
     int nAnchorX = nAnchorXRaw / 5 * 5;
@@ -946,7 +950,7 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
     int nFillJ;
 
     // open LEFT bound: [minX - depth*5, minX) x (anchorY +- span)
-    if (nAnchorXRaw - pDrawFloor->nMinTileX < nFillReach) {
+    if (nAnchorXRaw - pDrawFloor->nMinTileX < nFillReachCoords) {
       for (nFillI = 1; nFillI <= nFillDepth; nFillI++) {
         for (nFillJ = -nFillSpan; nFillJ <= nFillSpan; nFillJ++) {
           DRAW_DrawEdgeFloorTile(pDrawFloor, nBoundMinX - nFillI * 5, nAnchorY + nFillJ * 5);
@@ -955,7 +959,7 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
     }
 
     // open RIGHT bound: (maxX, maxX + depth*5] x (anchorY +- span)
-    if (pDrawFloor->nMaxTileX - nAnchorXRaw < nFillReach) {
+    if (pDrawFloor->nMaxTileX - nAnchorXRaw < nFillReachCoords) {
       for (nFillI = 1; nFillI <= nFillDepth; nFillI++) {
         for (nFillJ = -nFillSpan; nFillJ <= nFillSpan; nFillJ++) {
           DRAW_DrawEdgeFloorTile(pDrawFloor, nBoundMaxX + nFillI * 5, nAnchorY + nFillJ * 5);
@@ -964,7 +968,7 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
     }
 
     // open TOP bound: (anchorX +- span) x [minY - depth*5, minY)
-    if (nAnchorYRaw - pDrawFloor->nMinTileY < nFillReach) {
+    if (nAnchorYRaw - pDrawFloor->nMinTileY < nFillReachCoords) {
       for (nFillJ = 1; nFillJ <= nFillDepth; nFillJ++) {
         for (nFillI = -nFillSpan; nFillI <= nFillSpan; nFillI++) {
           DRAW_DrawEdgeFloorTile(pDrawFloor, nAnchorX + nFillI * 5, nBoundMinY - nFillJ * 5);
@@ -973,7 +977,7 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
     }
 
     // open BOTTOM bound: (anchorX +- span) x (maxY, maxY + depth*5]
-    if (pDrawFloor->nMaxTileY - nAnchorYRaw < nFillReach) {
+    if (pDrawFloor->nMaxTileY - nAnchorYRaw < nFillReachCoords) {
       for (nFillJ = 1; nFillJ <= nFillDepth; nFillJ++) {
         for (nFillI = -nFillSpan; nFillI <= nFillSpan; nFillI++) {
           DRAW_DrawEdgeFloorTile(pDrawFloor, nAnchorX + nFillI * 5, nBoundMaxY + nFillJ * 5);

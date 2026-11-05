@@ -1285,14 +1285,18 @@ BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, D2Wall2DrawCon
 // DRLGROOMEX_ActivateRoomEx with tile data), so the draw walks were the only
 // limit. This BFS enumerates those rooms: hop<=1 entries (the retail set) are
 // walked for their own neighbors but never emitted; deeper rooms are kept
-// only when their subtile rect intersects the world-space view square
-// (nCenterSubtileX/Y +- nReachSubtiles). Dedupe is a linear scan over the
-// enqueued set - hop<=3 neighborhoods stay well under the 128-slot queue.
+// only when their rect intersects the world-space view square
+// (nCenterX/Y +- nReach; DRLG room-coord space = game coords, 5 per subtile
+// - [R119] renamed from nCenterSubtileX/nReachSubtiles: the values were
+// always room coords, the old names invited the subtile-vs-coords mixup
+// that shrank the call sites' reach 5x). Dedupe is a linear scan over the
+// enqueued set - hop<=3 neighborhoods stay well under the 512-slot queue
+// ([R119] was 128; the corrected coord-space reach passes far more rooms).
 int __stdcall WALL2_CollectRoomsBeyondAdjacency(D2RoomStrc * pCenterRoom, int nDepth,
-    int nCenterSubtileX, int nCenterSubtileY, int nReachSubtiles,
+    int nCenterX, int nCenterY, int nReach,
     D2RoomStrc ** apOut, int nMaxOut) {
-    D2RoomStrc* apQueue[128];
-    uint8_t anHopQueue[128];
+    D2RoomStrc* apQueue[512];
+    uint8_t anHopQueue[512];
     D2RoomStrc** ppNearRooms;
     int nNearCount;
     D2DrlgRoomCoordsStrc sNearCoords;
@@ -1331,7 +1335,7 @@ int __stdcall WALL2_CollectRoomsBeyondAdjacency(D2RoomStrc * pCenterRoom, int nD
         if (nNextHop > nDepth) {
           continue; // hard stop: never walk past the requested depth
         }
-        if (nTail < 128) {
+        if (nTail < 512) {
           apQueue[nTail] = pNearRoom;
           anHopQueue[nTail] = (uint8_t)nNextHop;
           nTail++;
@@ -1342,8 +1346,8 @@ int __stdcall WALL2_CollectRoomsBeyondAdjacency(D2RoomStrc * pCenterRoom, int nD
         D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pNearRoom, &sNearCoords);
         int nRoomXEnd = (int)(sNearCoords.dwXStart + sNearCoords.dwXSize);
         int nRoomYEnd = (int)(sNearCoords.dwYStart + sNearCoords.dwYSize);
-        if ((int)sNearCoords.dwXStart > nCenterSubtileX + nReachSubtiles || nRoomXEnd < nCenterSubtileX - nReachSubtiles ||
-            (int)sNearCoords.dwYStart > nCenterSubtileY + nReachSubtiles || nRoomYEnd < nCenterSubtileY - nReachSubtiles) {
+        if ((int)sNearCoords.dwXStart > nCenterX + nReach || nRoomXEnd < nCenterX - nReach ||
+            (int)sNearCoords.dwYStart > nCenterY + nReach || nRoomYEnd < nCenterY - nReach) {
           continue; // room entirely outside the world-space view square
         }
         if (nOut < nMaxOut) {
@@ -1483,11 +1487,11 @@ void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nT
       // the 3000-entry draw-list caps still bound the worst case. Wide stops
       // only - 640x480/800x600 keep the retail one-hop walk byte-identical.
       if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
-        D2RoomStrc* apWideRooms[96];
+        D2RoomStrc* apWideRooms[256];
         int nWideRooms = WALL2_CollectRoomsBeyondAdjacency(pGameViewLocal.pRoom, 3,
             UNIT_CenterXCoordsDiv5 * 5, UNIT_CenterYCoordsDiv5 * 5,
-            ScreenSizeX / 32 + ScreenSizeY / 16 + 10 + 80,
-            apWideRooms, 96);
+            ScreenSizeX * 5 / 32 + ScreenSizeY * 5 / 16 + 450, // [R119] game coords - was 5x-short subtile scaling
+            apWideRooms, 256);
         int nWideIdx = 0;
         while (nWideIdx < nWideRooms) {
           WALL2_CollectRoomTilesAndUnits(apWideRooms[nWideIdx], &pGameViewLocal);

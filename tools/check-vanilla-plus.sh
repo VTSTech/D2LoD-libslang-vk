@@ -496,6 +496,20 @@ gate "r118: floor pass wide walk"          D2Client/GAME/Draw.cpp           'Wal
 gate "r118: floor two-pass helper"         D2Client/GAME/Draw.cpp           'DRAW_DrawWideViewRoomFloors' 3
 gate "r118: floor pass wide gate"          D2Client/GAME/Draw.cpp           'VPRES_IsWideLayoutMode' 2
 
+# ---- r119: the R118 reach was subtile-scaled against room-coord (game-coord)
+# bounds - 5x short (217 coords = 43 subtiles vs the 127-subtile 1080p half-
+# reach), so hop-2/3 rooms only patched a band past the retail 3x3 block and
+# R117's four fill open-bound triggers under-fired past 43 subtiles (the
+# perspective top edge/corners + the rolling ortho bottom triangle). Reaches
+# now computed in coords, fill triggers compare nFillReachCoords, BFS queue
+# 128->512, out caps 96->256.
+gate "r119: scene reach in coords"         D2Client/GAME/Wall2.cpp          'ScreenSizeX \* 5 / 32 \+ ScreenSizeY \* 5 / 16 \+ 450' 1
+gate "r119: floor reach in coords"         D2Client/GAME/Draw.cpp           'ScreenSizeX \* 5 / 32 \+ ScreenSizeY \* 5 / 16 \+ 450' 1
+gate "r119: fill triggers in coords"       D2Client/GAME/Draw.cpp           'nFillReachCoords' 5
+gate "r119: walk queue widened"            D2Client/GAME/Wall2.cpp          'apQueue\[512\]' 1
+gate "r119: scene out cap 256"             D2Client/GAME/Wall2.cpp          'apWideRooms\[256\]' 1
+gate "r119: floor out cap 256"             D2Client/GAME/Draw.cpp           'apWideRooms\[256\]' 1
+
 # ---- resolution site-5: wide-layout classification + centered 800-px UI ----
 # Wide modes (3=1344x700 dormant, 4=1280x720, 5=1366x768 [R112]) join the
 # retail 800x600 UI class via VPRES_IsWideLayoutMode and re-center the
@@ -948,7 +962,7 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # pDC6SubImages[5] growth left the two raw 0x550-byte walks stale - mouse
 # hit-test dead + sub-image slot spill - and the FreeLoadedImages retail
 # halt armed on the new count-5 row)
-gate "res: self-id 0.0.7-R118"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R118' 1
+gate "res: self-id 0.0.7-R119"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R119' 1
 # R115: string bumped R113 -> R115 (the 1080p sixth-stop round; owner:
 # "Great job. works. Published Glide3xVK 0.4.7. Now lets do 1080p")
 # R116: string bumped R115 -> R116 (the GDI windowed 1366x768 shear fix;
