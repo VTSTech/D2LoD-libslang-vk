@@ -14,11 +14,13 @@
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/Sound/SoundHdr.h"
 #include "D2Client/UI/Path.h"
+#include "D2Client/UI/VanillaPlusCore.h" // [R118] wide-layout classifier decl
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/UNIT/PlrSkills.h"
 #include "D2Client/UNIT/UnitSnd.h"
+#include "globals/globals.h" // [R118] ScreenSizeX — wide-view room-walk reach
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
 #include "D2Common/D2RoomCoordListStrc.h"
@@ -1270,6 +1272,90 @@ BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, D2Wall2DrawCon
     return 1;
 }
 
+// VP-BEGIN [R118]: wide-view room walk. Retail draws exactly the player's
+// room plus its direct neighbors - one hop of ppRoomList, both here (via
+// CallRoomCallback) and in the floor pass (DrawFloorByViewAndFloor's
+// GetAdjacentRoomsList loop). At 640x480/800x600 the screen reaches ~25-31
+// subtiles, always inside that 3x3 room block. At the wide stops the screen
+// reaches 85 (1280x720) to ~127 (1920x1080) subtiles, so everything past
+// the block stayed undrawn and the cleared backbuffer showed through as the
+// black rim at the screen edges (owner: "blackness at the edges ... present
+// in all video modes 720p and up"). The rooms exist: InitNearRooms
+// materializes the RoomEx graph three hops out (hop-2 rooms get
+// DRLGROOMEX_ActivateRoomEx with tile data), so the draw walks were the only
+// limit. This BFS enumerates those rooms: hop<=1 entries (the retail set) are
+// walked for their own neighbors but never emitted; deeper rooms are kept
+// only when their subtile rect intersects the world-space view square
+// (nCenterSubtileX/Y +- nReachSubtiles). Dedupe is a linear scan over the
+// enqueued set - hop<=3 neighborhoods stay well under the 128-slot queue.
+int __stdcall WALL2_CollectRoomsBeyondAdjacency(D2RoomStrc * pCenterRoom, int nDepth,
+    int nCenterSubtileX, int nCenterSubtileY, int nReachSubtiles,
+    D2RoomStrc ** apOut, int nMaxOut) {
+    D2RoomStrc* apQueue[128];
+    uint8_t anHopQueue[128];
+    D2RoomStrc** ppNearRooms;
+    int nNearCount;
+    D2DrlgRoomCoordsStrc sNearCoords;
+    int nTail = 0;
+    int nHead = 0;
+    int nOut = 0;
+    if (!pCenterRoom || !apOut || nMaxOut <= 0 || nDepth < 2) {
+      return 0;
+    }
+
+    apQueue[0] = pCenterRoom;
+    anHopQueue[0] = 0;
+    nTail = 1;
+    while (nHead < nTail) {
+      D2RoomStrc* pCurRoom = apQueue[nHead];
+      int nCurHop = anHopQueue[nHead];
+      nHead++;
+      ppNearRooms = 0;
+      nNearCount = 0;
+      D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pCurRoom, &ppNearRooms, &nNearCount);
+      int nNearIdx = 0;
+      while (nNearIdx < nNearCount) {
+        D2RoomStrc* pNearRoom = ppNearRooms[nNearIdx];
+        nNearIdx++;
+        if (!pNearRoom) {
+          continue;
+        }
+        int nSeenIdx = 0;
+        while (nSeenIdx < nTail && apQueue[nSeenIdx] != pNearRoom) {
+          nSeenIdx++;
+        }
+        if (nSeenIdx < nTail) {
+          continue; // already enqueued (neighbor graphs cycle)
+        }
+        int nNextHop = nCurHop + 1;
+        if (nNextHop > nDepth) {
+          continue; // hard stop: never walk past the requested depth
+        }
+        if (nTail < 128) {
+          apQueue[nTail] = pNearRoom;
+          anHopQueue[nTail] = (uint8_t)nNextHop;
+          nTail++;
+        }
+        if (nNextHop <= 1) {
+          continue; // hop<=1 = retail's set, walked only for its own neighbors
+        }
+        D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pNearRoom, &sNearCoords);
+        int nRoomXEnd = (int)(sNearCoords.dwXStart + sNearCoords.dwXSize);
+        int nRoomYEnd = (int)(sNearCoords.dwYStart + sNearCoords.dwYSize);
+        if ((int)sNearCoords.dwXStart > nCenterSubtileX + nReachSubtiles || nRoomXEnd < nCenterSubtileX - nReachSubtiles ||
+            (int)sNearCoords.dwYStart > nCenterSubtileY + nReachSubtiles || nRoomYEnd < nCenterSubtileY - nReachSubtiles) {
+          continue; // room entirely outside the world-space view square
+        }
+        if (nOut < nMaxOut) {
+          apOut[nOut] = pNearRoom;
+          nOut++;
+        }
+      }
+    }
+    return nOut;
+}
+// VP-END [R118]
+
 // Client render-prep: rebuilds the per-frame "wall2" tile/unit draw list for the given game view. Allocates the draw list, computes the visible screen rect (expanding by 0x30 in perspective mode) and caches it in the RECT_* globals, then resets the wall2 entry/alloc counters and zero-fills the grid cell array. Maps the view center to iso grid coords (DRLG_OrthToIsoCoordsDiv160), seeds each grid cell's iso row/col, caches the local player's tile coords (UNIT_CenterX/YCoordsDiv5, gnPlayerTileGridIndex), then walks the current room tree via CallRoomCallback(WALL2_CollectRoomTilesAndUnits) to gather drawable tiles/units. Halts via Fog error if the wall2 buffer or the player unit is missing. Side effects: mutates view draw-list fields and several render globals.
 void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nTickCount) {
     // Static local variables (originally global data)
@@ -1387,6 +1473,28 @@ void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nT
 
       gnPlayerTileGridIndex = D2Common::DUNGEON::Dungeon::GetGridIndex(D2Common::Units::UNITS_GetRoom(pUnit), nPlayerY, nPlayerX);
       D2Common::DUNGEON::Dungeon::CallRoomCallback(pGameViewLocal.pRoom, (ROOMCALLBACKFN)WALL2_CollectRoomTilesAndUnits, &pGameViewLocal);
+      // VP-BEGIN [R118]: wide-view scene walk. Retail's CallRoomCallback
+      // visits exactly one hop of ppRoomList, so walls, roofs, units and
+      // shadows stopped at the 3x3 room block - the same limit that starved
+      // the floor pass (see WALL2_CollectRoomsBeyondAdjacency). Feed the
+      // rooms two and three hops out to the same collector: it re-checks the
+      // per-room rcCull rect, the per-tile screen rect and WALL2_IsInDrawGrid
+      // before adding anything, so off-screen rooms cost one rect test and
+      // the 3000-entry draw-list caps still bound the worst case. Wide stops
+      // only - 640x480/800x600 keep the retail one-hop walk byte-identical.
+      if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+        D2RoomStrc* apWideRooms[96];
+        int nWideRooms = WALL2_CollectRoomsBeyondAdjacency(pGameViewLocal.pRoom, 3,
+            UNIT_CenterXCoordsDiv5 * 5, UNIT_CenterYCoordsDiv5 * 5,
+            ScreenSizeX / 32 + ScreenSizeY / 16 + 10 + 80,
+            apWideRooms, 96);
+        int nWideIdx = 0;
+        while (nWideIdx < nWideRooms) {
+          WALL2_CollectRoomTilesAndUnits(apWideRooms[nWideIdx], &pGameViewLocal);
+          nWideIdx++;
+        }
+      }
+      // VP-END [R118]
       return;
     }
 }

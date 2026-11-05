@@ -53,6 +53,22 @@ void __fastcall FreeWall2(struct D2GameViewStrc * pGameView);
 BOOL __stdcall WALL2_CollectRoomTilesAndUnits(struct D2RoomStrc * pRoom, struct D2Wall2DrawContextStrc * pDrawContext);
 // Client render-prep: rebuilds the per-frame "wall2" tile/unit draw list for the given game view. Allocates the draw list, computes the visible screen rect (expanding by 0x30 in perspective mode) and caches it in the RECT_* globals, then resets the wall2 entry/alloc counters and zero-fills the grid cell array. Maps the view center to iso grid coords (DRLG_OrthToIsoCoordsDiv160), seeds each grid cell's iso row/col, caches the local player's tile coords (UNIT_CenterX/YCoordsDiv5, gnPlayerTileGridIndex), then walks the current room tree via CallRoomCallback(WALL2_CollectRoomTilesAndUnits) to gather drawable tiles/units. Halts via Fog error if the wall2 buffer or the player unit is missing. Side effects: mutates view draw-list fields and several render globals.
 void __fastcall WALL2_BuildSceneDrawList(struct D2GameViewStrc * pGameView, uint32_t nTickCount);
+// VP-BEGIN [R118]: wide-view room walk. BFSes the room-neighbor graph
+// (DRLGROOM_GetAdjacentRoomsList) from pCenterRoom out to nDepth hops,
+// skipping hop<=1 (the retail draw set: the player's room + its direct
+// neighbors) and rooms whose subtile rect lies fully outside the world-space
+// view square (nCenterSubtileX/Y +- nReachSubtiles). Dedupes via a seen
+// scan; writes surviving rooms to apOut (nMaxOut cap) and returns the count.
+// The DRLG materializes rooms three RoomEx-hops out (InitNearRooms recursion:
+// hop-2 rooms get DRLGROOMEX_ActivateRoomEx), so rooms the wide screen can
+// reach already exist - retail's one-hop draw walks simply stopped short of
+// them. Callers gate on VPRES_IsWideLayoutMode so 640x480/800x600 stay
+// byte-identical retail. Shared by the floor pass (Draw.cpp) and the wall2
+// scene pass (Wall2.cpp) so floors, walls, roofs, units and shadows extend
+// together.
+int __stdcall WALL2_CollectRoomsBeyondAdjacency(struct D2RoomStrc * pCenterRoom, int nDepth,
+    int nCenterSubtileX, int nCenterSubtileY, int nReachSubtiles,
+    struct D2RoomStrc ** apOut, int nMaxOut);
 void __stdcall WALL2_OnAllocGameView_NoOp();
 // 11 internal functions (defined in .cpp)
 

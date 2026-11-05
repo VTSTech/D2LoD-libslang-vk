@@ -465,6 +465,37 @@ gate "r117: fill depth formula"            D2Client/GAME/Draw.cpp           'int
 gate "r117: fill span formula"             D2Client/GAME/Draw.cpp           'int nFillSpan = nFillReach \* 2 / 5 \+ 1' 1
 gate "r117: band fill call sites"          D2Client/GAME/Draw.cpp           'nFillI \* 5' 4
 
+# ---- r118: wide-view room walk (D2Client/GAME/Draw.cpp + Wall2.cpp) ----
+# Owner after R117: "The blackness at the edges is still there. and is
+# present in all video modes 720p and up. 1080p sees way beyond 720p's
+# border and yet when i switch to 720p it has a blackness at the edges."
+# Not the light grid (LIGHTMAP_InitFromPlayerAndRooms pre-fills the whole
+# 48x48 ambient grid with the player room's ambient color) and not R117's
+# fill (it only stamps DrawEdges level boundaries): the retail floor pass
+# AND the wall2 scene pass walk exactly ONE hop of ppRoomList - the 3x3
+# room block. 800x600's ~25-subtile screen reach always fit inside it; the
+# wide stops reach 85 (720p) to ~127 (1080p) subtiles, so the world past
+# the block never rendered and the cleared backbuffer showed as the black
+# rim at the screen edges, in every mode, worse the wider the view. The
+# rooms already exist: InitNearRooms materializes the RoomEx graph three
+# hops out (hop-2 rooms get DRLGROOMEX_ActivateRoomEx). R118 BFSes that
+# neighborhood (WALL2_CollectRoomsBeyondAdjacency, depth 3, hop<=1 skipped,
+# world-square culled at reach W/32+H/16+90 subtiles) and feeds hop-2/3
+# rooms to both passes: floors through the retail two-pass shape
+# (DRAW_DrawWideViewRoomFloors), walls/roofs/units/shadows through
+# WALL2_CollectRoomTilesAndUnits' existing rcCull/grid/entry-cap culls.
+# Bounds grown by the extra tiles also sharpen R117's open-bound tests to
+# fire at real level boundaries. Wide stops only; 640x480/800x600 never
+# reach the new code. Pins: collector symbol, both call sites, both wide
+# gates, the two-pass helper, and the self-id roll.
+gate "r118: room-walk collector defined"   D2Client/GAME/Wall2.cpp          '__stdcall WALL2_CollectRoomsBeyondAdjacency' 1
+gate "r118: scene pass wide walk"          D2Client/GAME/Wall2.cpp          'WALL2_CollectRoomsBeyondAdjacency\(pGameViewLocal.pRoom, 3,' 1
+gate "r118: scene walk wide gate"          D2Client/GAME/Wall2.cpp          'VPRES_IsWideLayoutMode' 1
+gate "r118: wall2 includes vpres header"   D2Client/GAME/Wall2.cpp          'UI/VanillaPlusCore\.h' 1
+gate "r118: floor pass wide walk"          D2Client/GAME/Draw.cpp           'Wall2::WALL2_CollectRoomsBeyondAdjacency\(pRoom, 3,' 1
+gate "r118: floor two-pass helper"         D2Client/GAME/Draw.cpp           'DRAW_DrawWideViewRoomFloors' 3
+gate "r118: floor pass wide gate"          D2Client/GAME/Draw.cpp           'VPRES_IsWideLayoutMode' 2
+
 # ---- resolution site-5: wide-layout classification + centered 800-px UI ----
 # Wide modes (3=1344x700 dormant, 4=1280x720, 5=1366x768 [R112]) join the
 # retail 800x600 UI class via VPRES_IsWideLayoutMode and re-center the
@@ -524,7 +555,9 @@ gate "site-5: spell icons not vanilla-anchored (R45)" D2Client/UI/SpellSel.cpp '
 # R93: 1 -> 2 (the issue #26 border-3 scene-build guard adds a second
 # VPRES_IsWideLayoutMode call in GAMEVIEW_PrepareScene)
 gate "site-5: summit clouds gate"          D2Client/GAME/View.cpp          'VPRES_IsWideLayoutMode' 2
-gate "site-5: level edges gate (GAME)"     D2Client/GAME/Draw.cpp          'VPRES_IsWideLayoutMode' 1
+# R118: 1 -> 2 (the wide-view room-walk floor gate adds a second classifier
+# call in DrawFloorByViewAndFloor; the first is R117's fill gate)
+gate "site-5: level edges gate (GAME)"     D2Client/GAME/Draw.cpp          'VPRES_IsWideLayoutMode' 2
 # R92: 1 -> 2 (the issue #26 warp-fade wide guard adds a second classifier call)
 gate "site-5: level edges gate (client)"   D2Client/D2Client.cpp           'VPRES_IsWideLayoutMode' 2
 gate "site-5: listbox metrics gate"        D2Client/UI/ListBox/ListBoxImplementation.cpp 'VPRES_IsWideLayoutMode' 1
@@ -915,11 +948,14 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # pDC6SubImages[5] growth left the two raw 0x550-byte walks stale - mouse
 # hit-test dead + sub-image slot spill - and the FreeLoadedImages retail
 # halt armed on the new count-5 row)
-gate "res: self-id 0.0.7-R117"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R117' 1
+gate "res: self-id 0.0.7-R118"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R118' 1
 # R115: string bumped R113 -> R115 (the 1080p sixth-stop round; owner:
 # "Great job. works. Published Glide3xVK 0.4.7. Now lets do 1080p")
 # R116: string bumped R115 -> R116 (the GDI windowed 1366x768 shear fix;
 # owner: "in D3D windowed mode 1366x768 everything is distorted and slanted")
+# R118: string bumped R117 -> R118 (the wide-view room-walk round; owner:
+# "The blackness at the edges is still there. and is present in all video
+# modes 720p and up")
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the

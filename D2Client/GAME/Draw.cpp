@@ -700,6 +700,40 @@ void __thiscall DrawSubTile(D2DrawFloorStrc * pDrawFloor, int32_t nTileX, int32_
     DRAW_DrawEdgeFloorTile(pDrawFloor, nWorldX + nStepX * 2, nWorldY + nStepY * 2);
 }
 
+// VP-BEGIN [R118]: wide-view floor walk. Draws one room's floor tiles through
+// the exact retail two-pass shape of DrawFloorByViewAndFloor's room loop:
+// pass = (nFlags >> 0xe) & 7 against 1 then 2, pParam 1 only for pass 1 when
+// the level has FloorFilter, screen base pDrawFloor->nX/nY, world anchor
+// roomCoords + tile pos * 5. Kept bit-identical so hop-2/3 rooms render with
+// the same layering as retail's hop-0/1 rooms.
+static void DRAW_DrawWideViewRoomFloors(D2DrawFloorStrc * pDrawFloor, D2RoomStrc * pRoom, uint32_t bNoFilter) {
+    D2DrlgRoomCoordsStrc sRoomCoords;
+    D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &sRoomCoords);
+    int nScreenBaseX = pDrawFloor->nX;
+    int nScreenBaseY = pDrawFloor->nY;
+    int nWorldRoomX = (int)sRoomCoords.dwXStart;
+    int nWorldRoomY = (int)sRoomCoords.dwYStart;
+    int nPass = 1;
+    do {
+      void* pParam;
+      if (bNoFilter || nPass != 1) {
+        pParam = 0;
+      } else {
+        pParam = (void*)0x1;
+      }
+      int nTileCount = 0;
+      D2DrlgTileDataStrc* pTile = D2Common::DUNGEON::Dungeon::DRLGROOM_GetFloorTilesFromRoom(pRoom, &nTileCount);
+      for (; nTileCount; nTileCount--) {
+        if ((int)((pTile->nFlags >> 0xe) & 7) == nPass) {
+          DrawFloorTile(pDrawFloor, pTile, pParam, nScreenBaseX + pTile->nScreenX, pTile->nScreenY + nScreenBaseY, nWorldRoomX + pTile->nPosX * 5, nWorldRoomY + pTile->nPosY * 5);
+        }
+        pTile++;
+      }
+      nPass++;
+    } while (nPass <= 2);
+}
+// VP-END [R118]
+
 // Client-side floor renderer: populates the per-frame D2DrawFloorStrc from the current view/state then draws all floor tiles of the current room and its adjacent rooms. Caches low-quality/perspective flags, weather splash rate, window-border type, and the player's roll seed; resets the tile bounding box; conditionally enables weather splash/recording every few frames. For each adjacent room it gets room coords and floor tiles and calls DrawFloorTile for tiles whose flag-derived layer (nFlags>>14 &7) matches the current pass (1..2), honoring the level's FloorFilter. When the level draws edges in perspective, calls DrawSubTile to fill the four boundary edges around the player position. Halts via ERROR_UnrecoverableInternalError_Halt if no player or level row.
 void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameViewStrc * pGameView) {
     eD2LevelId eLevelId;
@@ -810,6 +844,38 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
         bDrawEdges = 0;
       } while (nRoomIdx < nRoomCount);
     }
+
+    // VP-BEGIN [R118]: wide-view floor walk. The retail loop above draws the
+    // player's room + one hop of neighbors; at the wide stops the screen
+    // reaches 2-3 rooms out, so the world past that 3x3 block never rendered
+    // and the cleared backbuffer showed as the black rim at every screen
+    // edge ("present in all video modes 720p and up" - 800x600's ~25-subtile
+    // reach always fit inside the block, which is why retail never needed
+    // more). The DRLG materializes rooms three hops out, so draw them: same
+    // BFS collector the wall2 scene pass uses, same two-pass tile shape as
+    // the retail loop (DRAW_DrawWideViewRoomFloors). DrawFloorTile's
+    // rcExtendedView cull makes off-screen tiles one rect test, and its
+    // DRAW_UpdateTileVisibilityBounds call means the bounds below now reflect
+    // the true visible extent - which also sharpens the R117 edge-void fill's
+    // open-bound tests to fire at real level boundaries instead of the 3x3
+    // block edge. Wide stops only: 640x480/800x600 never reach this.
+    if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
+      D2RoomStrc* apWideRooms[96];
+      D2DrlgRoomCoordsStrc sWideCenterCoords;
+      D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &sWideCenterCoords);
+      int nWideCenterX = (int)(sWideCenterCoords.dwXStart + sWideCenterCoords.dwXSize / 2);
+      int nWideCenterY = (int)(sWideCenterCoords.dwYStart + sWideCenterCoords.dwYSize / 2);
+      int nWideRooms = Wall2::WALL2_CollectRoomsBeyondAdjacency(pRoom, 3,
+          nWideCenterX, nWideCenterY,
+          ScreenSizeX / 32 + ScreenSizeY / 16 + 10 + 80,
+          apWideRooms, 96);
+      int nWideIdx = 0;
+      while (nWideIdx < nWideRooms) {
+        DRAW_DrawWideViewRoomFloors(pDrawFloor, apWideRooms[nWideIdx], bNoFilter);
+        nWideIdx++;
+      }
+    }
+    // VP-END [R118]
 
     nTileCount = bDrawEdges;
     if (!pDrawFloor->bPerspectiveHasEffectOnSprite) {

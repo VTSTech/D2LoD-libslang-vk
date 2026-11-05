@@ -21,7 +21,15 @@ foreach(list D2_SOURCES D2_HEADERS)
         string(FIND "${entry}" "${CMAKE_BINARY_DIR}/" _in_build)
         string(FIND "${entry}" "${CMAKE_SOURCE_DIR}/thirdparty/libbacktrace/" _in_backtrace)
         string(FIND "${entry}" "${CMAKE_SOURCE_DIR}/asm_matching/" _in_asm)
-        if(NOT _in_build EQUAL 0 AND NOT _in_backtrace EQUAL 0 AND NOT _in_asm EQUAL 0)
+        # [R118] scripts/ holds host-side tools only. The root CMakeLists
+        # globs *.cpp tree-wide, so R117's host test harness
+        # (scripts/test_r117_fill.cpp, with its own main() and stub
+        # globals) silently compiled INTO d2.exe - the owner's R117 build
+        # died right after the static-init boot mark, before WinMain, in
+        # every renderer. Excluded here so anything parked under scripts/
+        # can never reach the game link again.
+        string(FIND "${entry}" "${CMAKE_SOURCE_DIR}/scripts/" _in_scripts)
+        if(NOT _in_build EQUAL 0 AND NOT _in_backtrace EQUAL 0 AND NOT _in_asm EQUAL 0 AND NOT _in_scripts EQUAL 0)
             list(APPEND _kept "${entry}")
         endif()
     endforeach()
@@ -30,3 +38,4 @@ endforeach()
 unset(entry)
 unset(_in_build)
 unset(_in_backtrace)
+unset(_in_scripts)
