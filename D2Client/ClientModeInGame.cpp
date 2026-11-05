@@ -28,6 +28,7 @@
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
+#include "Fog/Src/LogManager.h" // [vanilla-plus vpres] probe refusal log
 #include "Storm/Source/SCMD.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
@@ -450,6 +451,62 @@ int32_t __stdcall fAPPMODE_client_ReturnAppMode(HMODULE hModule, D2IniConfigStrc
     return 0;
 }
 
+// Vanilla Plus [vpres d3d probe]: Vista+ ChangeDisplaySettings - and
+// therefore the exclusive DirectDraw SetDisplayMode that both the DDraw and
+// the D3D renderer ride - only accepts timings from the driver's display
+// mode list. The dormant 1344x700 stop is a non-standard timing retail
+// never shipped, so no driver lists it; selecting it in D3D rejected the
+// mode-set and D2Win's resize-failure path then exited the process (the
+// field-reported "works in Glide, crashes on switching in D3D" - Glide is
+// immune because the wrapper sizes its own swapchain and never changes the
+// display mode). Enumerates the primary display's 32 bpp mode list, the
+// same list DDraw's exclusive mode-set consumes.
+static BOOL VPRES_IsDisplayModeListed(int nWidth, int nHeight) {
+    DEVMODEA sDevMode;
+    int nIndex = 0;
+    for (;;) {
+      memset(&sDevMode, 0, sizeof(DEVMODEA));
+      sDevMode.dmSize = sizeof(DEVMODEA);
+      if (!EnumDisplaySettingsA(nullptr, nIndex++, &sDevMode)) {
+        return 0;
+      }
+      if ((sDevMode.dmFields & (DM_PELSWIDTH | DM_PELSHEIGHT)) == (DM_PELSWIDTH | DM_PELSHEIGHT) &&
+          (int)sDevMode.dmPelsWidth == nWidth && (int)sDevMode.dmPelsHeight == nHeight &&
+          sDevMode.dmBitsPerPel == 32) {
+        return 1;
+      }
+    }
+}
+
+// Vanilla Plus [vpres d3d probe]: can an exclusive-mode renderer actually
+// enter this resolution stop? Stops 0 (640x480) and 2 (800x600) are retail
+// standards listed on every driver. Stops 3 (1344x700) and 4 (1280x720)
+// also accept the D3D renderer's host-mode letterbox ladder (see
+// RENDERER_D3D_InitializeDevice), so the probe passes when EITHER the exact
+// mode OR a host mode (1366x768 / 1360x768) is listed - client and renderer
+// agree on the candidate set, so a stop that survives this probe can never
+// trip the fatal resize path in D2Win::D2GFX_SetVideoMode.
+static BOOL VPRES_ExclusiveRendererCanEnterStop(DWORD dwStop) {
+    int nWidth;
+    int nHeight;
+    if (!dwStop) {
+      nWidth = 640;
+      nHeight = 480;
+    } else if (dwStop == 3) {
+      nWidth = 1344;
+      nHeight = 700;
+    } else if (dwStop >= 2) {
+      nWidth = 1280;
+      nHeight = 720;
+    } else {
+      nWidth = 800;
+      nHeight = 600;
+    }
+    return VPRES_IsDisplayModeListed(nWidth, nHeight) ||
+           VPRES_IsDisplayModeListed(0x556, 0x300) || // 1366x768 host
+           VPRES_IsDisplayModeListed(0x550, 0x300);   // 1360x768 host
+}
+
 void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
     // Static local variables (originally global data)
     static int gbScreenResolutionChangeInitInProgress = 0x280; D2_STATIC_GUARD(gbScreenResolutionChangeInitInProgress, "D2Client::ClientModeInGame::CLIENT_SetScreenResolution::gbScreenResolutionChangeInitInProgress");
@@ -458,6 +515,36 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
     if (RequestedScreenModeMaybe == dwScreenSize) {
       return;
     }
+
+    // Vanilla Plus [vpres d3d probe]: refuse the new stops on exclusive-mode
+    // renderers when neither the exact mode nor a letterbox host mode exists
+    // in the driver's display mode list. Everything stays coherent: screen
+    // keeps the still-running mode, and the saved slider position is snapped
+    // back to the stop that matches it so registry, slider and screen agree
+    // (SetupMiniPanel re-applies this stop at every game-enter; without the
+    // snap it would re-enter this refusal forever while the menu kept
+    // showing the dead stop). Glide skips the probe entirely - it enters
+    // any frame size without touching the display mode.
+    if (RequestedScreenModeMaybe == 3 || RequestedScreenModeMaybe == 4) {
+      eD2RendererMode eMode_lcl = D2gfx::D2GFX::D2GFX_GetRendererMode();
+      if ((eMode_lcl == RENDERED_DirectDraw || eMode_lcl == RENDERER_Direct3D) &&
+          !VPRES_ExclusiveRendererCanEnterStop(RequestedScreenModeMaybe)) {
+        DWORD dwPosition_lcl = 1;
+        if (!dwScreenSize) {
+          dwPosition_lcl = 0;
+        } else if (dwScreenSize == 4) {
+          dwPosition_lcl = 2;
+        } else if (dwScreenSize == 3) {
+          dwPosition_lcl = 3;
+        }
+        Storm::Source::SReg::SRegSaveValue("Diablo II", "Resolution", 0, dwPosition_lcl);
+        Fog::Src::LogManager::LOGFILE_WriteStringToFile(
+            "[vanilla-plus vpres] resolution stop %d rejected: display mode list has neither it nor a host mode; keeping mode %d",
+            (int)RequestedScreenModeMaybe, (int)dwScreenSize);
+        return;
+      }
+    }
+
     switch (RequestedScreenModeMaybe) {
       case 0:
         {

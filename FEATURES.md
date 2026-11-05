@@ -6,8 +6,12 @@ never a UI stop); row 15 adds **1920x1080**. Video-options slider stops, not `[f
 keys. Tree-verified same-day against the pushed tree (1344x700-PLAN.md §8): a third gap
 joined row 14 — the mini-panel's own position→mode re-apply (`SetupMiniPanel`) — and the
 dims-pair count corrected to seven. **Row 14 then IMPLEMENTED the same day (R109)**: the
-three-gap code round — gates 394/394, syntax-check digests identical, llvm-mingw build
-gate + field QA pending (owner). Earlier: v5, 2026-11-05. Rows 12–13 (`stack_gems`, `stack_runes`) added from an owner suggestion —
+three-gap code round — then the field round (owner QA): **Glide GREEN** (owner screenshot,
+stop live in the menu), **D3D crash caught and fixed in-round** — Vista+ display-mode lists
+omit 1344x700, so the exclusive DD7 `SetDisplayMode` rejected it and D2Win's fatal-resize
+path exited the process; fix = a D3D host-mode letterbox ladder (1366x768 → 1360x768) plus
+a client-side mode-list probe that refuses the stop cleanly when nothing fits (§14).
+Gates 401/401; llvm-mingw build gate pending (owner; D3D re-test owed). Earlier: v5, 2026-11-05. Rows 12–13 (`stack_gems`, `stack_runes`) added from an owner suggestion —
 **planned, not implemented**: no D2R parity (Blizzard never shipped rune/gem stacking — a live
 player request through 2.7), PD2 ships it. Earlier: v4, 2026-11-05. Status sweep: shipped rows
 marked Shipped with their first release (1, 3, 6, 9, 10, 11); row 9's SMOKE debts cleared (§H items 25/27 in the R83 full-belt pass [#24], the ten-page items in the R104 pass [#28]); §1/§6/§9/§10 as-built notes refreshed, §9's pre-ship draft marked superseded by the shipped in-panel tab. Earlier: v3, 2026-10-29 — row 9 (`shared_stash`) added from an owner suggestion — side-file design, `.d2s`/`.d2x` untouched; row 4 (`transparent_hud`) added from an owner suggestion — no D2R parity, engine-native draw modes. Scoped by research: D2R official QoL behavior + prior art from the
@@ -56,7 +60,7 @@ Every slate row must satisfy all of these before it ships:
 | 11 | Mana Burn fix (melee drain 256x bug) | Combat (D2Game) | D2R 2.4 patch notes ("fixed melee hits draining 256 times too much") + Basin wiki Mana Burn | S | Low | **Implemented** (R106 — `mana_burn_fix`; ini-only at ship, in-game **Mana Burn Fix** row on the Vanilla+ Options page since R108; server-side gate TU + VP-marked drain-roll shim in SUnitDmg.cpp; field QA + llvm-mingw gate pending) |
 | 12 | Stackable gems | Inventory | None — owner suggestion 2026-11-05; PD2 stacks gems in its currency tab | M | Med | `stack_gems` |
 | 13 | Stackable runes | Inventory | None — owner suggestion 2026-11-05; PD2 stacks runes in its currency tab | M | Med | `stack_runes` |
-| 14 | 1344x700 resolution (retail's dormant mode 3) | Video / renderers | Retail-dormant engine mode — the binaries carry the tables, no UI stop ever shipped; D2MultiRes-era community prior art | S–M | Low–Med | **Implemented** (R109 — Gap A `case 3` + Gap B slider stop 3 + Gap C mini-panel mapping; gates 394/394; llvm-mingw gate + field QA pending (owner); plan: 1344x700-PLAN.md) |
+| 14 | 1344x700 resolution (retail's dormant mode 3) | Video / renderers | Retail-dormant engine mode — the binaries carry the tables, no UI stop ever shipped; D2MultiRes-era community prior art | S–M | Low–Med | **Implemented** (R109 — Gap A `case 3` + Gap B slider stop 3 + Gap C mini-panel mapping; field: Glide GREEN, D3D switch crash fixed in-round via mode-list probe + host-mode letterbox ladder; gates 401/401; llvm-mingw gate + D3D re-test pending (owner); plan: 1344x700-PLAN.md) |
 | 15 | 1920x1080 resolution | Video / renderers | None — owner suggestion 2026-11-05; SGD2FreeRes/D2DX-class arbitrary-res prior art | M | Med | video-options slider stop 4 (not `[features]`-gated) |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
@@ -491,7 +495,29 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
   attach degrades gracefully: the count stays 3 and the load clamp folds position 3 to
   720p. Drive-by: the stale GDI decompiler comment "1360x700" corrected to 1344x700
   (`0x540`). Gates: 7 new `res3:` rows, `init attach` re-counted (3), minipanel clamp
-  gate re-pinned (`> 3`), self-ID `Vanilla+0.0.7-R109` → **394/394**.
+  gate re-pinned (`> 3`), self-ID `Vanilla+0.0.7-R109` → 394/394.
+- **Field round (owner QA, same day)**: **Glide GREEN** — the stop works end to end under
+  glide3xvk 0.4.6 (owner screenshot: video menu at 1344x700, world rendering, wide-UI
+  offsets correct). **D3D crashed on switching** — root cause is NOT the mode-3 code (the
+  D3D size case, wide-set and dims guards all carried 1344x700 already): on Vista+ the
+  exclusive DDraw `SetDisplayMode` only accepts timings from the driver's display-mode
+  list; 1344x700 is a non-standard timing retail never shipped, so no driver lists it
+  (1280x720 is CEA-standard and enters everywhere). The rejected mode-set failed
+  `RENDERER_D3D_InitializeDevice`, and D2Win's `D2GFX_SetVideoMode` treats a failed
+  resize as fatal (`"Failed to resize window... this is fatal!"` → `exit`). Glide was
+  immune — the wrapper sizes its own Vulkan swapchain and never touches the display
+  mode. **Fix (two layers, same candidate set)**: (1) `RENDERER_D3D_InitializeDevice`
+  retries a rejected mode with the smallest standard host modes that fully contain the
+  logical frame — 1366x768, then 1360x768 — while every render coordinate and the
+  viewport stay 1344x700, so the larger flip chain shows as inert black letterbox bands
+  (`RENDERER_D3D_ClearBackbuffer` now clears the LOCKED surface's row count, byte-identical
+  for exact-fit modes); (2) `CLIENT_SetScreenResolution` probes the driver's mode list
+  (32 bpp, `EnumDisplaySettingsA`) before committing stops 3/4 on DDraw/D3D and refuses
+  cleanly — screen keeps the running mode and the saved slider position snaps back so
+  registry, slider and screen agree — when neither the exact mode nor a host mode is
+  listed, so no path can reach the fatal resize. Boot is covered by layer 1 (the game
+  boots at 640x480 and only re-applies the saved stop through the probed choke point).
+  Gates: 7 new `res3:` D3D/probe rows → **401/401**; D3D re-test owed (owner).
 - **The dormant mode**: retail 1.14d ships mode-3 plumbing end to end but no UI stop — the
   size table maps 3 → 1344x700 (`D2gfx/D2GFX.cpp` `D2GFX_GetWindowSizeByResolutionMode`,
   case 3 = `0x540` x 700), GDI windowed has native `0x540`-wide branches (DIB alloc +

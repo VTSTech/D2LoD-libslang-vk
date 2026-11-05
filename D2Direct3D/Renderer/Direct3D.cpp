@@ -1334,12 +1334,18 @@ void __stdcall RENDERER_D3D_ClearBackbuffer() {
     ddSurfDescSize.dwSize = 0x7c;
     memset(&ddSurfDescSize.dwFlags, 0, 0x78);
     DWORD nResult = pTargetSurface->lpVtbl->Lock(pTargetSurface, nullptr, &ddSurfDescSize, 0x21, nullptr);
-    int nRowsLeft = RENDERER_nWindowHeight;
     if (nResult) {
       DIRECTD3D_LogError("Failed to lock render surface for clear", nResult);
       return;
     }
 
+    // Vanilla Plus [vpres d3d ladder]: clear the LOCKED surface's own row
+    // count, not the logical frame height. With the host-mode letterbox the
+    // flip chain is taller than RENDERER_nWindowHeight, and the rows outside
+    // the logical frame would otherwise keep their undefined power-on
+    // garbage on every flip. Exact-fit modes return dwHeight equal to
+    // RENDERER_nWindowHeight, so this is byte-identical to retail there.
+    int nRowsLeft = (int)ddSurfDescSize.dwHeight;
     for (; nRowsLeft; nRowsLeft--) {
       memset(ddSurfDescSize.lpSurface, 0, ddSurfDescSize.lPitch);
       ddSurfDescSize.lpSurface = (void*)((int)ddSurfDescSize.lpSurface + ddSurfDescSize.lPitch);
@@ -2606,8 +2612,41 @@ static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWn
 
     nResult = g_pDirectDraw7->lpVtbl->SetDisplayMode(g_pDirectDraw7, RENDERER_nWindowWidth, RENDERER_nWindowHeight, 0x20, 0, 0);
     if (nResult) {
-      DIRECTD3D_LogError("SetDisplayMode failed!", nResult);
-      return 0;
+      // Vanilla Plus [vpres d3d ladder]: Vista+ display-mode lists (what
+      // ChangeDisplaySettings - and therefore this exclusive SetDisplayMode -
+      // accept) omit the dormant 1344x700: a non-standard timing retail never
+      // shipped, so no driver mode table carries it, while 1280x720 (CEA
+      // standard) enters everywhere. A rejected mode here used to be fatal
+      // (D2Win: "Failed to resize window... this is fatal!"), which is the
+      // field-reported D3D crash on switching to the new stop while Glide
+      // worked (the wrapper sizes its own swapchain and never touches the
+      // display mode). Retry with the smallest standard modes that fully
+      // contain the logical frame: the viewport below and every render
+      // coordinate stay RENDERER_nWindowWidth x RENDERER_nWindowHeight, so
+      // the wider/taller flip chain shows as inert black letterbox bands
+      // (RENDERER_D3D_ClearBackbuffer clears the locked surface rows).
+      // Dims-agnostic ladder: a hypothetical unlistable 1280x720 is hosted
+      // by the same two modes.
+      static const int gnVPHostDisplayModes[2][2] = {
+          {0x556, 0x300}, // 1366x768 - the panel-standard 16:9 host
+          {0x550, 0x300}, // 1360x768 - CEA-864 alternative host
+      };
+      int nHostTry;
+      for (nHostTry = 0; nHostTry < 2; nHostTry++) {
+        Fog::Src::LogManager::LOGFILE_WriteStringToFile(
+            "[vanilla-plus vpres] display mode %dx%d rejected (hr=0x%08x), retrying with host mode %dx%d",
+            RENDERER_nWindowWidth, RENDERER_nWindowHeight, nResult,
+            gnVPHostDisplayModes[nHostTry][0], gnVPHostDisplayModes[nHostTry][1]);
+        nResult = g_pDirectDraw7->lpVtbl->SetDisplayMode(
+            g_pDirectDraw7, gnVPHostDisplayModes[nHostTry][0], gnVPHostDisplayModes[nHostTry][1], 0x20, 0, 0);
+        if (!nResult) {
+          break;
+        }
+      }
+      if (nResult) {
+        DIRECTD3D_LogError("SetDisplayMode failed!", nResult);
+        return 0;
+      }
     }
 
     /* BOOL bRepaint for MoveWindow */ /* int nHeight for MoveWindow */ /* int nWidth for MoveWindow */ /* int Y for MoveWindow */ /* int X for MoveWindow */ /* HWND hWnd for MoveWindow */ MoveWindow((HWND)hWnd, 0, 0, RENDERER_nWindowWidth, RENDERER_nWindowHeight, 1);

@@ -304,6 +304,19 @@ gate "res3: per-stop label 1344x700"      D2Client/UI/EscMenu.cpp        'L"1344
 gate "res3: draw covers both stops"       D2Client/UI/EscMenu.cpp        'nImageIndex != 2 && pItem->nImageIndex != 3' 1
 gate "res3: mappings to mode 3"           D2Client/UI/EscMenu.cpp        'RequestedScreenModeMaybe = 3' 2
 gate "res3: minipanel maps mode 3"        D2Client/UI/MiniPanel.cpp      'nScreenMode_lcl = 3' 1
+# Field round (R109): "works in Glide, crashes upon switching in D3D". Root
+# cause: Vista+ mode lists omit 1344x700 (non-standard timing), the exclusive
+# DD7 SetDisplayMode rejects it, and D2Win::D2GFX_SetVideoMode exits on a
+# failed resize. Two-layer fix that must move together (client probe and
+# renderer ladder agree on the candidate set: exact mode, else 1366x768 /
+# 1360x768 letterbox hosts).
+gate "res3: d3d host-mode ladder table"   D2Direct3D/Renderer/Direct3D.cpp 'gnVPHostDisplayModes' 3
+gate "res3: d3d ladder retry log"         D2Direct3D/Renderer/Direct3D.cpp 'retrying with host mode' 1
+gate "res3: d3d clear uses locked rows"   D2Direct3D/Renderer/Direct3D.cpp 'nRowsLeft = \(int\)ddSurfDescSize\.dwHeight' 1
+gate "res3: client probe helper"          D2Client/ClientModeInGame.cpp  'VPRES_ExclusiveRendererCanEnterStop' 2
+gate "res3: probe exact+host listing"     D2Client/ClientModeInGame.cpp  'VPRES_IsDisplayModeListed' 4
+gate "res3: probe gates stops 3 and 4"    D2Client/ClientModeInGame.cpp  'RequestedScreenModeMaybe == 3 \|\| RequestedScreenModeMaybe == 4' 1
+gate "res3: probe refusal log include"    D2Client/ClientModeInGame.cpp  'include "Fog/Src/LogManager\.h"' 1
 gate "fork-api include in EscMenu.cpp"       D2Client/UI/EscMenu.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
 # 1839 merge: D2FILE_CreateProcess moved to the new D2Hell module; the
 # [d2boot] CreateProcess marks re-planted there (merge-tripwire against a
