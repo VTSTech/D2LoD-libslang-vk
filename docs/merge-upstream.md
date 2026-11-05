@@ -42,6 +42,13 @@ rule in it was learned the hard way (see "War stories" at the bottom).
     git fetch upstream
     git merge upstream/main          # expect conflicts; they are all marked
 
+    # 1.5) line-ending sanity BEFORE merging (the eighth-sync lesson): if the
+    #      fork-touched files are CRLF and upstream's are LF, one normalization
+    #      commit on the fork side FIRST (handoff §8: merged main is
+    #      LF-normalized). The eighth sync's raw trial surface fell
+    #      48 files/78 hunks -> 26 real sites/57 hunks — 22 of the raw
+    #      conflicts were pure line-ending noise that auto-merged away.
+
     # 2) resolve conflicts:
     #    - VP-marked regions: ours (re-apply on top of upstream's new code)
     #    - CMakeLists.txt: root should end up = upstream's + the one
@@ -89,6 +96,23 @@ rule in it was learned the hard way (see "War stories" at the bottom).
     #    every D2BOOT_* user TU and proves it still reaches the declaration
     #    (direct include or transitively). Mandatory when the merge touched
     #    include blocks; cheap enough to always run.
+    python3 scripts/refile_aliasing_audit.py
+    #    REFILE-ALIASING audit (added R124, after the 1908->1948 eighth-sync
+    #    D3D fullscreen boot crash): upstream's file-symbols refile turned
+    #    retail globals into function-local statics; a refiled SCALAR indexed
+    #    as an array (or a refile static + the old global-relative spelling of
+    #    the same storage living side by side in one TU) aliases the real
+    #    storage only at RETAIL data addresses - in a rebuilt exe the static
+    #    lives wherever the linker puts it and the indexed read runs into
+    #    unrelated .bss. The eighth sync shipped UploadTextureToCache's four
+    #    node-base sites split across both spellings (the resolver dropped the
+    #    refile on one line of one hunk): the allocator wrote one region, the
+    #    per-frame palette check + SetTexture indexed the other, and D3D
+    #    fullscreen AVed (READ 0x10) on the first texture re-upload. Sweeps
+    #    all 220 refile-marked TUs for the three defect shapes; every grep
+    #    instrument stays green on the broken state (both spellings are
+    #    textually plausible), so this audit is mandatory after any merge that
+    #    carries a refile commit.
     bash scripts/merge_site_syntax_sweep.sh "$(git log --merges -1 --format=%h)"
     #    MERGE-SITE SYNTAX SWEEP (added Rev 92, reworked Rev 93 - baseline
     #    diffing): every audit above is grep-based, and a merge that keeps
@@ -379,3 +403,34 @@ PR) so acceptance is frictionless.
   round ("the include survives the file"); and a file resolved to one parent
   wholesale still compiles against the MERGE tree's headers — only a whole-tree
   include walk sees that.
+- **The 1908->1948 refile-aliasing split (`18a368ce`/`fd89b115`, eighth
+  sync):** upstream's `7d30a7d8` refiled module-local symbols into their using
+  modules, turning `RENDERER_DIRECT3D_UploadTextureToCache`'s texture-cache
+  node-buffer bases at retail `0x00970ec4` into a function-local static
+  addressed as `(&INT_00970ec4)[iMipLevel * 7]` — a spelling that aliases the
+  real storage (`&gD3DGenericTextureCache - 4 + iMipLevel * 28`) ONLY at
+  retail data addresses; in a rebuilt exe the static lives wherever the linker
+  puts it and the indexed read runs past the 4-byte static into unrelated
+  .bss. The merge took upstream's spelling for three of the function's four
+  base sites and kept the fourth (the palette-identity check) on the fork's
+  relative form — one hunk, two spellings, and the resolver dropped the refile
+  on the if-condition line. Every instrument was green and DESERVED to be:
+  presence gates count markers, the count gates did not count the statics, the
+  syntax sweep compiles both spellings fine, and each spelling alone is a
+  valid resolution of its own hunk — the defect lived BETWEEN hunks, in which
+  spelling each of the four sites took. The rebuilt exe indexed the texture
+  cache through two different regions (allocator writes vs the per-frame
+  palette check + SetTexture), and D3D fullscreen died at the first
+  title-screen texture re-upload (VEH 0xC0000005, AV READ at 0x10, own-code;
+  `-w` and Glide untouched). Fix: all four sites back on the fork's
+  build-independent relative form (field-proven R74..R122), upstream's dead
+  statics dropped, dated VP note. Instruments: `scripts/refile_aliasing_audit.py`
+  (step 4) sweeps all 220 refile-marked TUs for the three defect shapes —
+  repo-wide CLEAN after the fix, i.e. the only site the eighth sync created.
+  Rules: when a merge carries a refile commit, diff every touched FUNCTION
+  against BOTH parents' spellings of the same storage (the four-sites-in-one-
+  function class hides between hunks); a spelling that is address-equivalent
+  at retail is NOT equivalent in a rebuilt exe — retail-relative forms stay
+  build-independent, prefer them; and when a field crash survives every
+  grep-based audit, suspect the two-spellings-in-one-function class and run
+  the aliasing audit before blaming the old war-story classes.

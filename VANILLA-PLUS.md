@@ -12,12 +12,14 @@ restructure on 2026-10-28 moved the former `vanilla-plus` branch to `main` and
 renamed `libslang-vk` → `Glide3xVK`; the repository itself took its current
 name `D2VP-QoL` on 2026-11-03 — old GitHub URLs redirect regardless.)
 
-**Latest release: [`R108`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R108)
-("Vanilla+ 0.0.7-R108")** — one 7z with the client (boot banner self-IDs
-`Vanilla+0.0.7-R108`: the **Mana Burn Fix** joins the Vanilla+ Options page as
-its eighth row; the build also carries the `mana_burn_fix` combat fix and the
-seventh upstream sync, Ghidra DB → 1908), the Glide3xVK 0.4.6 wrapper and
-launcher/debug scripts. All releases: the
+**Latest release: [`R124`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R124)
+("Vanilla+0.0.7-R124")** — one 7z with the client (boot banner self-IDs
+`Vanilla+0.0.7-R124`: the **D3D fullscreen boot-crash fix**, field-verified
+2026-11-06 — the build also carries the **eighth upstream sync**, Ghidra DB →
+1948, and the R109–R122 wide-resolution arc: 1344x700 / 1366x768 / 1920x1080
+slider stops with hosted-stretch fullscreen, plus the wide-view rendering
+fixes), the Glide3xVK **0.4.8** wrapper pairing and launcher/debug scripts.
+All releases: the
 [releases page](https://github.com/VTSTech/D2VP-QoL/releases); per-release
 change lists: [CHANGELOG.md](CHANGELOG.md).
 
@@ -39,13 +41,15 @@ change lists: [CHANGELOG.md](CHANGELOG.md).
 The wrapper never touches Game.exe and this branch never touches the wrapper;
 each can be fixed, replaced and released independently.
 
-## Status (2026-11-04)
+## Status (2026-11-06)
 
-- **Up to date with upstream.** Seven numbered syncs of `jaenster/redivivus:main`
-  (first `R87`, latest the seventh: upstream `e2e9ec61..7df6ad0e`, Ghidra DB
-  → **1908**, 15 commits / 437 files, merged as `427551b7`) — vanilla-plus is
-  ahead of upstream and never behind. At DB 1908 the upstream byte-match stands
-  at 6,733 of 14,626 functions (46.0%) / 21.87% of bytes (`asm_matching/msvc8`).
+- **Up to date with upstream.** Eight numbered syncs of `jaenster/redivivus:main`
+  (first `R87`, latest the eighth: upstream `7df6ad0e..b8e3087f`, Ghidra DB
+  → **1948**, 16 commits / 786 files, merged as `18a368ce` — 693 unreferenced
+  functions defined, module-local symbols refiled into their using modules,
+  **Duriel's death no longer crashes**) — vanilla-plus is
+  ahead of upstream and never behind. At DB 1948 the upstream byte-match stands
+  at 7,648 of 14,626 functions (52.3%) / 23.99% of bytes (`asm_matching/msvc8`).
 - **The closed defect tracks stay closed** (HISTORY H1/H26): the glide crash
   series (fixes 1–13), sound (15–16; upstreamed as jaenster/redivivus PR #10 —
   drops work again and the Act 5 snow hang is gone, both upstream fixes) and
@@ -60,6 +64,19 @@ each can be fixed, replaced and released independently.
   Boot → intro → title → character select → in game, Direct3D and Glide
   (incl. the native 1280x720 widescreen mode), sound end to end and the
   `-nointro` boot switch (R86) are all field-green; the build is field-played daily.
+- **The video-options slider is six stops deep** — 640x480 / 800x600 / 1280x720
+  retail, plus **1344x700** (R109 — retail's dormant mode 3, first exposure),
+  **1366x768** (R112) and **1920x1080** (R115): probe-first fullscreen entry
+  (the driver's mode list is consulted before any mode-set), hosted stops
+  stretch to fill the host with the cursor mapped back into the logical frame,
+  windowed `-w` clean at every stop (the R116 GDI-pitch shear fix), and the
+  wide-view rendering campaign closed the black-edge/void family at ≥720p
+  (R117–R122: edge-void band fill, the room walk extended to hop 4, `vpdiag`
+  instrumentation in `d2boot.log`, the retail cull-rect re-fit) — the campaign
+  closed on vpdiag evidence (fill firing at full stretch, zero silent drops).
+  Glide pairing: wrapper **0.4.8** for the 1080p stop (0.4.7 adds 1366x768,
+  0.4.6 knows 1344x700). The eighth-sync build re-verified in the field after
+  the R124 D3D fullscreen fix (2026-11-06: "d3d fullscreen works again").
 - **The Vanilla+ surface is eight features deep** — all opt-in, default OFF,
   all manageable in-game from the Vanilla+ Options page (`Esc → Options`;
   the page shipped with 0.0.6 on 2026-10-30 and grew to eight rows — Shared
@@ -69,16 +86,16 @@ each can be fixed, replaced and released independently.
   (field-proven R74/R82), No Panel World Shift (field-proven R95–R101) and
   the Mana Burn fix (R106, options row R108).
 - **Releases**: `0.0.1` → `0.0.7` shipped 2026-10-27 → 2026-11-02; the 0.0.7
-  line now advances by R-tag — `R67` (first 0.0.7) … **`R108`** (current
+  line now advances by R-tag — `R67` (first 0.0.7) … **`R124`** (current
   latest; self-ID
-  `Vanilla+0.0.7-R108`, pinned by line 1 of `d2boot.log`). GitHub CI
+  `Vanilla+0.0.7-R124`, pinned by line 1 of `d2boot.log`). GitHub CI
   (mingw-i686) builds every release tag and ships `d2s-<sha>.exe` (stripped) +
   `d2-map-<sha>.map` (linker map, load-bearing for crash symbolization).
 - **Housekeeping**: the repo is renamed `D2LoD-libslang-vk` → **`D2VP-QoL`**
   (2026-11-03) and the wrapper has completed its spin-out to the
   [Glide3xVK](https://github.com/VTSTech/Glide3xVK) repo (latest wrapper tag
-  0.4.6). The gate suite ([`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh))
-  pins the whole Vanilla+ surface at **387/387**. `d2light-diag` / `d2drop-diag`
+  0.4.8). The gate suite ([`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh))
+  pins the whole Vanilla+ surface at **499/499**. `d2light-diag` / `d2drop-diag`
   are retired (R103 — lights and drops field-stable for many releases);
   `ShadowDiag` and the `[d2boot]` marks stay in-tree.
 - **`d2boot.log` contract (since `f10b5ff`)**: boot milestones + `D2BOOT_Fail` /
@@ -266,10 +283,11 @@ cannot be attributed.
    clock/timer overlay, transparent HUD, monster HP bar, automap scale,
    quick-cast keys. Candidates are discussed per issue; nothing lands without
    a config gate.
-4. **Keep current with upstream** — **standing cadence.** Seven numbered syncs
+4. **Keep current with upstream** — **standing cadence.** Eight numbered syncs
    so far, each per [docs/merge-upstream.md](docs/merge-upstream.md) with the
    full audit battery (gate suite, marker-placement and dead-store audits,
-   merge-site syntax sweep); the fork is ahead of upstream and never behind.
+   refile-aliasing audit, merge-site syntax sweep); the fork is ahead of
+   upstream and never behind.
 
 ## Build notes
 
@@ -278,7 +296,7 @@ cannot be attributed.
   release tag ships artifacts: `d2s-<sha>.exe` (stripped, play/distribute) +
   `d2-map-<sha>.map` (linker map, load-bearing for crash symbolization).
 - Every source change updates the `tools/check-vanilla-plus.sh` gate table
-  (387 checks at R108); the build self-ID string (first `d2boot.log` line)
+  (499 checks at R124); the build self-ID string (first `d2boot.log` line)
   bumps every code round so any shipped exe pins to its source round.
 - Transfer: the agent sandbox has no push credentials — regular rounds travel
   as **overlay zips of changed files**, upstream merges as **git bundles**;
