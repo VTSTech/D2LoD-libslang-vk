@@ -1098,6 +1098,11 @@ void __stdcall RENDERER_D3D_ReleaseDevice() {
       return;
     }
 
+    // VP [vpres stretch / R112]: the stretch arm only lives while the device
+    // does; a mode switch / shutdown must return to the retail 1:1 present
+    // and cursor mapping even if the next InitializeDevice never runs.
+    D2gfx::D2GFX::D2GFX_SetPresentationStretch(0, 0);
+
     RENDERER_D3D_ReleaseGroundTileCache();
     d3dFloorCache::D3D_FreeSystemMemoryTexturesForTiles();
     RENDERER_D3D_FreeTextureCaches();
@@ -2279,6 +2284,12 @@ static void RENDERER_D3D_GetWindowSizeByResolutionMode(int nResolutionMode, int*
         *nWidth = 1280;
         *nHeight = 720;
         return;
+      case 5:
+        // Vanilla Plus [R112]: 1366x768 (0x556 x 0x300) - panel-standard
+        // 16:9 stop, see D2GFX case 5.
+        *nWidth = 0x556;
+        *nHeight = 0x300;
+        return;
       default:
         *nWidth = 800;
         *nHeight = 600;
@@ -2308,6 +2319,49 @@ static BOOL VPRES3D_IsDisplayModeListed(int nWidth, int nHeight) {
         return 1;
       }
     }
+}
+
+// Vanilla Plus [vpres stretch / R112]: hosted-stop present. TRUE = this call
+// presented (stretched Blt of the logical frame over the whole host mode);
+// FALSE = not hosted (or the Blt failed) and the caller must do the retail
+// Flip. The scene always renders into the top-left logical rect of the
+// host-sized flip chain (viewport stays logical, R111); when
+// InitializeDevice hosts, the D2gfx stretch channel carries the host size
+// and this routine stretch-blits the logical rect onto the primary - the
+// R111 black letterbox bands become a full-screen (slightly non-square)
+// stretched frame, which is what the owner asked for ("center and stretch
+// it to 1366x768 when 1344x700 is not valid"). A DD7 flip chain primary
+// accepts Blts in exclusive fullscreen (the 8-bit DDraw renderer has always
+// presented this way); if an exotic backend refuses the Blt we fall back to
+// the caller's Flip - the R111 letterboxed look, never a lost frame.
+// Trade-off vs Flip: no vblank sync on hosted stops (DDBLT_WAIT only) -
+// accepted for a compat path retail never exercised; true-exclusive stops
+// keep the retail Flip byte-identical.
+BOOL VPRES3D_PresentHostedFrame() {
+    int nHostWidth = 0;
+    int nHostHeight = 0;
+    D2gfx::D2GFX::D2GFX_GetPresentationStretch(&nHostWidth, &nHostHeight);
+    if (!nHostWidth || !nHostHeight || !g_pD3DSurfaceBackbuffer || !D3DSurfaceSecondary) {
+      return 0;
+    }
+
+    RECT sSourceRect;
+    RECT sDestRect;
+    sSourceRect.left = 0;
+    sSourceRect.top = 0;
+    sSourceRect.right = RENDERER_nWindowWidth;
+    sSourceRect.bottom = RENDERER_nWindowHeight;
+    sDestRect.left = 0;
+    sDestRect.top = 0;
+    sDestRect.right = nHostWidth;
+    sDestRect.bottom = nHostHeight;
+    DWORD nBltResult = g_pD3DSurfaceBackbuffer->lpVtbl->Blt(
+        g_pD3DSurfaceBackbuffer, &sDestRect, D3DSurfaceSecondary, &sSourceRect, 0x01000000 /* DDBLT_WAIT */, nullptr);
+    if (nBltResult) {
+      DIRECTD3D_LogError("Hosted stretch Blt failed (falling back to flip)!", nBltResult);
+      return 0;
+    }
+    return 1;
 }
 
 static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWnd) {
@@ -2608,7 +2662,7 @@ static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWn
       RENDERER_nWindowWidth = nModeWidth;
       RENDERER_nWindowHeight = nModeHeight;
       g_bPerspectiveMode = 0;
-      // VP: modes 2/3/4 are the 800x600-class UI and must take the SAME
+      // VP: modes 2/3/4/5 are the 800x600-class UI and must take the SAME
       // fully-initialized device path as retail 800x600 (the fallthrough
       // sets g_bPerspectiveMode = 1, which selects the floor/subtile/font
       // texture caches in RENDERER_D3D_AllocateTextureCaches). The goto path
@@ -2618,7 +2672,8 @@ static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWn
       // plays" at the new 1280x720 stop. Retail only ever reached the goto
       // via the dormant registry modes 1/3, which its own else-branch
       // clamped to 800x600 anyway - the path was never actually exercised.
-      if (nResolutionMode != 2 && nResolutionMode != 3 && nResolutionMode != 4) {
+      // [R112] mode 5 = 1366x768 joins the same 800x600-class UI class.
+      if (nResolutionMode != 2 && nResolutionMode != 3 && nResolutionMode != 4 && nResolutionMode != 5) {
         goto setup_device;
       }
     }
@@ -2652,13 +2707,22 @@ static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWn
     // set). The flip chain below is created without DDSD_WIDTH/HEIGHT, so
     // it auto-sizes to the host display mode, while the viewport and every
     // render coordinate stay logical RENDERER_nWindowWidth x
-    // RENDERER_nWindowHeight - the extra host rows/cols show as inert black
-    // letterbox bands (RENDERER_D3D_ClearBackbuffer clears the LOCKED
-    // surface's own row count, so the bands stay black on every flip).
-    // Dims-agnostic: a hypothetical unlistable 1280x720 is hosted by the
-    // same two modes. Candidate set is agreed with the client-side probe
+    // RENDERER_nWindowHeight. Dims-agnostic: a hypothetical unlistable
+    // 1280x720 is hosted by the same two modes. Candidate set is agreed
+    // with the client-side probe
     // (D2Client::ClientModeInGame::VPRES_ExclusiveRendererCanEnterStop), so
     // a stop that survives that probe always finds its presentation here.
+    // Vanilla Plus [vpres stretch / R112, field round 3]: R111 showed the
+    // hosted frame top-left with black letterbox bands (the extra host
+    // rows/cols never drawn). Owner: "i see the black bars. can we center
+    // and stretch it to 1366x768 when 1344x700 is not valid." Hosted stops
+    // now STRETCH the logical frame over the whole host mode: the scene
+    // still renders into the top-left logical rect, but the present is a
+    // stretched Blt of that rect onto the primary (VPRES3D_PresentHostedFrame
+    // below) instead of a Flip, and D2Win's cursor capture scales raw
+    // host-space coords back into the logical frame via the D2gfx stretch
+    // channel armed here, so clicks land where the stretched pixels are.
+    // True-exclusive stops arm nothing: retail Flip, 1:1 cursor.
     static const int gnVPHostDisplayModes[2][2] = {
         {0x556, 0x300}, // 1366x768 - the panel-standard 16:9 host
         {0x550, 0x300}, // 1360x768 - CEA-864 alternative host
@@ -2676,11 +2740,18 @@ static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWn
       }
       if (nHostWidth) {
         Fog::Src::LogManager::LOGFILE_WriteStringToFile(
-            "[vanilla-plus vpres] stop %dx%d is not in the display mode list: hosting fullscreen at %dx%d (black letterbox bands)",
+            "[vanilla-plus vpres] stop %dx%d is not in the display mode list: hosting fullscreen at %dx%d (frame stretched to host)",
             RENDERER_nWindowWidth, RENDERER_nWindowHeight, nHostWidth, nHostHeight);
       }
     }
 
+    // VP [vpres stretch / R112]: arm the D2gfx stretch channel to the host
+    // size before the mode-set (a failure path must never leave a stale arm;
+    // RELEASE paths clear it again). Not hosted -> (0, 0) = retail present.
+    // Pure-data state setter in D2gfx - D2Win's cursor capture consumes it;
+    // the D2GFX.h include already rode along with this TU's existing
+    // pD2GFXRenderedDataStrc use, no new host-boundary surface.
+    D2gfx::D2GFX::D2GFX_SetPresentationStretch(nHostWidth, nHostHeight);
     if (nHostWidth) {
       nResult = g_pDirectDraw7->lpVtbl->SetDisplayMode(g_pDirectDraw7, nHostWidth, nHostHeight, 0x20, 0, 0);
     } else {
@@ -2885,6 +2956,11 @@ BOOL __fastcall CreateWindow(HWND hWnd, int nResolutionMode) {
     }
 
     RENDERER_D3D_ClearBackbuffer();
+    // VP [vpres stretch / R112]: hosted stops stretch-present the cleared
+    // frame; true-exclusive stops keep the retail Flip.
+    if (VPRES3D_PresentHostedFrame()) {
+      return 1;
+    }
     DDS_Flip pDVar1 = g_pD3DSurfaceBackbuffer->lpVtbl->Flip;
     if (pD2GFXRenderedDataStrc->bVSync) {
       (*pDVar1)(g_pD3DSurfaceBackbuffer, nullptr, 1);
@@ -2929,7 +3005,12 @@ void __fastcall PlayCutScene(char * szFile, int nResolutionMode, void * fpFrame)
       dwFlags = 1;
     }
 
-    g_pD3DSurfaceBackbuffer->lpVtbl->Flip(g_pD3DSurfaceBackbuffer, nullptr, dwFlags);
+    // VP [vpres stretch / R112]: hosted stops stretch-present the cleared
+    // frame too (the Bink loop itself rides the normal EndScene2 present,
+    // so cutscenes stretch with the game frame); true-exclusive keeps Flip.
+    if (!VPRES3D_PresentHostedFrame()) {
+      g_pD3DSurfaceBackbuffer->lpVtbl->Flip(g_pD3DSurfaceBackbuffer, nullptr, dwFlags);
+    }
     d3dFloorCache::D3D_PlayBinkVideo(szFile, nResolutionMode, (fnBinkFrameCallback)fpFrame);
     g_bCutscenePlaying = 0;
 }
@@ -2987,6 +3068,12 @@ BOOL __fastcall ResizeWindow(HWND hWnd, BOOL bForceResize) {
     }
 
     RENDERER_D3D_ClearBackbuffer();
+    // VP [vpres stretch / R112]: same hosted guard as CreateWindow - the
+    // mode switch just re-ran InitializeDevice, so the arm matches the new
+    // stop (hosted -> stretch, true-exclusive -> retail Flip).
+    if (VPRES3D_PresentHostedFrame()) {
+      return 1;
+    }
     DDS_Flip pDVar1 = g_pD3DSurfaceBackbuffer->lpVtbl->Flip;
     if (pD2GFXRenderedDataStrc->bVSync) {
       (*pDVar1)(g_pD3DSurfaceBackbuffer, nullptr, 1);
@@ -4752,7 +4839,8 @@ static void __thiscall RENDERER_D3D_CalculateViewportRect(RECT * pRect, int nScr
 
       nQuarterWidth = (int)(RENDERER_nWindowWidth + (RENDERER_nWindowWidth >> 0x1f & 3U)) >> 2;
       // VP-BEGIN [issue #26 / R92]: wide-UI layouts (Vanilla Plus 1280x720 /
-      // dormant 1344x700) keep the margin side of the perspective cull open.
+      // dormant 1344x700 / 1366x768 [R112]) keep the margin side of the
+      // perspective cull open.
       // Retail cuts both sides by a quarter window because the open panel
       // reaches the screen edge at 640x480/800x600; the 800-class panel
       // floats 240 px inboard at 1280x720, so the margin-side cut blacked out
@@ -4761,7 +4849,8 @@ static void __thiscall RENDERER_D3D_CalculateViewportRect(RECT * pRect, int nScr
       // edge. The renderer only knows its own backbuffer dims, hence the
       // explicit size test (no D2Client imports across the module boundary).
       BOOL bWideUiLayout = (RENDERER_nWindowWidth == 1280 && RENDERER_nWindowHeight == 720)
-                        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700);
+                        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700)
+                        || (RENDERER_nWindowWidth == 1366 && RENDERER_nWindowHeight == 768); // VP [R112]: 1366x768 joins the wide class
       // VP: [issue #26 / R94] wide-UI layouts open the bottom band of the
       // perspective cull too. Retail reserves the bottom 0x2f px for the
       // full-width bottom HUD; at 1280x720 the 800-class HUD floats 240 px
@@ -4861,12 +4950,13 @@ void __stdcall RENDERER_D3D_InitPerspectiveVertexBuffer() {
 
 // NOTE: Register params: pTileLibraryEntryStrc (ECX): D2TileLibraryEntryStrc *, nTilePosX (EDX): int
 // VP: [issue #26 / R93] TRUE on the Vanilla Plus wide-UI backbuffer sizes
-// (1280x720 / dormant 1344x700). Same dims test as the R92 perspective-rect
+// (1280x720 / dormant 1344x700 / 1366x768 [R112]). Same dims test as the R92 perspective-rect
 // guard in RENDERER_D3D_CalculateViewportRect - the renderer only knows its
 // own backbuffer dims, no D2Client imports across the module boundary.
 static BOOL RENDERER_D3D_IsWideUiLayout(void) {
     return (RENDERER_nWindowWidth == 1280 && RENDERER_nWindowHeight == 720)
-        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700);
+        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700)
+        || (RENDERER_nWindowWidth == 1366 && RENDERER_nWindowHeight == 768); // VP [R112]: 1366x768 joins the wide class
 }
 
 int32_t __fastcall RENDERER_D3D_BuildShadowTileVertices(D2TileLibraryEntryStrc * pTileLibraryEntryStrc, int nTilePosX, int32_t nTilePosY, uint8_t byLightRow, uint32_t dwAlpha, int32_t nScreenSplitIndex) {

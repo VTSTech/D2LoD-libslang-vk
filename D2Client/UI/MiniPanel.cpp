@@ -674,10 +674,10 @@ void __stdcall SetupMiniPanel() {
     if (!bReadOk) {
       nResolution = 1;
     }
-    // VP: the registry value is the slider position (0/1/2/3; stops 2/3 are
-    // attached by the Resolution row's init callback). Clamp foreign values
-    // to 800x600.
-    if (nResolution < 0 || nResolution > 3) {
+    // VP: the registry value is the slider position (0/1/2/3/4; stops 2/3/4
+    // are attached by the Resolution row's init callback). Clamp foreign
+    // values to 800x600.
+    if (nResolution < 0 || nResolution > 4) {
       nResolution = 1;
     }
 
@@ -689,6 +689,9 @@ void __stdcall SetupMiniPanel() {
       // would fold it into 720p. This path re-applies the saved stop at
       // every game-enter (GAME_InitClientSide) and cutscene-exit (pkt 0x61).
       nScreenMode_lcl = 3;
+    } else if (nResolution == 4) {
+      // Vanilla Plus [R112]: 1366x768 - same ahead-of->= 2 ordering.
+      nScreenMode_lcl = 5;
     } else if (nResolution >= 2) {
       nScreenMode_lcl = 4; // Vanilla Plus: 1280x720
     }

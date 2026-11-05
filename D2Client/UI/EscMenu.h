@@ -41,7 +41,7 @@ struct D2EscMenuItemStrc {
     /* 0x114 */ void (__fastcall *fpClickCallback)(struct D2EscMenuItemStrc *, struct D2UIMouseMsgStrc *); // Invoked when the item is activated; ESCMENU_ClickMenuItem loads ECX with the item
     /* 0x118 */ void (__fastcall *fpInitCallback)(struct D2EscMenuItemStrc *, struct D2UIMouseMsgStrc *); // Invoked once from ESCMENU_LoadLocalizedImages to seed nImageIndex from the live setting
     /* 0x11C */ void (__fastcall *fpDrawCallback)(struct D2EscMenuItemStrc *, struct D2UIMouseMsgStrc *); // Invoked every frame from DRAW_EscMenu to refresh nImageIndex before the row is drawn
-    /* 0x120 */ int nSubImageCount; // Number of sub-images (max 4)
+    /* 0x120 */ int nSubImageCount; // Number of sub-images (max 4 retail; 5 since VP R112 - the fifth video-options stop)
     /* 0x124 */ int nImageIndex; // Current image index or state
     /* 0x128 */ int bSelected; // Boolean: is this item selected
     /* 0x12C */ char szSubImage1Path[260]; // Path to first sub-image
@@ -49,7 +49,7 @@ struct D2EscMenuItemStrc {
     /* 0x334 */ char szSubImage3Path[260]; // Path to third sub-image
     /* 0x438 */ char szSubImage4Path[260]; // Path to fourth sub-image
     /* 0x53C */ struct DC6 * pDC6Main; // Loaded main DC6 image
-    /* 0x540 */ struct DC6 * pDC6SubImages[4]; // Array of loaded sub-image DC6 pointers
+    /* 0x540 */ struct DC6 * pDC6SubImages[5]; // Array of loaded sub-image DC6 pointers (VP [R112]: grown from retail 4 to 5 for the video-options slider's fifth stop (1366x768); retail tables keep shipping <= 4 stops, the designated inits zero-fill the fifth slot, and the only count-5 row is the VP Resolution row whose slots 2-4 attach at runtime)
 };
 
 struct D2EscMenuUIFlagStrc {

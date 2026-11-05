@@ -487,19 +487,21 @@ static BOOL VPRES_IsDisplayModeListed(int nWidth, int nHeight) {
 
 // Vanilla Plus [vpres d3d probe]: can an exclusive-mode renderer actually
 // enter this resolution stop? Stops 0 (640x480) and 2 (800x600) are retail
-// standards listed on every driver. Stops 3 (1344x700) and 4 (1280x720)
-// also accept the D3D renderer's host-mode letterbox ladder (see
+// standards listed on every driver. Stops 3 (1344x700), 4 (1280x720) and
+// 5 (1366x768 [R112]) also accept the D3D renderer's host-mode ladder (see
 // RENDERER_D3D_InitializeDevice), so for D3D the probe passes when EITHER
 // the exact mode OR a host mode (1366x768 / 1360x768) is listed - client
 // and renderer agree on the candidate set, so a stop that survives this
 // probe can never trip the fatal resize path in D2Win::D2GFX_SetVideoMode
 // nor strand the presentation in the emulated borderless-window fallback
-// (field R110). The DirectDraw renderer gets the exact-only branch: its
-// 8-bit palettized pipeline has no letterbox mechanism, so hosting would
-// present a frame smaller than its own surface - it enters a stop only
-// when the driver genuinely lists the mode at the 8 bpp its DD1
-// SetDisplayMode requests (extinct on modern drivers, which means stops
-// 3/4 refuse gracefully there instead of gambling on the fatal resize).
+// (field R110); since R112 a hosted stop stretch-fills the host, so the
+// presentation is always fullscreen-shaped. The DirectDraw renderer gets
+// the exact-only branch: its 8-bit palettized pipeline has no letterbox
+// mechanism, so hosting would present a frame smaller than its own surface
+// - it enters a stop only when the driver genuinely lists the mode at the
+// 8 bpp its DD1 SetDisplayMode requests (extinct on modern drivers, which
+// means stops 3/4/5 refuse gracefully there instead of gambling on the
+// fatal resize).
 static BOOL VPRES_ExclusiveRendererCanEnterStop(DWORD dwStop) {
     int nWidth;
     int nHeight;
@@ -509,6 +511,12 @@ static BOOL VPRES_ExclusiveRendererCanEnterStop(DWORD dwStop) {
     } else if (dwStop == 3) {
       nWidth = 1344;
       nHeight = 700;
+    } else if (dwStop == 5) {
+      // Vanilla Plus [R112]: 1366x768 - usually listed natively (CEA
+      // standard), in which case the stop enters true-exclusive; the host
+      // tail below covers the exotic unlistable driver (stretch ladder).
+      nWidth = 0x556;
+      nHeight = 0x300;
     } else if (dwStop >= 2) {
       nWidth = 1280;
       nHeight = 720;
@@ -542,7 +550,7 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
     // snap it would re-enter this refusal forever while the menu kept
     // showing the dead stop). Glide skips the probe entirely - it enters
     // any frame size without touching the display mode.
-    if (RequestedScreenModeMaybe == 3 || RequestedScreenModeMaybe == 4) {
+    if (RequestedScreenModeMaybe == 3 || RequestedScreenModeMaybe == 4 || RequestedScreenModeMaybe == 5) {
       eD2RendererMode eMode_lcl = D2gfx::D2GFX::D2GFX_GetRendererMode();
       if ((eMode_lcl == RENDERED_DirectDraw || eMode_lcl == RENDERER_Direct3D) &&
           !VPRES_ExclusiveRendererCanEnterStop(RequestedScreenModeMaybe)) {
@@ -553,6 +561,8 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
           dwPosition_lcl = 2;
         } else if (dwScreenSize == 3) {
           dwPosition_lcl = 3;
+        } else if (dwScreenSize == 5) {
+          dwPosition_lcl = 4; // Vanilla Plus [R112]: the 1366x768 slider stop
         }
         Storm::Source::SReg::SRegSaveValue("Diablo II", "Resolution", 0, dwPosition_lcl);
         Fog::Src::LogManager::LOGFILE_WriteStringToFile(
@@ -593,6 +603,18 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
           // Vanilla Plus: 1280x720
           ScreenSizeX = 1280;
           ScreenSizeY = 720;
+          nScreenMode = 1;
+          break;
+        }
+      case 5:
+        {
+          // Vanilla Plus [R112]: 1366x768 - the panel-standard 16:9 stop.
+          // Same retail downstream flow (WindowSize, border, automap
+          // recenter) the other wide stops ride; D3D usually enters it
+          // true-exclusive (CEA-standard timing), and when the driver does
+          // not list it the R112 stretch host ladder presents instead.
+          ScreenSizeX = 0x556;
+          ScreenSizeY = 0x300;
           nScreenMode = 1;
           break;
         }

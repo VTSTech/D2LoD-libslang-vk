@@ -500,7 +500,8 @@ BOOL __fastcall SetGamma(int32_t nGamma) {
       // stop to an 800x600 surface and only ever exercised mode 2 through
       // the perspective=1 path (modes 1/3 were dormant, unreachable via its
       // own registry clamp). The Vanilla Plus stops need real sizes here:
-      // mode 4 = Vanilla Plus 1280x720, mode 3 = the dormant 1344x700.
+      // mode 4 = Vanilla Plus 1280x720, mode 3 = the dormant 1344x700,
+      // mode 5 = 1366x768 [R112].
       // grSstWinOpen resolution enum gains 16 = 1280x720 and 17 = 1344x700;
       // the paired Glide3xVK wrapper (branch Glide3xVK, g3x_resolution_size)
       // maps both. Older wrapper builds fail soft: 640x480 surface plus an
@@ -510,7 +511,7 @@ BOOL __fastcall SetGamma(int32_t nGamma) {
       // RENDERER_GLIDE_InitTextureMemory's non-perspective branch is gated
       // on width==800 && height==600 and never runs, so the floor/subtile/
       // sprite caches stay uninitialized and the world renders nothing.
-      // Modes 2/3/4 are the 800x600-class UI and take the SAME
+      // Modes 2/3/4/5 are the 800x600-class UI and take the SAME
       // fully-initialized perspective=1 path as retail 800x600 - that
       // branch is VRAM-budget based and resolution-independent.
       fGammaVal.fValue = (float)nGamma / 100.0;
@@ -980,8 +981,16 @@ static BOOL RENDERER_GLIDE_InitWindow(int32_t nParam, FxU32 dwWindowHandle) {
         screen_resolution = 17; // dormant 1344x700 (Glide3xVK g3x_resolution_size entry 17)
         RENDERER_nWindowWidth = 1344;
         RENDERER_nWindowHeight = 700;
+      } else if (nParam == 5) {
+        // Vanilla Plus [R112]: 1366x768. Wrapper side: g3x_resolution_size
+        // needs entry 18 = {0x556, 0x300} (Glide3xVK round alongside R112;
+        // older wrappers fail soft to 640x480 + "unknown resolution" log
+        // line, same soft-fail shape as entries 16/17).
+        screen_resolution = 18; // Vanilla Plus 1366x768 (Glide3xVK g3x_resolution_size entry 18)
+        RENDERER_nWindowWidth = 0x556;
+        RENDERER_nWindowHeight = 0x300;
       }
-      if (nParam != 2 && nParam != 3 && nParam != 4) {
+      if (nParam != 2 && nParam != 3 && nParam != 4 && nParam != 5) {
         goto open_sst_window;
       }
     }
@@ -2749,12 +2758,13 @@ void __fastcall ClearScreen(BOOL bPartial) {
 }
 
 // VP: [issue #26 / R93] TRUE on the Vanilla Plus wide-UI backbuffer sizes
-// (1280x720 / dormant 1344x700). Same dims test as the R92 perspective-bounds
+// (1280x720 / dormant 1344x700 / 1366x768 [R112]). Same dims test as the R92 perspective-bounds
 // guard below - the renderer only knows its own backbuffer dims, no D2Client
 // imports across the module boundary.
 static BOOL RENDERER_GLIDE_IsWideUiLayout(void) {
     return (RENDERER_nWindowWidth == 1280 && RENDERER_nWindowHeight == 720)
-        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700);
+        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700)
+        || (RENDERER_nWindowWidth == 1366 && RENDERER_nWindowHeight == 768); // VP [R112]: 1366x768 joins the wide class
 }
 
 static void __stdcall RENDERER_GLIDE_CalculateScreenBounds(int32_t nViewportMode, RECT * pnBounds, int32_t nScreenPanels, int * pnXOffset) {
@@ -2817,7 +2827,8 @@ static void __stdcall RENDERER_GLIDE_CalculateScreenBounds(int32_t nViewportMode
       // panel (issue #26). Backbuffer-dims test: no D2Client imports across
       // the module boundary.
       BOOL bWideUiLayout = (RENDERER_nWindowWidth == 1280 && RENDERER_nWindowHeight == 720)
-                        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700);
+                        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700)
+                        || (RENDERER_nWindowWidth == 1366 && RENDERER_nWindowHeight == 768); // VP [R112]: 1366x768 joins the wide class
       if (nScreenPanels == 1) {
         *pnXOffset = -nHalfWidthDiv2;
         pnBounds->left += nHalfWidthDiv2;

@@ -635,9 +635,13 @@ static BOOL InternalOpenWindow(int32_t nResolutionMode) {
     // these [4] tables for modes 0-2 only and indexed them directly by the
     // requested mode: mode 3 read the {0} sentinel and mode 4 read PAST the
     // array (OOB). Filled 3 with its documented 1344x700 and added Vanilla
-    // Plus mode 4 = 1280x720 (0x500 x 0x2d0), 8bpp.
-    static uint32_t gdwDirectDrawPaletteSizes[5] = { 0x280, 0x320, 0x320, 0x540, 0x500 }; D2_STATIC_GUARD(gdwDirectDrawPaletteSizes, "D2DDraw::Renderer::DirectDraw::InternalOpenWindow::gdwDirectDrawPaletteSizes");
-    static uint32_t gdwDirectDrawSurfaceWidths[5] = { 0x1e0, 0x258, 0x258, 0x2bc, 0x2d0 }; D2_STATIC_GUARD(gdwDirectDrawSurfaceWidths, "D2DDraw::Renderer::DirectDraw::InternalOpenWindow::gdwDirectDrawSurfaceWidths");
+    // Plus mode 4 = 1280x720 (0x500 x 0x2d0), 8bpp. [R112] mode 5 =
+    // 1366x768 (0x556 x 0x300) joins - the client probe still gates the
+    // DDRAW renderer to exact 8-bpp listings only (no letterbox mechanism),
+    // so these entries only fire on drivers that genuinely list the mode
+    // at 8 bpp (extinct on modern drivers; kept for completeness/parity).
+    static uint32_t gdwDirectDrawPaletteSizes[6] = { 0x280, 0x320, 0x320, 0x540, 0x500, 0x556 }; D2_STATIC_GUARD(gdwDirectDrawPaletteSizes, "D2DDraw::Renderer::DirectDraw::InternalOpenWindow::gdwDirectDrawPaletteSizes");
+    static uint32_t gdwDirectDrawSurfaceWidths[6] = { 0x1e0, 0x258, 0x258, 0x2bc, 0x2d0, 0x300 }; D2_STATIC_GUARD(gdwDirectDrawSurfaceWidths, "D2DDraw::Renderer::DirectDraw::InternalOpenWindow::gdwDirectDrawSurfaceWidths");
 
     char* szErrorMsg;
     DDSURFACEDESC ddSurfDesc;
@@ -1157,7 +1161,7 @@ void __fastcall RENDERER_DDRAW_SetHorizontalBounds(int32_t bWidescreen) {
       return;
     }
 
-    // VP: modes 3/4 render the full (1344/1280-wide) playfield; retail
+    // VP: modes 3/4/5 render the full (1344/1280/1366-wide) playfield; retail
     // clamped every nonzero mode to the 800-wide bound.
     if (bWidescreen == 4) {
       gnDDrawRenderWidth = 1280;
@@ -1166,6 +1170,11 @@ void __fastcall RENDERER_DDRAW_SetHorizontalBounds(int32_t bWidescreen) {
 
     if (bWidescreen == 3) {
       gnDDrawRenderWidth = 0x540;
+      return;
+    }
+
+    if (bWidescreen == 5) {
+      gnDDrawRenderWidth = 0x556; // Vanilla Plus [R112]: 1366x768
       return;
     }
 
@@ -2018,7 +2027,8 @@ void __fastcall ClearScreen(BOOL bPartial) {
 // the renderer only knows its own backbuffer dims, no D2Client imports.
 static BOOL RENDERER_DDRAW_IsWideUiLayout(void) {
     return (RENDERER_nWindowWidth == 1280 && RENDERER_nWindowHeight == 720)
-        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700);
+        || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700)
+        || (RENDERER_nWindowWidth == 1366 && RENDERER_nWindowHeight == 768); // VP [R112]: 1366x768 joins the wide class
 }
 
 BOOL __fastcall DrawShadowTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, int32_t nDrawMode, int32_t nScreenPanels) {

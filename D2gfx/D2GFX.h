@@ -81,6 +81,15 @@ void __stdcall D2GFX_OnActivationChange(BOOL bActive);
 HWND __stdcall GetHwnd();
 int32_t __stdcall D2GFX_GetScreenSize(int * pWidth, int * pHeight);
 void __stdcall UpdateOSCursorVisibilty(int32_t shouldHide);
+// VP [vpres stretch / R112]: hosted-stop presentation state. The D3D
+// renderer calls the setter when it hosts a stop whose exact display mode
+// the driver does not list (frame rendered at the logical size, stretched
+// over the listed host mode at present); (0, 0) clears it. The cursor
+// capture (D2Win::MOUSE_CaptureMousePosition) reads the getter to scale
+// raw host-space cursor coords into the logical frame. Kept in D2gfx
+// because D2Win must reach it and renderers must not import D2Client.
+void __stdcall D2GFX_SetPresentationStretch(int nHostWidth, int nHostHeight);
+void __stdcall D2GFX_GetPresentationStretch(int * pHostWidth, int * pHostHeight);
 uint32_t __stdcall IsFullscreen();
 BOOL __stdcall D2GFX_ActivateWindow(BOOL bActive);
 BOOL __stdcall D2GFX_ResizeWindow(int32_t nResolution, BOOL bForceResize);

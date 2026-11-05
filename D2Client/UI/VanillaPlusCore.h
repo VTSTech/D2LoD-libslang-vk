@@ -64,7 +64,8 @@ int __stdcall VPRES_GetWideUiOffsetX();
 // "const - gnPanelOffsetY" text/hit-test expressions - stays in 800x600
 // space and lands exactly one height-delta too high. This offset is that
 // delta: ScreenSizeY - 600, clamped to 0. 0 at modes 0/1/2 (retail math
-// stays byte-identical), 100 at mode 3 (1344x700), 120 at mode 4 (1280x720).
+// stays byte-identical), 100 at mode 3 (1344x700), 120 at mode 4 (1280x720),
+// 168 at mode 5 (1366x768) [R112].
 // Add it to fixed Y coordinates of the 800-class UI. DO NOT add it to
 // bottom-anchored expressions (anything already containing "+ ScreenSizeY")
 // or change gnPanelOffsetY (-60) - double-shifting is the failure mode.
@@ -76,7 +77,8 @@ int __stdcall VPRES_GetWideUiOffsetY();
 // inventory) is open, so the action re-centers in the uncovered strip
 // (both panels open = no slide). That retail assumption is exact only when
 // the open panel reaches the screen edge (640x480/800x600); at the wide
-// stops (1280x720 / 1344x700) the 800-class UI floats 240 px inboard, the
+// stops (1280x720 / 1344x700 / 1366x768 [R112]) the 800-class UI floats
+// inboard, the
 // slide drags world out from under the visible outer margins, and every
 // margin artifact of issue #26 lives on that panned path (the perspective
 // projection anchors on the player and expands from the screen center, so

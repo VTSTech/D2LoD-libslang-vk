@@ -35,6 +35,15 @@ int __fastcall CheckGamma() {
 }
 
 BOOL __fastcall EndScene2() {
+    // VP [vpres stretch / R112]: hosted stops (driver lacks the exact mode,
+    // frame stretched over the listed host) present by the renderer's
+    // stretch-Blt instead of the retail Flip - see
+    // D2Direct3D::Renderer::VPRES3D_PresentHostedFrame. FALSE falls through
+    // to the retail Flip, byte-identical on every true-exclusive stop.
+    if (D2Direct3D::Renderer::VPRES3D_PresentHostedFrame()) {
+      return 1;
+    }
+
     DDS_Flip pDVar1 = g_pD3DSurfaceBackbuffer->lpVtbl->Flip;
     if (pD2GFXRenderedDataStrc->bVSync) {
       (*pDVar1)(g_pD3DSurfaceBackbuffer, nullptr, 1);

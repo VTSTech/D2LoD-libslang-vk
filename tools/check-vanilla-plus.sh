@@ -266,10 +266,11 @@ gate "sound: ClampAttenuation divisor decoded"        D2Sound/Src/D2SoundSmp.cpp
 gate "sound: no raw IEEE-754 volume literals left"    D2Sound/Src/D2SoundSmp.cpp '\(double\)(0x3f1a36e2e0000000|-0x3f3c780000000000|0x409f400000000000|-0x3f60c00000000000)' 0
 
 # ---- resolution-mode (1280x720 slider stop) --------------------------------
-# The registry value is the slider POSITION (0/1/2/3); stops 2/3 are attached
-# at runtime by the Resolution row's init callback because no MPQ label assets
-# exist for them. EscMenu.cpp mapping: 0 -> mode 0, 1 -> mode 2, 2 -> mode 4,
-# 3 -> mode 3 (R109; stop 3 tested BEFORE the >= 2 arm).
+# The registry value is the slider POSITION (0/1/2/3/4); stops 2/3/4 are
+# attached at runtime by the Resolution row's init callback because no MPQ
+# label assets exist for them. EscMenu.cpp mapping: 0 -> mode 0, 1 -> mode 2,
+# 2 -> mode 4, 3 -> mode 3 (R109), 4 -> mode 5 (R112; stops 3/4 tested
+# BEFORE the >= 2 arm).
 gate "resolution: draw callback wired (row)" D2Client/UI/EscMenu.cpp    'fpDrawCallback = \*/ &D2Client::UI::EscMenu::UI_SLIDER_DrawResolutionValue' 1
 gate "resolution: draw fn defined"           D2Client/UI/EscMenu.cpp     '__fastcall UI_SLIDER_DrawResolutionValue' 1
 # Both resolution callbacks (Apply + LoadAndApply) live in EscMenu.cpp on the
@@ -278,8 +279,8 @@ gate "resolution: draw fn defined"           D2Client/UI/EscMenu.cpp     '__fast
 # new D2Hell module (the old UI include pin on it retired with the move).
 gate "resolution: apply maps mode 4"         D2Client/UI/EscMenu.cpp     'RequestedScreenModeMaybe = 4' 2
 gate "resolution: decl in EscMenu.h"         D2Client/UI/EscMenu.h       'UI_SLIDER_DrawResolutionValue' 1
-gate "resolution: init attach"                  D2Client/UI/EscMenu.cpp     'VPRES_BuildBlankPlaceholder|nSubImageCount = 3' 3
-gate "resolution: minipanel clamp + mode 4"  D2Client/UI/MiniPanel.cpp   'nResolution > 3|nScreenMode_lcl = 4' 2
+gate "resolution: init attach"                  D2Client/UI/EscMenu.cpp     'VPRES_BuildBlankPlaceholder|nSubImageCount = 3' 4
+gate "resolution: minipanel clamp + modes 4/5"  D2Client/UI/MiniPanel.cpp   'nResolution > 4|nScreenMode_lcl = 5|nScreenMode_lcl = 4' 3
 gate "resolution: core blank builder"        D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_BuildBlankPlaceholder' 1
 gate "resolution: core font pick"            D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_PickFontMatchingDC6' 1
 gate "resolution: self-check wiring"         D2Client/UI/VanillaPlusCore.cpp 'UI_SLIDER_DrawResolutionValue' 1
@@ -301,7 +302,7 @@ gate "res3: mode-set case 3"              D2Client/ClientModeInGame.cpp  "Vanill
 gate "res3: d2gfx size-table case 3"      D2gfx/D2GFX.cpp                '\*nWidth = 0x540' 1
 gate "res3: init attach stop 4"           D2Client/UI/EscMenu.cpp        'nSubImageCount = 4' 1
 gate "res3: per-stop label 1344x700"      D2Client/UI/EscMenu.cpp        'L"1344x700"' 1
-gate "res3: draw covers both stops"       D2Client/UI/EscMenu.cpp        'nImageIndex != 2 && pItem->nImageIndex != 3' 1
+gate "res3: draw covers all three stops"  D2Client/UI/EscMenu.cpp        'nImageIndex != 2 && pItem->nImageIndex != 3 && pItem->nImageIndex != 4' 1
 gate "res3: mappings to mode 3"           D2Client/UI/EscMenu.cpp        'RequestedScreenModeMaybe = 3' 2
 gate "res3: minipanel maps mode 3"        D2Client/UI/MiniPanel.cpp      'nScreenMode_lcl = 3' 1
 # Field round 1 (R109): "works in Glide, crashes upon switching in D3D". Root
@@ -327,7 +328,7 @@ gate "res3: client probe helper"          D2Client/ClientModeInGame.cpp  'VPRES_
 gate "res3: probe exact+host listing"     D2Client/ClientModeInGame.cpp  'VPRES_IsDisplayModeListed' 7
 gate "res3: probe depth-aware helper"     D2Client/ClientModeInGame.cpp  'VPRES_IsDisplayModeListedAtDepth' 3
 gate "res3: ddraw exact-8bpp arm"         D2Client/ClientModeInGame.cpp  'VPRES_IsDisplayModeListedAtDepth\(nWidth, nHeight, 8\)' 1
-gate "res3: probe gates stops 3 and 4"    D2Client/ClientModeInGame.cpp  'RequestedScreenModeMaybe == 3 \|\| RequestedScreenModeMaybe == 4' 1
+gate "res3: probe gates stops 3/4/5"      D2Client/ClientModeInGame.cpp  'RequestedScreenModeMaybe == 3 \|\| RequestedScreenModeMaybe == 4 \|\| RequestedScreenModeMaybe == 5' 1
 gate "res3: probe refusal log include"    D2Client/ClientModeInGame.cpp  'include "Fog/Src/LogManager\.h"' 1
 gate "fork-api include in EscMenu.cpp"       D2Client/UI/EscMenu.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
 # 1839 merge: D2FILE_CreateProcess moved to the new D2Hell module; the
@@ -335,11 +336,63 @@ gate "fork-api include in EscMenu.cpp"       D2Client/UI/EscMenu.cpp     'includ
 # future regen dropping them again).
 gate "d2boot: D2Hell CreateProcess marks"    D2Hell/D2Hell.cpp           'D2BOOT_MarkFmt\("CreateProcess' 2
 
+# ---- resolution mode 5 (1366x768 fifth stop) + stretch present (R112) ------
+# Field round 3 (R111 -> R112): "ok, i see the black bars. can we center and
+# stretch it to 1366x768 when 1344x700 is not valid. Might as well add
+# 1366x768 as a resolution option as well." Two halves that must move
+# together: (1) HOSTED STOPS STRETCH - the scene still renders into the
+# top-left logical rect of the host-sized flip chain (R111), but the present
+# is now a stretched Blt of that rect onto the primary
+# (VPRES3D_PresentHostedFrame) instead of a Flip, and D2Win's cursor capture
+# scales raw host-space coords back into the logical frame through the D2gfx
+# stretch channel the renderer arms in InitializeDevice / clears in
+# ReleaseDevice - clicks land where the stretched pixels are, the bottom
+# 68px stay reachable; (2) 1366x768 = MODE 5, the slider's FIFTH stop
+# (position 4 -> mode 5, before the >= 2 arm): CEA-standard timing, so D3D
+# usually enters true-exclusive; the stretch ladder hosts it when the driver
+# does not list it. The esc-menu slot array grew [4] -> [5] (EscMenu.h) -
+# the only count-5 row is the VP Resolution row (blank 4 attaches at
+# runtime; the loader walk still caps at the 4 real path fields).
+gate "res5: d2gfx size-table case 5"       D2gfx/D2GFX.cpp                  '\*nWidth = 0x556' 1
+gate "res5: d3d mirror case 5"             D2Direct3D/Renderer/Direct3D.cpp '\*nWidth = 0x556' 1
+gate "res5: d3d perspective-class gate"    D2Direct3D/Renderer/Direct3D.cpp 'nResolutionMode != 5' 1
+gate "res5: glide entry 18"                D2Glide/Renderer/Glide.cpp       'screen_resolution = 18' 1
+gate "res5: glide mode-5 surface"          D2Glide/Renderer/Glide.cpp       'RENDERER_nWindowWidth = 0x556' 1
+gate "res5: glide perspective path 2/3/4/5" D2Glide/Renderer/Glide.cpp      'nParam != 2 && nParam != 3 && nParam != 4 && nParam != 5' 1
+gate "res5: ddraw table entries"           D2DDraw/Renderer/DirectDraw.cpp  '0x540, 0x500, 0x556' 1
+gate "res5: ddraw horizontal bound"        D2DDraw/Renderer/DirectDraw.cpp  'gnDDrawRenderWidth = 0x556' 1
+gate "res5: gdi dib 1366x768"              D2Gdi/Renderer/Windowed.cpp      'nResolutionMode == 5' 1
+gate "res5: gdi scale width 1366"          D2Gdi/Renderer/Windowed.cpp      'nParam == 5' 1
+gate "res5: mode-set case 5"               D2Client/ClientModeInGame.cpp    'ScreenSizeX = 0x556' 1
+gate "res5: probe stop-5 dims"             D2Client/ClientModeInGame.cpp    'nWidth = 0x556' 1
+gate "res5: wide classifier"               D2Client/UI/VanillaPlusCore.cpp  'eResolutionMode == 5' 1
+gate "res5: esc menu mapping mode 5"       D2Client/UI/EscMenu.cpp          'RequestedScreenModeMaybe = 5' 2
+gate "res5: init attach stop 5"            D2Client/UI/EscMenu.cpp          'nSubImageCount = 5' 1
+gate "res5: per-stop label 1366x768"       D2Client/UI/EscMenu.cpp          'L"1366x768"' 1
+gate "res5: draw clamp covers slot 4"      D2Client/UI/EscMenu.cpp          'nDrawIdx > 4' 1
+gate "res5: escmenu count 5 legal (load+free)" D2Client/UI/EscMenu.cpp          'nSubImageCount > 5' 3
+gate "res5: loader walk cap"               D2Client/UI/EscMenu.cpp          'nSubImageWalkCount' 3
+# R113 (the R112 struct-growth fallout round): D2EscMenuItemStrc grew to
+# 0x554 bytes (pDC6SubImages[5]); the two raw 0x550-byte (0x154-int) table
+# walks and the FreeLoadedImages count-4 halt were still retail-shaped. Pin
+# the corrected strides so a future struct change cannot silently re-arm it.
+gate "r113: mouse-Y walk stride 0x554"     D2Client/UI/EscMenu.cpp          'pItemYPosition \+= 0x155' 1
+gate "r113: loader item stride 0x554"      D2Client/UI/EscMenu.cpp          'nSubImageOffset \+= 0x155' 1
+gate "res5: minipanel maps mode 5"         D2Client/UI/MiniPanel.cpp        'nScreenMode_lcl = 5' 1
+gate "res5: subimage slots [5] (EscMenu.h)" D2Client/UI/EscMenu.h           'pDC6SubImages\[5\]' 1
+# The stretch-present channel (five TUs must agree):
+gate "stretch: d2gfx channel set/get"      D2gfx/D2GFX.cpp                  'D2GFX_SetPresentationStretch|D2GFX_GetPresentationStretch' 2
+gate "stretch: d3d present helper"         D2Direct3D/Renderer/Direct3D.cpp 'VPRES3D_PresentHostedFrame' 5
+gate "stretch: d3d Blt present"            D2Direct3D/Renderer/Direct3D.cpp 'DDBLT_WAIT' 2
+gate "stretch: d3d arm + release-clear"    D2Direct3D/Renderer/Direct3D.cpp 'D2GFX_SetPresentationStretch' 2
+gate "stretch: endscene2 guard"            D2Client/Renderer/Direct3D.cpp   'VPRES3D_PresentHostedFrame' 2
+gate "stretch: cursor host->logical"       D2Win/Src/D2WinMain.cpp          'D2GFX_GetPresentationStretch' 1
+
 # ---- resolution site-5: wide-layout classification + centered 800-px UI ----
-# Wide modes (3=1344x700 dormant, 4=1280x720) join the retail 800x600 UI
-# class via VPRES_IsWideLayoutMode and re-center the exactly-800-px-wide UI
-# with VPRES_GetWideUiOffsetX() = (ScreenSizeX-800)/2. The offset is 0 at
-# modes 0/1/2, so retail behavior stays byte-identical.
+# Wide modes (3=1344x700 dormant, 4=1280x720, 5=1366x768 [R112]) join the
+# retail 800x600 UI class via VPRES_IsWideLayoutMode and re-center the
+# exactly-800-px-wide UI with VPRES_GetWideUiOffsetX() = (ScreenSizeX-800)/2.
+# The offset is 0 at modes 0/1/2, so retail behavior stays byte-identical.
 gate "site-5: classifier defined"          D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_IsWideLayoutMode' 1
 gate "site-5: centering offset defined"    D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_GetWideUiOffsetX' 1
 gate "site-5: DRAW_UI gnPanelOffset block" D2Client/UI/Draw.cpp            'VP-BEGIN \[resolution site-5\]' 1
@@ -461,7 +514,7 @@ gate "resfix: ddraw horizontal bound 1280"  D2DDraw/Renderer/DirectDraw.cpp 'gnD
 gate "resfix: glide mode-4 surface 1280x720"    D2Glide/Renderer/Glide.cpp 'RENDERER_nWindowWidth = 1280' 1
 gate "resfix: glide mode-3 surface 1344x700"    D2Glide/Renderer/Glide.cpp 'RENDERER_nWindowWidth = 1344' 1
 gate "resfix: glide resolution enum 16"         D2Glide/Renderer/Glide.cpp 'screen_resolution = 16' 1
-gate "resfix: glide perspective path modes 2/3/4" D2Glide/Renderer/Glide.cpp 'nParam != 2 && nParam != 3 && nParam != 4' 1
+gate "resfix: glide perspective path modes 2/3/4/5" D2Glide/Renderer/Glide.cpp 'nParam != 2 && nParam != 3 && nParam != 4 && nParam != 5' 1
 
 # ---- glide texmem init + fix-2/3 guards (R46: d6affdd merge-port casualties) --
 # The d6affdd "merge port" replaced InitTextureMemory with the fork's pre-merge
@@ -779,7 +832,13 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # R111: string bumped R109 -> R111 (the D3D probe-first fullscreen round;
 # R110 shipped the first D3D crash fix without a mark bump - mark skipped
 # straight to R111 per the owner's every-round-is-a-new-Rxx rule)
-gate "res: self-id 0.0.7-R111"                Game/Main.cpp                    'Vanilla\+0\.0\.7-R111' 1
+# R112: string bumped R111 -> R112 (the stretch-to-fill host present + the
+# 1366x768 fifth stop round; owner: "i see the black bars ... add 1366x768")
+# R113: string bumped R112 -> R113 (the esc-menu regression round: R112's
+# pDC6SubImages[5] growth left the two raw 0x550-byte walks stale - mouse
+# hit-test dead + sub-image slot spill - and the FreeLoadedImages retail
+# halt armed on the new count-5 row)
+gate "res: self-id 0.0.7-R113"                Game/Main.cpp                    'Vanilla\+0\.0\.7-R113' 1
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the

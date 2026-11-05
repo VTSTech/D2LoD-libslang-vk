@@ -237,8 +237,9 @@ static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
         ";       re-centers in the uncovered strip    (vanilla behavior)\r\n"
         ";   1 = the world stays exactly where it is when the character\r\n"
         ";       screen or the inventory is open; the panel just floats\r\n"
-        ";       over it. Applies at 1280x720 / 1344x700 only - at\r\n"
-        ";       640x480 / 800x600 the vanilla slide is kept.\r\n"
+        ";       over it. Applies at the wide stops (1280x720 / 1344x700 /\r\n"
+        ";       1366x768) only - at 640x480 / 800x600 the vanilla slide\r\n"
+        ";       is kept.\r\n"
         "no_panel_shift=0\r\n"
         "\r\n"
         "; Mana Burn fix (D2R 2.4 parity):\r\n"
@@ -599,7 +600,8 @@ BOOL __stdcall PANELSHIFT_NoShiftWorld() {
     // here the globals are direct).
     return gbNoPanelShiftMode
         && ((ScreenSizeX == 1280 && ScreenSizeY == 720)
-            || (ScreenSizeX == 1344 && ScreenSizeY == 700));
+            || (ScreenSizeX == 1344 && ScreenSizeY == 700)
+            || (ScreenSizeX == 1366 && ScreenSizeY == 768)); // VP [R112]: 1366x768 joins the wide class
 }
 
 uint32_t __stdcall PANELSHIFT_BorderForWorld(uint32_t eBorderType) {
@@ -959,13 +961,14 @@ void __stdcall VANILLAPLUS_SelfCheck() {
 // not already screen-center- or ScreenSizeX-relative gets
 // VPRES_GetWideUiOffsetX() (= (ScreenSizeX - 800) / 2) added. The offset
 // is 0 at 800x600 and clamped to 0 at 640x480, so retail modes keep
-// byte-identical behavior; only modes 3 (1344x700) and 4 (1280x720) see a
-// non-zero shift (240 px at 1280x720).
+// byte-identical behavior; only modes 3 (1344x700), 4 (1280x720) and
+// 5 (1366x768) see a non-zero shift (240 px at 1280x720, 283 at 1366x768).
 // ---------------------------------------------------------------------------
 BOOL __stdcall VPRES_IsWideLayoutMode(DWORD eResolutionMode) {
     // 2 = retail 800x600; 3 = dormant 1344x700 (same 800-class UI, already
-    // in the D2GFX mode table); 4 = Vanilla Plus 1280x720.
-    return eResolutionMode == 2 || eResolutionMode == 3 || eResolutionMode == 4;
+    // in the D2GFX mode table); 4 = Vanilla Plus 1280x720; 5 = Vanilla Plus
+    // 1366x768 [R112].
+    return eResolutionMode == 2 || eResolutionMode == 3 || eResolutionMode == 4 || eResolutionMode == 5;
 }
 
 int __stdcall VPRES_GetWideUiOffsetX() {
@@ -978,7 +981,8 @@ int __stdcall VPRES_GetWideUiOffsetX() {
 // bottom-anchored panel art by the same height delta the art gains
 // automatically ("gnPanelOffsetY - const + ScreenSizeY" forms). Clamped to
 // 0 at 640x480/800x600 so retail modes stay byte-identical; 100 at mode 3
-// (1344x700), 120 at mode 4 (1280x720). gnPanelOffsetY itself stays -60 -
+// (1344x700), 120 at mode 4 (1280x720), 168 at mode 5 (1366x768) [R112].
+// gnPanelOffsetY itself stays -60 -
 // bottom-anchored expressions already contain ScreenSizeY and would
 // double-shift.
 int __stdcall VPRES_GetWideUiOffsetY() {

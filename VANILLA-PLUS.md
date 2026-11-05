@@ -174,7 +174,7 @@ The wider candidate slate (D2R backports + owner suggestions) is scoped in
   busts the client stash-gate cache, so the tab follows the toggle the same
   frame). Plan: [SHARED-STASH-PLAN.md](SHARED-STASH-PLAN.md).
 - **No Panel World Shift** — with one panel open at the wide layouts
-  (1280x720 / 1344x700) the world — terrain, units, effects — stays exactly
+  (1280x720 / 1344x700 / 1366x768) the world — terrain, units, effects — stays exactly
   where it was: the panel floats over an unmoved camera instead of the vanilla
   quarter-screen slide (units stay locked to the world via the R100
   border-neutralizer pass across all 14 unit-anchored consumers). The vanilla

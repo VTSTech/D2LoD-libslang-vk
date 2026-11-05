@@ -1400,6 +1400,24 @@ void __stdcall MOUSE_CaptureMousePosition(HWND * phWnd) {
     gbCursorVisible = 1;
     D2gfx::D2GFX::UpdateOSCursorVisibilty(1);
     D2gfx::D2GFX::D2GFX_GetScreenSize((int*)&phWnd, &nScreenHeight);
+    // VP [vpres stretch / R112]: when the D3D renderer is stretch-presenting
+    // a hosted stop (driver lacks the stop's exact display mode; the logical
+    // frame is stretched over the listed host mode), the message coords are
+    // HOST-space pixels while everything downstream - the clamp bounds from
+    // D2GFX_GetScreenSize, the UI hit tests, the world click - speaks
+    // LOGICAL frame space. Map host -> logical first (the same ratio the
+    // renderer's stretch-Blt uses) and the retail clamp below then runs
+    // unchanged: clicks land where the stretched pixels are, and the cursor
+    // sprite (drawn at these logical coords) sits under the physical cursor.
+    {
+      int nStretchHostW = 0;
+      int nStretchHostH = 0;
+      D2gfx::D2GFX::D2GFX_GetPresentationStretch(&nStretchHostW, &nStretchHostH);
+      if (nStretchHostW > 0 && nStretchHostH > 0) {
+        nRawX = (int)(((int64_t)nRawX * (int64_t)(int)(intptr_t)phWnd) / (int64_t)nStretchHostW);
+        nRawY = (uint32_t)(((int64_t)(int)nRawY * (int64_t)nScreenHeight) / (int64_t)nStretchHostH);
+      }
+    }
     phWnd = (HWND*)((int)phWnd - 1);
     nScreenHeight--;
     uint32_t bWindowActive = D2gfx::D2GFX::D2GFX_IsWindowActive();

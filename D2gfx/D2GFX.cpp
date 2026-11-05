@@ -361,6 +361,15 @@ void __stdcall D2GFX_GetWindowSizeByResolutionMode(int32_t nResolutionMode, int 
         *nWidth = 1280;
       *nHeight = 720;
       return;
+      case 5:
+        // Vanilla Plus [R112]: 1366x768 - the panel-standard 16:9 stop
+        // (0x556 x 0x300). Unlike dormant mode 3 this is a CEA-standard
+        // timing most laptop panels list natively, so D3D usually enters it
+        // true-exclusive (no hosting); unlistable drivers fall back to the
+        // R112 stretch host ladder like mode 3 does.
+        *nWidth = 0x556;
+      *nHeight = 0x300;
+      return;
       default:
         *nWidth = 0;
       nLine = 0x6d;
@@ -536,6 +545,26 @@ int32_t __stdcall D2GFX_GetScreenSize(int * pWidth, int * pHeight) {
 
     int nResult = RENDERER_CurrentRenderedFunctions->nfpGetScreenSize(pWidth, pHeight);
     return nResult;
+}
+
+// VP [vpres stretch / R112]: hosted-stop presentation state (see D2GFX.h).
+// The D3D renderer owns when this is armed; it is pure data here. (0, 0) =
+// no stretch: retail presentation (Flip) and 1:1 cursor mapping.
+static int gnVPStretchHostWidth = 0;
+static int gnVPStretchHostHeight = 0;
+
+void __stdcall D2GFX_SetPresentationStretch(int nHostWidth, int nHostHeight) {
+    gnVPStretchHostWidth = nHostWidth;
+    gnVPStretchHostHeight = nHostHeight;
+}
+
+void __stdcall D2GFX_GetPresentationStretch(int * pHostWidth, int * pHostHeight) {
+    if (pHostWidth) {
+      *pHostWidth = gnVPStretchHostWidth;
+    }
+    if (pHostHeight) {
+      *pHostHeight = gnVPStretchHostHeight;
+    }
 }
 
 void __stdcall UpdateOSCursorVisibilty(int32_t shouldHide) {

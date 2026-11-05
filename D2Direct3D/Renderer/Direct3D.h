@@ -1127,6 +1127,12 @@ void __fastcall SetGamma(int nGamma);
 BOOL __fastcall GetBackBuffer(BYTE * pBuffer);
 int32_t __fastcall RENDERER_D3D_CreateSystemMemoryTexture(struct IDirectDrawSurface7 * * ppSurface, struct IDirect3DTexture2 * * ppTexture, int32_t nWidth, int32_t nHeight);
 void __stdcall RENDERER_D3D_ClearBackbuffer();
+// VP [vpres stretch / R112]: hosted-stop present (see Direct3D.cpp).
+// TRUE = presented the logical frame stretched over the host mode; FALSE =
+// not hosted / Blt refused, caller does the retail Flip. Consumed by this
+// renderer's CreateWindow/ResizeWindow/PlayCutScene and by
+// D2Client::Renderer::EndScene2 (the per-frame present).
+BOOL VPRES3D_PresentHostedFrame();
 void __fastcall RENDERER_D3D_CopySurfacePixels(struct IDirectDrawSurface7 * pSrcSurface, struct IDirectDrawSurface7 * pDestSurface, int nHeight);
 void __fastcall RENDERER_DIRECT3D_ErrorLog(char * szText, DWORD dwHResult);
 HRESULT __stdcall RENDERER_D3D_EnumDisplayModeCallback(int * pDisplayModeDesc, int pModeList);

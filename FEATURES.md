@@ -20,7 +20,17 @@ window at the logical size on the unchanged desktop) showed. R111 probes the mod
 BEFORE the mode-set — an unlisted stop goes straight to a listed host mode (a real mode
 set) — and sizes the window to the HOST so the emulated-fullscreen window covers the
 screen; frame stays 1344x700 with black letterbox bands (§14). Gates 405/405; llvm-mingw
-build gate + D3D re-test pending (owner). Earlier: v5, 2026-11-05. Rows 12–13 (`stack_gems`, `stack_runes`) added from an owner suggestion —
+build gate + D3D re-test pending (owner). **Field round 3 (owner QA, R111 → R112)**: the
+fullscreen look held ("ok, i see the black bars") — the bands ARE the R111 letterbox on
+the 1366x768 host mode, so R112 does two things the owner asked for in the same breath:
+(1) **hosted stops stretch** — the logical frame is stretched over the whole host mode at
+present (a stretched Blt instead of the Flip) and the cursor capture maps host pixels
+back into the logical frame, so clicks land where the stretched pixels are (§14); (2)
+**1366x768 becomes the slider's fifth stop** — resolution mode 5 (`0x556 x 0x300`), the
+panel-standard 16:9 timing most laptop panels list natively, so D3D usually enters it
+TRUE-exclusive (no hosting, retail Flip) and only exotic drivers fall back to the stretch
+ladder (§14). Gates 432/432 (27 net-new `res5:`/`stretch:` rows); llvm-mingw build gate +
+D3D re-test pending (owner). Earlier: v5, 2026-11-05. Rows 12–13 (`stack_gems`, `stack_runes`) added from an owner suggestion —
 **planned, not implemented**: no D2R parity (Blizzard never shipped rune/gem stacking — a live
 player request through 2.7), PD2 ships it. Earlier: v4, 2026-11-05. Status sweep: shipped rows
 marked Shipped with their first release (1, 3, 6, 9, 10, 11); row 9's SMOKE debts cleared (§H items 25/27 in the R83 full-belt pass [#24], the ten-page items in the R104 pass [#28]); §1/§6/§9/§10 as-built notes refreshed, §9's pre-ship draft marked superseded by the shipped in-panel tab. Earlier: v3, 2026-10-29 — row 9 (`shared_stash`) added from an owner suggestion — side-file design, `.d2s`/`.d2x` untouched; row 4 (`transparent_hud`) added from an owner suggestion — no D2R parity, engine-native draw modes. Scoped by research: D2R official QoL behavior + prior art from the
@@ -69,8 +79,8 @@ Every slate row must satisfy all of these before it ships:
 | 11 | Mana Burn fix (melee drain 256x bug) | Combat (D2Game) | D2R 2.4 patch notes ("fixed melee hits draining 256 times too much") + Basin wiki Mana Burn | S | Low | **Implemented** (R106 — `mana_burn_fix`; ini-only at ship, in-game **Mana Burn Fix** row on the Vanilla+ Options page since R108; server-side gate TU + VP-marked drain-roll shim in SUnitDmg.cpp; field QA + llvm-mingw gate pending) |
 | 12 | Stackable gems | Inventory | None — owner suggestion 2026-11-05; PD2 stacks gems in its currency tab | M | Med | `stack_gems` |
 | 13 | Stackable runes | Inventory | None — owner suggestion 2026-11-05; PD2 stacks runes in its currency tab | M | Med | `stack_runes` |
-| 14 | 1344x700 resolution (retail's dormant mode 3) | Video / renderers | Retail-dormant engine mode — the binaries carry the tables, no UI stop ever shipped; D2MultiRes-era community prior art | S–M | Low–Med | **Implemented** (R109 — Gap A `case 3` + Gap B slider stop 3 + Gap C mini-panel mapping; field: Glide GREEN, D3D switch crash fixed in-round via mode-list probe + host-mode letterbox ladder; field round 2 (R111): D3D borderless-window look fixed — probe-first presentation + host-sized window, gates 405/405; llvm-mingw gate + D3D re-test pending (owner); plan: 1344x700-PLAN.md) |
-| 15 | 1920x1080 resolution | Video / renderers | None — owner suggestion 2026-11-05; SGD2FreeRes/D2DX-class arbitrary-res prior art | M | Med | video-options slider stop 4 (not `[features]`-gated) |
+| 14 | 1344x700 resolution (retail's dormant mode 3) + 1366x768 fifth stop | Video / renderers | Retail-dormant engine mode — the binaries carry the tables, no UI stop ever shipped; D2MultiRes-era community prior art; 1366x768 is the panel-standard the field box letterboxes onto | S–M | Low–Med | **Implemented** (R109 — Gap A `case 3` + Gap B slider stop 3 + Gap C mini-panel mapping; field: Glide GREEN, D3D switch crash fixed in-round via mode-list probe + host-mode letterbox ladder; field round 2 (R111): D3D borderless-window look fixed — probe-first presentation + host-sized window; field round 3 (R112): hosted stops STRETCH the frame over the host mode + **1366x768 joins as the slider's fifth stop (mode 5)**, gates 432/432; llvm-mingw gate + D3D re-test pending (owner); plan: 1344x700-PLAN.md §10) |
+| 15 | 1920x1080 resolution | Video / renderers | None — owner suggestion 2026-11-05; SGD2FreeRes/D2DX-class arbitrary-res prior art | M | Med | video-options slider stop 6 / mode 6 (not `[features]`-gated; slot bookkeeping after R112 — see §15) |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
 the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipped for 0.0.4, and row 1 shipped as the orb-face readout and was repurposed post-release (see §1).
@@ -555,6 +565,65 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
   three touched TUs (the pre-existing D2Hell.h host-shim noise only). D3D re-test owed
   (owner; expected: display switches to 1366x768, game frame top-left 1344x700 with
   black bands right/bottom, no desktop visible, mouse confined to the logical frame).
+- **Field round 3 (owner QA, R111 → R112)**: the R111 fullscreen look held — "ok, i see
+  the black bars" — and those bands ARE the R111 letterbox: the field box hosts 1344x700
+  on its native 1366x768 panel, the frame renders top-left, the extra host rows/cols stay
+  black. Owner asked for two things in one breath: "can we center and stretch it to
+  1366x768 when 1344x700 is not valid. Might as well add 1366x768 as a resolution option
+  as well." **(1) Hosted stops stretch**: the scene still renders into the top-left
+  logical rect (viewport untouched, R111), but the PRESENT is now a stretched Blt of that
+  rect onto the primary — new `D2Direct3D::Renderer::VPRES3D_PresentHostedFrame`, wired
+  into `EndScene2` (the per-frame present), `CreateWindow`, `ResizeWindow` and
+  `PlayCutScene` (cutscenes stretch too — Bink rides the normal frame pump); FALSE falls
+  through to the retail Flip, byte-identical on every true-exclusive stop, and a Blt
+  refusal on an exotic backend degrades to the R111 letterbox instead of a lost frame.
+  The cursor follows: the renderer arms a D2gfx stretch channel
+  (`D2GFX_SetPresentationStretch`) with the host size and `MOUSE_CaptureMousePosition`
+  maps raw host pixels back into the logical frame (`x * logical / host`) BEFORE the
+  retail clamp — clicks land where the stretched pixels are, the bottom 68 px stay
+  reachable, the drawn cursor sits under the physical one. Trade-off, documented: hosted
+  presents have no vblank sync (DDBLT_WAIT only); true-exclusive keeps Flip. **(2)
+  1366x768 = mode 5, the slider's FIFTH stop**: `D2GFX` case 5 (`0x556 x 0x300`) + the
+  D3D mirror, `CLIENT_SetScreenResolution` case 5, probe stop-5 dims (exact-or-host, the
+  same candidate set), slider position 4 → mode 5 in both mappings (ahead of the `>= 2`
+  arm), label table `L"1366x768"`, mini-panel `== 4 → mode 5` + clamp `> 4`, renderer
+  branches (D3D perspective-class gate, DDraw `[6]` display tables + horizontal bound,
+  GDI DIB + scale width, Glide `grSstWinOpen` enum **18** + perspective path), wide class
+  (`VPRES_IsWideLayoutMode` + all seven dims pairs), and the esc-menu slot array grown
+  `pDC6SubImages[4]` → `[5]` (the one retail-struct change: the fifth stop's blank
+  attaches at runtime; the loader walk still caps at the four real path fields, count-5
+  rows are legal, the draw-site clamp covers slot 4). Unlike dormant mode 3, 1366x768 is
+  a CEA-standard timing most panels list natively — D3D usually enters it TRUE-exclusive
+  (retail Flip, 1:1 cursor); the stretch ladder only fires on drivers that omit it.
+  Glide note: the paired [Glide3xVK](https://github.com/VTSTech/Glide3xVK) wrapper needs
+  `g3x_resolution_size` entry 18 = `{0x556, 0x300}` — older wrappers fail soft (640x480
+  surface + "unknown resolution" log line), same contract as entries 16/17. Gates: 21
+  `res5:` + 6 `stretch:` rows, `init attach` re-counted (4), minipanel gate re-pinned
+  (`> 4` + mode-5 arm), self-ID `Vanilla+0.0.7-R112` → **432/432**; syntax-check: zero
+  errors in the twelve touched TU bodies (the pre-existing `__time32_t`/D2Hell.h
+  host-shim header noise only). llvm-mingw build gate + D3D re-test owed (owner;
+  expected at 1344x700: full-screen stretched frame, edge-to-edge, no bands; at 1366x768:
+  true-exclusive native mode, retail presentation).
+- **R113 field round 4 (regression hotfix, no behavior change)**: R112's struct growth
+  (`D2EscMenuItemStrc.pDC6SubImages [4] → [5]`, items 0x550 → 0x554 bytes) left three
+  retail-shaped consumers of the old stride/count live in `EscMenu.cpp` — the mouse-Y
+  row walk (`pItemYPosition += 0x154`) read rows ≥ 1 four bytes per-item early, so the
+  mouse could not hit-test any menu row at ANY stop (keyboard nav kept working — it
+  walks by array indexing; owner: "The mouse can no longer navigate or select options
+  in the menu ... It no longer says 'Resolution' but '640x480' instead of the word
+  Resolution"); the loader's sub-image slot-write counter (`nSubImageOffset += 0x154`)
+  spilled every item's value-DC6 writes 4·N bytes into the previous item (the
+  "640x480" value image parked in the background row's slot 4, drawn over the baked
+  "Resolution" caption; later items scribbled pointer bytes into `szSubImage4Path`
+  tails — the visible corruption); and `ESCMENU_FreeLoadedImages` kept the retail
+  `nSubImageCount > 4 → HALT` that R112's legal count-5 row trips on every menu
+  teardown. Fix: both raw walks re-pointed to `0x155` ints (the R112 0x554-byte
+  stride), the free path accepts count ≤ 5. Stops/mappings/labels/stretch untouched —
+  640x480/800x600 stay byte-identical retail, the wide stops behave exactly as R112
+  shipped. Gates: `res5: escmenu count 5 legal` re-counted 2 → 3 (loader + free), +2
+  `r113:` stride pins, self-ID `Vanilla+0.0.7-R113` → **434/434**; syntax-check error
+  digest identical pre/post on the two touched TUs (pre-existing D2Hell.h host-shim
+  noise only). llvm-mingw build gate + menu re-test owed (owner).
 - **The dormant mode**: retail 1.14d ships mode-3 plumbing end to end but no UI stop — the
   size table maps 3 → 1344x700 (`D2gfx/D2GFX.cpp` `D2GFX_GetWindowSizeByResolutionMode`,
   case 3 = `0x540` x 700), GDI windowed has native `0x540`-wide branches (DIB alloc +
@@ -589,9 +658,13 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
   play.
 - **Why it rides the 720p playbook**: the same site-1..6 checklist per new mode —
   `CLIENT_SetScreenResolution` + D2GFX table cases, D3D size case + wide-set + dims guards,
-  DDraw `[6]` tables + horizontal bounds, GDI windowed branches, Glide wrapper
-  `g3x_resolution_size` entry 18 + client mapping, `VPRES_IsWideLayoutMode`, slider stop 5.
-  The wide-UI offsets are formulas (X 560 / Y 480).
+  DDraw display tables + horizontal bounds, GDI windowed branches, Glide wrapper
+  `g3x_resolution_size` entry + client mapping, `VPRES_IsWideLayoutMode`, slider stop.
+  **Slot bookkeeping after R112**: 1366x768 consumed mode 5 / slider stop 5 / wrapper
+  entry 18 / the `[5]` sub-image slot — 1080p rides **mode 6 / slider stop 6 / wrapper
+  entry 19 / `pDC6SubImages[6]`** (array grows again) / DDraw `[7]` tables. The wide-UI
+  offsets are formulas (X 560 / Y 480). The R112 stretch ladder also gives 1080p the same
+  D3D safety net: an unlistable stop stretches over the best host instead of crashing.
 - **Order**: schedule AFTER row 14 — 1344x700 exercises the wide class at a non-1280 width
   first, cheap insurance; and the round should start by consolidating the copy-pasted
   dims-pair tests (`(1280,720) || (1344,700)` across Glide.cpp ×2, Direct3D.cpp ×2,
