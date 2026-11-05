@@ -3532,9 +3532,24 @@ static uint32_t RENDERER_D3D_ComputeLutFamilyStamp() {
 }
 
 static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode) {
-    // Static local variables (originally global data)
-    static uint8_t DAT_00970eac; D2_STATIC_GUARD_BSS(DAT_00970eac, "D2Direct3D::Renderer::RENDERER_DIRECT3D_UploadTextureToCache::DAT_00970eac");
-    static int INT_00970ec4; D2_STATIC_GUARD_BSS(INT_00970ec4, "D2Direct3D::Renderer::RENDERER_DIRECT3D_UploadTextureToCache::INT_00970ec4");
+    // VP [R124 / refile-aliasing fix]: upstream's eighth-sync refile turned the
+    // texture-cache node-buffer bases at 0x00970ec4 into a function-local static
+    // (INT_00970ec4) and addressed them as (&INT_00970ec4)[iMipLevel * 7]. That
+    // spelling only aliases the real storage (&gD3DGenericTextureCache - 4 +
+    // iMipLevel * 28 == &pCache(iMipLevel)->pNodeBuffer, pNodeBuffer @ 0x18 in the
+    // 0x1C-byte D3DTextureCacheStrc) at RETAIL data addresses; in a rebuilt exe the
+    // static lives wherever the linker puts it and (&INT_00970ec4)[iMipLevel * 7]
+    // reads past the 4-byte static into unrelated .bss as a garbage node-array
+    // pointer. The eighth-sync merge took upstream's spelling for three of the four
+    // sites but kept this function's fourth (the palette-identity check below) on
+    // the fork's relative form - so the rebuilt exe read node pointers through two
+    // DIFFERENT regions: allocator writes landed in one, the per-frame palette
+    // check and SetTexture indexed the other, and D3D fullscreen AVed on the first
+    // title-screen texture re-upload (AV READ 0x10, d2boot.log 2026-11-05). The
+    // fork's relative form is build-independent and field-proven R74..R122; all
+    // four sites use it again and upstream's dead statics are dropped. Retail
+    // addresses for reference: 0x00970eac (unused byte), 0x00970ec4 (node-buffer
+    // base array).
 
     DWORD dwHResult;
     int iCacheNodeIdx;
@@ -3623,7 +3638,7 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
     }
     if (*pnCacheNodeIdx && (*(uint8_t**)(*pnCacheNodeIdx * 0x20 - 0x14 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7]) == pPalette || nMode == 4)) {
       d3dTextureCache::D3DTEXCACHE_InvalidateByIndex(pCache, *pnCacheNodeIdx);
-      dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)(*pnCacheNodeIdx * 0x20 + (&INT_00970ec4)[iMipLevel * 7] - 0xc));
+      dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)(*pnCacheNodeIdx * 0x20 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7] - 0xc)); // VP [R124]: relative form, see refile-aliasing note above
       if (!dwHResult) {
         return 1;
       }
@@ -3652,8 +3667,8 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
       exit(-1);
     } else {
       iCacheNodeIdx = *pnCacheNodeIdx * 0x20;
-      nTmp = *(int*)(iCacheNodeIdx - 0x10 + (&INT_00970ec4)[iMipLevel * 7]);
-      iMipLevel = iCacheNodeIdx - 0x20 + (&INT_00970ec4)[iMipLevel * 7];
+      nTmp = *(int*)(iCacheNodeIdx - 0x10 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7]); // VP [R124]: relative form, see refile-aliasing note above
+      iMipLevel = iCacheNodeIdx - 0x20 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7]; // VP [R124]: relative form, see refile-aliasing note above
       pbPixelData = (uint8_t*)gpD3DTextureSpritePoolMemory0;
       *(int*)(iMipLevel + 4) = pbSrcPixel;
       *(int*)(iMipLevel + 8) = nMipIdx;

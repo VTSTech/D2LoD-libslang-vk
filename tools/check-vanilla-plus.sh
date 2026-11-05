@@ -1052,7 +1052,12 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # pDC6SubImages[5] growth left the two raw 0x550-byte walks stale - mouse
 # hit-test dead + sub-image slot spill - and the FreeLoadedImages retail
 # halt armed on the new count-5 row)
-gate "res: self-id 0.0.7-R123"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R123' 1
+# R124: string bumped R123 -> R124 (the D3D fullscreen boot-crash fix: the
+# eighth-sync merge left UploadTextureToCache's four node-base sites split
+# across upstream's refiled static and the fork's retail-relative form - the
+# rebuilt exe then indexed the texture cache through two different regions;
+# all four sites back on the relative form, refile-aliasing audit added)
+gate "res: self-id 0.0.7-R124"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R124' 1
 # R115: string bumped R113 -> R115 (the 1080p sixth-stop round; owner:
 # "Great job. works. Published Glide3xVK 0.4.7. Now lets do 1080p")
 # R116: string bumped R115 -> R116 (the GDI windowed 1366x768 shear fix;
