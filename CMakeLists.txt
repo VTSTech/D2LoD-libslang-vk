@@ -75,16 +75,21 @@ file(GLOB_RECURSE D2_HEADERS CONFIGURE_DEPENDS
     "${D2_ROOT}/Source/*.h"
     "${D2_ROOT}/3rdparty/*.h"
     "${D2_ROOT}/Redivivus/*.h")
+# [vanilla-plus] included before the filter lines below so the literal-prefix
+# list helpers exist by the time they are called: upstream's list(FILTER ...
+# REGEX "^${D2_ROOT}/...") forms compile the raw path into a regex, which fails
+# CMake regex compilation ("Nested *?+.") when the checkout lives under a
+# metacharacter name, e.g. F:\Coding\Code\C++\ - the fork hit this first and
+# went literal (see sources.cmake).
+include("${CMAKE_SOURCE_DIR}/vanilla-plus/cmake/sources.cmake")
 foreach(list D2_SOURCES D2_HEADERS)
     # Vendored C library, built as its own target below; its headers (config.h,
     # internal.h) must not land on the game's include path.
-    list(FILTER ${list} EXCLUDE REGEX "^${D2_ROOT}/3rdparty/libbacktrace/")
-    list(FILTER ${list} EXCLUDE REGEX "^${CMAKE_BINARY_DIR}/")
+    # [vanilla-plus] literal-prefix excludes, not list(FILTER REGEX): see the
+    # include comment above.
+    d2_list_exclude_prefix(${list} "${D2_ROOT}/3rdparty/libbacktrace/")
+    d2_list_exclude_prefix(${list} "${CMAKE_BINARY_DIR}/")
 endforeach()
-# [vanilla-plus] the fork-owned source/header filters (build dir, vendored
-# libbacktrace, asm_matching oracle) live in vanilla-plus/cmake/sources.cmake;
-# root CMakeLists stays one include line away from upstream.
-include("${CMAKE_SOURCE_DIR}/vanilla-plus/cmake/sources.cmake")
 list(SORT D2_SOURCES)
 
 if(NOT REDIVIVUS_DEV)
@@ -187,7 +192,9 @@ if(REDIVIVUS_MODULE_LIBRARIES)
             continue()
         endif()
         set(srcs ${D2_UNCLAIMED})
-        list(FILTER srcs INCLUDE REGEX "^${dir}/")
+        # [vanilla-plus] literal-prefix include filter: the REGEX form dies when
+        # the checkout path carries regex metacharacters (see sources.cmake).
+        d2_list_keep_prefix(srcs "${dir}/")
         if(D2_MODULE_${m}_DATA AND EXISTS "${D2_ROOT}/${D2_MODULE_${m}_DATA}")
             list(APPEND srcs "${D2_ROOT}/${D2_MODULE_${m}_DATA}")
         endif()
