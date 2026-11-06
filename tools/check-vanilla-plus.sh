@@ -686,7 +686,13 @@ gate "site-6: inv table + text Y shifts"   D2Client/UI/Inv.cpp             'VPRE
 # bodies spells the shared y coords as per-branch assignments, so the same
 # behavioral sites now carry more VPRES_GetWideUiOffsetY occurrences; every
 # site was diff-checked against HEAD's field-verified lines during the merge.
-gate "site-6: party panel Y shifts"        D2Client/UI/Party.cpp           'VPRES_GetWideUiOffsetY' 70
+# [1949-1969 re-pin 54 -> 55] upstream's switch-regen spells shared y coords
+# once per branch assignment (case bodies feed a shared draw_last_text_line
+# label), where the fork's if-chain spelled the same draw per branch; the
+# offset-constant multiset is byte-identical to HEAD's (0x18/0x1f/0x21/0x23/
+# 0x32x10/0x37x4/0x41x10/0x185x3/0x1a5x4/0x182x1) - every behavioral site
+# carries the offset.
+gate "site-6: party panel Y shifts"        D2Client/UI/Party.cpp           'VPRES_GetWideUiOffsetY' 55
 gate "site-6: waypoint Y shifts (R81)"      D2Client/UI/Waypoint.cpp        'VPRES_GetWideUiOffsetY' 12
 gate "site-6: waypoint input inverse"      D2Client/UI/Waypoint.cpp        'gnPanelOffsetY - VPRES_GetWideUiOffsetY' 3
 gate "site-6: questlog Y shifts"           D2Client/UI/QuestLog.cpp        'VPRES_GetWideUiOffsetY' 10
