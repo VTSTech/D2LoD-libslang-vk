@@ -639,17 +639,17 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
           // tables carried it all along (D2GFX case 3 = 0x540 x 700); this
           // stop is what never shipped. Downstream flow (WindowSize, border,
           // automap recenter) is the same retail path case 4 rides.
-          ScreenSizeX = 1344;
-          ScreenSizeY = 700;
-          nScreenMode = 1;
+          UI::ui::ScreenSizeX = 1344;
+          UI::Inv::ScreenSizeY = 700;
+          UI::Inv::nScreenMode = 1;
           break;
         }
       case 4:
         {
           // Vanilla Plus: 1280x720
-          ScreenSizeX = 1280;
-          ScreenSizeY = 720;
-          nScreenMode = 1;
+          UI::ui::ScreenSizeX = 1280;
+          UI::Inv::ScreenSizeY = 720;
+          UI::Inv::nScreenMode = 1;
           break;
         }
       case 5:
@@ -659,9 +659,9 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
           // recenter) the other wide stops ride; D3D usually enters it
           // true-exclusive (CEA-standard timing), and when the driver does
           // not list it the R112 stretch host ladder presents instead.
-          ScreenSizeX = 0x556;
-          ScreenSizeY = 0x300;
-          nScreenMode = 1;
+          UI::ui::ScreenSizeX = 0x556;
+          UI::Inv::ScreenSizeY = 0x300;
+          UI::Inv::nScreenMode = 1;
           break;
         }
       case 6:
@@ -672,9 +672,9 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
           // (the most universally listed CEA timing), and when a driver
           // does not list it the R112 stretch host ladder presents instead
           // (hosted, downscaled onto 1366x768/1360x768).
-          ScreenSizeX = 0x780;
-          ScreenSizeY = 0x438;
-          nScreenMode = 1;
+          UI::ui::ScreenSizeX = 0x780;
+          UI::Inv::ScreenSizeY = 0x438;
+          UI::Inv::nScreenMode = 1;
           break;
         }
     }
