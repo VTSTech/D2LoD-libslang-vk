@@ -138,42 +138,6 @@ ships the client renamed **`d2vp.exe`**. The default `d2.exe` is ~300 MB **on pu
 Every shipped release with its change list: [`CHANGELOG.md`](CHANGELOG.md). Tag
 downloads: the [releases page](https://github.com/VTSTech/D2VP-QoL/releases).
 
-## Verification
-
-Two checks stand behind every release:
-
-- **The Vanilla+ gate suite** — [`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh)
-  pins the whole Vanilla+ surface (feature gates, 720p anchors, sound constants, boot
-  telemetry, doc budgets) with **519 checks**, green at the current tip.
-- **[`asm_matching/`](asm_matching/README.md)** (upstream) compiles the tree with Visual
-  C++ 2005 SP1 and byte-compares each function against the 1.14d binary — a check on the
-  decompilation itself: where the code comes out identical, the decompiled function was
-  read correctly. Current counts live in its README and below.
-
-At this commit, generated from version 1948 of the Ghidra database:
-
-|Measure|Identical machine code|
-|-|-|
-|Functions|7,648 of 14,626 (52.3%)|
-|Functions without placeholders|7,081 of 14,626 (48.4%), not counting the 567 identical functions that are placeholders (below)|
-|Code|623,380 of 2,598,518 bytes (23.99%)|
-|Instructions|1,814,591 of 2,598,518 bytes (69.8%), counting identical instructions in functions that still differ|
-
-Of the 7,648 identical functions, 567 are recovered unreferenced functions: code in
-1.14d that nothing calls by a direct reference (placeholders named
-`Unreferenced_<address>`). These counts leave out the statically linked C runtime, C++
-exception code and the PKWARE library. Over the whole binary, runtime included:
-8,208 of 15,711 functions (52.2%), 722,355 of 2,748,975 bytes (26.28%).
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="asm_matching/msvc8/evidence/byte-match-dark.svg">
-  <img alt="The original's code split by how closely the rebuild matches it" src="asm_matching/msvc8/evidence/byte-match-light.svg">
-</picture>
-
-What is compared, and why a whole matching function is a strict measure, is documented
-in [`asm_matching/`](asm_matching/README.md); the byte-match work itself belongs
-upstream — [Redivivus](https://github.com/jaenster/redivivus).
-
 ## Crash reports
 
 A decompiler-reconstructed rebuild will keep yielding single-wrong-type crashes upstream
@@ -216,9 +180,8 @@ upstream regenerations are merged through) · [docs/building.md](docs/building.m
 - The recovered source is [Redivivus](https://github.com/jaenster/redivivus) by jaenster
   and contributors — this fork's `d2vp.exe` is built from it. Much of the 1.14d
   reverse-engineering comes from [blizzhackers](https://blizzhackers.dev), dzik in
-  particular; the byte-match oracle in `asm_matching/` is Niehztog's;
-  [D2MOO](https://github.com/ThePhrozenKeep/D2MOO) supplied many of the structure
-  layouts the work started from.
+  particular; [D2MOO](https://github.com/ThePhrozenKeep/D2MOO) supplied many of the
+  structure layouts the work started from.
 - Vanilla+, the Glide3xVK wrapper and this fork: VTSTech.
 
 ## License
