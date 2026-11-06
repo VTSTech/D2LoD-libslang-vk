@@ -1302,6 +1302,33 @@ void __fastcall RENDERER_GLIDE_SetTextureFiltering(int32_t nFilteringMode) {
     gnGlideTextureFilteringMode = nFilterMode;
 }
 
+// VP-BEGIN [glide-perf f4]: cached no-op guards for per-primitive state setters.
+// grDitherMode(2) fires after every shadow quad / perspective sprite and
+// SetDrawMode re-asserts grDitherMode(0) per draw, so sprite-heavy frames re-send
+// unchanged modes across the wrapper boundary call after call. Cache the last
+// mode actually sent (gnGlideColorCombineMode pattern) and only cross on change.
+// Sentinel is -1, not the combine cache's 0, because 0 is a LEGAL mode for both
+// setters (GR_DITHER_DISABLE / chromakey off) and would swallow the first set.
+// If Glide3xVK resets dither/chromakey on grSstWinOpen (resolution change) the
+// cache can be stale for one set - self-heals on the next mode change and is at
+// worst a one-frame dither nuance.
+static void RENDERER_GLIDE_SetDitherModeCached(int32_t nMode) {
+    static int gnGlideDitherModeCached = -1; D2_STATIC_GUARD(gnGlideDitherModeCached, "D2Glide::Renderer::Glide::RENDERER_GLIDE_SetDitherModeCached::gnGlideDitherModeCached");
+    if (nMode != gnGlideDitherModeCached) {
+      gnGlideDitherModeCached = nMode;
+      (*GLIDEDLL_grDitherMode_4)(nMode);
+    }
+}
+
+static void RENDERER_GLIDE_SetChromakeyModeCached(int32_t nMode) {
+    static int gnGlideChromakeyModeCached = -1; D2_STATIC_GUARD(gnGlideChromakeyModeCached, "D2Glide::Renderer::Glide::RENDERER_GLIDE_SetChromakeyModeCached::gnGlideChromakeyModeCached");
+    if (nMode != gnGlideChromakeyModeCached) {
+      gnGlideChromakeyModeCached = nMode;
+      (*GLIDEDLL_grChromakeyMode_4)(nMode);
+    }
+}
+// VP-END [glide-perf f4]
+
 int * __fastcall GetRenderStatistics() {
     return &gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes;
 }
@@ -2218,7 +2245,7 @@ static void __stdcall RENDERER_GLIDE_DrawPalettedQuad(GlideTexInfoStrc * pGlideQ
     gGlideVertex0.aVertex[3].fS = fTexS1;
     gGlideVertex0.aVertex[3].fT = fTexT0;
     (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, &gGlideVertex0, 0x1c);
-    (*GLIDEDLL_grDitherMode_4)(2);
+    RENDERER_GLIDE_SetDitherModeCached(2); // [glide-perf f4] was raw grDitherMode(2) per shadow quad
 }
 
 static void RENDERER_GLIDE_SetDrawMode(int32_t nDrawMode) {
@@ -2226,7 +2253,7 @@ static void RENDERER_GLIDE_SetDrawMode(int32_t nDrawMode) {
     if (false) {
       default_case:
       RENDERER_GLIDE_SetAlphaBlendMode(4);
-      (*GLIDEDLL_grDitherMode_4)(0);
+      RENDERER_GLIDE_SetDitherModeCached(0); // [glide-perf f4]
       if (!nDrawMode) {
         (*GLIDEDLL_grConstantColorValue_4)(0x40);
         return;
@@ -2261,7 +2288,7 @@ static void RENDERER_GLIDE_SetDrawMode(int32_t nDrawMode) {
 
     RENDERER_GLIDE_SetAlphaBlendMode(nBlendModeArg);
     (*GLIDEDLL_grConstantColorValue_4)(0xff);
-    (*GLIDEDLL_grDitherMode_4)(0);
+    RENDERER_GLIDE_SetDitherModeCached(0); // [glide-perf f4]
 }
 
 // Glide: draw isometric perspective image with texture filtering and lighting
@@ -2347,7 +2374,7 @@ void __fastcall DrawPerspectiveImage(D2GfxDataStrc * pData, int32_t nPosX, int32
     gGlideVertex0.aVertex[2].dwColor = gGlideVertex0.aVertex[0].dwColor;
     gGlideVertex0.aVertex[3].dwColor = gGlideVertex0.aVertex[0].dwColor;
     (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, &gGlideVertex0, 0x1c);
-    (*GLIDEDLL_grDitherMode_4)(2);
+    RENDERER_GLIDE_SetDitherModeCached(2); // [glide-perf f4] was raw grDitherMode(2) per perspective sprite
 }
 
 BOOL __fastcall DrawImage(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, DWORD dwGamma, int32_t nDrawMode, BYTE * pPalette) {
@@ -2633,7 +2660,7 @@ void __fastcall DrawImageFast(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPos
     int32_t nUploadResult;
     GlideTexInfoStrc texSizeBuf;
     RENDERER_GLIDE_SetAlphaBlendMode(4);
-    (*GLIDEDLL_grDitherMode_4)(0);
+    RENDERER_GLIDE_SetDitherModeCached(0); // [glide-perf f4]
     (*GLIDEDLL_grConstantColorValue_4)(0x40);
     int pSpriteMetadata = RENDERER_GLIDE_GetSpriteMetadata(pData, (uint32_t**)&texSizeBuf);
     if (!pSpriteMetadata) {
@@ -2936,12 +2963,63 @@ void __stdcall RENDERER_GLIDE_DrawLightGradient() {
     (*GLIDEDLL_grChromakeyMode_4)(1);
 }
 
+// VP-BEGIN [glide-perf f2]: batched light map. The retail path walks the fixed
+// 48x48 grid and issues per cell one grConstantColorValue + 8 grDrawPoint =
+// 20,736 wrapper calls per frame - the single largest Glide call source, and
+// one D3D never pays (D2Direct3D's DrawLight is an empty stub). The 8 radial
+// point offsets per cell are static (same tables as
+// RENDERER_GLIDE_DrawLightRadialPoints, kept in sync by comment), so the full
+// 18,432-point vertex array is built once and per frame only dwColor is
+// refreshed (identical packed-color math) and ONE grDrawVertexArrayContiguous
+// is submitted. Mode 0 = GR_POINTS per the standard glide3 primitive enum,
+// consistent with the in-repo evidence that contiguous mode 5 = FAN (Glide.h
+// debug-font comment) and pointer-array mode 4 = TRIANGLE_STRIP.
+// A/B GATE: this assumes Glide3xVK honours per-vertex dwColor for GR_POINTS
+// (the combine stays FUNCTION_LOCAL/ITERATED - RENDERER_GLIDE_SetColorCombine(2)
+// issues the exact same grColorCombine(1,0,1,2,0) the old raw call did, and
+// also keeps gnGlideColorCombineMode truthful, which the raw calls did not).
+// If the light map renders single-color or vanishes, the wrapper forces
+// constant color for points: revert this function, or batch per distinct
+// color / 3 calls of 6,144 points.
 void __stdcall RENDERER_GLIDE_DrawLightMap() {
     GrColor_t nLightColor;
     uint32_t nAlpha;
     int nLightmapEntryPtr;
-    (*GLIDEDLL_grColorCombine_20)(1, 0, 1, 2, 0);
-    (*GLIDEDLL_grChromakeyMode_4)(0);
+    // Static local variables (originally global data)
+    static D2GlideVertexStrc gaGlideLightMapPoints[0x30 * 0x30 * 8] = {}; D2_STATIC_GUARD(gaGlideLightMapPoints, "D2Glide::Renderer::Glide::RENDERER_GLIDE_DrawLightMap::gaGlideLightMapPoints");
+    static int bGlideLightMapPointsBuilt = 0; D2_STATIC_GUARD(bGlideLightMapPointsBuilt, "D2Glide::Renderer::Glide::RENDERER_GLIDE_DrawLightMap::bGlideLightMapPointsBuilt");
+    static int gnGlideLightMapOffsetX[8] = { 0x1, 0x2, 0x0, 0x1, 0x2, 0x3, 0x1, 0x2 }; D2_STATIC_GUARD(gnGlideLightMapOffsetX, "D2Glide::Renderer::Glide::RENDERER_GLIDE_DrawLightMap::gnGlideLightMapOffsetX");
+    static int gnGlideLightMapOffsetY[8] = { 0x0, 0x0, 0x1, 0x1, 0x1, 0x1, 0x2, 0x2 }; D2_STATIC_GUARD(gnGlideLightMapOffsetY, "D2Glide::Renderer::Glide::RENDERER_GLIDE_DrawLightMap::gnGlideLightMapOffsetY");
+    if (!bGlideLightMapPointsBuilt) {
+      D2GlideVertexStrc* pBuildPoint = gaGlideLightMapPoints;
+      int nBuildCol = 0;
+      do {
+        int nBuildRow = 0;
+        do {
+          int nBuildX = nBuildRow * 2 + 100 + nBuildCol * -2;
+          int nBuildY = (nBuildCol + 0x32 + nBuildRow) * 2;
+          int nOffsetIdx = 0;
+          do {
+            pBuildPoint->fX = (float)(gnGlideLightMapOffsetX[nOffsetIdx] + nBuildX);
+            pBuildPoint->fY = (float)(gnGlideLightMapOffsetY[nOffsetIdx] + nBuildY);
+            pBuildPoint->dwColor = 0;
+            pBuildPoint->fOOW = 1.0;
+            pBuildPoint->fS = 0.0;
+            pBuildPoint->fT = 0.0;
+            pBuildPoint->fW = 0.0;
+            pBuildPoint++;
+            nOffsetIdx++;
+          } while (nOffsetIdx < 8);
+          nBuildRow++;
+        } while (nBuildRow < 0x30);
+        nBuildCol++;
+      } while (nBuildCol < 0x30);
+      bGlideLightMapPointsBuilt = 1;
+    }
+
+    RENDERER_GLIDE_SetColorCombine(2);
+    RENDERER_GLIDE_SetChromakeyModeCached(0);
+    D2GlideVertexStrc* pPoint = gaGlideLightMapPoints;
     int nCol = 0;
     do {
       int nRow;
@@ -2955,16 +3033,23 @@ void __stdcall RENDERER_GLIDE_DrawLightMap() {
           nLightColor = (((*(uint8_t*)(gpnLightmapRowPointers[nCol] + 5 + nRow * 8) * nAlpha & -256) + (*(uint8_t*)(nLightmapEntryPtr + 6) * nAlpha >> 8)) * 0x100 + (*(uint8_t*)(nLightmapEntryPtr + 7) * nAlpha >> 8)) * 0x100;
         }
 
-        RENDERER_GLIDE_DrawLightRadialPoints(nRow * 2 + 100 + nCol * -2, nLightColor, (nCol + 0x32 + nRow) * 2);
+        int nPointIdx = 0;
+        do {
+          pPoint->dwColor = nLightColor;
+          pPoint++;
+          nPointIdx++;
+        } while (nPointIdx < 8);
         nRow++;
       } while (nRow < 0x30);
 
       nCol++;
     } while (nCol < 0x30);
 
-    (*GLIDEDLL_grColorCombine_20)(3, 1, 0, 1, 0);
-    (*GLIDEDLL_grChromakeyMode_4)(1);
+    (*GLIDEDLL_grDrawVertexArrayContiguous_16)(0, 0x30 * 0x30 * 8, gaGlideLightMapPoints, 0x1c);
+    RENDERER_GLIDE_SetColorCombine(1);
+    RENDERER_GLIDE_SetChromakeyModeCached(1);
 }
+// VP-END [glide-perf f2]
 
 void __fastcall DrawLight(DWORD * pLight, DWORD * pPlayerLight, int32_t nPosX, int32_t nPosY) {
     // Static local variables (originally global data)
