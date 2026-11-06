@@ -133,11 +133,11 @@ void __fastcall Draw_UI_LoadGame(int32_t bAdvanceFrame) {
             gbLoadBarOutlineColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0xff, 0);
           }
           if (!gbLoadScreenLevelLoadInProgress) {
-            D2gfx::D2GFX::D2GFX_DrawSolidRectEx(ScreenSizeX / 2 - 0x82, ScreenSizeY / 2 + 0x9e, ScreenSizeX / 2 + 0x82, ScreenSizeY / 2 + 0xb2, (uint32_t)gbLoadBarOutlineColor, DRAW_TRANSPARENT);
-            D2gfx::D2GFX::D2GFX_DrawSolidRectEx(ScreenSizeX / 2 - 0x80, ScreenSizeY / 2 + 0xa0, ScreenSizeX / 2 + 0x80, ScreenSizeY / 2 + 0xb0, 0, DRAW_SOLID);
+            D2gfx::D2GFX::D2GFX_DrawSolidRectEx(ui::ScreenSizeX / 2 - 0x82, Inv::ScreenSizeY / 2 + 0x9e, ui::ScreenSizeX / 2 + 0x82, Inv::ScreenSizeY / 2 + 0xb2, (uint32_t)gbLoadBarOutlineColor, DRAW_TRANSPARENT);
+            D2gfx::D2GFX::D2GFX_DrawSolidRectEx(ui::ScreenSizeX / 2 - 0x80, Inv::ScreenSizeY / 2 + 0xa0, ui::ScreenSizeX / 2 + 0x80, Inv::ScreenSizeY / 2 + 0xb0, 0, DRAW_SOLID);
             nSizeX = GAME::Msg::LOADING_GetProgressRatio();
             if (nSizeX) {
-              Engine::Gfx::D2GFX_DrawSolidRectExBySize(ScreenSizeX / 2 - 0x80, ScreenSizeY / 2 + 0xa0, nSizeX, 0x10, (uint32_t)gbLoadBarColorInitialized, DRAW_SOLID);
+              Engine::Gfx::D2GFX_DrawSolidRectExBySize(ui::ScreenSizeX / 2 - 0x80, Inv::ScreenSizeY / 2 + 0xa0, nSizeX, 0x10, (uint32_t)gbLoadBarColorInitialized, DRAW_SOLID);
             }
           }
         }
@@ -150,7 +150,7 @@ void __fastcall Draw_UI_LoadGame(int32_t bAdvanceFrame) {
         sLoadGfx.pDC6 = gnLoadedActIndex;
         sLoadGfx.nDirection = 0;
         sLoadGfx.nFrameNumber = gnLoadScreenAnimFrame;
-        D2gfx::D2GFX::D2GFX_DrawImage(&sLoadGfx, ScreenSizeX / 2 - 0x80, ScreenSizeY / 2 + 0x80, -1, DRAW_SOLID, nullptr);
+        D2gfx::D2GFX::D2GFX_DrawImage(&sLoadGfx, ui::ScreenSizeX / 2 - 0x80, Inv::ScreenSizeY / 2 + 0x80, -1, DRAW_SOLID, nullptr);
         D2gfx::D2GFX::D2GFX_EndScene();
         GAME::Game::UI_ResetInputState();
         GAME::Game::GAMEDATA_ClearQueuedClicks();
@@ -251,11 +251,11 @@ void __stdcall InitializeUI() {
     Waypoint::InitializeWaypoints();
     ui::UI_ResetTradeGlobals();
     Dialog::gpDialog = 0;
-    gpCurrentDialog = 0;
-    gpDialogDefaultActionCallback = 0;
-    gpUiGoldDialogCancelButton = 0;
-    gpUiGoldTransactionDialog = 0;
-    gbKeyConfigModeActiveInDialog = 0;
+    ui::gpCurrentDialog = 0;
+    ui::gpDialogDefaultActionCallback = 0;
+    ui::gpUiGoldDialogCancelButton = 0;
+    ui::gpUiGoldTransactionDialog = 0;
+    ui::gbKeyConfigModeActiveInDialog = 0;
     Inv::INV_LoadBodySlotImages();
     GFX_bShowUIFlag.Game = 0;
     GFX_bShowUIFlag.Inventory = 0;
@@ -514,24 +514,26 @@ void __fastcall DRAW_UI(D2GameViewStrc * pGameView) {
     DWORD dwResolutionMode;
     dwResolutionMode = D2gfx::D2GFX::D2GFX_GetResolutionMode();
     // VP-BEGIN [resolution site-5]: wide modes (3/4) reuse the retail
-    // 800x600 panel layout, re-centered on the playfield. gnPanelOffsetX/Y
-    // anchor every 800-class panel expression ("gnPanelOffsetX + const" /
-    // "ScreenSizeX - gnPanelOffsetX - const"), so bumping gnPanelOffsetX by
+    // 800x600 panel layout, re-centered on the playfield. Inv::gnPanelOffsetX/Y
+    // anchor every 800-class panel expression ("Inv::gnPanelOffsetX + const" /
+    // "ScreenSizeX - Inv::gnPanelOffsetX - const"), so bumping Inv::gnPanelOffsetX by
     // the centering offset moves the whole panel set as one rigid unit.
     // At retail 800x600 VPRES_GetWideUiOffsetX() is 0 and this matches the
-    // vanilla (80, -60) byte-for-byte; 640x480 keeps (0, 0).
+    // vanilla (80, -60) byte-for-byte; 640x480 keeps (0, 0). (Upstream's
+    // 1949-1969 regen spells the same arm as dwResolutionMode == 2; the
+    // VPRES gate is the superset — identical values at mode 2.) [1949-1969]
     if (VPRES_IsWideLayoutMode(dwResolutionMode)) {
-      gnPanelOffsetX = 80 + VPRES_GetWideUiOffsetX();
-      gnPanelOffsetY = -60;
+      Inv::gnPanelOffsetX = 80 + VPRES_GetWideUiOffsetX();
+      Inv::gnPanelOffsetY = -60;
     } else {
-      gnPanelOffsetX = 0;
-      gnPanelOffsetY = 0;
+      Inv::gnPanelOffsetX = 0;
+      Inv::gnPanelOffsetY = 0;
     // VP-END [resolution site-5]
     }
 
     D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(nullptr, 0, 0, 0, 0);
     /* Render ingame ESC menu */ gU16ImmunityStringBuffer1[0] = 0;
-    gU16ImmunityStringBuffer2[0] = 0;
+    ui::gU16ImmunityStringBuffer2[0] = 0;
     if (GFX_bShowUIFlag.EscMenu) {
       EscMenu::DRAW_EscMenu();
     }

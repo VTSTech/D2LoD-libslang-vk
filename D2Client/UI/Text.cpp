@@ -2281,7 +2281,9 @@ static uint32_t gbTextScrollBoxVisible = 0; D2_STATIC_GUARD(gbTextScrollBoxVisib
 static uint32_t gnTextNpcGuid = 0; D2_STATIC_GUARD(gnTextNpcGuid, "gnTextNpcGuid");
 static uint32_t gpOverHeadUnitGUID = 0; D2_STATIC_GUARD(gpOverHeadUnitGUID, "gpOverHeadUnitGUID");
 static uint32_t gnTextNpcInteractGuid = 0; D2_STATIC_GUARD(gnTextNpcInteractGuid, "gnTextNpcInteractGuid");
-uint32_t gnTextOverheadCounter = 0; D2_GLOBAL_GUARD(gnTextOverheadCounter, "gnTextOverheadCounter");
+namespace D2Client::UI::Text {
+uint32_t gnTextOverheadCounter = 0; D2_GLOBAL_GUARD(gnTextOverheadCounter, "D2Client::UI::Text::gnTextOverheadCounter");
+} // namespace D2Client::UI::Text
 static uint16_t gnTextScrollBoxWidth = 0; D2_STATIC_GUARD(gnTextScrollBoxWidth, "gnTextScrollBoxWidth");
 static RECT lprcTextOverheadRect = {}; D2_STATIC_GUARD(lprcTextOverheadRect, "lprcTextOverheadRect");
 static uint32_t gbTextOverheadActive = 0; D2_STATIC_GUARD(gbTextOverheadActive, "gbTextOverheadActive");
@@ -2310,8 +2312,8 @@ static uint32_t gbTextEventHandlersRegistered = 0; D2_STATIC_GUARD(gbTextEventHa
 namespace D2Client::UI::Text {
 
 void __fastcall TEXT_SetScrollCompleteCallback_Unref_0045afe0(pfnTextScrollComplete pfnCallback, void * pUserParam) {
-    MouseXOffset = (uint32_t)(uintptr_t)pfnCallback;
-    MouseYOffset = (uint32_t)(uintptr_t)pUserParam;
+    Path::MouseXOffset = (uint32_t)(uintptr_t)pfnCallback;
+    Path::MouseYOffset = (uint32_t)(uintptr_t)pUserParam;
 }
 
 // JMP thunk
@@ -2320,8 +2322,8 @@ void __stdcall thunk_TEXT_ClearChatMessages() {
 }
 
 void __fastcall TEXT_SetScrollCompleteCallback_Unref_004776d0(pfnTextScrollComplete pfnCallback, void * pUserParam) {
-    D2Game::GAME::Rendering::CurrentRendingEngine = (int)pfnCallback;
-    gnCurrentEngineIndex = (uint32_t)(uintptr_t)pUserParam;
+    GAME::Rendering::CurrentRendingEngine = (int)pfnCallback;
+    GAME::Rendering::gnCurrentEngineIndex = (uint32_t)(uintptr_t)pUserParam;
 }
 
 void __stdcall TEXT_OnPanelUnregister_NoOp_Unref_004967e0() {
@@ -2644,7 +2646,7 @@ void __fastcall TEXT_DrawTextBoxAtPosition(D2TextBoxStrc * pTextBox, int32_t nSc
     }
 
     D2TextLineStrc* pCurLine = pTextBox->pLineList;
-    if (!(nLineCount && pCurLine && nScreenY >= 0 && (int)((uint32_t)pTextBox->nHeight + nScreenY) < ScreenSizeY)) {
+    if (!(nLineCount && pCurLine && nScreenY >= 0 && (int)((uint32_t)pTextBox->nHeight + nScreenY) < Inv::ScreenSizeY)) {
       return;
     }
 
@@ -2677,7 +2679,7 @@ static int TEXT_DrawTextBoxWithBorderCheck(D2TextBoxStrc * pTextBox, int * pnPos
     switch (nBorderType) {
       case 1:
         {
-          if (*pnPosition > ScreenSizeX / 2 - 10) {
+          if (*pnPosition > ui::ScreenSizeX / 2 - 10) {
             return 1;
           }
 
@@ -2685,7 +2687,7 @@ static int TEXT_DrawTextBoxWithBorderCheck(D2TextBoxStrc * pTextBox, int * pnPos
         }
       case 2:
         {
-          if (*pnPosition < ScreenSizeX / 2 + 10) {
+          if (*pnPosition < ui::ScreenSizeX / 2 + 10) {
             return 1;
           }
 
@@ -2850,7 +2852,7 @@ void __stdcall TEXT_DrawChatMessages() {
     ScreenMessage_t* pListHead = ScreenMessagesMaybe.pHead;
     if (nBorderType != 1) {
       if (nBorderType == 2) {
-        nScreenX = ScreenSizeX / 2 + 0xf;
+        nScreenX = ui::ScreenSizeX / 2 + 0xf;
         bWordWrap = 1;
       }
     } else {
@@ -2987,8 +2989,8 @@ void __stdcall TEXT_DrawPartyMessages() {
             nPixelWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pMessage->apwszLines[0]);
             nPixelWidth = D2Win::Src::D2WinFont::D2WINFONT_GetStringPixelWidthN((uint16_t*)pMessage->apwszLines[0], nPixelWidth);
             nPixelWidth += 10;
-            Engine::Gfx::D2GFX_DrawSolidRectExBySize(nScreenX - 5, nRowY - nLineY / 2 - 0x81 + ScreenSizeY, nPixelWidth, nRectH, nRectColor, eDrawMode);
-            D2Win::Src::D2WinFont::DRAW_text(pMessage->apwszLines[0], nScreenX, (int)pPrevMessage - nLineY / 2 - 0x73 + ScreenSizeY, pMessageHead->color, 0);
+            Engine::Gfx::D2GFX_DrawSolidRectExBySize(nScreenX - 5, nRowY - nLineY / 2 - 0x81 + Inv::ScreenSizeY, nPixelWidth, nRectH, nRectColor, eDrawMode);
+            D2Win::Src::D2WinFont::DRAW_text(pMessage->apwszLines[0], nScreenX, (int)pPrevMessage - nLineY / 2 - 0x73 + Inv::ScreenSizeY, pMessageHead->color, 0);
           }
 
           nLineY += 0x19;
@@ -3076,7 +3078,7 @@ static uint8_t __stdcall TEXT_FindNonOverlappingRect(int32_t nExistingRectCount,
                 rcCandidate.top = pRect->top + gaTextNonOverlapRects[nDirIdx] * (int)pExistingRect;
                 rcCandidate.right = rcCandidate.left + 400;
                 rcCandidate.bottom = rcCandidate.top + 0x118;
-                if (rcCandidate.left >= 0 && rcCandidate.right <= ScreenSizeX && rcCandidate.top >= 0 && rcCandidate.bottom <= ScreenSizeY) {
+                if (rcCandidate.left >= 0 && rcCandidate.right <= ui::ScreenSizeX && rcCandidate.top >= 0 && rcCandidate.bottom <= Inv::ScreenSizeY) {
                   bOverlaps = '\0';
                   pCheckRect = gnTextBoxExclusionLeft;
                   nRemaining = nExistingRectCount;
@@ -3203,7 +3205,7 @@ void __fastcall TEXT_PrintGameString(uint16_t * wMessage, uint8_t nColor) {
     DWORD dwNow = GetTickCount();
     pNewMsg->dwMessageExpiration = dwNow + 10000;
     int32_t nLine = D2Win::Src::D2WinFont::SetAndReturnLastFont(0xd);
-    D2TextLineStrc* pNewMessage = D2Win::Src::D2WinFont::D2WINFONT_WordWrapString(wMessage, (int*)&nWrapCount, ScreenSizeX - 0x46);
+    D2TextLineStrc* pNewMessage = D2Win::Src::D2WinFont::D2WINFONT_WordWrapString(wMessage, (int*)&nWrapCount, ui::ScreenSizeX - 0x46);
     uint32_t nLineCount = nWrapCount;
     if (nWrapCount > 6) {
       nLineCount = 6;
@@ -3316,7 +3318,7 @@ void __fastcall TEXT_PrintPartyMessage(uint16_t * wszText, uint8_t byColor) {
       uint16_t* pwszLine;
       while (true) {
         nLineLen = nSegLen;
-        if (!((int)nLineLen > 0 && (nPixelWidth = D2Win::Src::D2WinFont::D2WINFONT_GetStringPixelWidthN((uint16_t*)(pwszText + nOffset), nLineLen) , nPixelWidth > ScreenSizeX - 0x46))) {
+        if (!((int)nLineLen > 0 && (nPixelWidth = D2Win::Src::D2WinFont::D2WINFONT_GetStringPixelWidthN((uint16_t*)(pwszText + nOffset), nLineLen) , nPixelWidth > ui::ScreenSizeX - 0x46))) {
           break;
         }
 
@@ -3417,8 +3419,8 @@ void __stdcall TEXT_SetTextBoxExclusionRect() {
     RECT nRectLeft;
     nRectLeft.top = gnScrollingTextBoxTopY;
     nRectLeft.bottom = gnScrollingTextBoxTopY + 0xb6;
-    if ((int)(gnScrollingTextBoxTopY + 0xb6) >= ScreenSizeY - 0x35) {
-      nRectLeft.bottom = ScreenSizeY - 0x35;
+    if ((int)(gnScrollingTextBoxTopY + 0xb6) >= Inv::ScreenSizeY - 0x35) {
+      nRectLeft.bottom = Inv::ScreenSizeY - 0x35;
     }
 
     nRectLeft.left = gnTextBoxExclusionX - 10;
@@ -3845,8 +3847,8 @@ void __fastcall TEXT_HandleEventMessagePacket(D2Packet0x5aEventStructure * pMess
       case '\x12':
         pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x2afd);
       D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, pwszLocale);
-      if (sgpDrlgAct) {
-        D2Common::Environment::DRLGENV_InitializeEnvironment(sgpDrlgAct, UNIT::CUnit::GetCurrentRoom(), 5, 0, 1);
+      if (GAME::Game::sgpDrlgAct) {
+        D2Common::Environment::DRLGENV_InitializeEnvironment(GAME::Game::sgpDrlgAct, UNIT::CUnit::GetCurrentRoom(), 5, 0, 1);
       }
 
       GAME::View::SetShake(6, 4000, 10000, 4000);
@@ -6245,7 +6247,7 @@ void __stdcall TEXT_CloseScrollingText() {
 
 void __stdcall TEXT_DrawScrollBackground() {
     D2GfxDataStrc sGfxData;
-    D2gfx::D2GFX::D2GFX_DrawSolidRectEx(gnPanelOffsetX, gnPanelOffsetY - 0xe0 + ScreenSizeY, ScreenSizeX / 2, ScreenSizeY - 0x30, 0, DRAW_SOLID);
+    D2gfx::D2GFX::D2GFX_DrawSolidRectEx(Inv::gnPanelOffsetX, Inv::gnPanelOffsetY - 0xe0 + Inv::ScreenSizeY, ui::ScreenSizeX / 2, Inv::ScreenSizeY - 0x30, 0, DRAW_SOLID);
     if (!gpQuestScrollImageBg) {
       char szImagePath[260];
       /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szImagePath, "%s\\UI\\MENU\\scroin", "DATA\\GLOBAL");
@@ -6257,16 +6259,16 @@ void __stdcall TEXT_DrawScrollBackground() {
     sGfxData.pDC6 = pScrollBgImage;
     sGfxData.nDirection = 0;
     sGfxData.nFrameNumber = 0;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX, gnPanelOffsetY - 0x6d + ScreenSizeY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, Inv::gnPanelOffsetX, Inv::gnPanelOffsetY - 0x6d + Inv::ScreenSizeY, -1, DRAW_SOLID, nullptr);
     sGfxData.nFrameNumber = 1;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x100, gnPanelOffsetY - 0x6d + ScreenSizeY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, Inv::gnPanelOffsetX + 0x100, Inv::gnPanelOffsetY - 0x6d + Inv::ScreenSizeY, -1, DRAW_SOLID, nullptr);
     sGfxData.nFrameNumber = 2;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX, gnPanelOffsetY - 0x31 + ScreenSizeY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, Inv::gnPanelOffsetX, Inv::gnPanelOffsetY - 0x31 + Inv::ScreenSizeY, -1, DRAW_SOLID, nullptr);
     sGfxData.nFrameNumber = 3;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x100, gnPanelOffsetY - 0x31 + ScreenSizeY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, Inv::gnPanelOffsetX + 0x100, Inv::gnPanelOffsetY - 0x31 + Inv::ScreenSizeY, -1, DRAW_SOLID, nullptr);
     sGfxData.pDC6 = ui::GetBuySellBtnDC6();
     sGfxData.nFrameNumber = 10;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x115, gnPanelOffsetY - 0x3d + ScreenSizeY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, Inv::gnPanelOffsetX + 0x115, Inv::gnPanelOffsetY - 0x3d + Inv::ScreenSizeY, -1, DRAW_SOLID, nullptr);
 }
 
 void __stdcall TEXT_DrawQuestScrollAnimation(int32_t bDraw) {
@@ -6368,11 +6370,11 @@ void __stdcall TEXT_DrawQuestScrollAnimation(int32_t bDraw) {
           }
 
           nLineIdx = (uint32_t)nLineValue;
-          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData2, gaTextDrawAnimPos[nLineIdx * 2] + gnPanelOffsetX, gaTextDrawAnimPos[nLineIdx * 2 + 1] - gnPanelOffsetY, -1, eDrawMode, nullptr);
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData2, gaTextDrawAnimPos[nLineIdx * 2] + Inv::gnPanelOffsetX, gaTextDrawAnimPos[nLineIdx * 2 + 1] - Inv::gnPanelOffsetY, -1, eDrawMode, nullptr);
           memset(&sGfxData, 0, 0x48);
           sGfxData.pDC6 = gpQuestScrollImageTop;
           sGfxData.nFrameNumber = (int)nElapsed >= 0x15 ? 0 : nElapsed;
-          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gaTextAnimBounds[nLineIdx * 2] + gnPanelOffsetX, gaTextAnimBounds[nLineIdx * 2 + 1] - gnPanelOffsetY, -1, DRAW_LIGHTTRANSPARENT, nullptr);
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gaTextAnimBounds[nLineIdx * 2] + Inv::gnPanelOffsetX, gaTextAnimBounds[nLineIdx * 2 + 1] - Inv::gnPanelOffsetY, -1, DRAW_LIGHTTRANSPARENT, nullptr);
         }
       }
 
@@ -6408,7 +6410,7 @@ void __stdcall TEXT_OnEscCloseQuestScroll(D2UIMouseMsgStrc * pMsg) {
 }
 
 void __stdcall TEXT_OnClickCloseQuestScroll(D2UIMouseMsgStrc * pMsg) {
-    if (!((int)(uint32_t)pMsg->uLParam.sMousePos.nMouseY < ScreenSizeY - 0x30 && (int)(uint32_t)pMsg->uLParam.sMousePos.nMouseX < ScreenSizeX / 2)) {
+    if (!((int)(uint32_t)pMsg->uLParam.sMousePos.nMouseY < Inv::ScreenSizeY - 0x30 && (int)(uint32_t)pMsg->uLParam.sMousePos.nMouseX < ui::ScreenSizeX / 2)) {
       return;
     }
 
@@ -6496,23 +6498,31 @@ int __stdcall TEXT_CloseMessageLogDialog() {
 
 void __stdcall TEXT_OpenMessageLogDialog() {
     fpDialogFunc pfnCloseCallback;
+    uint32_t nEnabled;
     int32_t nEntryIdx;
+    int32_t nField;
+    uint32_t nPosX;
+    uint32_t nPosY;
     uint32_t nSehTryLevel = -1;
     pfnEHHandlerRoutine puStack12 = __GSHandlerCheck_EH_6ca07b;
     void* pSavedExceptionList = ExceptionList;
     if (!Dialog::DialogHandle) {
       ::ListBoxWrapper* pLogListAlloc;
       ExceptionList = &pSavedExceptionList;
-      Dialog::DialogHandle = Dialog::AllocDialogStrc(5, 0x1e, TEXT_CloseMessageLogDialog, nullptr, 0, 0, 0, ScreenSizeX - 0x14, ScreenSizeY - 0x82, 0, 0);
+      Dialog::DialogHandle = Dialog::AllocDialogStrc(5, 0x1e, TEXT_CloseMessageLogDialog, nullptr, 0, 0, 0, ui::ScreenSizeX - 0x14, Inv::ScreenSizeY - 0x82, 0, 0);
       Dialog::DIALOG_SetHighlightStyle(Dialog::DialogHandle, 1);
       Dialog::AddStringData(Dialog::DialogHandle, D2Lang::StrTable::strtable::GetLocaleString(0xfc3), 0x15, 0, 4, 1, 0, 0);
       nEntryIdx = 1;
       pfnCloseCallback = TEXT_CloseMessageLogDialog;
-      Dialog::AddStringData(Dialog::DialogHandle, D2Lang::StrTable::strtable::GetLocaleString(0x1030), ScreenSizeY - 0xa5, 0, 0, 1, pfnCloseCallback, nEntryIdx);
+      nEnabled = 1;
+      nField = 0;
+      nPosY = 0;
+      nPosX = Inv::ScreenSizeY - 0xa5;
+      Dialog::AddStringData(Dialog::DialogHandle, D2Lang::StrTable::strtable::GetLocaleString(0x1030), nPosX, nPosY, nField, nEnabled, pfnCloseCallback, nEntryIdx);
       pLogListAlloc = (::ListBoxWrapper*)Storm::Source::SMem::SMemAlloc(0xc, "new", -1, 0);
       nSehTryLevel = 0;
       if (pLogListAlloc) {
-        gpTextMessageLogHead = ListBox::ListBoxWrapper::Constructor(pLogListAlloc, 5, 0x41, ScreenSizeX - 0x14, ScreenSizeY - 200, 2, 0, 0xd, nullptr, true);
+        gpTextMessageLogHead = ListBox::ListBoxWrapper::Constructor(pLogListAlloc, 5, 0x41, ui::ScreenSizeX - 0x14, Inv::ScreenSizeY - 200, 2, 0, 0xd, nullptr, true);
       } else {
         gpTextMessageLogHead = 0;
       }
@@ -7048,7 +7058,7 @@ void __fastcall TEXT_DrawMonsterHoverText(D2UnitStrc * pUnit) {
     switch (nBorderType) {
       case 1:
         {
-          nXOffset = -(ScreenSizeX / 4);
+          nXOffset = -(ui::ScreenSizeX / 4);
           break;
         }
       case 3:
@@ -7061,14 +7071,14 @@ void __fastcall TEXT_DrawMonsterHoverText(D2UnitStrc * pUnit) {
         }
       case 2:
         {
-          nXOffset = ScreenSizeX / 4;
+          nXOffset = ui::ScreenSizeX / 4;
           break;
         }
     }
 
     ptScreenPos2.x += nXOffset;
     draw_if_on_screen:
-    if (ptScreenPos2.y > 0 && ptScreenPos2.y < ScreenSizeY && ptScreenPos2.x > -100 && ptScreenPos2.x < ScreenSizeX + 100) {
+    if (ptScreenPos2.y > 0 && ptScreenPos2.y < Inv::ScreenSizeY && ptScreenPos2.x > -100 && ptScreenPos2.x < ui::ScreenSizeX + 100) {
       D2Common::Chat::TEXT_CopyHoverMessageString(pHover, szMessage);
       if (szMessage[0] == -1 && szMessage[1] == -1 && ((nStringId = atoi(szMessage + 2) , nStringId >= 0x42d && nStringId <= 0x50f) || nStringId >= 0x5587 && nStringId <= 0x5615 || nStringId == 0x2aa4 || nStringId == 0x5586)) {
         wszString = D2Lang::StrTable::strtable::GetLocaleString((uint16_t)nStringId);
@@ -7122,7 +7132,7 @@ void __fastcall TEXT_DrawObjectHoverText(D2UnitStrc * pUnit) {
     switch (nBorderType) {
       case 1:
         {
-          nXOffset = -(ScreenSizeX / 4);
+          nXOffset = -(ui::ScreenSizeX / 4);
           break;
         }
       case 3:
@@ -7135,14 +7145,14 @@ void __fastcall TEXT_DrawObjectHoverText(D2UnitStrc * pUnit) {
         }
       case 2:
         {
-          nXOffset = ScreenSizeX / 4;
+          nXOffset = ui::ScreenSizeX / 4;
           break;
         }
     }
 
     ptScreenPos.x += nXOffset;
     draw_if_on_screen:
-    if (ptScreenPos.y > 0 && ptScreenPos.y < ScreenSizeY && ptScreenPos.x > -100 && ptScreenPos.x < ScreenSizeX + 100) {
+    if (ptScreenPos.y > 0 && ptScreenPos.y < Inv::ScreenSizeY && ptScreenPos.x > -100 && ptScreenPos.x < ui::ScreenSizeX + 100) {
       D2Common::Chat::TEXT_CopyHoverMessageString(pHoverText, szMessage);
       nStringId = atoi(szMessage);
       if (nStringId >= 0x1 && nStringId <= 0xfffe) {
@@ -7260,7 +7270,7 @@ void __fastcall TEXT_ShowNpcDialog(D2UnitStrc * pUnit, uint16_t wDialogStringId,
     RECT nExclusionXOff;
     gnTextScrollBoxHeight = 0;
     gnScrollingTextBoxTopY = 0xc;
-    gnTextBoxExclusionX = (ScreenSizeX - 0x145) / 2;
+    gnTextBoxExclusionX = (ui::ScreenSizeX - 0x145) / 2;
     gpTextScrollBoxImage = 0;
     GAME::Game::UI_ResetInputState();
     if (gpTextScrollBoxDC6 != SOUND_NONE) {
@@ -7303,8 +7313,8 @@ void __fastcall TEXT_ShowNpcDialog(D2UnitStrc * pUnit, uint16_t wDialogStringId,
 
     nExclusionXOff.top = gnScrollingTextBoxTopY;
     nExclusionXOff.bottom = gnScrollingTextBoxTopY + 0xb6;
-    if ((int)(gnScrollingTextBoxTopY + 0xb6) >= ScreenSizeY - 0x35) {
-      nExclusionXOff.bottom = ScreenSizeY - 0x35;
+    if ((int)(gnScrollingTextBoxTopY + 0xb6) >= Inv::ScreenSizeY - 0x35) {
+      nExclusionXOff.bottom = Inv::ScreenSizeY - 0x35;
     }
 
     nExclusionXOff.left = gnTextBoxExclusionX - 10;
@@ -7350,11 +7360,11 @@ void __fastcall TEXT_ShowNpcDialog(D2UnitStrc * pUnit, uint16_t wDialogStringId,
 void __fastcall TEXT_ShowScrollingText(uint16_t wDialogStringId, int32_t bAlignToPanel, int32_t bShowImage) {
     RECT nExclusionLeft;
     if (!bAlignToPanel) {
-      gnTextBoxExclusionX = (ScreenSizeX - 0x145) / 2;
+      gnTextBoxExclusionX = (ui::ScreenSizeX - 0x145) / 2;
       gnScrollingTextBoxTopY = 0xc;
     } else {
-      gnScrollingTextBoxTopY = 0x105 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
-      gnTextBoxExclusionX = gnPanelOffsetX;
+      gnScrollingTextBoxTopY = 0x105 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+      gnTextBoxExclusionX = Inv::gnPanelOffsetX;
     }
 
     gnTextScrollBoxHeight = (uint32_t)(bAlignToPanel != 0);
@@ -7373,8 +7383,8 @@ void __fastcall TEXT_ShowScrollingText(uint16_t wDialogStringId, int32_t bAlignT
     gpTextScrollBoxBuffer = 0;
     gnTextNpcInteractGuid = 0;
     nExclusionLeft.bottom = gnScrollingTextBoxTopY + 0xb6;
-    if ((int)(gnScrollingTextBoxTopY + 0xb6) >= ScreenSizeY - 0x35) {
-      nExclusionLeft.bottom = ScreenSizeY - 0x35;
+    if ((int)(gnScrollingTextBoxTopY + 0xb6) >= Inv::ScreenSizeY - 0x35) {
+      nExclusionLeft.bottom = Inv::ScreenSizeY - 0x35;
     }
 
     nExclusionLeft.left = gnTextBoxExclusionX - 10;
@@ -7603,7 +7613,7 @@ _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca07b(EHExceptionRecord * pException
 }
 
 void StaticInit_gnTextBoxExclusionX() {
-    gnTextBoxExclusionX = (ScreenSizeX - 0x145) / 2;
+    gnTextBoxExclusionX = (ui::ScreenSizeX - 0x145) / 2;
 }
 
 } // namespace D2Client::UI::Text

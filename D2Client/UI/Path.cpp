@@ -40,19 +40,21 @@
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
-uint32_t MouseYOffset = 0; D2_GLOBAL_GUARD(MouseYOffset, "MouseYOffset");
-uint32_t MouseXOffset = 0; D2_GLOBAL_GUARD(MouseXOffset, "MouseXOffset");
+namespace D2Client::UI::Path {
+uint32_t MouseYOffset = 0; D2_GLOBAL_GUARD(MouseYOffset, "D2Client::UI::Path::MouseYOffset");
+uint32_t MouseXOffset = 0; D2_GLOBAL_GUARD(MouseXOffset, "D2Client::UI::Path::MouseXOffset");
+} // namespace D2Client::UI::Path
 static uint32_t gnBorderType = 0; D2_STATIC_GUARD(gnBorderType, "gnBorderType");
 static uint32_t MouseYRelatedB = 0; D2_STATIC_GUARD(MouseYRelatedB, "MouseYRelatedB");
 
 namespace D2Client::UI::Path {
 
 uint32_t __stdcall DRAW_GetTypeOfBorder_Unref_0045ae60() {
-    return gaScreenResolutionTableIndexArray;
+    return Engine::gaScreenResolutionTableIndexArray;
 }
 
 uint32_t __stdcall DRAW_GetTypeOfBorder_Unref_0045ae80() {
-    return gaScreenResolutionModeArray;
+    return Engine::gaScreenResolutionModeArray;
 }
 
 uint32_t __stdcall DRAW_GetTypeOfBorder() {
@@ -69,19 +71,19 @@ void __fastcall TypeOfUiOverlayOverWorld(uint32_t eBorderType) {
           // VP: [issue #26 / R95] no-panel-shift - the world keeps the
           // border-0 camera (no quarter slide) on the wide stops while
           // d2vp.ini no_panel_shift=1; retail slide otherwise.
-          MouseYRelatedB = PANELSHIFT_NoShiftWorld() ? 0 : -(ScreenSizeX / 4);
+          MouseYRelatedB = PANELSHIFT_NoShiftWorld() ? 0 : -(ui::ScreenSizeX / 4);
         break;
         case 2:
-          MouseYRelatedB = PANELSHIFT_NoShiftWorld() ? 0 : ScreenSizeX / 4;
+          MouseYRelatedB = PANELSHIFT_NoShiftWorld() ? 0 : ui::ScreenSizeX / 4;
       }
     }
 
     gnBorderType = eBorderType;
     D2gfx::D2GFX::D2GFX_SetOverlayMode(MouseYRelatedB);
-    int nViewOffsetX = WindowSizeX / 4;
+    int nViewOffsetX = SpellSel::WindowSizeX / 4;
     switch (eBorderType) {
       case 0:
-        GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
+        GAME::View::SetViewRectangleSize(GAME::Game::D2GameView, 0, 0, SpellSel::WindowSizeX, ui::WindowSizeY);
       break;
       case 1:
         // VP-BEGIN [issue #26 / R95]: no-panel-shift - a single open panel
@@ -93,7 +95,7 @@ void __fastcall TypeOfUiOverlayOverWorld(uint32_t eBorderType) {
         // margins are clickable world again). The R92 wide guard below stays
         // for the vanilla slide (no_panel_shift=0).
         if (PANELSHIFT_NoShiftWorld()) {
-          GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
+          GAME::View::SetViewRectangleSize(GAME::Game::D2GameView, 0, 0, SpellSel::WindowSizeX, ui::WindowSizeY);
           return;
         }
         // VP-BEGIN [issue #26 / R92]: wide-UI layouts (1280x720) keep the tile
@@ -105,11 +107,11 @@ void __fastcall TypeOfUiOverlayOverWorld(uint32_t eBorderType) {
         // The pan itself (-quarter via MouseYRelatedB) is untouched: the
         // mouse->world mapping rides the same offset.
         if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
-          GAME::View::SetViewRectangleSize(D2GameView, -nViewOffsetX, 0, WindowSizeX + nViewOffsetX, WindowSizeY);
-          D2GameView->rcExtendedView.right += nViewOffsetX; // DrawFloorTile rejects outside this rect
+          GAME::View::SetViewRectangleSize(GAME::Game::D2GameView, -nViewOffsetX, 0, SpellSel::WindowSizeX + nViewOffsetX, ui::WindowSizeY);
+          GAME::Game::D2GameView->rcExtendedView.right += nViewOffsetX; // DrawFloorTile rejects outside this rect
           return;
         }
-        GAME::View::SetViewRectangleSize(D2GameView, -nViewOffsetX, 0, WindowSizeX - nViewOffsetX, WindowSizeY);
+        GAME::View::SetViewRectangleSize(GAME::Game::D2GameView, -nViewOffsetX, 0, SpellSel::WindowSizeX - nViewOffsetX, ui::WindowSizeY);
       return;
       case 2:
         // VP-BEGIN [issue #26 / R95]: no-panel-shift - mirror of the case-1
@@ -117,7 +119,7 @@ void __fastcall TypeOfUiOverlayOverWorld(uint32_t eBorderType) {
         // widening, world clicking stays active. The R92+R93 wide guard
         // below stays for the vanilla slide (no_panel_shift=0).
         if (PANELSHIFT_NoShiftWorld()) {
-          GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
+          GAME::View::SetViewRectangleSize(GAME::Game::D2GameView, 0, 0, SpellSel::WindowSizeX, ui::WindowSizeY);
           return;
         }
         // VP-BEGIN [issue #26 / R92+R93]: wide-UI layouts (1280x720) keep the
@@ -133,14 +135,14 @@ void __fastcall TypeOfUiOverlayOverWorld(uint32_t eBorderType) {
         // column count / rcCull derive from); the floor-side left-margin
         // coverage rides the rcExtendedView.left widening below.
         if (VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
-          GAME::View::SetViewRectangleSize(D2GameView, nViewOffsetX, 0, WindowSizeX + 3 * nViewOffsetX, WindowSizeY);
-          D2GameView->rcExtendedView.left -= nViewOffsetX;
+          GAME::View::SetViewRectangleSize(GAME::Game::D2GameView, nViewOffsetX, 0, SpellSel::WindowSizeX + 3 * nViewOffsetX, ui::WindowSizeY);
+          GAME::Game::D2GameView->rcExtendedView.left -= nViewOffsetX;
           return;
         }
-        GAME::View::SetViewRectangleSize(D2GameView, nViewOffsetX, 0, WindowSizeX + nViewOffsetX, WindowSizeY);
+        GAME::View::SetViewRectangleSize(GAME::Game::D2GameView, nViewOffsetX, 0, SpellSel::WindowSizeX + nViewOffsetX, ui::WindowSizeY);
       return;
       case 3:
-        GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
+        GAME::View::SetViewRectangleSize(GAME::Game::D2GameView, 0, 0, SpellSel::WindowSizeX, ui::WindowSizeY);
       GAME::Game::GAMEDATA_ClearQueuedClicks();
       return;
     }
@@ -169,7 +171,7 @@ void __fastcall ConvertCoordToPerspectiveView(int * pX, int * pY) {
     if (bPerspective) {
       int nDiv;
       nY += nY / -40;
-      nX += (0x28 - nY / 4) * (nX - ScreenSizeX / 2) / (ScreenSizeX / 2);
+      nX += (0x28 - nY / 4) * (nX - ui::ScreenSizeX / 2) / (ui::ScreenSizeX / 2);
     }
 
     nY += MouseYOffset;
@@ -327,7 +329,7 @@ void __stdcall DRAW_UpdateMouseWorldOffsets() {
     int nShakeX;
     gnMouseWorldXBorder = -0xa0;
     if (gnBorderType == 2) {
-      gnMouseWorldXBorder = ScreenSizeX / 2 - 0xa0;
+      gnMouseWorldXBorder = ui::ScreenSizeX / 2 - 0xa0;
     } else if (gnBorderType == 3) {
       gnMouseWorldXBorder = 0;
     }
@@ -335,8 +337,8 @@ void __stdcall DRAW_UpdateMouseWorldOffsets() {
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
     int32_t nTargetX = D2Common::Units::GetTargetX(pUnit);
     int32_t nTargetY = D2Common::Units::GetTargetY(pUnit);
-    MouseXOffset = nTargetX - ScreenSizeX / 2;
-    MouseYOffset = nTargetY - ScreenSizeY / 2 + 0x10;
+    MouseXOffset = nTargetX - ui::ScreenSizeX / 2;
+    MouseYOffset = nTargetY - Inv::ScreenSizeY / 2 + 0x10;
     BOOL bHasShake = GAME::View::SHAKE_GetShake(&nShakeX, &nShakeY);
     if (!bHasShake) {
       return;
