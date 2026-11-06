@@ -244,8 +244,14 @@
 #include "Source/D2Launch/MainMenus.data.h"
 #include "Source/D2Launch/MainMenus.h"
 #include "Source/Fog/Engine/Application.data.h"
+// VP-BEGIN [resolution site-5]: wide-layout classifier + centering offset.
 #include "Source/D2Client/UI/VanillaPlusCore.h"
+// VP-END [resolution site-5]
+// VP-BEGIN [quest-gossip-mark]: boot-log mark support for the c2s 0x31 gossip
+// send trace (issue #13) - the id the client echoes back decides the server's
+// 0x4c turn-in gate.
 #include "Redivivus/d2_boot.h"
+// VP-END [quest-gossip-mark]
 #include "Source/D2Client/UI/VanillaPlusOptions.h" // VP: vanilla-plus (row 10): D2Client::UI::VanillaPlus page handlers
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E

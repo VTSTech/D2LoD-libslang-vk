@@ -2,10 +2,10 @@
 """Post-merge audit: every TU using D2BOOT_* must see the declaration.
 
 The 1781 upstream merge re-planted D2Game/GAME/SCmd.cpp's [d2boot] mark but
-dropped the fork's `#include "support/d2_boot.h"` (last include-block line) -
+dropped the fork's `#include "Redivivus/d2_boot.h"` (last include-block line) -
 invisible to grep presence gates, fatal at compile ("D2BOOT_MarkFmt was not
 declared in this scope"). This audit checks the whole class: any TU that
-references a D2BOOT_* symbol must reach support/d2_boot.h, either by direct
+references a D2BOOT_* symbol must reach Redivivus/d2_boot.h, either by direct
 include or through a header that (transitively) includes it.
 
 Run after any upstream merge, alongside the rev47/rev48 audits -
@@ -16,8 +16,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DECL = "support/d2_boot.h"
-SKIP = ("support/d2_boot.cpp", DECL)  # impl + declaration itself
+DECL = "Redivivus/d2_boot.h"
+SKIP = ("Redivivus/d2_boot.cpp", DECL)  # impl + declaration itself
 
 inc_re = re.compile(r'^\s*#\s*include\s+"([^"]+)"', re.M)
 

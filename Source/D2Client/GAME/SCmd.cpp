@@ -223,6 +223,7 @@
 #include "Source/D2Game/Monster/AI/AI.h"
 #include "Source/D2Game/SKILLS/SkillAss.h"
 #include "Redivivus/d2_boot.h" // [d2boot] loading-screen freeze diagnostics
+#include "Source/D2Client/GAME/Roster.data.h" // VP: the [R60] roster-state mark reads gpRosterOther/pRosterPartyList (TU-private since 962f88d5)
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 

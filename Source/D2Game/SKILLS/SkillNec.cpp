@@ -1050,7 +1050,9 @@ static void __stdcall SKILLNEC_SetSkeletonComponentsByMasteryLvl(D2UnitStrc * pS
 
     // Get skeleton's MonStats2 to read variant counts per component
     // Clamp table indices to valid range [0, count-1] for each component
-    D2MonStats2Txt* pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pSkeletonUnit->nClassId);
+    // VP: vanilla-plus skeleton-variant counts - namespace re-pinned at the tenth
+    // sync (the accessor lives in D2Common::DATATBLS::MonsterTbls, not D2Client).
+    D2MonStats2Txt* pMonStats2 = D2Common::DATATBLS::MonsterTbls::TXT_MonStats_GetMonStats2(pSkeletonUnit->nClassId);
     uint8_t nVariantCounts[8] = {1, 1, 1, 1, 1, 1, 1, 1}; // defaults
     if (pMonStats2) {
         // aComponents[16] = { HDv, TRv, LGv, Rav, Lav, RHv, LHv, SHv, S1v..S8v }

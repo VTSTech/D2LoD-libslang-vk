@@ -8,7 +8,7 @@
 # verifier was grep-based - the gates pin TEXT, not semantics. This script
 # runs the fork-owned TUs through a C++ front end with the SAME flags as the
 # Win11 build (tools/build-local-win11.ps1: -std=c++17 -w -fms-extensions,
-# d2_platform.h + support/d2_hand.h force-included, CMake's D2_HEADERS
+# d2_platform.h + Redivivus/d2_hand.h force-included, CMake's D2_HEADERS
 # include dirs) so a declaration/namespace/typo break dies here, before an
 # overlay ships. It checks SEMANTICS of the fork code against the tree's
 # headers; it does not produce objects and it is not a codegen check.
@@ -46,7 +46,7 @@ TUS=(
     "D2Client/UI/VanillaPlusCore.cpp"
     "D2Client/UI/VanillaPlusOptions.cpp"
     "D2Game/PLAYER/VanillaPlusStash.cpp"
-    "support/d2_crash.cpp"
+    "Redivivus/d2_crash.cpp"
 )
 if [ "$#" -gt 0 ]; then TUS=("$@"); fi
 
@@ -96,7 +96,15 @@ sed -e '/typedef void\* PRTL_CRITICAL_SECTION_DEBUG;/d' \
     -e '/^struct IMAGE_SECTION_HEADER { char Name\[8\]; };$/d' \
     -e '/^struct CONTEXT { DWORD ContextFlags; };$/d' \
     -e '/^typedef CONTEXT\* LPCONTEXT;$/d' \
-    d2_platform.h > "$SHADOW/d2_platform.h"
+    Source/D2Headers/d2_platform.h > "$SHADOW/d2_platform.h"
+# [tenth sync] upstream's headers include the platform header by its rooted
+# post-restructure path ("Source/D2Headers/d2_platform.h"), which would bypass
+# the shadow above and parse the stub-bearing real file a second time
+# (redefinition of D2_IsNaN et al). Mirror the reconciled copy at the rooted
+# path inside the shadow so -I$SHADOW (first on the search path) serves both
+# spellings from one physical file.
+mkdir -p "$SHADOW/Source/D2Headers"
+cp "$SHADOW/d2_platform.h" "$SHADOW/Source/D2Headers/d2_platform.h"
 # Some fork TUs include <windows.h> directly (VanillaPlusStash.cpp,
 # d2_crash.cpp). A stub in the shadow (first on the include path) routes them
 # to d2_platform.h's alias surface + vp_host_api.h's fill-in, both already
@@ -114,8 +122,8 @@ cat > "$SHADOW/tlhelp32.h" <<'EOF'
 #pragma once
 #include "d2_platform.h"
 EOF
-PLATFORM_HDR="$ROOT/d2_platform.h"
-if ! cmp -s d2_platform.h "$SHADOW/d2_platform.h"; then
+PLATFORM_HDR="$ROOT/Source/D2Headers/d2_platform.h"
+if ! cmp -s Source/D2Headers/d2_platform.h "$SHADOW/d2_platform.h"; then
     INCS=("-I$SHADOW" "${INCS[@]}")
     PLATFORM_HDR="$SHADOW/d2_platform.h"
 fi
@@ -126,8 +134,8 @@ FLAGS=(-fsyntax-only -std=c++17 -w -fms-extensions
        -include tools/vp_host_shim.h
        -include "$PLATFORM_HDR"
        -include tools/vp_host_api.h
-       -include support/d2_hand.h)
-if [ ! -f support/d2_hand.h ]; then
+       -include Redivivus/d2_hand.h)
+if [ ! -f Redivivus/d2_hand.h ]; then
     FLAGS=(-fsyntax-only -std=c++17 -w -fms-extensions
            -include tools/vp_host_shim.h
            -include "$PLATFORM_HDR"

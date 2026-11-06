@@ -8,9 +8,9 @@
 // there is no options-page cache bust - a flip applies on the next <= 2 s
 // poll.
 
-#include "D2Game/UNIT/VanillaPlusCombat.h"
+#include "Source/D2Game/UNIT/VanillaPlusCombat.h"
 
-#include "D2Client/UI/VanillaPlusCore.h" // ALTTOGGLE_BuildIniPath (shared ini path helper)
+#include "Source/D2Client/UI/VanillaPlusCore.h" // ALTTOGGLE_BuildIniPath (shared ini path helper)
 
 #include <windows.h>
 

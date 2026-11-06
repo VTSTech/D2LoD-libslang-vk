@@ -114,6 +114,8 @@
 #include "Source/D2Client/UI/VanillaPlusCore.h" // VP: vanilla-plus ALTTOGGLE_EnsureIni (file refiled D2Client/Engine/Application.cpp -> Game/Main.cpp, R106)
 #include "Redivivus/d2_boot.h" // [d2boot]
 #include "Redivivus/d2_hangwatch.h" // [vanilla-plus hangwatch]
+#include "Source/D2Sound/D2Sound.h" // VP: [d2boot] sound-init verdict getters
+#include "Source/D2Sound/VanillaPlusSound.h" // VP: [d2boot] EAX verdict via the fork's D2Sound-module bridge (the tenth sync's per-module gates made SOUND_GetEAXEnabledFlag module-private)
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -1260,7 +1262,7 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
       // d2boot enter/done marks stay (freeze triage is fork-side). (Re-planted R106.)
       D2BOOT_MarkFmt("SOUND_Initialize enter (bkg=%d)", (int)pD2IniData->bSOUNDBKG); // [d2boot] pins a pre-sound freeze (enter written, done never) and reports the init verdict
       D2Sound::Sound::SOUND_Initialize(*(uint32_t*)pD2IniData->bD2ExpMpqExistsOrLanugageCode, (uint32_t)pD2IniData->bSOUNDBKG);
-      D2BOOT_MarkFmt("SOUND_Initialize done (dsoundInit=%d eax=%d)", (int)D2Sound::SOUND_GetDirectSoundInitializedFlag(), (int)D2Sound::SOUND_GetEAXEnabledFlag()); // [d2boot] dsoundInit=0 means the whole engine failed to start: no menu music, no effects
+      D2BOOT_MarkFmt("SOUND_Initialize done (dsoundInit=%d eax=%d)", (int)D2Sound::SOUND_GetDirectSoundInitializedFlag(), (int)VPSOUND_GetEAXEnabledFlag()); // [d2boot] dsoundInit=0 means the whole engine failed to start: no menu music, no effects
       __frame0.bSoundInit = 1;
     }
     D2BOOT_Mark("setup ok -> entering mode loop"); // [d2boot]

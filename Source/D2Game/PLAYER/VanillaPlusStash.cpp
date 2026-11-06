@@ -76,30 +76,30 @@
 // engage: the intercept is false, the flush is a zero-op.
 // ---------------------------------------------------------------------------
 
-#include "D2Game/PLAYER/VanillaPlusStash.h"
+#include "Source/D2Game/PLAYER/VanillaPlusStash.h"
 
-#include "D2Client/D2ClientStrc.h"
-#include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/GAME/SCmd.h"
-#include "D2Client/UI/VanillaPlusCore.h" // ALTTOGGLE_BuildIniPath (shared ini path helper)
-#include "D2Common/D2InventoryStrc.h"
-#include "D2Common/D2StatListExStrc.h"
-#include "D2Common/D2UnitStrc.h"
-#include "D2Common/INVENTORY/Inventory.h"
-#include "D2Common/ITEMS/Items.h"
-#include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit.h"
-#include "D2Game/GAME/SCmd.h"
-#include "D2Game/ITEMS/ItemMode.h"
-#include "D2Game/PLAYER/PlayerSave.h"
-#include "D2Game/PLAYER/PlayerSave2.h"
-#include "D2Game/UNIT/Party.h"
-#include "D2Game/UNIT/SUnit.h"
-#include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Memory.h"
-#include "Fog/Source/SFile.h"
-#include "globals/globals.h"
-#include "support/d2_boot.h" // [d2boot]
+#include "Source/D2Client/D2ClientStrc.h"
+#include "Source/D2Client/GAME/Game/SGAMEDATA.h"
+#include "Source/D2Client/GAME/SCmd.h"
+#include "Source/D2Client/UI/VanillaPlusCore.h" // ALTTOGGLE_BuildIniPath (shared ini path helper)
+#include "Source/D2Common/D2InventoryStrc.h"
+#include "Source/D2Common/D2StatListExStrc.h"
+#include "Source/D2Common/D2UnitStrc.h"
+#include "Source/D2Common/INVENTORY/Inventory.h"
+#include "Source/D2Common/ITEMS/Items.h"
+#include "Source/D2Common/Stats/StatsEx.h"
+#include "Source/D2Common/Unit.h"
+#include "Source/D2Game/GAME/SCmd.h"
+#include "Source/D2Game/ITEMS/ItemMode.h"
+#include "Source/D2Game/PLAYER/PlayerSave.h"
+#include "Source/D2Game/PLAYER/PlayerSave2.h"
+#include "Source/D2Game/UNIT/Party.h"
+#include "Source/D2Game/UNIT/SUnit.h"
+#include "Source/Fog/D2PoolManagerStrc.h"
+#include "Source/Fog/Memory.h"
+#include "Source/Fog/Source/SFile.h"
+#include "Source/globals/globals.h"
+#include "Redivivus/d2_boot.h" // [d2boot]
 
 #include <windows.h>
 #include <string.h>

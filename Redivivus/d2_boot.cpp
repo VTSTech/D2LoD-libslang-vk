@@ -10,7 +10,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "support/d2_boot.h"
+#include "Redivivus/d2_boot.h"
 
 static HANDLE g_hBootLog = INVALID_HANDLE_VALUE;
 static char g_szBootLogPath[MAX_PATH] = "(unopened)";

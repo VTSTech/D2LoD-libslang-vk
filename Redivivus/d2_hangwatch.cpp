@@ -23,8 +23,8 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "support/d2_boot.h"
-#include "support/d2_hangwatch.h"
+#include "Redivivus/d2_boot.h"
+#include "Redivivus/d2_hangwatch.h"
 
 #ifndef HANGWATCH_THRESHOLD_MS
 #define HANGWATCH_THRESHOLD_MS 12000

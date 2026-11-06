@@ -42,29 +42,30 @@
 // DRAW_VanillaPlusOptions from ui::GetMouseX/GetMouseY, and the mouse down/up
 // handlers keep reading coordinates from the message itself.
 
-#include "D2Client/UI/VanillaPlusOptions.h"
+#include "Source/D2Client/UI/VanillaPlusOptions.h"
 
-#include "D2Client/Cursor.h" // VP: upstream moved GetMouseX/GetMouseY from ui:: to Cursor::
+#include "Source/D2Client/Cursor.h" // VP: upstream moved GetMouseX/GetMouseY from ui:: to Cursor::
 
-#include "D2CMP/SRC/CelCmp.h"
-#include "D2Client/D2Client.h"
-#include "D2Client/UI/VanillaPlusCore.h"
-#include "D2Client/D2GfxDataStrc.h"
-#include "D2Client/Engine/Gfx.h"
-#include "D2Client/Message.h"
-#include "D2Client/Sound/Sound.h"
-#include "D2Client/UI/Draw.h"
-#include "D2Client/UI/EscMenu.h"
-#include "D2Client/UI/ui.h"
-#include "D2Sound/Src/D2SoundFast.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
-#include "D2Win/Src/D2WinFont.h"
-#include "D2gfx/D2GFX.h"
-#include "Fog/Fog.h"
-#include "Fog/Memory.h"
-#include "Storm/Storm.h"
-#include "globals/globals.h"
+#include "Source/D2CMP/SRC/CelCmp.h"
+#include "Source/D2Client/D2Client.h"
+#include "Source/D2Client/UI/VanillaPlusCore.h"
+#include "Source/D2Client/D2GfxDataStrc.h"
+#include "Source/D2Client/Engine/Gfx.h"
+#include "Source/D2Client/Message.h"
+#include "Source/D2Client/Sound/Sound.h"
+#include "Source/D2Client/UI/Draw.h"
+#include "Source/D2Client/UI/EscMenu.h"
+#include "Source/D2Client/UI/ui.h"
+#include "Source/D2Sound/Src/D2SoundFast.h"
+#include "Source/D2Win/DC6.h"
+#include "Source/D2Win/DC6Block.h"
+#include "Source/D2Win/Src/D2WinFont.h"
+#include "Source/D2gfx/D2GFX.h"
+#include "Source/Fog/Fog.h"
+#include "Source/Fog/Memory.h"
+#include "3rdparty/Storm/Storm.h"
+#include "Source/globals/globals.h"
+#include "Source/D2Client/D2Client.globals.h" // VP: [tenth sync] the restructure moved the UI globals' externs (ScreenSizeX et al) into the per-module globals header; globals.h no longer carries them
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 

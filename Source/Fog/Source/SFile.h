@@ -74,6 +74,12 @@ BOOL __stdcall GetUseDirectCommand();
 void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize);
 uint32_t __stdcall SFILE_GetGlobalPointer();
 void __fastcall FILETOOLS_SetLogFilePathWithoutDateAndExtension2(char * szSuffix);
+// [vanilla-plus options page] bust the portable_save 2 s hot-read cache (called
+// from D2Client's D2VP_ConfigReloaded after a page toggle write). Declared
+// OUTSIDE the module-private gate below: the tenth sync's per-module gates
+// made this block invisible to D2Client, and that bridge is the one
+// cross-module caller; the definition stays beside the cache it resets.
+void __stdcall PORTABLESAVE_FlushConfig();
 // Module-private: no other module references these
 #if !defined(D2_MODULE_LIBRARIES) || defined(D2_MODULE_Fog)
 int __fastcall SFILE_EnsurePathEndsWithBackslash(char * szText1, uint32_t nMaxLen);
@@ -82,9 +88,6 @@ int __fastcall Unreferenced_00407260(int param_1);
 int __fastcall Unreferenced_00407280(int param_1);
 int __fastcall Unreferenced_00407290(int param_1);
 int32_t __thiscall SFILE_CalculateBufferOffset(int32_t pThis, int32_t nBufferOffset);
-// [vanilla-plus options page] bust the portable_save 2 s hot-read cache (called
-// from D2Client's D2VP_ConfigReloaded after a page toggle write).
-void __stdcall PORTABLESAVE_FlushConfig();
 char * ERRORMANAGER_SprintfToBuffer(char * szText1, char * szText2, ...);
 char * ERRORMANAGER_SnprintfTerminated(char * szText1, size_t nSize, char * szText2, ...);
 int32_t __fastcall SFILE_JulianDayNumber(int32_t nYear, int32_t nMonth, int32_t nDay);

@@ -128,6 +128,7 @@
 #include "Source/D2Headers/d2_platform.h"
 #include "Source/D2Lang/Unicode/UNISYS.inline.h"
 #include "Source/D2Client/UI/VanillaPlusCore.h" // VP: vanilla-plus ALTTOGGLE_LabelClickThrough
+#include "Source/D2Client/UNIT/CUnit.h" // VP: vanilla-plus HitTestScreen for the toggle stale-selection unload
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 

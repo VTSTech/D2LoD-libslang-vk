@@ -74,6 +74,7 @@
 #include "Source/Fog/Engine/Application.data.h"
 #include "Source/Game/Main.h"
 #include "Redivivus/d2_boot.h"
+#include "Source/D2Win/Src/D2WinPalette.h" // VP: fix-27 transpose-base view (buffer TU-private since 962f88d5)
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 

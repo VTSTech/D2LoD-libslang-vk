@@ -211,6 +211,12 @@ struct D2LowQualityItemsTxt * __stdcall TXT_LowQualityItems_GetLine(int32_t nInd
 // QualityRatio.txt row lookup. Returns quality upgrade chance ratios for treasure class calculations. Used by ITEM_RollItemQuality to apply TC quality bonuses during quality cascade.
 struct D2ItemRatioTxt * __stdcall TXT_QualityRatio_GetLine(uint32_t nItemClassId, uint32_t dwUnused, uint16_t nQualityTier);
 struct D2GambleTableStrc * __stdcall GetGambleTableSize();
+// [gamble-cache-fix R128] bounds-checked read of the per-level gamble upper-bound cache
+// ([0..99]; 0 outside) — the accessor replacing the vanilla data-adjacency read (issue #32).
+// [tenth sync] declared OUTSIDE the module-private gate below: SUNITNPC's gamble
+// diagnostics (module D2Game) are the one cross-module caller; upstream's refile
+// also made the fork-side duplicate GetGambleTableSize line redundant (declared above).
+int __stdcall GetGambleLevelCache(int32_t nLevel);
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __stdcall ITEMTBLS_CopyRunewordRecord(int32_t nRunewordId, char * pSourceRecord);
 // Module-private: no other module references these
@@ -274,11 +280,6 @@ int TXT_Gamble_SortFunction(LPCVOID pEntry1, LPCVOID pEntry2);
 void __fastcall TXT_AllocTxt_gamble(struct D2PoolManagerStrc * pMemory);
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __stdcall FreeGambleTable();
-// [gamble-cache-fix R128] bounds-checked read of the per-level gamble upper-bound cache
-// ([0..99]; 0 outside) — the accessor replacing the vanilla data-adjacency read (issue #32).
-// (GetGambleTableSize is declared in this header's upstream section - the tenth sync's
-// refile made the fork-side duplicate here redundant; the declaration below is fork-only.)
-int __stdcall GetGambleLevelCache(int32_t nLevel);
 // Breadth-first traversal of the itemtypes.txt equiv1/equiv2 parent-type tree to test whether nItemTypeId is a subtype of nTargetTypeId. Returns 1 if nTargetTypeId &lt; 1 (wildcard), 1 if target found in the type hierarchy, 0 if out-of-range or stack depth exceeds 124. Used by item-type membership checks.
 BOOL __fastcall ITEMTBLS_CheckItemTypeRecursive(int32_t nItemTypeId, int32_t nTargetTypeId);
 // Loads and compiles the itemtypes.txt data table at startup. Builds the 36-entry field-definition array (code/equiv1-2/bodyloc/shoots/quiver/maxsock/class/storepage/invgfx1-6/etc., with code/bodyloc/class/storepage columns linked to their lookup tables), creates the itemtypes TxtLink, and calls CompileTxt to populate sgtDataTable.pTxtItemTypes (record size 0xE4) and its row count. Then allocates and fills pTxtItemTypesUnknown, a per-type bitmap (ceil(count/32) dwords per type) where bit j is set if type j is a recursive subtype of type i (via ITEMTBLS_CheckItemTypeRecursive), giving fast item-type ancestry tests.

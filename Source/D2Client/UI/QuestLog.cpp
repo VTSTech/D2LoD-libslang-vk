@@ -157,7 +157,9 @@
 #include "Source/D2Client/UI/ui.data.h"
 #include "Source/D2Lang/Unicode/UNISYS.inline.h"
 #include "Source/D2Launch/MainMenus.h"
+// VP-BEGIN [resolution site-5]: wide-layout classifier + centering offset.
 #include "Source/D2Client/UI/VanillaPlusCore.h"
+// VP-END [resolution site-5]
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
