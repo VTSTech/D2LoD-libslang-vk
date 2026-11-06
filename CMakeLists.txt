@@ -118,6 +118,11 @@ list(REMOVE_DUPLICATES D2_INCLUDE_DIRS)
 #                    both are forced in ahead of every source.
 # SHELL: keeps each -include paired with its file; CMake de-duplicates plain
 # repeated options, which would orphan the second header.
+# [vanilla-plus] SHELL: content is emitted verbatim - the quoting pass CMake
+# applies to plain arguments (which is what makes every other path here
+# space-safe) does not run on it, so the forced-include paths carry their own
+# quotes; a checkout under a folder with spaces would otherwise split the
+# option mid-path at every TU.
 # The macro prefix map makes __FILE__ tree-relative, as it is when link.sh
 # compiles from inside the tree; debug info keeps absolute paths for addr2line.
 # -fwrapv: signed overflow wraps. VC8 never exploits signed-overflow UB, so the
@@ -132,11 +137,11 @@ target_include_directories(d2_flags INTERFACE ${D2_INCLUDE_DIRS})
 # re-planted onto upstream's d2_flags target at the tenth sync.
 target_compile_options(d2_flags INTERFACE
     "$<${CXX_ONLY}:$<$<NOT:$<BOOL:${REDIVIVUS_LEAN}>>:-g>;-w;-fms-extensions;-fwrapv>"
-    "$<${CXX_ONLY}:SHELL:-include ${D2_PLATFORM_HEADER}>"
+    "$<${CXX_ONLY}:SHELL:-include \"${D2_PLATFORM_HEADER}\">"
     "$<${CXX_ONLY}:-fmacro-prefix-map=${D2_ROOT}/=>")
 if(EXISTS "${D2_SUPPORT}/d2_hand.h")
     target_compile_options(d2_flags INTERFACE
-        "$<${CXX_ONLY}:SHELL:-include ${D2_SUPPORT}/d2_hand.h>")
+        "$<${CXX_ONLY}:SHELL:-include \"${D2_SUPPORT}/d2_hand.h\">")
 endif()
 if(REDIVIVUS_PERMISSIVE)
     target_compile_options(d2_flags INTERFACE "$<${CXX_ONLY}:-fpermissive>")
