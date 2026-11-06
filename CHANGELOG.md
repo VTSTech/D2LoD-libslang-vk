@@ -11,6 +11,7 @@ its source round. Per-tag notes: the
 
 ## [0.0.8] — 2026-11-06 ([`R128`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R128))
 
+- **R129 — the ninth upstream sync** (merge-only; upstream `b8e3087f..dd2cbd94`, Ghidra DB → 1969, 6 commits, 366 files: "globals in the modules that own them" — 558 globals moved into owning-module namespaces and file-local globals refiled into their using TUs as statics, plus msvc8 tooling rounds). All 20 conflicted files resolved per docs/merge-upstream.md; 225 fork lines re-spelled for the namespace move; Direct3D's gadwBitMasks re-regen NOT taken (the field-proven literal-mask forms stay, build-independent); the merge-site syntax sweep caught and fixed a party-switch splice; audits green (519/519, sweep 0, include-path/refile-aliasing/placement/branch/visibility clean).
 - **R128 — Gheed gamble crash fix** ([issue #32](https://github.com/VTSTech/D2VP-QoL/issues/32),
   owner-closed 2026-11-06). Clicking **Gamble** crashed the game on every round since the
   source regeneration — the gamble screen's per-level item-count lookup read a table that
