@@ -11,11 +11,11 @@ its source round. Per-tag notes: the
 
 ## [Unreleased] — the 0.0.8-line rounds
 
-- **R128 — Gheed gamble crash fix** ([issue #32](https://github.com/VTSTech/D2VP-QoL/issues/32)).
-  Clicking **Gamble** crashed the game on every round since the source regeneration —
-  the gamble screen's per-level item-count lookup read a table that no longer sits where
-  the original binary kept it. Fixed with a bounds-checked accessor; new `gamble:` lines
-  in `d2boot.log` pin the fix in the field.
+- **R128 — Gheed gamble crash fix** ([issue #32](https://github.com/VTSTech/D2VP-QoL/issues/32),
+  owner-closed 2026-11-06). Clicking **Gamble** crashed the game on every round since the
+  source regeneration — the gamble screen's per-level item-count lookup read a table that
+  no longer sits where the original binary kept it. Fixed with a bounds-checked accessor;
+  new `gamble:` lines in `d2boot.log` pin the fix in the field. Field-verified 2026-11-06.
 - **R127 — vpdiag retirement.** The R120 wide-view diagnostic probes leave the tree
   whole (the R103 diag-retirement class); zero behavior change — the wide-view fixes
   the probes shipped with stay. `d2boot.log` no longer carries `vpdiag` lines.

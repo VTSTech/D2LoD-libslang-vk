@@ -124,9 +124,9 @@ With `[features] no_panel_shift=1` (wide layouts only), a single open panel rend
 
 ---
 
-## M. Gamble at a gambling NPC ([issue #32](https://github.com/VTSTech/D2VP-QoL/issues/32), R128)
+## M. Gamble at a gambling NPC ([issue #32](https://github.com/VTSTech/D2VP-QoL/issues/32), R128 — FIELD-VERIFIED 2026-11-06, owner-closed)
 
-The one-click crash: talking to Gheed (or any gambling NPC) and clicking **Gamble** crashed the game on every round since the source regeneration. R128 fixes the broken item-table lookup; this section proves it in the field.
+The one-click crash: talking to Gheed (or any gambling NPC) and clicking **Gamble** crashed the game on every round since the source regeneration. R128 fixed the broken item-table lookup and the §M pass went green the same day (window opens, sane `gamble:` bounds, one purchase, re-open clean). The items stay as the **standing gamble regression check** for future full-belt runs.
 
 - [ ] **1.** Talk to Gheed in town → click **Gamble** → the gamble window opens with a mixed item list and **no crash** (pre-R128 this died with an AV READ ~1 s after the click).
 - [ ] **2.** `d2boot.log` must show the fix chain: `gamble: gen start npc=0x.... level=<your level> cache=<count> total=<count>` → ~14 × `gamble: roll level=.. bound=.. pick=..` with **sane bounds** (`bound` is a small count, 2..total — never a huge pointer-looking value) → `gamble: gen done items=14`. A garbage-looking `bound=` means the running exe predates the fix (check item 0).
