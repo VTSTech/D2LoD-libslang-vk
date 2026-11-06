@@ -170,8 +170,9 @@ exception code and the PKWARE library. Over the whole binary, runtime included:
   <img alt="The original's code split by how closely the rebuild matches it" src="asm_matching/msvc8/evidence/byte-match-light.svg">
 </picture>
 
-[BYTE-MATCHING.md](BYTE-MATCHING.md) explains what is compared and why whole matching
-functions are a strict measure.
+What is compared, and why a whole matching function is a strict measure, is documented
+in [`asm_matching/`](asm_matching/README.md); the byte-match work itself belongs
+upstream — [Redivivus](https://github.com/jaenster/redivivus).
 
 ## Crash reports
 
