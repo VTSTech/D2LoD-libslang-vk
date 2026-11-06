@@ -4178,6 +4178,32 @@ BOOL __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
       pfVertexSlot += 9;
     } while (_nAlpha);
 
+    // VP-BEGIN [glide-perf f5]: uniform-light floor tiles collapse to the
+    // retail low-quality corner fan. When the refill walk above produced 36
+    // identical dwColor values, every one of the 50 grid triangles
+    // interpolates that same constant color, so the 4-corner mode-5 fan over
+    // gapGlideGroundQuadCornerPtrs (v0, v5, v35, v30 - the same corners,
+    // positions, colors and state the bLowQuality branch above sends) covers
+    // the same diamond and rasterizes the same pixels for 2 triangles instead
+    // of 50. Tiles near light pools keep the full grid; dark corridors and
+    // any uniformly lit tile pay 1/25th of the ground raster. The sub-texel
+    // texture-interpolation delta is the game's own shipped Low Quality
+    // delta, and under a constant color it cannot shift tile edges: coverage
+    // is the same 4-corner convex quad either way.
+    uint32_t dwUniformColor = gaGlideGroundTileVertices[0].dwColor;
+    int nUniformCheck = 1;
+    do {
+      if (gaGlideGroundTileVertices[nUniformCheck].dwColor != dwUniformColor) {
+        break;
+      }
+      nUniformCheck++;
+    } while (nUniformCheck < 0x24);
+    if (nUniformCheck == 0x24) {
+      bResult = (*GLIDEDLL_grDrawVertexArray_12)(5, 4, gapGlideGroundQuadCornerPtrs);
+      return bResult;
+    }
+    // VP-END [glide-perf f5]
+
     // VP-BEGIN [glide-perf f1]: one merged strip table instead of five calls
     // per floor tile. gapGlideGroundStripVertexPtrs[60] is five 12-vertex
     // TRIANGLE_STRIP groups (pointer-array mode 4) over
