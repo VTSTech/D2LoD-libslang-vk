@@ -1080,7 +1080,7 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # the 100-int cache sat adjacent in the original .data; the regen's separate
 # statics made it an OOB read of unrelated globals (pointer read as roll bound
 # -> seed%ptr -> pTable+idx*4 fault). Cache moved to file scope + accessor.)
-gate "res: self-id 0.0.8-R128"              Game/Main.cpp                    'Vanilla\+0\.0\.8-R128' 1
+gate "res: self-id 0.0.8-R129"              Game/Main.cpp                    'Vanilla\+0\.0\.8-R129' 1
 gate "res: self-id R127 gone"               Game/Main.cpp                    'Vanilla\+0\.0\.8-R127' 0
 # ---- [vanilla-plus issue #32] rev 136: track T - the gamble-cache fix. Root
 # cause: D2Game/UNIT/SUNITNPC.cpp GAMBLE_GenerateGambleInventory read the
