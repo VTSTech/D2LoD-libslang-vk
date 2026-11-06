@@ -58882,7 +58882,7 @@ void __fastcall UI_SLIDER_DrawResolutionValue(D2EscMenuItemStrc * pItem, D2UIMou
       return; // foreign row: never ours, draw nothing
     }
 
-    const int nMenuCenterY = ScreenSizeY - 0x50;
+    const int nMenuCenterY = Inv::ScreenSizeY - 0x50;
     const int nRowTop = gaEscMenuHeaderDeleteChar.nVerticalSpacing * nVisibleBefore
         + (nMenuCenterY / 2 - gaEscMenuHeaderDeleteChar.nVerticalSpacing * gaEscMenuHeaderDeleteChar.nItemCount / 2);
     const int nRowBottom = nRowTop + gaEscMenuHeaderDeleteChar.nRowHeight;
@@ -58908,7 +58908,7 @@ void __fastcall UI_SLIDER_DrawResolutionValue(D2EscMenuItemStrc * pItem, D2UIMou
         VPRES_PickFontMatchingDC6(pItem->pDC6SubImages[1]));
 
     // X: DRAW_EscMenu draws this row's value images with alignment 2 - their
-    // cell RIGHT edge anchors at ScreenSizeX/2 + 0xe6 (IMAGE_DrawDC6ImageOnScreen
+    // cell RIGHT edge anchors at ui::ScreenSizeX/2 + 0xe6 (IMAGE_DrawDC6ImageOnScreen
     // subtracts the frame width). Left-anchoring the text at that x pushed it
     // a full label width past the value column (issue #23): right-align by
     // subtracting the rendered advance width instead (DRAW_text0 measures with
@@ -58925,7 +58925,7 @@ void __fastcall UI_SLIDER_DrawResolutionValue(D2EscMenuItemStrc * pItem, D2UIMou
     // "HIGH"/"ON" baseline; resolution-independent, same relative geometry
     // at 800x600.
     static const int RESLABEL_DESCENDER_COMP = 2;
-    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gwszLabel, ScreenSizeX / 2 + 0xe6 - nLabelWidth, nRowBottom + RESLABEL_DESCENDER_COMP, 0, 0);
+    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gwszLabel, ui::ScreenSizeX / 2 + 0xe6 - nLabelWidth, nRowBottom + RESLABEL_DESCENDER_COMP, 0, 0);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -59010,7 +59010,7 @@ void __fastcall UI_SLIDER_ApplyPerspective(D2EscMenuItemStrc * pItem, D2UIMouseM
         (int)pItem->nImageIndex);
     Storm::Source::SReg::SRegSaveValue("Diablo II", "Perspective", 0, pItem->nImageIndex);
     D2gfx::D2GFX::D2GFX_SetPerspective(pItem->nImageIndex);
-    GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
+    GAME::View::SetViewRectangleSize(GAME::Game::D2GameView, 0, 0, SpellSel::WindowSizeX, ui::WindowSizeY);
 }
 
 // Reads the perspective setting from the registry, applies it via D2GFX_SetPerspective if the hardware supports it, and updates the view rectangle. (StorePerspective at 0047d187 was a stray entry inside this body.)
@@ -59026,7 +59026,7 @@ void __fastcall UI_SLIDER_LoadAndApplyPerspective(D2EscMenuItemStrc * pItem, D2U
     if (BVar1) {
       Storm::Source::SReg::SRegSaveValue("Diablo II", "Perspective", 0, *pnOut);
       D2gfx::D2GFX::D2GFX_SetPerspective(*pnOut);
-      GAME::View::SetViewRectangleSize(D2GameView, 0, 0, WindowSizeX, WindowSizeY);
+      GAME::View::SetViewRectangleSize(GAME::Game::D2GameView, 0, 0, SpellSel::WindowSizeX, ui::WindowSizeY);
       return;
     }
 
@@ -59147,7 +59147,7 @@ void __fastcall UI_SLIDER_InitAutomapParty(D2EscMenuItemStrc * pItem, D2UIMouseM
 static int32_t ESCMENU_GetItemIndexFromMouseY(int32_t nParam) {
     BOOL nItemCount;
     int nMenuItemCount = gpEscMenuItemCount->nItemCount;
-    int nMenuCenterY = (ScreenSizeY - 0x50) / 2;
+    int nMenuCenterY = (Inv::ScreenSizeY - 0x50) / 2;
     int nMenuHeight = gpEscMenuItemCount->nVerticalSpacing * nMenuItemCount / 2;
     int32_t nFoundIndex = -1;
     if (!(nParam > nMenuCenterY - nMenuHeight && nParam < nMenuCenterY + nMenuHeight)) {
@@ -59260,7 +59260,7 @@ static void ESCMENU_HandleSliderDrag(int32_t nMouseY, int32_t nMouseX) {
       nSelectedIndex = gnEscMenuSelectedIndex;
       pDVar1 = gpEscMenuCurrentTable + gnEscMenuSelectedIndex;
       if (pDVar1->nMenuItemType == 2) {
-        nScreenCenterX = ScreenSizeX / 2;
+        nScreenCenterX = ui::ScreenSizeX / 2;
         nTrackHitX = nScreenCenterX - 0x3b;
         nSliderTrackX = nScreenCenterX - 0x3c;
         if (!pDVar1->pDC6Main) {
@@ -59864,7 +59864,7 @@ void __stdcall ESCMENU_DrawProgressBar(D2EscMenuItemStrc * pMenuItem, int32_t nB
     int32_t nBarWidth;
     D2GfxDataStrc sGfxData;
     int nItemCount = gpEscMenuItemCount->nBarYOffset + nBaseY;
-    int nScreenCenterX = ScreenSizeX / 2;
+    int nScreenCenterX = ui::ScreenSizeX / 2;
     if (bIsOptionsMenu) {
       nCenterX = nScreenCenterX - 0x91;
     } else {
@@ -59894,10 +59894,10 @@ void __stdcall ESCMENU_DrawProgressBar(D2EscMenuItemStrc * pMenuItem, int32_t nB
     Engine::Gfx::D2GFX_DrawSolidRectExBySize(nBarWidth, nItemCount - 0x1e, nCenterX, 0x1e, 0, bIsFilled ? DRAW_TRANSPARENT : DRAW_LESSTRANSPARENT);
     Engine::Gfx::D2GFX_DrawSolidRectExBySize(nBarWidth + nCenterX, nItemCount - 0x1e, 0x121 - nCenterX, 0x1e, 0, (uint32_t)(pMenuItem->bSelected != 0));
     nBarWidth = 2;
-    nScreenCenterX = ScreenSizeX / 2 + 0xe6;
+    nScreenCenterX = ui::ScreenSizeX / 2 + 0xe6;
     if (bIsOptionsMenu) {
       nBarWidth = 1;
-      nScreenCenterX = ScreenSizeX / 2;
+      nScreenCenterX = ui::ScreenSizeX / 2;
     }
 
     DC6* pDecorationDC6 = gpEscMenuOptBarCDC6;
@@ -59947,7 +59947,7 @@ void __stdcall DRAW_EscMenu() {
       nMouseY = Cursor::GetMouseY();
       nVerticalSpacing = gpEscMenuItemCount->nVerticalSpacing;
       nTotalItemCount = gpEscMenuItemCount->nItemCount;
-      nMenuCenterY = ScreenSizeY - 0x50;
+      nMenuCenterY = Inv::ScreenSizeY - 0x50;
       if (gnEscMenuLastMouseY != nMouseY || gnEscMenuLastMouseX != nMouseX) {
         gnEscMenuLastMouseY = nMouseY;
         gnEscMenuLastMouseX = nMouseX;
@@ -59989,11 +59989,11 @@ void __stdcall DRAW_EscMenu() {
               case -1:
 
               case 0:
-                D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(pCurrentTable[nItemIndex].pDC6Main, ScreenSizeX / 2, nItemBottomY, 1, eDrawMode, -1);
+                D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(pCurrentTable[nItemIndex].pDC6Main, ui::ScreenSizeX / 2, nItemBottomY, 1, eDrawMode, -1);
               pCurrentTable = gpEscMenuCurrentTable;
               break;
               case 1:
-                D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(pCurrentTable[nItemIndex].pDC6Main, ScreenSizeX / 2 - 0xe6, nItemBottomY, 0, eDrawMode, -1);
+                D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(pCurrentTable[nItemIndex].pDC6Main, ui::ScreenSizeX / 2 - 0xe6, nItemBottomY, 0, eDrawMode, -1);
               // [R61 issue #19] sub-image slots can legitimately be NULL on the
               // first init after a degraded load (empty runtime-attached stop -
               // the VP Resolution row's stop 2). The old pointer read is also an
@@ -60009,14 +60009,14 @@ void __stdcall DRAW_EscMenu() {
                   nDrawIdx = 0;
                 }
                 if (pDrawItem->pDC6SubImages[nDrawIdx]) {
-                  D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(pDrawItem->pDC6SubImages[nDrawIdx], ScreenSizeX / 2 + 0xe6, nItemBottomY, 2, eDrawMode, -1);
+                  D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(pDrawItem->pDC6SubImages[nDrawIdx], ui::ScreenSizeX / 2 + 0xe6, nItemBottomY, 2, eDrawMode, -1);
                 }
               }
               pCurrentTable = gpEscMenuCurrentTable;
               break;
               case 2:
                 if ((int)pCurrentTable[nItemIndex].pDC6Main) {
-                  D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(pCurrentTable[nItemIndex].pDC6Main, ScreenSizeX / 2 - 0xe6, nItemBottomY, 0, eDrawMode, -1);
+                  D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(pCurrentTable[nItemIndex].pDC6Main, ui::ScreenSizeX / 2 - 0xe6, nItemBottomY, 0, eDrawMode, -1);
                   pCurrentTable = gpEscMenuCurrentTable;
                 }
               ESCMENU_DrawProgressBar(&pCurrentTable[nItemIndex], nMouseY, eDrawMode, (uint32_t)!pCurrentTable[nItemIndex].pDC6Main);
@@ -60040,9 +60040,9 @@ void __stdcall DRAW_EscMenu() {
       }
 
       nVerticalSpacing = gpEscMenuCurrentTable[gnEscMenuSelectedIndex].nYPosition + gpEscMenuItemCount->nStarOffset;
-      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 - SizeCurrentSelectedEscMenuItem - 0xf9, nVerticalSpacing, -1, DRAW_SOLID, nullptr);
+      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ui::ScreenSizeX / 2 - SizeCurrentSelectedEscMenuItem - 0xf9, nVerticalSpacing, -1, DRAW_SOLID, nullptr);
       sGfxData.nFrameNumber = DRAW_RotatingStarPosition;
-      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 + 0xf9, nVerticalSpacing, -1, DRAW_SOLID, nullptr);
+      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ui::ScreenSizeX / 2 + 0xf9, nVerticalSpacing, -1, DRAW_SOLID, nullptr);
       bIsExpansion = ui::DRAW_CheckTickRateLimiter();
       if (!bIsExpansion) {
         return;

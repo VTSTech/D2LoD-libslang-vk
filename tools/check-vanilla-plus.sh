@@ -226,7 +226,10 @@ gate "sounds.txt null guard in SOUND_PlaySound" D2Client/Sound/Sound.cpp 'VP: lo
 # globals.cpp (retail site) with its extern in globals.h.
 gate "class sound externs right-sized [11]" D2Client/UNIT/UnitSnd.data.h 'extern int gaUnitSoundIds\w+\[11\]' 6
 gate "class sound tables initialized"      D2Client/UNIT/UnitSnd.cpp     'int gaUnitSoundIds\w+\[11\] = \{' 6
-gate "pointer table targets Amazon table"  D2Client/UNIT/UnitSnd.cpp     'gaUnitSoundTableByClassId\[7\] = \{ gaUnitSoundIdsAmazon' 1
+# [1949-1969 re-pin] stale since the 1908->1948 sync's namespacing (the table's
+# Amazon entry points at D2Client::UNIT::UnitSnd::gaUnitSoundIdsAmazon now); the
+# row stayed red through the owner's R128 gate run. Pattern follows the code.
+gate "pointer table targets Amazon table"  D2Client/UNIT/UnitSnd.cpp     'gaUnitSoundTableByClassId\[7\] = \{ \(int\*\)&D2Client::UNIT::UnitSnd::gaUnitSoundIdsAmazon' 1
 # restored retail values (1.14d Game.exe .data): full-initializer tripwire per class
 # [R99 re-pin] upstream 0fe2eda8 (ghidra 1870 sound names) recovered the retail tables
 # in multi-line hex form (values verified identical to the fork's decimal hand-build);
@@ -467,7 +470,10 @@ gate "r116: dib pitch global wired"        D2Gdi/Renderer/Windowed.cpp      'REN
 # only). Retail modes keep the retail exit byte-identical.
 # Pins: the reach/depth/span formulas and the 4 band call sites
 # (a future edit that drops one open-side band fails the gate).
-gate "r117: fill reach formula"            D2Client/GAME/Draw.cpp           'int nFillReach = ScreenSizeX / 32 \+ ScreenSizeY / 16 \+ 10' 1
+# [1949-1969 re-pin] the ninth sync's global namespace move respelled the fork
+# line's globals (ScreenSizeX -> UI::ui::ScreenSizeX, ScreenSizeY -> UI::Inv::ScreenSizeY);
+# the formula itself is unchanged.
+gate "r117: fill reach formula"            D2Client/GAME/Draw.cpp           'int nFillReach = UI::ui::ScreenSizeX / 32 \+ UI::Inv::ScreenSizeY / 16 \+ 10' 1
 gate "r117: fill depth formula"            D2Client/GAME/Draw.cpp           'int nFillDepth = nFillReach / 5 \+ 1' 1
 gate "r117: fill span formula"             D2Client/GAME/Draw.cpp           'int nFillSpan = nFillReach \* 2 / 5 \+ 1' 1
 gate "r117: band fill call sites"          D2Client/GAME/Draw.cpp           'nFillI \* 5' 4
@@ -536,8 +542,8 @@ gate "r121: walk depth four (scene)"       D2Client/GAME/Wall2.cpp          'WAL
 # perspective top edge/corners + the rolling ortho bottom triangle). Reaches
 # now computed in coords, fill triggers compare nFillReachCoords, BFS queue
 # 128->512, out caps 96->256.
-gate "r119: scene reach in coords"         D2Client/GAME/Wall2.cpp          'ScreenSizeX \* 5 / 32 \+ ScreenSizeY \* 5 / 16 \+ 450' 1
-gate "r119: floor reach in coords"         D2Client/GAME/Draw.cpp           'ScreenSizeX \* 5 / 32 \+ ScreenSizeY \* 5 / 16 \+ 450' 1
+gate "r119: scene reach in coords"         D2Client/GAME/Wall2.cpp          'UI::ui::ScreenSizeX \* 5 / 32 \+ UI::Inv::ScreenSizeY \* 5 / 16 \+ 450' 1
+gate "r119: floor reach in coords"         D2Client/GAME/Draw.cpp           'UI::ui::ScreenSizeX \* 5 / 32 \+ UI::Inv::ScreenSizeY \* 5 / 16 \+ 450' 1
 gate "r119: fill triggers in coords"       D2Client/GAME/Draw.cpp           'nFillReachCoords' 5
 gate "r119: walk queue widened"            D2Client/GAME/Wall2.cpp          'apQueue\[512\]' 1
 gate "r119: scene out cap 256"             D2Client/GAME/Wall2.cpp          'apWideRooms\[256\]' 1
@@ -580,8 +586,8 @@ gate "r127: wall2 diag include gone"        D2Client/GAME/Wall2.cpp          'in
 # were already ruled benign (ambient pre-fill) in R121.
 gate "r122: rect re-fit wide arm"          D2Client/GAME/View.cpp           're-fit the fixed-pixel cull rect' 1
 gate "r122: rect left/top base"            D2Client/GAME/View.cpp           'lprc->(left|top) = -0xc0' 2
-gate "r122: rect right covers backbuffer"  D2Client/GAME/View.cpp           'lprc->right = ScreenSizeX \+ 0xc0' 1
-gate "r122: rect bottom covers backbuffer" D2Client/GAME/View.cpp           'lprc->bottom = ScreenSizeY \+ 0xc0' 1
+gate "r122: rect right covers backbuffer"  D2Client/GAME/View.cpp           'lprc->right = UI::ui::ScreenSizeX \+ 0xc0' 1
+gate "r122: rect bottom covers backbuffer" D2Client/GAME/View.cpp           'lprc->bottom = UI::Inv::ScreenSizeY \+ 0xc0' 1
 
 # ---- resolution site-5: wide-layout classification + centered 800-px UI ----
 # Wide modes (3=1344x700 dormant, 4=1280x720, 5=1366x768 [R112]) join the
@@ -676,7 +682,17 @@ gate "site-6: belt + border Y shifts"      D2Client/UI/Panel.cpp           'VPRE
 gate "site-6: belt hover Y virtualization (R52)" D2Client/UI/Panel.cpp           'nVirtualMouseY = nMouseY - VPRES_GetWideUiOffsetY' 1
 gate "site-6: belt tooltip Y anchor (R52)"        D2Client/UI/Panel.cpp           'gnBeltTooltipY = aInvRect\[2\] \+ VPRES_GetWideUiOffsetY' 1
 gate "site-6: inv table + text Y shifts"   D2Client/UI/Inv.cpp             'VPRES_GetWideUiOffsetY' 15
-gate "site-6: party panel Y shifts"        D2Client/UI/Party.cpp           'VPRES_GetWideUiOffsetY' 54
+# [1949-1969 re-pin 54 -> 70] upstream's switch-regen of the party button
+# bodies spells the shared y coords as per-branch assignments, so the same
+# behavioral sites now carry more VPRES_GetWideUiOffsetY occurrences; every
+# site was diff-checked against HEAD's field-verified lines during the merge.
+# [1949-1969 re-pin 54 -> 55] upstream's switch-regen spells shared y coords
+# once per branch assignment (case bodies feed a shared draw_last_text_line
+# label), where the fork's if-chain spelled the same draw per branch; the
+# offset-constant multiset is byte-identical to HEAD's (0x18/0x1f/0x21/0x23/
+# 0x32x10/0x37x4/0x41x10/0x185x3/0x1a5x4/0x182x1) - every behavioral site
+# carries the offset.
+gate "site-6: party panel Y shifts"        D2Client/UI/Party.cpp           'VPRES_GetWideUiOffsetY' 55
 gate "site-6: waypoint Y shifts (R81)"      D2Client/UI/Waypoint.cpp        'VPRES_GetWideUiOffsetY' 12
 gate "site-6: waypoint input inverse"      D2Client/UI/Waypoint.cpp        'gnPanelOffsetY - VPRES_GetWideUiOffsetY' 3
 gate "site-6: questlog Y shifts"           D2Client/UI/QuestLog.cpp        'VPRES_GetWideUiOffsetY' 10
@@ -684,7 +700,9 @@ gate "site-6: questlog input inverse"      D2Client/UI/QuestLog.cpp        'gnPa
 gate "site-6: scrolling text Y shift"      D2Client/UI/Text.cpp            'VPRES_GetWideUiOffsetY' 1
 gate "site-6: tooltip + gold dialog Y shifts" D2Client/UI/ui.cpp              'VPRES_GetWideUiOffsetY' 11
 gate "site-6: gold dialog X shifts"         D2Client/UI/ui.cpp              'VPRES_GetWideUiOffsetX' 5
-gate "site-6: modal popup Y shifts"        D2Client/Engine.cpp             'VPRES_GetWideUiOffsetY' 18
+# [1949-1969 re-pin 18 -> 19] upstream inlined the insert-disc string select
+# into two draws; the site-6 offset rides both now (was one shared draw).
+gate "site-6: modal popup Y shifts"        D2Client/Engine.cpp             'VPRES_GetWideUiOffsetY' 19
 gate "site-6: help screen Y shifts"        D2Client/UI/Help.cpp            'VPRES_GetWideUiOffsetY' 74
 gate "site-6: fork-api include in Party.cpp"  D2Client/UI/Party.cpp        'include "D2Client/UI/VanillaPlusCore\.h"' 1
 gate "site-6: fork-api include in Waypoint.cpp" D2Client/UI/Waypoint.cpp   'include "D2Client/UI/VanillaPlusCore\.h"' 1
@@ -1062,7 +1080,7 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # the 100-int cache sat adjacent in the original .data; the regen's separate
 # statics made it an OOB read of unrelated globals (pointer read as roll bound
 # -> seed%ptr -> pTable+idx*4 fault). Cache moved to file scope + accessor.)
-gate "res: self-id 0.0.8-R128"              Game/Main.cpp                    'Vanilla\+0\.0\.8-R128' 1
+gate "res: self-id 0.0.8-R129"              Game/Main.cpp                    'Vanilla\+0\.0\.8-R129' 1
 gate "res: self-id R127 gone"               Game/Main.cpp                    'Vanilla\+0\.0\.8-R127' 0
 # ---- [vanilla-plus issue #32] rev 136: track T - the gamble-cache fix. Root
 # cause: D2Game/UNIT/SUNITNPC.cpp GAMBLE_GenerateGambleInventory read the

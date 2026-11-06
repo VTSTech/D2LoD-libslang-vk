@@ -1052,7 +1052,7 @@ void __fastcall SCMD_SetOrClearBitFlag(D2UnitStrc * pUnit, uint32_t dwFlagMask, 
 }
 
 int32_t __stdcall GetTxtMonStatsSize() {
-    return sgptDataTable->nTxtMonStatsSize;
+    return D2Common::ITEMS::Items::sgptDataTable->nTxtMonStatsSize;
 }
 
 void __fastcall SCMD_ClearPlayerTradeFields(D2UnitStrc * pUnit) {
@@ -1067,20 +1067,20 @@ void __fastcall SCMD_ClearPlayerTradeFields(D2UnitStrc * pUnit) {
 }
 
 D2SkillsTxt * __fastcall TXT_Skills_GetLine(eD2Skills eSkill) {
-    if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount) {
-      return sgptDataTable->pTxtSkills + eSkill;
+    if ((int)eSkill >= 0 && (int)eSkill < D2Common::ITEMS::Items::sgptDataTable->nTxtSkillsCount) {
+      return D2Common::ITEMS::Items::sgptDataTable->pTxtSkills + eSkill;
     }
 
     return nullptr;
 }
 
 int Unreferenced_0045c4e0() {
-    return sgptDataTable->nTxtSkillsCount;
+    return D2Common::ITEMS::Items::sgptDataTable->nTxtSkillsCount;
 }
 
 D2ItemStatCostTxt * __fastcall TXT_ItemStatCost_GetLine(eD2UnitStat eUnitStat) {
-    if ((int)eUnitStat >= 0 && (int)eUnitStat < sgptDataTable->nTxtItemStatCostSize) {
-      return sgptDataTable->pTxtItemStatCost + eUnitStat;
+    if ((int)eUnitStat >= 0 && (int)eUnitStat < D2Common::ITEMS::Items::sgptDataTable->nTxtItemStatCostSize) {
+      return D2Common::ITEMS::Items::sgptDataTable->pTxtItemStatCost + eUnitStat;
     }
 
     return nullptr;
@@ -1102,13 +1102,13 @@ void __stdcall SaveCharacter() {
         return;
       }
 
-      D2IniData_client->eCTEMP_eD2PlayerStatus = *(eD2PlayerStatus*)(D2Game::Save::pRawSaveBuffer + 0x18);
+      ClientModeInGame::D2IniData_client->eCTEMP_eD2PlayerStatus = *(eD2PlayerStatus*)(D2Game::Save::pRawSaveBuffer + 0x18);
     } else {
       if (D2Game::Save::nRawSaveBufferSize < 0x14f) {
         return;
       }
 
-      D2IniData_client->eCTEMP_eD2PlayerStatus = *(eD2PlayerStatus*)(D2Game::Save::pRawSaveBuffer + 0x24);
+      ClientModeInGame::D2IniData_client->eCTEMP_eD2PlayerStatus = *(eD2PlayerStatus*)(D2Game::Save::pRawSaveBuffer + 0x24);
     }
 
     Fog::Source::SFile::GetAndCreateSavePath(szFilePath, 0x400);
@@ -1321,15 +1321,15 @@ int __fastcall CLIENT_GetUnitAct(D2UnitStrc * pUnit) {
     exit(-1);
 }
 
-// 0x04 sets ServerLoadingComplete=1 / _gLevelLoadInProgress=0, calls
+// 0x04 sets Game::ServerLoadingComplete=1 / _gLevelLoadInProgress=0, calls
 // GetActNoFromLevelNumber (result discarded), and clears the player's pending interact / queued skill
 // / target. 0x05 @0045ca30 tears down: frees weather DC6s, reinitialises the memory pools, sets
-// ServerLoadingComplete=0 / _gLevelLoadInProgress=1, restarts the connect timeout.
+// Game::ServerLoadingComplete=0 / _gLevelLoadInProgress=1, restarts the connect timeout.
 void __fastcall NET_D2GS_CLIENT_Incoming0x04_STARTACT(char * pBytes) {
     eD2LevelId eLevel;
     D2BOOT_Mark("s2c 0x04 STARTACT received - loading screen can drop now"); // [d2boot]
     D2UnitStrc* pUnit;
-    ServerLoadingComplete = 1;
+    Game::ServerLoadingComplete = 1;
     gLevelLoadInProgress = 0;
     D2RoomStrc* pRoom = UNIT::CUnit::GetCurrentRoom();
     if (pRoom) {
@@ -1357,7 +1357,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x04_STARTACT(char * pBytes) {
 void __fastcall NET_D2GS_CLIENT_Incoming0x05_UnloadComplete(char * pBytes) {
     Game::thunk_WEATHER_FreeDC6Graphics();
     Fog::Memory::InitializeMemoryManagers(nullptr);
-    ServerLoadingComplete = 0;
+    Game::ServerLoadingComplete = 0;
     gLevelLoadInProgress = 1;
     gConnectLongTimeoutStartTick = GetTickCount();
 }
@@ -1370,7 +1370,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x06_ENDGAME(char * pBytes) {
         Game::CLIENT_ConnectionRefused(8);
       }
     }
-    if ((eD2GSGameType_007a0610 == GAMETYPE_BNET_BETA || eD2GSGameType_007a0610 == GAMETYPE_BNET) && ServerLoadingComplete) {
+    if ((eD2GSGameType_007a0610 == GAMETYPE_BNET_BETA || eD2GSGameType_007a0610 == GAMETYPE_BNET) && Game::ServerLoadingComplete) {
       Game::CLIENT_ConnectionRefused(7);
     }
 
@@ -1381,7 +1381,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x07_NEWROOM(char * pBytes) {
     D2RoomStrc* pRoomCache;
     uint16_t nX = *(uint16_t*)(pBytes + 1);
     uint16_t nY = *(uint16_t*)(pBytes + 3);
-    if (!sgpDrlgAct) {
+    if (!Game::sgpDrlgAct) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x58a);
       exit(-1);
     }
@@ -1393,14 +1393,14 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x07_NEWROOM(char * pBytes) {
       pRoomCache = 0;
     }
 
-    D2Common::DUNGEON::Dungeon::AddRoomData(sgpDrlgAct, (eD2LevelId)(uint8_t)pBytes[5], (uint32_t)nX, (uint32_t)nY, pRoomCache);
+    D2Common::DUNGEON::Dungeon::AddRoomData(Game::sgpDrlgAct, (eD2LevelId)(uint8_t)pBytes[5], (uint32_t)nX, (uint32_t)nY, pRoomCache);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x08_REMOVEROOM(char * pBytes) {
     D2RoomStrc* pRoom;
     uint16_t nY = *(uint16_t*)(pBytes + 3);
     uint16_t nX = *(uint16_t*)(pBytes + 1);
-    if (!sgpDrlgAct) {
+    if (!Game::sgpDrlgAct) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x59e);
       exit(-1);
     }
@@ -1412,7 +1412,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x08_REMOVEROOM(char * pBytes) {
       pRoom = 0;
     }
 
-    D2Common::DUNGEON::Dungeon::RemoveRoomData(sgpDrlgAct, (eD2LevelId)(uint8_t)pBytes[5], (uint32_t)nX, (uint32_t)nY, pRoom);
+    D2Common::DUNGEON::Dungeon::RemoveRoomData(Game::sgpDrlgAct, (eD2LevelId)(uint8_t)pBytes[5], (uint32_t)nX, (uint32_t)nY, pRoom);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x09_AssignLevelWarp(D2GSPacketSrv0x09 * pBytes) {
@@ -1634,7 +1634,7 @@ void __fastcall SCMD_Rcv0x72_UnitIgnore(D2UnitStrc * pUnit, char * pBytes) {
 void __fastcall NET_D2GS_CLIENT_Incoming0x11_UnitDoOverlay(D2GSPacketSrv0x11 * pBytes) {
     uint16_t nOverlayId = pBytes->wParam;
     D2UnitStrc* pUnit = UNIT::Player::UNITS_FindClientSideUnit(pBytes->dwUnitGUID, (eD2UnitType)pBytes->nUnitType);
-    if (!(pUnit && (int)(uint32_t)nOverlayId < sgptDataTable->nTxtOverlaySize)) {
+    if (!(pUnit && (int)(uint32_t)nOverlayId < D2Common::ITEMS::Items::sgptDataTable->nTxtOverlaySize)) {
       return;
     }
 
@@ -1659,8 +1659,8 @@ void __fastcall SCMD_Rcv0x14_Ignore(char * pBytes) {
 // D2Common::Unit::CUnit::CLIENT_TeleportUnitToPosition(pUnit, nX, nY, byFlag) - a warp to an X/Y.
 // It warps ANY unit type, branching on UNIT_PLAYER vs UNIT_MONSTER for the collision pattern.
 void __fastcall NET_D2GS_CLIENT_Incoming0x15_WarpXY(D2GSPacketSrv0x15 * pBytes) {
-    uint16_t nY = pBytes->wY;
     uint16_t nX = pBytes->wX;
+    uint16_t nY = pBytes->wY;
     D2UnitStrc* pUnit = UNIT::Player::UNITS_FindClientSideUnit(pBytes->dwUnitGUID, (eD2UnitType)pBytes->nUnitType);
     if (!pUnit) {
       return;
@@ -1672,7 +1672,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x15_WarpXY(D2GSPacketSrv0x15 * pBytes) 
       eD2LevelId eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
       eAct neAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
       pUnit->nAct = neAct;
-      pUnit->pDrlgAct = sgpDrlgAct;
+      pUnit->pDrlgAct = Game::sgpDrlgAct;
       if (pUnit->pPath.pStaticPath) {
         BOOL bIsDead;
         if (pUnit->eUnitType == UNIT_PLAYER) {
@@ -1906,10 +1906,10 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xA3_PROGRESSIVE_SKILL(D2GSPacketSrv0xA3
 
     D2UnitStrc* pTargetUnit = UNIT::Player::UNITS_FindClientSideUnit(pBytes->dwValue2, (eD2UnitType)pBytes->nTargetType);
     eD2Skills eSkill = (eD2Skills)(short int)pBytes->wSkillId;
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    if (!((int)eSkill >= 0 && (int)eSkill < D2Common::ITEMS::Items::sgptDataTable->nTxtSkillsCount && D2Common::ITEMS::Items::sgptDataTable->pTxtSkills + eSkill)) {
       return;
     }
-    if (*((uint8_t*)&sgptDataTable->pTxtSkills[eSkill] + 0x4) & (uint8_t)gadwBitMasks[2]) {
+    if (*((uint8_t*)&D2Common::ITEMS::Items::sgptDataTable->pTxtSkills[eSkill] + 0x4) & (uint8_t)Fog::BitBuffer::gadwBitMasks[2]) {
       SKILLS::Skills::SKILL_ExecuteClientProgressWithAura(pUnit, pTargetUnit, eSkill, (int)(short int)pBytes->wSkillLevel, pBytes->dwValue3, pBytes->dwValue4, (uint32_t)pBytes->nParam2);
       return;
     }
@@ -1925,11 +1925,11 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xA5_FORCESTOPSKILL(D2GSPacketSrv0xA5 * 
     }
 
     eD2Skills eSkill = (eD2Skills)nSkill;
-    if (!((int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    if (!((int)eSkill < D2Common::ITEMS::Items::sgptDataTable->nTxtSkillsCount && D2Common::ITEMS::Items::sgptDataTable->pTxtSkills + eSkill)) {
       return;
     }
 
-    switch (sgptDataTable->pTxtSkills[eSkill].srvdofunc) {
+    switch (D2Common::ITEMS::Items::sgptDataTable->pTxtSkills[eSkill].srvdofunc) {
       case 0x43:
         SKILLS::SkillsPal::SKILL_StopAndClearUninterruptable(pUnit, eSkill);
       D2Common::DATATBLS::ItemStats::SetState(pUnit, STATE_skill_move, 0);
@@ -1949,7 +1949,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xA5_FORCESTOPSKILL(D2GSPacketSrv0xA5 * 
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0xA4_PRELOAD_MONSTER(char * pBytes) {
-    if ((int)(uint32_t)*(uint16_t*)(pBytes + 1) >= sgptDataTable->nTxtMonStatsSize) {
+    if ((int)(uint32_t)*(uint16_t*)(pBytes + 1) >= D2Common::ITEMS::Items::sgptDataTable->nTxtMonStatsSize) {
       return;
     }
 
@@ -2474,12 +2474,12 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x53(D2GSPacketSrv0x53 * pBytes) {
     int32_t nAngle = pBytes->nTicks;
     int32_t nIndex = pBytes->nCycleIndex;
     D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
-    if (sgpDrlgAct != pPlayer->pDrlgAct) {
+    if (Game::sgpDrlgAct != pPlayer->pDrlgAct) {
       return;
     }
 
     uint32_t nState = (uint32_t)pBytes->bEclipse;
-    D2Common::Environment::DRLGENV_InitializeEnvironment(sgpDrlgAct, UNIT::CUnit::GetCurrentRoom(), nIndex, nAngle, nState);
+    D2Common::Environment::DRLGENV_InitializeEnvironment(Game::sgpDrlgAct, UNIT::CUnit::GetCurrentRoom(), nIndex, nAngle, nState);
     UNIT::CUnit::UpdateObjectAutoLightOnPeriodChange();
     pPlayer = UNIT::Player::GetPlayerUnit_UI();
     if (!pPlayer) {
@@ -2792,7 +2792,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x81(D2GSPacketSrv0x81 * pBytes) {
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x7B_SYNCHOTKEYS(D2GSPacketSrv0x7B * pBytes) {
     uint32_t nSkillId = pBytes->wSkillId & 0xfff;
-    if ((int)nSkillId > sgptDataTable->nTxtSkillsCount) {
+    if ((int)nSkillId > D2Common::ITEMS::Items::sgptDataTable->nTxtSkillsCount) {
       nSkillId = -1;
     }
 
@@ -3096,11 +3096,11 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xA8_UNITSTATE_ONVAL_EX(D2GSPacketSrv0xA
       if (eUnitStat < 0) {
         return;
       }
-      if (eUnitStat >= sgptDataTable->nTxtItemStatCostSize) {
+      if (eUnitStat >= D2Common::ITEMS::Items::sgptDataTable->nTxtItemStatCostSize) {
         return;
       }
 
-      pItemStatCost = sgptDataTable->pTxtItemStatCost + eUnitStat;
+      pItemStatCost = D2Common::ITEMS::Items::sgptDataTable->pTxtItemStatCost + eUnitStat;
       if (!pItemStatCost) {
         return;
       }
@@ -3115,7 +3115,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xA8_UNITSTATE_ONVAL_EX(D2GSPacketSrv0xA
       }
 
       nSendBits = pItemStatCost->sendBits;
-      if (nSendBits < 0x20 && (char)pItemStatCost->dwItemStatFlags & (uint8_t)gadwBitMasks[1]) {
+      if (nSendBits < 0x20 && (char)pItemStatCost->dwItemStatFlags & (uint8_t)Fog::BitBuffer::gadwBitMasks[1]) {
         eSkill = Fog::BitBuffer::ReadSigned(&bitBuffer, (uint32_t)nSendBits);
       } else {
         eSkill = Fog::BitBuffer::ReadUnsigned(&bitBuffer, (uint32_t)nSendBits);
@@ -3171,11 +3171,11 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAA_UNITSTATE_ALL_EX(D2GSPacketSrv0xAA 
           if (eUnitStat < 0) {
             return;
           }
-          if (eUnitStat >= sgptDataTable->nTxtItemStatCostSize) {
+          if (eUnitStat >= D2Common::ITEMS::Items::sgptDataTable->nTxtItemStatCostSize) {
             return;
           }
 
-          pItemStatCost = sgptDataTable->pTxtItemStatCost + eUnitStat;
+          pItemStatCost = D2Common::ITEMS::Items::sgptDataTable->pTxtItemStatCost + eUnitStat;
           if (!pItemStatCost) {
             return;
           }
@@ -3190,7 +3190,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAA_UNITSTATE_ALL_EX(D2GSPacketSrv0xAA 
           }
 
           nSendBits = pItemStatCost->sendBits;
-          if (nSendBits < 0x20 && (char)pItemStatCost->dwItemStatFlags & (uint8_t)gadwBitMasks[1]) {
+          if (nSendBits < 0x20 && (char)pItemStatCost->dwItemStatFlags & (uint8_t)Fog::BitBuffer::gadwBitMasks[1]) {
             eSkill = Fog::BitBuffer::ReadSigned(&bitBuffer, (uint32_t)nSendBits);
           } else {
             eSkill = Fog::BitBuffer::ReadUnsigned(&bitBuffer, (uint32_t)nSendBits);
@@ -3267,19 +3267,19 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAC(char * pPacketData) {
       if (i < 0) {
         return;
       }
-      if (i >= sgptDataTable->nTxtMonStatsSize) {
+      if (i >= D2Common::ITEMS::Items::sgptDataTable->nTxtMonStatsSize) {
         return;
       }
 
-      i = (int)sgptDataTable->pTxtMonStats[i].MonStatsEx;
+      i = (int)D2Common::ITEMS::Items::sgptDataTable->pTxtMonStats[i].MonStatsEx;
       if (i < 0) {
         return;
       }
-      if (i >= sgptDataTable->nTxtMonStatsExSize) {
+      if (i >= D2Common::ITEMS::Items::sgptDataTable->nTxtMonStatsExSize) {
         return;
       }
 
-      pMonStats2Txt = sgptDataTable->pTxtMonStatsEx;
+      pMonStats2Txt = D2Common::ITEMS::Items::sgptDataTable->pTxtMonStatsEx;
       if (!(pMonStats2Txt + i)) {
         return;
       }
@@ -3412,11 +3412,11 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAC(char * pPacketData) {
       if (nStatValue < 0) {
         break;
       }
-      if (nStatValue >= sgptDataTable->nTxtItemStatCostSize) {
+      if (nStatValue >= D2Common::ITEMS::Items::sgptDataTable->nTxtItemStatCostSize) {
         break;
       }
 
-      pItemStatCost = sgptDataTable->pTxtItemStatCost + nStatValue;
+      pItemStatCost = D2Common::ITEMS::Items::sgptDataTable->pTxtItemStatCost + nStatValue;
       if (!(pItemStatCost && pItemStatCost->sendBits > '\0')) {
         break;
       }
@@ -3428,7 +3428,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAC(char * pPacketData) {
       }
 
       nSendBits = pItemStatCost->sendBits;
-      if (nSendBits < 0x20 && (char)pItemStatCost->dwItemStatFlags & (uint8_t)gadwBitMasks[1]) {
+      if (nSendBits < 0x20 && (char)pItemStatCost->dwItemStatFlags & (uint8_t)Fog::BitBuffer::gadwBitMasks[1]) {
         nReadBits = Fog::BitBuffer::ReadSigned(&bitBuffer, (uint32_t)nSendBits);
       } else {
         nReadBits = Fog::BitBuffer::ReadUnsigned(&bitBuffer, (uint32_t)nSendBits);
@@ -3575,7 +3575,7 @@ void __fastcall NET_D2GS_CLIENT_PacketHandle_to0xAF(char * pBytes, size_t nSize)
             D2TraceFmt("SPKT %02X", (unsigned)byPacketId); }
         // [d2boot] one line per distinct S->C opcode seen before the load
         // completes; a missing 0x04 here is the loading-screen hang signature.
-        if (!ServerLoadingComplete && byPacketId < 0xB5) {
+        if (!Game::ServerLoadingComplete && byPacketId < 0xB5) {
           static uint8_t s_byBootSeenS2C[0xB5];
           if (!s_byBootSeenS2C[byPacketId]) {
             s_byBootSeenS2C[byPacketId] = 1;

@@ -487,7 +487,7 @@ namespace D2Direct3D::Renderer {
 // it sets is the one Direct3DCallBack tests for "Supports 1555 textures".
 HRESULT __stdcall D3D_EnumTextureFormatsCallback(void * lpDDPixFmt, DWORD * pnDeviceFlags) {
     if (pnDeviceFlags && *(uint32_t*)((int)lpDDPixFmt + 4) == gsD3DTextureDescTemplate[1] && *(uint32_t*)((int)lpDDPixFmt + 0xc) == gsD3DTextureDescTemplate[3] && *(uint32_t*)((int)lpDDPixFmt + 0x10) == gsD3DTextureDescTemplate[4] && *(uint32_t*)((int)lpDDPixFmt + 0x14) == gsD3DTextureDescTemplate[5] && *(uint32_t*)((int)lpDDPixFmt + 0x18) == gsD3DTextureDescTemplate[6] && *(uint32_t*)((int)lpDDPixFmt + 0x1c) == gsD3DTextureDescTemplate[7]) {
-      *pnDeviceFlags |= gadwBitMasks[9];
+      *pnDeviceFlags |= Fog::BitBuffer::gadwBitMasks[9];
     }
 
     *pnDeviceFlags |= 0x200;
@@ -511,7 +511,7 @@ void __fastcall UpdateScaleFactor(int nScaleFactor) {
 }
 
 int __fastcall CheckGamma() {
-    return gadwBitMasks[4] & gnD3DTextureCapFlags;
+    return Fog::BitBuffer::gadwBitMasks[4] & gnD3DTextureCapFlags;
 }
 
 BOOL __fastcall EndScene2() {
@@ -1143,7 +1143,7 @@ void __stdcall RENDERER_D3D_AllocateTextureCaches() {
     }
     if (g_bPerspectiveMode) {
       uint32_t uVideoMemBudget;
-      if (gadwBitMasks[6] & gnD3DTextureCapFlags) {
+      if (Fog::BitBuffer::gadwBitMasks[6] & gnD3DTextureCapFlags) {
         gnD3DTextureCacheCount = 0x50;
         gnD3DTextureCacheBlockSize = 0xa0;
       } else {
@@ -1884,9 +1884,9 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
     pDeviceBlock = gD3DDeviceBlock0 + gnDirect3DDeviceCount;
     memset(pDeviceBlock, 0, 0x134);
     if (!lpGUID) {
-      pDeviceBlock->dwFlags |= gadwBitMasks[0];
+      pDeviceBlock->dwFlags |= Fog::BitBuffer::gadwBitMasks[0];
     } else {
-      pDeviceBlock->dwFlags &= gadwInvBitMasks[0];
+      pDeviceBlock->dwFlags &= Fog::BitBuffer::gadwInvBitMasks[0];
       gD3DDeviceBlock0[nEnumDeviceIdx].guid.Data1 = lpGUID->Data1;
       wGuidData3 = lpGUID->Data3;
       gD3DDeviceBlock0[nEnumDeviceIdx].guid.Data2 = lpGUID->Data2;
@@ -1942,27 +1942,27 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
               bSupportsGameDisplayMode = false;
               for (nDisplayModeIndex = 0; nDisplayModeIndex < gD3DDeviceBlock0[nEnumDeviceIdx].nModeCount; nDisplayModeIndex++) {
                 dwModeFlags = *(uint32_t*)(nDeviceNameOffset + (int)((char*)&gD3DDeviceBlock0 + 316) + nDisplayModeIndex * 0x14);
-                if (gadwBitMasks[2] & dwModeFlags) {
+                if (Fog::BitBuffer::gadwBitMasks[2] & dwModeFlags) {
                   bSupports32BitCutscene = true;
                 }
-                if (gadwBitMasks[3] & dwModeFlags) {
+                if (Fog::BitBuffer::gadwBitMasks[3] & dwModeFlags) {
                   bSupportsUIDisplayMode = true;
                 }
-                if (gadwBitMasks[0] & dwModeFlags) {
+                if (Fog::BitBuffer::gadwBitMasks[0] & dwModeFlags) {
                   bHasUIScreenMode = true;
                 }
-                if (gadwBitMasks[1] & dwModeFlags) {
+                if (Fog::BitBuffer::gadwBitMasks[1] & dwModeFlags) {
                   bSupportsGameDisplayMode = true;
                 }
               }
 
               if (bSupports32BitCutscene) {
                 Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tSupports 32 bit cutscenes.");
-                pDeviceBlock->dwFlags |= gadwBitMasks[7];
+                pDeviceBlock->dwFlags |= Fog::BitBuffer::gadwBitMasks[7];
               }
               if (bSupportsUIDisplayMode) {
                 Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tSupports 24 bit cutscenes.");
-                pDeviceBlock->dwFlags |= gadwBitMasks[8];
+                pDeviceBlock->dwFlags |= Fog::BitBuffer::gadwBitMasks[8];
               }
               if (!bHasUIScreenMode) {
                 Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tCouldn\'t find valid display mode for user interface screens.");
@@ -2004,12 +2004,12 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                         goto ReleaseD3DInterfacesCleanup;
                       }
                       if (nDDCapsSize.dwCaps2 & 0x20000) {
-                        pDeviceBlock->dwFlags |= gadwBitMasks[4];
+                        pDeviceBlock->dwFlags |= Fog::BitBuffer::gadwBitMasks[4];
                       } else {
                         Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tDoesn\'t support gamma control.");
                       }
                       if (nDDCapsSize.dwCaps2 & 0x100000) {
-                        pDeviceBlock->dwFlags |= gadwBitMasks[5];
+                        pDeviceBlock->dwFlags |= Fog::BitBuffer::gadwBitMasks[5];
                         Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tSupports gamma calibration.");
                       }
 
@@ -2042,11 +2042,11 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                       }
                       if (sD3DHalDevDesc.dpcTriCaps.dwTextureCaps & 0x20) {
                         Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tRequires square textures!");
-                        pDeviceBlock->dwFlags |= gadwBitMasks[2];
+                        pDeviceBlock->dwFlags |= Fog::BitBuffer::gadwBitMasks[2];
                         goto ReleaseD3DInterfacesCleanup;
                       }
                       if ((uint8_t)sD3DHalDevDesc.dpcTriCaps.dwTextureFilterCaps & 0x20) {
-                        pDeviceBlock->dwFlags |= gadwBitMasks[3];
+                        pDeviceBlock->dwFlags |= Fog::BitBuffer::gadwBitMasks[3];
                       } else {
                         Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tDoesn\'t support mipmapping.");
                       }
@@ -2105,7 +2105,7 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                           if (!(nDDCapsSize.dwCaps2 & 0x200) || !(sD3DHalDevDesc.dwDevCaps & 0x1000)) {
                             Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\t\tDoes not support texturing from AGP memory.");
                           } else {
-                            pDeviceBlock->dwFlags |= gadwBitMasks[1];
+                            pDeviceBlock->dwFlags |= Fog::BitBuffer::gadwBitMasks[1];
                             pdwTotalMemOut = &gD3DDeviceBlock0[nEnumDeviceIdx].dwAgpMemFree;
                             dwMemCapsFlags.dwCaps2 = 0;
                             dwMemCapsFlags.dwCaps3 = 0;
@@ -2134,7 +2134,7 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                           if (hResult) {
                             RENDERER_DIRECT3D_ErrorLog("EnumTextureFormats() failed", hResult);
                           } else {
-                            if (pDeviceBlock->dwFlags & gadwBitMasks[9]) {
+                            if (pDeviceBlock->dwFlags & Fog::BitBuffer::gadwBitMasks[9]) {
                               Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tSupports 1555 textures.");
                               if (!gnDirect3DDeviceCount) {
                                 gdwD3DDeviceFlags[2].dwFlags = pDeviceBlock->dwFlags;
@@ -2345,7 +2345,7 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
       if (nLoadResult) {
         nResult = Storm::Source::SReg::SRegLoadValue(szRegPath, "dwFlags", 0, (int32_t*)&gnD3DTextureCapFlags);
         if (nResult) {
-          if (!(gnD3DTextureCapFlags & gadwBitMasks[0])) {
+          if (!(gnD3DTextureCapFlags & Fog::BitBuffer::gadwBitMasks[0])) {
             pnGuidSize = (uint32_t*)0x10;
             nLoadResult = Storm::Source::SReg::SRegLoadData((uint32_t*)szRegPath, "GUID", 0, (LPBYTE)&gsD3DAdapterGuid, 0x10, &pnGuidSize);
             if (!nLoadResult) {
@@ -3258,7 +3258,7 @@ BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x687);
       exit(-1);
     }
-    if (gnD3DTextureCapFlags & gadwBitMasks[0]) {
+    if (gnD3DTextureCapFlags & Fog::BitBuffer::gadwBitMasks[0]) {
       pD2GFXRenderedDataStrc = pSettings;
       D2GfxRendereInitFunctionsStrc = pHelpers;
       DVar1 = DirectDrawCreate(0, &lpDD, nullptr);
@@ -3775,7 +3775,7 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
           if (dwHResult) {
             DIRECTD3D_LogError("Failed to unlock memory surface", dwHResult);
           }
-          if (gnD3DTextureCapFlags & gadwBitMasks[10]) {
+          if (gnD3DTextureCapFlags & Fog::BitBuffer::gadwBitMasks[10]) {
             RENDERER_D3D_CopySurfacePixels(*(IDirectDrawSurface7**)(iMipLevel + 0x10), pDestSurface_00, pTexInfo->nTexHeight);
           } else {
             (*(dt_df2bbc22*)((char*)*(void**)(uintptr_t)*(int**)(iMipLevel + 0x14) + 20))(*(int**)(iMipLevel + 0x14), lpD3DTexture_00);

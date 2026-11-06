@@ -335,7 +335,7 @@ static uint32_t __stdcall SKILL_ExecuteSelectProc(D2UnitStrc * pUnit, eD2Skills 
     static int g_nSkillSelectProcCount = 0x7; D2_STATIC_GUARD(g_nSkillSelectProcCount, "D2Client::UNIT::CUnit::SKILL_ExecuteSelectProc::g_nSkillSelectProcCount");
 
     uint8_t bySelectProc;
-    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < D2Common::ITEMS::Items::sgptDataTable->nTxtSkillsCount ? D2Common::ITEMS::Items::sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (pSkillsTxt) {
       int nProcResult;
       bySelectProc = pSkillsTxt->SelectProc;
@@ -589,7 +589,7 @@ void __stdcall UpdateObjectAutoLightOnPeriodChange() {
 
     D2UnitStrc* pNextObject;
     D2UnitStrc* pObject;
-    int32_t nPeriodOfDay = D2Common::Environment::DRLGENV_GetPeriodOfDayFromAct(sgpDrlgAct, nullptr);
+    int32_t nPeriodOfDay = D2Common::Environment::DRLGENV_GetPeriodOfDayFromAct(GAME::Game::sgpDrlgAct, nullptr);
     if (nPeriodOfDay == gnCachedPeriodOfDay) {
       return;
     }
@@ -1040,7 +1040,7 @@ uint32_t __fastcall SKILL_IsTargetOwnedPet(D2UnitStrc * pUnit, int * pnSkillPara
     if (pSkill) {
       eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\CUnit.cpp", 0xb4a);
       pSkillsTxt = GAME::SCmd::TXT_Skills_GetLine(eSkillId);
-      if (pSkillsTxt && *((uint8_t*)pSkillsTxt + 0x7) & (uint8_t)gadwBitMasks[1]) {
+      if (pSkillsTxt && *((uint8_t*)pSkillsTxt + 0x7) & (uint8_t)Fog::BitBuffer::gadwBitMasks[1]) {
         bHasPetSkill = true;
       }
     }
@@ -1049,7 +1049,7 @@ uint32_t __fastcall SKILL_IsTargetOwnedPet(D2UnitStrc * pUnit, int * pnSkillPara
     if (pSkill) {
       eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\CUnit.cpp", 0xb55);
       pSkillsTxt = GAME::SCmd::TXT_Skills_GetLine(eSkillId);
-      if (pSkillsTxt && *((uint8_t*)pSkillsTxt + 0x7) & (uint8_t)gadwBitMasks[1]) {
+      if (pSkillsTxt && *((uint8_t*)pSkillsTxt + 0x7) & (uint8_t)Fog::BitBuffer::gadwBitMasks[1]) {
         nOwnerGUID = GAME::RosterPets::GetRosterOwnerGUID(pnSkillParams[3]);
         return (uint32_t)(nOwnerGUID == pUnit->nUnitGUID);
       }
@@ -1080,13 +1080,13 @@ uint32_t __fastcall SKILL_IsTargetAlliedUnit(D2UnitStrc * pUnit, int * pnSkillPa
     D2SkillStrc* pSkill = D2Common::Units::GetLeftSkill(pUnit);
     if (pSkill) {
       eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\CUnit.cpp", 0xb7f);
-      if ((int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkillId && *((uint8_t*)&sgptDataTable->pTxtSkills[eSkillId] + 0x7) & (uint8_t)gadwBitMasks[2]) {
+      if ((int)eSkillId >= 0 && (int)eSkillId < D2Common::ITEMS::Items::sgptDataTable->nTxtSkillsCount && D2Common::ITEMS::Items::sgptDataTable->pTxtSkills + eSkillId && *((uint8_t*)&D2Common::ITEMS::Items::sgptDataTable->pTxtSkills[eSkillId] + 0x7) & (uint8_t)Fog::BitBuffer::gadwBitMasks[2]) {
         bHasAlliedSkill = true;
       }
     }
 
     pSkill = D2Common::Units::GetRightSkill(pUnit);
-    if ((!pSkill || (eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\CUnit.cpp", 0xb88) , (int)eSkillId < 0) || (int)eSkillId >= sgptDataTable->nTxtSkillsCount || !(sgptDataTable->pTxtSkills + eSkillId) || !(*((uint8_t*)&sgptDataTable->pTxtSkills[eSkillId] + 0x7) & (uint8_t)gadwBitMasks[2])) && !bHasAlliedSkill) {
+    if ((!pSkill || (eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\CUnit.cpp", 0xb88) , (int)eSkillId < 0) || (int)eSkillId >= D2Common::ITEMS::Items::sgptDataTable->nTxtSkillsCount || !(D2Common::ITEMS::Items::sgptDataTable->pTxtSkills + eSkillId) || !(*((uint8_t*)&D2Common::ITEMS::Items::sgptDataTable->pTxtSkills[eSkillId] + 0x7) & (uint8_t)Fog::BitBuffer::gadwBitMasks[2])) && !bHasAlliedSkill) {
       return 0;
     }
 
@@ -1355,9 +1355,9 @@ D2RoomStrc * __fastcall FindRoom(int32_t nX, int32_t nY) {
         }
       }
 
-      pRoom = D2Common::DUNGEON::Dungeon::FindRoomBySubtileCoordinates(sgpDrlgAct, nX, nY);
+      pRoom = D2Common::DUNGEON::Dungeon::FindRoomBySubtileCoordinates(GAME::Game::sgpDrlgAct, nX, nY);
       if (!pRoom) {
-        Storm::Source::SSTR::SStrPrintf(szErrorMsg, 0x200, "Unable to find room for unit...  hControlUnit:%8x  hUnitRoom:%8x  ghAct:%8x  nX:%d  nY:%d", (uint32_t)pControlUnit, (uint32_t)pUnitRoom, (uint32_t)sgpDrlgAct, nX, nY);
+        Storm::Source::SSTR::SStrPrintf(szErrorMsg, 0x200, "Unable to find room for unit...  hControlUnit:%8x  hUnitRoom:%8x  ghAct:%8x  nX:%d  nY:%d", (uint32_t)pControlUnit, (uint32_t)pUnitRoom, (uint32_t)GAME::Game::sgpDrlgAct, nX, nY);
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13c);
         exit(-1);
       }
@@ -1429,7 +1429,7 @@ void __fastcall CLIENT_TeleportUnitToPosition(D2UnitStrc * pUnit, int32_t nX, in
         pCurrentRoom = D2Common::Units::UNITS_GetRoom(pUnit);
         if (pCurrentRoom) {
           pSkill = D2Common::Units::GetCurrentSkill(pUnit);
-          if (!pSkill || (pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill) , !pSkillsTxt) || !(*((uint8_t*)pSkillsTxt + 0x8) & (uint8_t)gadwBitMasks[6])) {
+          if (!pSkill || (pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill) , !pSkillsTxt) || !(*((uint8_t*)pSkillsTxt + 0x8) & (uint8_t)Fog::BitBuffer::gadwBitMasks[6])) {
             if (bWarpFade) {
               if (pUnit->eUnitType != UNIT_PLAYER) {
                 Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x17d);
@@ -1612,7 +1612,7 @@ static void FreeAny(D2UnitStrc * pUnit) {
         Missile::MISSILE_FreeClientMissile(pUnit);
       break;
       case UNIT_WARP:
-        if (sgpDrlgAct) {
+        if (GAME::Game::sgpDrlgAct) {
           D2Common::Unit::RemoveUnitFromRoom(pUnit);
         }
       D2Common::Units::FreeStaticPath(pUnit);
@@ -1979,7 +1979,7 @@ static D2UnitStrc * __stdcall InitCommonData(D2UnitStrc * pUnit, int32_t nUnitGU
       eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
       eActNo = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
       pUnit->nAct = eActNo;
-      pUnit->pDrlgAct = sgpDrlgAct;
+      pUnit->pDrlgAct = GAME::Game::sgpDrlgAct;
     }
 
     D2Common::Seed::SEED_InitDefault(&pUnit->sSeed);
@@ -2079,7 +2079,7 @@ D2UnitStrc * __fastcall UNIT_CreatePlayer(int32_t nUnitGuid, int32_t nClassId, i
       eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
       eActNo = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
       pUnit->nAct = eActNo;
-      pUnit->pDrlgAct = sgpDrlgAct;
+      pUnit->pDrlgAct = GAME::Game::sgpDrlgAct;
     }
 
     D2Common::Seed::SEED_InitDefault(&pUnit->sSeed);
@@ -2152,17 +2152,17 @@ D2UnitStrc * __fastcall UNIT_CreateMonster(D2CreateMonsterUnitStrc * pCreateData
     }
 
     int iVar1 = pCreateData->nMonstatId;
-    if (!(iVar1 >= 0 && iVar1 < sgptDataTable->nTxtMonStatsSize)) {
+    if (!(iVar1 >= 0 && iVar1 < D2Common::ITEMS::Items::sgptDataTable->nTxtMonStatsSize)) {
       return nullptr;
     }
 
-    D2MonStatsTxt* pDVar2 = sgptDataTable->pTxtMonStats + iVar1;
+    D2MonStatsTxt* pDVar2 = D2Common::ITEMS::Items::sgptDataTable->pTxtMonStats + iVar1;
     int nMonStatsExId = (int)pDVar2->MonStatsEx;
-    if (!(nMonStatsExId >= 0 && nMonStatsExId < sgptDataTable->nTxtMonStatsExSize)) {
+    if (!(nMonStatsExId >= 0 && nMonStatsExId < D2Common::ITEMS::Items::sgptDataTable->nTxtMonStatsExSize)) {
       return nullptr;
     }
 
-    D2MonStats2Txt* pMonStats2Diff = sgptDataTable->pTxtMonStatsEx;
+    D2MonStats2Txt* pMonStats2Diff = D2Common::ITEMS::Items::sgptDataTable->pTxtMonStatsEx;
     if (!(pMonStats2Diff + nMonStatsExId && pDVar2)) {
       return nullptr;
     }
@@ -2238,10 +2238,10 @@ D2UnitStrc * __fastcall UNIT_CreateMonster(D2CreateMonsterUnitStrc * pCreateData
         nPalShiftIdx = GAME::PalShift::PALSHIFT_GenerateShiftDuration(pUnit, (uint16_t)nNameSeed);
       }
     }
-    if (iVar1 < sgptDataTable->nTxtMonStatsSize) {
-      iVar1 = (int)sgptDataTable->pTxtMonStats[iVar1].MonStatsEx;
-      if (iVar1 >= 0 && iVar1 < sgptDataTable->nTxtMonStatsExSize) {
-        pMonStats2Diff = sgptDataTable->pTxtMonStatsEx + iVar1;
+    if (iVar1 < D2Common::ITEMS::Items::sgptDataTable->nTxtMonStatsSize) {
+      iVar1 = (int)D2Common::ITEMS::Items::sgptDataTable->pTxtMonStats[iVar1].MonStatsEx;
+      if (iVar1 >= 0 && iVar1 < D2Common::ITEMS::Items::sgptDataTable->nTxtMonStatsExSize) {
+        pMonStats2Diff = D2Common::ITEMS::Items::sgptDataTable->pTxtMonStatsEx + iVar1;
         if (pMonStats2Diff) {
           byDifficulty = GAME::Game::GetDificulity();
           if (pMonStats2Diff->byUtrans[byDifficulty]) {
@@ -2394,7 +2394,7 @@ uint32_t __fastcall HitTestScreen(D2UnitStrc * pUnit, int32_t nClickX, int32_t n
             if (nResult >= VPRES_GetWideUiOffsetX() + 400 && nResult < VPRES_GetWideUiOffsetX() + 800) {
               return 0;
             }
-          } else if (nResult >= ScreenSizeX / 2) {
+          } else if (nResult >= UI::ui::ScreenSizeX / 2) {
             return 0;
           }
 
@@ -2406,7 +2406,7 @@ uint32_t __fastcall HitTestScreen(D2UnitStrc * pUnit, int32_t nClickX, int32_t n
             if (nResult >= VPRES_GetWideUiOffsetX() && nResult < VPRES_GetWideUiOffsetX() + 400) {
               return 0;
             }
-          } else if (nResult < ScreenSizeX / 2) {
+          } else if (nResult < UI::ui::ScreenSizeX / 2) {
             return 0;
           }
 
@@ -2498,7 +2498,7 @@ uint32_t __fastcall HitTestScreen(D2UnitStrc * pUnit, int32_t nClickX, int32_t n
         goto check_gfx_bounds;
       case UNIT_MONSTER:
         pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassId);
-      if (*((uint8_t*)pMonStats2 + 0x4) & (uint8_t)gadwBitMasks[0]) {
+      if (*((uint8_t*)pMonStats2 + 0x4) & (uint8_t)Fog::BitBuffer::gadwBitMasks[0]) {
         rcBounds.left = pMonStats2->nHtLeft + nScreenX;
         rcBounds.right = pMonStats2->nHtWidth + rcBounds.left;
         rcBounds.top = pMonStats2->nHtTop + nOriginY;

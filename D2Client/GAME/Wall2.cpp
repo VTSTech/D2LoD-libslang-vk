@@ -20,7 +20,7 @@
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/UNIT/PlrSkills.h"
 #include "D2Client/UNIT/UnitSnd.h"
-#include "globals/globals.h" // [R118] ScreenSizeX — wide-view room-walk reach
+#include "globals/globals.h" // [R118] UI::ui::ScreenSizeX — wide-view room-walk reach
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
 #include "D2Common/D2RoomCoordListStrc.h"
@@ -370,7 +370,7 @@ void __fastcall DRAW_WORLD_Unit(D2UnitStrc * pUnit, uint32_t nGamma, uint32_t nD
 }
 
 void __stdcall WALL2_ResetAmbientSound() {
-    if (D2IniData_client->bNOSOUND) {
+    if (ClientModeInGame::D2IniData_client->bNOSOUND) {
       return;
     }
 
@@ -898,7 +898,7 @@ static void __stdcall WALL2_AddLowerWallTile(D2Wall2DrawListStrc * pDrawList, D2
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &roomCoords);
     pDVar1->nX = (roomCoords.dwXStart + pTileData->nPosX * 5) * 8;
     pDVar1->nY = (roomCoords.dwYStart + pTileData->nPosY * 5) * 8;
-    pDrawList->dwWall2PassMask |= gadwBitMasks[0];
+    pDrawList->dwWall2PassMask |= Fog::BitBuffer::gadwBitMasks[0];
     pLastNode = pWall2Cell->pUnderFloorList;
     if (!pLastNode) {
       pWall2Cell->pUnderFloorList = pDVar1;
@@ -956,7 +956,7 @@ static void __stdcall WALL2_AddRoofTile(D2Wall2DrawListStrc * pDrawList, D2Wall2
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &roomCoords);
     pDVar1->nX = (roomCoords.dwXStart + pTileData->nPosX * 5) * 8;
     pDVar1->nY = (roomCoords.dwYStart + pTileData->nPosY * 5) * 8;
-    pDrawList->dwWall2PassMask |= gadwBitMasks[1];
+    pDrawList->dwWall2PassMask |= Fog::BitBuffer::gadwBitMasks[1];
     pDVar2 = pWall2Cell->pRoofPassList;
     if (!pDVar2) {
       pWall2Cell->pRoofPassList = pDVar1;
@@ -1004,7 +1004,7 @@ static void __stdcall WALL2_AddShadowPassTile(D2Wall2CellStrc * pWall2Cell, D2Ro
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &roomCoords);
     pDVar1->nX = (roomCoords.dwXStart + pTileData->nPosX * 5) * 8;
     pDVar1->nY = (roomCoords.dwYStart + pTileData->nPosY * 5) * 8;
-    pDrawList->dwWall2PassMask |= gadwBitMasks[3];
+    pDrawList->dwWall2PassMask |= Fog::BitBuffer::gadwBitMasks[3];
     pCurNode = pWall2Cell->pShadowPassList;
     if (!pCurNode) {
       pWall2Cell->pShadowPassList = pDVar1;
@@ -1053,7 +1053,7 @@ static void __stdcall WALL2_InsertUnitDraw(D2Wall2CellStrc * pWall2Cell, D2UnitS
     }
 
     pDVar1->nY = nUnitPos * 8;
-    pDrawList->dwWall2PassMask |= gadwBitMasks[3];
+    pDrawList->dwWall2PassMask |= Fog::BitBuffer::gadwBitMasks[3];
     pDVar2 = pWall2Cell->pShadowPassList;
     if (!pWall2Cell->pShadowPassList) {
       pWall2Cell->pShadowPassList = pDVar1;
@@ -1106,7 +1106,7 @@ static void __stdcall WALL2_InsertUnitShadowDraw(D2Wall2CellStrc * pWall2Cell, D
     }
 
     pDVar1->nY = nUnitPos * 8;
-    pDrawList->dwWall2PassMask |= gadwBitMasks[3];
+    pDrawList->dwWall2PassMask |= Fog::BitBuffer::gadwBitMasks[3];
     pDVar2 = pWall2Cell->pShadowPassList;
     if (!pDVar2) {
       pWall2Cell->pShadowPassList = pDVar1;
@@ -1471,7 +1471,7 @@ void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nT
         D2RoomStrc* apWideRooms[256];
         int nWideRooms = WALL2_CollectRoomsBeyondAdjacency(pGameViewLocal.pRoom, 4, // [R121] 3->4: the hop-4 diagonal room
             UNIT_CenterXCoordsDiv5 * 5, UNIT_CenterYCoordsDiv5 * 5,
-            ScreenSizeX * 5 / 32 + ScreenSizeY * 5 / 16 + 450, // [R119] game coords - was 5x-short subtile scaling
+            UI::ui::ScreenSizeX * 5 / 32 + UI::Inv::ScreenSizeY * 5 / 16 + 450, // [R119] game coords - was 5x-short subtile scaling
             apWideRooms, 256);
         int nWideIdx = 0;
         while (nWideIdx < nWideRooms) {
