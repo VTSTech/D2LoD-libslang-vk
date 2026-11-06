@@ -1,0 +1,791 @@
+{
+  "source": "Redivivus, https://github.com/jaenster/redivivus (MIT, the Redivivus contributors)",
+  "version": 2,
+  "file": "Source/D2Common/Drlg/DrlgGrid.cpp",
+  "functions": [
+    {
+      "name": "ResetGrid_Unref_0040f570",
+      "address": "0040f570",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0040f570"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_0040f570"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_00416810",
+      "address": "00416810",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00416810"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_00416810"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_00416890",
+      "address": "00416890",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00416890"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_00416890"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_004168b0",
+      "address": "004168b0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "004168b0"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_004168b0"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_00416960",
+      "address": "00416960",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00416960"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_00416960"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_004169a0",
+      "address": "004169a0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "004169a0"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_004169a0"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_0041c390",
+      "address": "0041c390",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0041c390"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_0041c390"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_004203e0",
+      "address": "004203e0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "004203e0"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_004203e0"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_0044be20",
+      "address": "0044be20",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0044be20"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_0044be20"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_0044de50",
+      "address": "0044de50",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0044de50"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_0044de50"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_0044dee0",
+      "address": "0044dee0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0044dee0"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_0044dee0"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_0045ba70",
+      "address": "0045ba70",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0045ba70"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_0045ba70"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_00601bb0",
+      "address": "00601bb0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00601bb0"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_00601bb0"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_00601d20",
+      "address": "00601d20",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00601d20"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_00601d20"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_00601db0",
+      "address": "00601db0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00601db0"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_00601db0"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_0060e290",
+      "address": "0060e290",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0060e290"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_0060e290"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "DRLGGRID_FloodFillGridCoords",
+      "address": "0066c3d0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0066c3d0"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "DRLGGRID_FloodFillGridCoords",
+        "DRLGCOORDS_IsPointInside",
+        "GetGridFlags",
+        "AlterGridFlag",
+        "DRLGGRID_IsGridValid"
+      ],
+      "usedTypes": [
+        "D2DrlgCoordsStrc",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "OverwriteFlag",
+      "address": "0067c420",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c420"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "OverwriteFlag"
+      ],
+      "usedTypes": [
+        "int32_t"
+      ]
+    },
+    {
+      "name": "OrFlag",
+      "address": "0067c430",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c430"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "OrFlag"
+      ],
+      "usedTypes": [
+        "int32_t"
+      ]
+    },
+    {
+      "name": "AndFlag",
+      "address": "0067c440",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c440"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "AndFlag"
+      ],
+      "usedTypes": [
+        "int32_t"
+      ]
+    },
+    {
+      "name": "XorFlag",
+      "address": "0067c450",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c450"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "XorFlag"
+      ],
+      "usedTypes": [
+        "int32_t"
+      ]
+    },
+    {
+      "name": "OverwriteFlagIfZero",
+      "address": "0067c460",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c460"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "OverwriteFlagIfZero"
+      ],
+      "usedTypes": [
+        "int32_t"
+      ]
+    },
+    {
+      "name": "AndNegatedFlag",
+      "address": "0067c470",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c470"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "AndNegatedFlag"
+      ],
+      "usedTypes": [
+        "int32_t"
+      ]
+    },
+    {
+      "name": "DRLGGRID_IsGridValid",
+      "address": "0067c480",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c480"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "DRLGGRID_IsGridValid"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "IsPointInsideGridArea",
+      "address": "0067c4a0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c4a0"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "IsPointInsideGridArea"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc",
+        "int32_t"
+      ]
+    },
+    {
+      "name": "DRLGGRID_GetCellAddress",
+      "address": "0067c4d0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c4d0"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "DRLGGRID_GetCellAddress"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc",
+        "eD2GridCellFlags"
+      ]
+    },
+    {
+      "name": "AlterGridFlag",
+      "address": "0067c4f0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c4f0"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "AlterGridFlag"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc",
+        "int32_t"
+      ]
+    },
+    {
+      "name": "DRLGGRID_ApplyFlagOperation",
+      "address": "0067c520",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c520"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "DRLGGRID_ApplyFlagOperation"
+      ],
+      "usedTypes": [
+        "D2DrlgCoordStrc",
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "GetOffset",
+      "address": "0067c550",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c550"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "GetOffset"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc",
+        "int32_t",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "GetGridFlags",
+      "address": "0067c570",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c570"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "GetGridFlags"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "AlterAllGridFlags",
+      "address": "0067c590",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c590"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "AlterAllGridFlags"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc",
+        "eD2GridCellFlags",
+        "int32_t"
+      ]
+    },
+    {
+      "name": "FlagOperations",
+      "address": "0067c600",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c600"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "FlagOperations"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc",
+        "eD2GridCellFlags",
+        "int32_t"
+      ]
+    },
+    {
+      "name": "DRLGGRID_ApplyFlagToBorderCells",
+      "address": "0067c6d0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c6d0"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "DRLGGRID_ApplyFlagToBorderCells"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc",
+        "eD2GridCellFlags"
+      ]
+    },
+    {
+      "name": "DRLGGRID_SetEdgeGridFlags",
+      "address": "0067c760",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c760"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "DRLGGRID_SetEdgeGridFlags"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc",
+        "D2DrlgVertexStrc"
+      ]
+    },
+    {
+      "name": "DRLGGRID_SetLineFlagsWithWidth",
+      "address": "0067c8e0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067c8e0"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "DRLGGRID_SetLineFlagsWithWidth",
+        "AreXYInsideCoordinates"
+      ],
+      "usedTypes": [
+        "D2DrlgCoordsStrc",
+        "D2DrlgGridStrc",
+        "D2DrlgVertexStrc"
+      ]
+    },
+    {
+      "name": "Unreferenced_0067cb60",
+      "address": "0067cb60",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067cb60"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "Unreferenced_0067cb60",
+        "memcpy"
+      ]
+    },
+    {
+      "name": "DRLGGRID_InitGridCells",
+      "address": "0067cb80",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067cb80"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "DRLGGRID_InitGridCells",
+        "AllocServerMemory",
+        "memset"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc",
+        "D2PoolManagerStrc",
+        "int32_t"
+      ]
+    },
+    {
+      "name": "FillGrid",
+      "address": "0067cbf0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067cbf0"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "FillGrid",
+        "memset"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc",
+        "int32_t"
+      ]
+    },
+    {
+      "name": "DRLGGRID_AllocGrid",
+      "address": "0067cc60",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067cc60"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "DRLGGRID_AllocGrid",
+        "AllocServerMemory"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc",
+        "D2PoolManagerStrc",
+        "eD2GridCellFlags"
+      ]
+    },
+    {
+      "name": "DRLGGRID_InitGridFromTileData",
+      "address": "0067ccc0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067ccc0"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "DRLGGRID_InitGridFromTileData",
+        "AllocServerMemory"
+      ],
+      "usedTypes": [
+        "D2DrlgCoordStrc",
+        "D2DrlgGridStrc",
+        "D2PoolManagerStrc",
+        "eD2GridCellFlags"
+      ]
+    },
+    {
+      "name": "FillExternalCellFlags",
+      "address": "0067cd30",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067cd30"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "FillExternalCellFlags"
+      ],
+      "usedTypes": [
+        "D2DrlgCoordStrc",
+        "D2DrlgGridStrc",
+        "D2DrlgMapStrc",
+        "int32_t"
+      ]
+    },
+    {
+      "name": "DRLGGRID_FreeGrid",
+      "address": "0067cd90",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067cd90"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "DRLGGRID_FreeGrid",
+        "FreeServerMemory"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc",
+        "D2PoolManagerStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid",
+      "address": "0067cdc0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0067cdc0"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    },
+    {
+      "name": "ResetGrid_Unref_006c4030",
+      "address": "006c4030",
+      "lines": [
+        {
+          "line": 1,
+          "address": "006c4030"
+        }
+      ],
+      "namespace": "D2Common::Drlg::DrlgGrid",
+      "calledFunctions": [
+        "ResetGrid_Unref_006c4030"
+      ],
+      "usedTypes": [
+        "D2DrlgGridStrc"
+      ]
+    }
+  ]
+}

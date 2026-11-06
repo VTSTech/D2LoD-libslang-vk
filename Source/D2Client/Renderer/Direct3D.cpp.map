@@ -1,0 +1,54 @@
+{
+  "source": "Redivivus, https://github.com/jaenster/redivivus (MIT, the Redivivus contributors)",
+  "version": 2,
+  "file": "Source/D2Client/Renderer/Direct3D.cpp",
+  "functions": [
+    {
+      "name": "RENDERER_D3D_CopyPixelsWithStride",
+      "address": "006b1d80",
+      "lines": [
+        {
+          "line": 1,
+          "address": "006b1d80"
+        }
+      ],
+      "namespace": "D2Client::Renderer::Direct3D",
+      "calledFunctions": [
+        "RENDERER_D3D_CopyPixelsWithStride",
+        "memcpy"
+      ]
+    },
+    {
+      "name": "RENDERER_D3D_ConvertPalettedTo32Bit",
+      "address": "006b1e30",
+      "lines": [
+        {
+          "line": 1,
+          "address": "006b1e30"
+        }
+      ],
+      "namespace": "D2Client::Renderer::Direct3D",
+      "calledFunctions": [
+        "RENDERER_D3D_ConvertPalettedTo32Bit"
+      ],
+      "usedTypes": [
+        "uint32_t",
+        "uint8_t"
+      ]
+    },
+    {
+      "name": "RENDERER_D3D_CloseRegistryKey",
+      "address": "006b2f40",
+      "lines": [
+        {
+          "line": 1,
+          "address": "006b2f40"
+        }
+      ],
+      "namespace": "D2Client::Renderer::Direct3D",
+      "calledFunctions": [
+        "RENDERER_D3D_CloseRegistryKey"
+      ]
+    }
+  ]
+}

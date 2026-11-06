@@ -32,7 +32,7 @@ asm_matching/msvc8/oracle diff DRLGENV_UpdateLightIntensity
 After editing one source file:
 
 ```sh
-asm_matching/msvc8/oracle build D2Common/Environment   # recompiles what the edit touched
+asm_matching/msvc8/oracle build Source/D2Common/Environment   # recompiles what the edit touched
 asm_matching/msvc8/oracle diff DRLGENV_UpdateLightIntensity
 ```
 
@@ -114,13 +114,13 @@ edited for it. Instead `oracle build`:
    structs had none), where it is only list-initialised its braced
    initialisers become constructor calls. The docstring is the full list.
    `FILE_PATCHES` holds the few edits tied to one file, all in
-   `d2_platform.h`'s toolchain glue; each anchor must match exactly once, so a
+   `Source/D2Headers/d2_platform.h`'s toolchain glue; each anchor must match exactly once, so a
    regenerated header fails loudly rather than compiling unpatched.
 2. **Forces in** `vc8_compat.h` (nullptr, constexpr, static_assert and the like
    as macros) ahead of `d2_platform.h`, and puts `shim_include/` first on the
    include path (`<cstdint>` for a compiler without one; a hook that runs
    right after the Windows headers; and the oracle's own
-   `support/d2_trace.h`, in which the tree's hand-added tracing calls compile
+   `Redivivus/d2_trace.h`, in which the tree's hand-added tracing calls compile
    to nothing - the original has none).
 3. **Compiles** each TU to `build/obj/<path>.obj`, four at a time,
    incrementally (by content: the compile cache above, header dependencies
@@ -143,8 +143,10 @@ edited for it. Instead `oracle build`:
    wineserver, before any compile is captured (otherwise the first compile's
    pipes stay open until the services exit, and it waits for the whole build).
 
-`support/`, `thirdparty/` and the tooling directories are not reconstruction
-and are not compiled. `globals/*.cpp` hold data only, no function, and are
+`Redivivus/` (but for the generated `ghidra_version.cpp`), `3rdparty/libbacktrace/`,
+`3rdparty/implibs/` and the tooling directories are not reconstruction and are
+not compiled; only the headers of `Redivivus/` are translated, since the tree
+includes them. `Source/globals/*.cpp` hold data only, no function, and are
 skipped unless `build.py --with-data` asks for them.
 
 ## Which original function is which
@@ -186,6 +188,22 @@ call where the epilogue lands. Calls into the statically linked CRT are known on
 If the generator's `.cpp.map` source maps (gitignored in this repo) are
 present next to the sources, the `sourcemap` tier reads them and everything
 else only fills gaps; the other tiers need nothing but the tree and the image.
+
+Our side is the functions the link keeps, not every function of every object
+(`ours.link_kept`). An external COMDAT that several objects define - an inline
+function of a header, a template instantiation, all `selectany` - is the copy
+of the first object in link order, as link.exe keeps the first definition it
+reads and discards the rest; the original's one copy came about the same way.
+Link order is `recon/runs/build-vc8.sh`'s: the TU paths through `sort(1)`
+(`ours.link_order`, the same collation). The copies are not interchangeable,
+since a directory can compile with other flags (`/GS-`, `/O1`), so it is that
+copy that is paired and judged, and the discarded ones are neither paired nor
+listed as unmapped. A map entry whose own TU's object holds no kept copy - the
+generator's `inline-host` functions, defined in a `<unit>.inline.h` (the
+entry's `definedIn`) and emitted only into the objects that call them - is
+found among all objects' external functions by its qualified name, or by its
+bare name where our qualifier is a prefix of the map's namespace, if that
+names one function; the row's `tu` is then the object the copy came from.
 
 Two checks keep the map honest. Functions paired by order-blind evidence
 (strings, imports, calls, refs) should also fall in address order within their
@@ -340,7 +358,7 @@ generator writes `gaTable_3__0_`) is an `interior` row: its bytes are its
 container's, so it is judged (is ours laid out inside the container, or an object
 of its own?) but kept out of the byte totals.
 
-Our side is the objects: `build/obj` and the `globals/` objects the whole-image
+Our side is the objects: `build/obj` and the `Source/globals/` objects the whole-image
 build compiles into `build-exe/obj/globals` with the same command line. A symbol
 pairs with an item by name (narrowed by an address the name carries, the owner
 function of a static local, or the namespace), else by the address
@@ -410,7 +428,7 @@ refused.
 
 A precompiled header (default; `ORACLE_PCH=0` turns it off) covers the
 prefix every TU parses (`d2_platform.h`, the Windows headers,
-`globals/globals.h`), which is most of each compile. `scripts/objdiff.py`
+`Source/globals/globals.h`), which is most of each compile. `scripts/objdiff.py`
 compares two builds function by function. A PCH build comes out identical to
 a plain one but for the rare function whose code depends on the *symbol
 phase*: VC8 breaks some ties by the numbers it gives symbols in declaration
@@ -425,8 +443,8 @@ regression.
 The inner loop for an edit to the tree:
 
 ```sh
-asm_matching/msvc8/oracle build D2Common/Units       # recompile what the edit touched
-asm_matching/msvc8/scripts/check.py D2Common/Units   # re-judge those functions against evidence/audit.tsv
+asm_matching/msvc8/oracle build Source/D2Common/Units       # recompile what the edit touched
+asm_matching/msvc8/scripts/check.py Source/D2Common/Units   # re-judge those functions against evidence/audit.tsv
 asm_matching/msvc8/oracle diff InitRightSkill        # what still differs, with the source lines it comes from
 ```
 
@@ -441,7 +459,7 @@ A hypothesis about the source - "was it `x >= 0`?", "was this an assertion?"
 - is tested on the bench before it touches the tree:
 
 ```sh
-cp asm_matching/msvc8/build/src/Fog/Src/AsyncData.cpp asm_matching/msvc8/build/scratch/try.cpp   # edit it
+cp asm_matching/msvc8/build/src/Source/Fog/Src/AsyncData.cpp asm_matching/msvc8/build/scratch/try.cpp   # edit it
 asm_matching/msvc8/scripts/snippet.py asm_matching/msvc8/build/scratch/try.cpp --func ASYNCDATA_GetReadSize
 ```
 

@@ -1,0 +1,63 @@
+{
+  "source": "Redivivus, https://github.com/jaenster/redivivus (MIT, the Redivivus contributors)",
+  "version": 2,
+  "file": "Source/D2Common/Chat/stpl_MappingEntryNode.cpp",
+  "functions": [
+    {
+      "name": "OperatorIndex",
+      "address": "0060e110",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0060e110"
+        }
+      ],
+      "namespace": "TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>",
+      "calledFunctions": [
+        "OperatorIndex"
+      ],
+      "usedTypes": [
+        "TSExplicitList<MappingEntryNode, -572662307>",
+        "TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "NextLink",
+      "address": "0060e1c0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0060e1c0"
+        }
+      ],
+      "namespace": "TSLink<MappingEntryNode>",
+      "calledFunctions": [
+        "NextLink"
+      ],
+      "usedTypes": [
+        "TSLink<MappingEntryNode>",
+        "int32_t",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "ComputeSlot",
+      "address": "0060e210",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0060e210"
+        }
+      ],
+      "namespace": "TSHashTable<MappingEntryNode, HASHKEY_STRI>",
+      "calledFunctions": [
+        "ComputeSlot"
+      ],
+      "usedTypes": [
+        "TSHashTable<MappingEntryNode, HASHKEY_STRI>",
+        "uint32_t"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,405 @@
+{
+  "source": "Redivivus, https://github.com/jaenster/redivivus (MIT, the Redivivus contributors)",
+  "version": 2,
+  "file": "Source/Fog/Engine/Application.cpp",
+  "functions": [
+    {
+      "name": "DEBUG_CaptureThreadContext",
+      "address": "00404660",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00404660"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_CaptureThreadContext"
+      ],
+      "usedTypes": [
+        "LPCONTEXT",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "Unreferenced_004046d0",
+      "address": "004046d0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "004046d0"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "Unreferenced_004046d0"
+      ]
+    },
+    {
+      "name": "DEBUG_GetPEImageType",
+      "address": "00404730",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00404730"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_GetPEImageType"
+      ],
+      "usedTypes": [
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "DEBUG_ParsePEDebugDirectory",
+      "address": "004047d0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "004047d0"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_ParsePEDebugDirectory"
+      ],
+      "usedTypes": [
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "DEBUG_IsValidDebugDirectorySize",
+      "address": "00404850",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00404850"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_IsValidDebugDirectorySize"
+      ],
+      "usedTypes": [
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "DEBUG_ParseDebugInfoFromMemory",
+      "address": "004048c0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "004048c0"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_ParseDebugInfoFromMemory",
+        "DEBUG_ParseNB01DebugInfo",
+        "DEBUG_ParseRSDSDebugInfo"
+      ],
+      "usedTypes": [
+        "D2FogDebugModuleEntryStrc",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "DEBUG_ParseDebugDataDirectory",
+      "address": "00404900",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00404900"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_ParseDebugDataDirectory",
+        "DEBUG_ParseNB01DebugInfo",
+        "DEBUG_ParseRSDSDebugInfo"
+      ],
+      "usedTypes": [
+        "D2FogDebugModuleEntryStrc",
+        "int32_t",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "DEBUG_ParseModuleHeaders",
+      "address": "004049a0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "004049a0"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_ParseModuleHeaders",
+        "DEBUG_GetPEImageType",
+        "DEBUG_ParsePEDebugDirectory",
+        "DEBUG_ParseDebugDataDirectory"
+      ],
+      "usedTypes": [
+        "short *",
+        "uint32_t",
+        "uint8_t"
+      ]
+    },
+    {
+      "name": "DEBUG_AddModuleToList",
+      "address": "00404ab0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00404ab0"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_AddModuleToList",
+        "strrchr",
+        "DEBUG_ParseModuleHeaders",
+        "__security_check_cookie"
+      ],
+      "usedTypes": [
+        "D2DebugModuleInfo",
+        "int32_t",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "DEBUG_EnumerateModulesViaPsapi",
+      "address": "00404c60",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00404c60"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_EnumerateModulesViaPsapi",
+        "DEBUG_AddModuleToList",
+        "__security_check_cookie"
+      ],
+      "usedTypes": [
+        "WCHAR",
+        "pfnEnumProcessModules",
+        "pfnGetModuleBaseNameW",
+        "pfnGetModuleInformation",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "DEBUG_EnumerateModulesViaToolhelp32",
+      "address": "00404dc0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00404dc0"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_EnumerateModulesViaToolhelp32",
+        "DEBUG_AddModuleToList",
+        "__security_check_cookie"
+      ],
+      "usedTypes": [
+        "MODULEENTRY32W"
+      ]
+    },
+    {
+      "name": "DEBUG_EnumerateModulesViaPEB",
+      "address": "00404e60",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00404e60"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_EnumerateModulesViaPEB",
+        "DEBUG_AddModuleToList"
+      ],
+      "usedTypes": [
+        "EH4_EXCEPTION_REGISTRATION"
+      ]
+    },
+    {
+      "name": "DEBUG_EnumerateModules",
+      "address": "00404f20",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00404f20"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_EnumerateModules",
+        "DEBUG_EnumerateModulesViaPsapi",
+        "DEBUG_EnumerateModulesViaToolhelp32",
+        "DEBUG_EnumerateModulesViaPEB"
+      ]
+    },
+    {
+      "name": "DEBUG_ExtractDebugDirectory64",
+      "address": "00404f40",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00404f40"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_ExtractDebugDirectory64"
+      ],
+      "usedTypes": [
+        "int32_t",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "DEBUG_ExtractDebugDirectory32",
+      "address": "00404f60",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00404f60"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_ExtractDebugDirectory32"
+      ],
+      "usedTypes": [
+        "IMAGE_OPTIONAL_HEADER32",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "DEBUG_ParseNB01DebugInfo",
+      "address": "00404f80",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00404f80"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_ParseNB01DebugInfo",
+        "strncpy_s"
+      ],
+      "usedTypes": [
+        "D2FogDebugModuleEntryStrc",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "DEBUG_ParseRSDSDebugInfo",
+      "address": "00404ff0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00404ff0"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_ParseRSDSDebugInfo",
+        "strncpy_s"
+      ],
+      "usedTypes": [
+        "D2FogDebugModuleEntryStrc",
+        "uint8_t"
+      ]
+    },
+    {
+      "name": "DEBUG_UnwindStackFrames",
+      "address": "00405060",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00405060"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_UnwindStackFrames",
+        "SYSTEM_CaptureThreadContext",
+        "__security_check_cookie"
+      ],
+      "usedTypes": [
+        "CONTEXT",
+        "D2CrashFrameStrc",
+        "EH4_EXCEPTION_REGISTRATION",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "DEBUG_FormatAddressInfo",
+      "address": "00405250",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00405250"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "DEBUG_FormatAddressInfo",
+        "GetModuleInfoForAddress",
+        "strrchr",
+        "strncpy_s",
+        "GetSymbolNameForAddress",
+        "GetSourceLineForAddress",
+        "__security_check_cookie"
+      ],
+      "usedTypes": [
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "Unreferenced_004067c0",
+      "address": "004067c0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "004067c0"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "Unreferenced_004067c0",
+        "SFileSetBasePath"
+      ]
+    },
+    {
+      "name": "PATH_GetKnownFolderPath",
+      "address": "004067d0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "004067d0"
+        }
+      ],
+      "namespace": "Fog::Engine::Application",
+      "calledFunctions": [
+        "PATH_GetKnownFolderPath"
+      ],
+      "usedTypes": [
+        "int32_t",
+        "pfnSHGetKnownFolderPath",
+        "uint32_t"
+      ]
+    }
+  ]
+}

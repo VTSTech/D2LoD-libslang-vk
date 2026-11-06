@@ -1,0 +1,124 @@
+{
+  "source": "Redivivus, https://github.com/jaenster/redivivus (MIT, the Redivivus contributors)",
+  "version": 2,
+  "file": "Source/Bnclient/Debug.cpp",
+  "functions": [
+    {
+      "name": "DEBUG_Trace_Unref_00515ec0",
+      "address": "00515ec0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00515ec0"
+        }
+      ],
+      "namespace": "Bnclient::Debug",
+      "calledFunctions": [
+        "DEBUG_Trace_Unref_00515ec0"
+      ]
+    },
+    {
+      "name": "DEBUG_Trace_Unref_00515ed0",
+      "address": "00515ed0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00515ed0"
+        }
+      ],
+      "namespace": "Bnclient::Debug",
+      "calledFunctions": [
+        "DEBUG_Trace_Unref_00515ed0"
+      ]
+    },
+    {
+      "name": "DEBUG_LogFormattedMessage",
+      "address": "00518ba0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00518ba0"
+        }
+      ],
+      "namespace": "Bnclient::Debug",
+      "calledFunctions": [
+        "DEBUG_LogFormattedMessage",
+        "SLogWrite"
+      ]
+    },
+    {
+      "name": "DEBUG_SetLoggingFlag",
+      "address": "00518bc0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00518bc0"
+        }
+      ],
+      "namespace": "Bnclient::Debug",
+      "calledFunctions": [
+        "DEBUG_SetLoggingFlag"
+      ]
+    },
+    {
+      "name": "DEBUG_GetTime32",
+      "address": "0051a470",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0051a470"
+        }
+      ],
+      "namespace": "Bnclient::Debug",
+      "calledFunctions": [
+        "_time32",
+        "DEBUG_GetTime32"
+      ],
+      "usedTypes": [
+        "__time32_t"
+      ]
+    },
+    {
+      "name": "DEBUG_Trace",
+      "address": "0051a480",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0051a480"
+        }
+      ],
+      "namespace": "Bnclient::Debug",
+      "calledFunctions": [
+        "DEBUG_Trace"
+      ]
+    },
+    {
+      "name": "DEBUG_Trace_Unref_0051d2d0",
+      "address": "0051d2d0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0051d2d0"
+        }
+      ],
+      "namespace": "Bnclient::Debug",
+      "calledFunctions": [
+        "DEBUG_Trace_Unref_0051d2d0"
+      ]
+    },
+    {
+      "name": "DEBUG_Trace_Unref_0051d2e0",
+      "address": "0051d2e0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0051d2e0"
+        }
+      ],
+      "namespace": "Bnclient::Debug",
+      "calledFunctions": [
+        "DEBUG_Trace_Unref_0051d2e0"
+      ]
+    }
+  ]
+}

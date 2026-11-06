@@ -1,0 +1,380 @@
+{
+  "source": "Redivivus, https://github.com/jaenster/redivivus (MIT, the Redivivus contributors)",
+  "version": 2,
+  "file": "Source/Bnclient/Cache.cpp",
+  "functions": [
+    {
+      "name": "CACHE_ComputeCRC32",
+      "address": "00518de0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00518de0"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_ComputeCRC32",
+        "GetInstructionPointer",
+        "ERROR_UnrecoverableInternalError_Halt",
+        "exit",
+        "SErrSetLastError"
+      ],
+      "usedTypes": [
+        "int32_t",
+        "uint32_t",
+        "uint8_t"
+      ]
+    },
+    {
+      "name": "CACHE_DecryptBlock",
+      "address": "00518e60",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00518e60"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_DecryptBlock"
+      ],
+      "usedTypes": [
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "CACHE_EncryptBlock",
+      "address": "00518ec0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00518ec0"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_EncryptBlock"
+      ],
+      "usedTypes": [
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "CACHE_GetFileTime",
+      "address": "00518f30",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00518f30"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_GetFileTime",
+        "GetTickCount"
+      ],
+      "usedTypes": [
+        "LPFILETIME",
+        "_SYSTEMTIME",
+        "int64_t",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "CACHE_HashString",
+      "address": "00518fa0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00518fa0"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_HashString",
+        "toupper"
+      ],
+      "usedTypes": [
+        "int32_t",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "CACHE_InitCryptTable",
+      "address": "00519000",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00519000"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_InitCryptTable"
+      ],
+      "usedTypes": [
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "CACHE_FindHashEntry",
+      "address": "00519110",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00519110"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_FindHashEntry",
+        "CACHE_HashString"
+      ],
+      "usedTypes": [
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "CACHE_RemoveEntry",
+      "address": "005191d0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "005191d0"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_RemoveEntry",
+        "CACHE_FindHashEntry"
+      ],
+      "usedTypes": [
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "CACHE_BuildFilePath",
+      "address": "00519220",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00519220"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_BuildFilePath",
+        "GetInstructionPointer",
+        "ERROR_UnrecoverableInternalError_Halt",
+        "exit",
+        "SStrPack"
+      ],
+      "usedTypes": [
+        "int32_t"
+      ]
+    },
+    {
+      "name": "CACHE_DeleteFile",
+      "address": "005192a0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "005192a0"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_DeleteFile",
+        "CACHE_BuildFilePath",
+        "__security_check_cookie"
+      ],
+      "usedTypes": [
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "CACHE_FreeAll",
+      "address": "00519300",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00519300"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_FreeAll",
+        "SMemFree"
+      ]
+    },
+    {
+      "name": "CACHE_FreeMem",
+      "address": "005193c0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "005193c0"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_FreeMem",
+        "SMemFree"
+      ],
+      "usedTypes": [
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "CACHE_Open",
+      "address": "005193e0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "005193e0"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_Open",
+        "CACHE_FreeAll",
+        "CACHE_BuildFilePath",
+        "__security_check_cookie",
+        "SMemAlloc",
+        "CACHE_InitCryptTable",
+        "SMemFree",
+        "CACHE_DeleteFile",
+        "memset",
+        "BnetLog_WriteLine",
+        "CACHE_ComputeCRC32",
+        "CACHE_HashString",
+        "CACHE_DecryptBlock"
+      ],
+      "usedTypes": [
+        "D2BnCacheFileHeaderStrc",
+        "int32_t",
+        "uint32_t",
+        "uint8_t"
+      ]
+    },
+    {
+      "name": "CACHE_Rebuild",
+      "address": "005198c0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "005198c0"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_Rebuild",
+        "CACHE_FreeAll",
+        "CACHE_DeleteFile",
+        "CACHE_BuildFilePath",
+        "CACHE_Open",
+        "__security_check_cookie"
+      ],
+      "usedTypes": [
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "CACHE_ReadData",
+      "address": "00519920",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00519920"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_ReadData",
+        "CACHE_FindHashEntry",
+        "memset",
+        "_stricmp",
+        "BnetLog_WriteLine",
+        "CACHE_RemoveEntry",
+        "CACHE_GetFileTime",
+        "SMemAlloc",
+        "CACHE_ComputeCRC32",
+        "CACHE_Rebuild",
+        "SMemFree",
+        "__security_check_cookie"
+      ],
+      "usedTypes": [
+        "D2BnCacheEntryHeaderStrc",
+        "FILETIME",
+        "LPDWORD",
+        "LPFILETIME",
+        "uint32_t",
+        "uint32_t *"
+      ]
+    },
+    {
+      "name": "CACHE_WriteData",
+      "address": "00519db0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00519db0"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "CACHE_WriteData",
+        "__security_check_cookie",
+        "CACHE_RemoveEntry",
+        "memset",
+        "CACHE_GetFileTime",
+        "CACHE_HashString",
+        "CACHE_ComputeCRC32",
+        "SMemAlloc",
+        "memcpy",
+        "CACHE_EncryptBlock",
+        "SMemFree",
+        "BnetLog_WriteLine",
+        "CACHE_Rebuild"
+      ],
+      "usedTypes": [
+        "D2BnCacheEntryHeaderStrc",
+        "D2BnCacheFileHeaderStrc",
+        "FILETIME",
+        "LPFILETIME",
+        "int32_t",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "StaticInit_CriticalSection_00881894",
+      "address": "006caea0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "006caea0"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "StaticInit_CriticalSection_00881894",
+        "atexit"
+      ]
+    },
+    {
+      "name": "StaticFini_CriticalSection_00881894",
+      "address": "006cb440",
+      "lines": [
+        {
+          "line": 1,
+          "address": "006cb440"
+        }
+      ],
+      "namespace": "Bnclient::Cache",
+      "calledFunctions": [
+        "StaticFini_CriticalSection_00881894"
+      ]
+    }
+  ]
+}

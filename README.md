@@ -29,6 +29,29 @@ surface: crash fixes, widescreen UI support, opt-in quality-of-life features and
 settings page — nothing silently changes gameplay. Upstream builds `d2.exe`; this fork
 ships the client as **`d2vp.exe`**.
 
+The tree is organised by the module names the game itself uses (`D2Client`, `D2Common`,
+`D2Game`, `D2Win`, `D2gfx`, `Fog`, ...). It is generated from reverse-engineered
+Ghidra databases and corrected where needed: the names, types and structure are
+reconstructions, and some functions still read like a decompiler wrote them, because one did.
+
+|Directory|What is in it|
+|-|-|
+|`Source/<module>/`|Blizzard's modules, one directory each, generated. `Source/D2Headers/` holds the shared headers `d2_platform.h` and `d2_enums.h`|
+|`3rdparty/Storm/`, `3rdparty/crashy/`|Storm and the crash-report library, generated|
+|`Source/globals/`|the game's global data, generated|
+|`project.json`|the module table: each module's directory, kind, dependencies with their evidence, exceptions, link order and strictness. `Source/modules.cmake` is generated from it, and the configure step fails when the two disagree|
+|`Redivivus/`|hand-written support code: the host glue, tracing, the crash handler|
+|`3rdparty/libbacktrace/`, `3rdparty/implibs/`|vendored code and the import-library definitions|
+
+Includes are rooted at the tree: `#include "Source/D2Common/ITEMS/Items.h"`. Each module
+builds into its own static library, and the executable links them whole in the order of the
+1.14d link. The build also writes `build/module-gates.tsv`, which lists every include that
+crosses a module boundary the original 1.13d DLL imports did not allow.
+
+The Ghidra databases behind the tree, 1.14d Windows and Mac, are open to read for anyone with
+an AI agent; see [Contributing](#contributing). How the project came about since 2021:
+[redivivus.app/about](https://redivivus.app/about).
+
 ## Scope
 
 Single-player, made to study, preserve and play the game. Online play on Battle.net is
@@ -124,6 +147,75 @@ i686 toolchain (one-time), then configures, builds, runs the CI gates and strips
 powershell -ExecutionPolicy Bypass -File tools\build-local-win11.ps1 -Clean -DeployTo "C:\Games\Diablo II"
 ```
 
+- [docs/building.md](docs/building.md): getting the game, the toolchain per platform.
+- [docs/original-compilers.md](docs/original-compilers.md): building with the compilers that
+  built 1.14d, Visual C++ 2005 SP1 and Apple LLVM 4.2, and their flags.
+
+## Known issues
+
+- **When an NPC has quest news, the scrolling text box does not appear.** The quest itself
+  advances normally; only the dialog is missing.
+- **It can still crash.** Rarely now, but it is not ruled out. Every
+  crash so far has been a single wrong type or a lost value somewhere in the
+  reconstruction, and each one fixed takes a class of others with it. A crash writes a
+  report with a symbolised stack trace to `d2crash-<date>-<time>.txt` next to the
+  executable (the Visual C++ build writes `Crash.txt` and a minidump to
+  `BlizzardError/<date time>/`); please attach it to an
+  [issue](https://github.com/jaenster/redivivus/issues).
+
+## Verification
+
+[`asm_matching/`](asm_matching/README.md) compiles the tree with Visual C++ 2005 SP1 and
+compares the machine code of each function with 1.14d. It is a check on the decompilation:
+where the code comes out identical, the decompiled function was read correctly.
+At this commit, generated from version 1970 of the Ghidra database:
+
+|Measure|Identical machine code|
+|-|-|
+|Functions|7,695 of 14,626 (52.6%)|
+|Functions without placeholders|7,128 of 14,626 (48.7%), not counting the 567 identical functions that are placeholders (below)|
+|Code|629,865 of 2,598,518 bytes (24.24%)|
+|Instructions|1,815,425 of 2,598,518 bytes (69.9%), counting identical instructions in functions that still differ|
+
+Of the 7,695 identical functions, 567 are recovered unreferenced functions: code in
+1.14d that nothing calls by a direct reference and that Ghidra never defined as a function. They
+are in the tree as placeholders named `Unreferenced_<address>`, or `<twin>_Unref_<address>` where
+the bytes repeat a named function. They count among the original functions either way, so the
+second row leaves them out of the identical count only.
+
+These leave out the C runtime that Visual C++ 2005 linked in statically (libcmt): the
+rebuild links a runtime instead of reconstructing it. Code the compiler generates for C++
+exceptions is left out as well, and so is the PKWARE compression library, linked into the
+original as a prebuilt 1997 library that no Visual C++ 2005 compile produced. Over the whole binary, runtime
+included: 8,255 of 15,711 functions (52.5%), 728,840 of
+2,748,975 bytes (26.51%).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="asm_matching/msvc8/evidence/byte-match-dark.svg">
+  <img alt="The original's code split by how closely the rebuild matches it" src="asm_matching/msvc8/evidence/byte-match-light.svg">
+</picture>
+
+[BYTE-MATCHING.md](BYTE-MATCHING.md) explains what is compared, the kinds of match, and why
+whole matching functions are a strict measure next to identical instructions.
+
+## Contributing
+
+Changes are welcome as pull requests or patches against a release tag. Most of the tree
+is regenerated, so a fix that belongs in the reverse-engineering (a wrong type, a missing
+parameter) is best reported as an issue with the evidence; it will land upstream and
+survive the next regeneration.
+
+[CONTRIBUTING.md](CONTRIBUTING.md) has the detail: which paths are generated and which are
+hand-written, and which door a given finding goes through so that it survives.
+
+With an AI agent you can read the Ghidra databases behind the tree (1.14d Windows and Mac)
+through a read-only MCP server, and report such fixes with the evidence. In Claude Code:
+
+```
+claude plugin marketplace add jaenster/redivivus
+claude plugin install redivivus@redivivus
+```
+
 GitHub CI (mingw-i686) builds every release tag and ships `d2s-<sha>.exe` (stripped,
 play/distribute) plus `d2-map-<sha>.map` (linker map, load-bearing for crash
 symbolisation). More per platform: [docs/building.md](docs/building.md).
@@ -177,7 +269,7 @@ upstream regenerations are merged through) · [docs/building.md](docs/building.m
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Code under `thirdparty/` keeps its own license.
+MIT, see [LICENSE](LICENSE). Code under `3rdparty/libbacktrace/` keeps its own license.
 
 The `.cpp.map` files map every function and line back to its address in 1.14d `Game.exe`. They
 are part of this work under the same license: if you use them, credit Redivivus and link [there](https://github.com/jaenster/redivivus).

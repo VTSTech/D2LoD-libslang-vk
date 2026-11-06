@@ -1,0 +1,175 @@
+{
+  "source": "Redivivus, https://github.com/jaenster/redivivus (MIT, the Redivivus contributors)",
+  "version": 2,
+  "file": "3rdparty/Storm/Source/SSystem.cpp",
+  "functions": [
+    {
+      "name": "SSYSTEM_Shutdown",
+      "address": "0041beb0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0041beb0"
+        }
+      ],
+      "namespace": "Storm::Source::SSystem",
+      "calledFunctions": [
+        "SSYSTEM_Shutdown",
+        "SSYSTEM_SetShutdownFlag",
+        "SLogFlushAll"
+      ],
+      "usedTypes": [
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "SSYSTEM_Initialize",
+      "address": "0041bee0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0041bee0"
+        }
+      ],
+      "namespace": "Storm::Source::SSystem",
+      "calledFunctions": [
+        "SSYSTEM_Initialize",
+        "SMemInitialize",
+        "SLogInitialize",
+        "SSTR_InitConversionTables"
+      ]
+    },
+    {
+      "name": "StormGetInstance",
+      "address": "0041bef0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0041bef0"
+        }
+      ],
+      "namespace": "Storm::Source::SSystem",
+      "calledFunctions": [
+        "StormGetInstance"
+      ]
+    },
+    {
+      "name": "SSYSTEM_GetSystemOption",
+      "address": "0041bf00",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0041bf00"
+        }
+      ],
+      "namespace": "Storm::Source::SSystem",
+      "calledFunctions": [
+        "SSYSTEM_GetSystemOption",
+        "SErrSetLastError"
+      ],
+      "usedTypes": [
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "SSYSTEM_SetSystemOption",
+      "address": "0041bfc0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0041bfc0"
+        }
+      ],
+      "namespace": "Storm::Source::SSystem",
+      "calledFunctions": [
+        "SSYSTEM_SetSystemOption",
+        "SErrSetLastError"
+      ],
+      "usedTypes": [
+        "int32_t",
+        "uint32_t"
+      ]
+    },
+    {
+      "name": "SSYSTEM_InitializeAndReturn",
+      "address": "0041c0c0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0041c0c0"
+        }
+      ],
+      "namespace": "Storm::Source::SSystem",
+      "calledFunctions": [
+        "SSYSTEM_InitializeAndReturn",
+        "SSYSTEM_Initialize"
+      ]
+    },
+    {
+      "name": "ILT_strpbrk",
+      "address": "0041c0d0",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0041c0d0"
+        }
+      ],
+      "namespace": "Storm::Source::SSystem",
+      "calledFunctions": [
+        "ILT_strpbrk",
+        "strpbrk"
+      ]
+    },
+    {
+      "name": "__break",
+      "address": "0041c160",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0041c160"
+        }
+      ],
+      "namespace": "Storm::Source::SSystem",
+      "calledFunctions": [
+        "__break"
+      ]
+    },
+    {
+      "name": "SSYSTEM_SetShutdownFlag",
+      "address": "0041c360",
+      "lines": [
+        {
+          "line": 1,
+          "address": "0041c360"
+        }
+      ],
+      "namespace": "Storm::Source::SSystem",
+      "calledFunctions": [
+        "SSYSTEM_SetShutdownFlag"
+      ]
+    },
+    {
+      "name": "TSFixedArray_Ui_Constructor",
+      "address": "00421b50",
+      "lines": [
+        {
+          "line": 1,
+          "address": "00421b50"
+        }
+      ],
+      "namespace": "Storm::Source::SSystem",
+      "calledFunctions": [
+        "TSFixedArray_Ui_Constructor"
+      ]
+    },
+    {
+      "name": "StaticInit_6ca890",
+      "address": "006ca890",
+      "lines": [],
+      "namespace": "Storm::Source::SSystem",
+      "calledFunctions": [
+        "SSYSTEM_Initialize"
+      ]
+    }
+  ]
+}
