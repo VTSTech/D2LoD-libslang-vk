@@ -154,15 +154,6 @@ game-source issue, report upstream if it's a reconstruction bug. Attach both fil
 issue — a crash without both artifacts cannot be attributed.
 [CONTRIBUTING.md](CONTRIBUTING.md) has the detail.
 
-With an AI agent you can read the Ghidra databases behind the tree (1.14d Windows and Mac)
-through a read-only MCP server, and report such fixes with the evidence. In Claude Code:
-
-```
-claude plugin marketplace add jaenster/redivivus
-claude plugin install redivivus@redivivus
-```
-
-Other agents: see https://redivivus.app/agent-setup/prompt.md.
 
 ## Project documents
 
