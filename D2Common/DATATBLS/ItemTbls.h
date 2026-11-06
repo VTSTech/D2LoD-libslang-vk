@@ -209,6 +209,9 @@ void __fastcall TXT_AllocTxt_gamble(struct D2PoolManagerStrc * pMemory);
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __stdcall FreeGambleTable();
 struct D2GambleTableStrc * __stdcall GetGambleTableSize();
+// [gamble-cache-fix R128] bounds-checked read of the per-level gamble upper-bound cache
+// ([0..99]; 0 outside) — the accessor replacing the vanilla data-adjacency read (issue #32).
+int __stdcall GetGambleLevelCache(int32_t nLevel);
 // Breadth-first traversal of the itemtypes.txt equiv1/equiv2 parent-type tree to test whether nItemTypeId is a subtype of nTargetTypeId. Returns 1 if nTargetTypeId &lt; 1 (wildcard), 1 if target found in the type hierarchy, 0 if out-of-range or stack depth exceeds 124. Used by item-type membership checks.
 BOOL __fastcall ITEMTBLS_CheckItemTypeRecursive(int32_t nItemTypeId, int32_t nTargetTypeId);
 // Loads and compiles the itemtypes.txt data table at startup. Builds the 36-entry field-definition array (code/equiv1-2/bodyloc/shoots/quiver/maxsock/class/storepage/invgfx1-6/etc., with code/bodyloc/class/storepage columns linked to their lookup tables), creates the itemtypes TxtLink, and calls CompileTxt to populate sgtDataTable.pTxtItemTypes (record size 0xE4) and its row count. Then allocates and fills pTxtItemTypesUnknown, a per-type bitmap (ceil(count/32) dwords per type) where bit j is set if type j is a recursive subtype of type i (via ITEMTBLS_CheckItemTypeRecursive), giving fast item-type ancestry tests.

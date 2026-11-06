@@ -2,7 +2,7 @@
 
 > **Running this checklist:** GitHub renders the boxes below read-only in the file view — task-list checkboxes are only live inside issues. To run a pass, open **Issues → New issue → "Vanilla+ Smoke Test"**: the template ([.github/ISSUE_TEMPLATE/smoke-test.md](.github/ISSUE_TEMPLATE/smoke-test.md), generated from this file by [tools/gen-smoke-issue-template.py](tools/gen-smoke-issue-template.py)) pre-fills every check as a clickable box, with a Verdict section to fill at the end. This file stays the canonical reference; when a round changes a check, re-run the generator and commit both files.
 
-Build: **Vanilla+0.0.8-R127** (confirm via line 1 of `d2boot.log` before starting). The per-round build history (R74 → R127, one line per round) and the closed-section narratives live in **HISTORY.md H43**. **The last full-belt pass: the R104 build (2026-11-04, [issue #28](https://github.com/VTSTech/D2VP-QoL/issues/28)) — every §A–§L check green**; the R105–R127 chain carries per-round field passes on the touched surfaces (resolution stops, wide-view, D3D fullscreen — R124 verified, shift-compare — R125/R126 verified 2026-11-06, vpdiag retirement R127 = no field ask).
+Build: **Vanilla+0.0.8-R128** (confirm via line 1 of `d2boot.log` before starting). The per-round build history (R74 → R128, one line per round) and the closed-section narratives live in **HISTORY.md H43**. **The last full-belt pass: the R104 build (2026-11-04, [issue #28](https://github.com/VTSTech/D2VP-QoL/issues/28)) — every §A–§L check green**; the R105–R128 chain carries per-round field passes on the touched surfaces (resolution stops, wide-view, D3D fullscreen — R124 verified, shift-compare — R125/R126 verified 2026-11-06, vpdiag retirement R127 = no field ask, gamble fix — R128 field verify owed, §M).
 Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 **Known-fail — none.** (Resolved 2026-11-03, [issue #8](https://github.com/VTSTech/D2VP-QoL/issues/8): the necro skeleton spawn tint is FIELD-VERIFIED on the R90b/R91 build — "Skeletons are finally white again" — and is now the standing §B item-5 regression check. The 2026-11-03 D3D registry-corruption episode was owner-environment, not a build bug — see the watch note in §L.)
@@ -11,7 +11,7 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 ## Setup (once, ~1 min)
 
-- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.8-R127`. If it says an older round (or still carries the `0.0.6` prefix), wrong exe — don't test further.
+- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.8-R128`. If it says an older round (or still carries the `0.0.6` prefix), wrong exe — don't test further.
 
 ## A. Boot & menus (~3 min)
 
@@ -117,6 +117,17 @@ With `[features] no_panel_shift=1` (wide layouts only), a single open panel rend
 - [x] **48. D3D perspective-toggle survival (R98 root fix):** in D3D, toggle Perspective ON→OFF and OFF→ON at the video options — no death either direction, no `promote out-of-range` / `texture cache dead` marks; then finish the D3D #26 matrix (41/42/43/45). (The R96/R97 probe rounds and the persisting-death read-out matrix are archived in **H43**.) — **CONFIRMED 2026-11-04 (R104, issue #28).** Keep as a per-build regression check.
 
 **Registry watch (owner environment, 2026-11-03 — not a build bug):** if D3D ever again boots to a black screen / fails to enter game across builds that previously worked: restore the fresh-install video-settings registry values before suspecting the build (Vanilla+ writes no registry values). Full episode record: H43.
+
+---
+
+## M. Gamble at a gambling NPC ([issue #32](https://github.com/VTSTech/D2VP-QoL/issues/32), R128)
+
+The one-click crash: talking to Gheed (or any gambling NPC) and clicking **Gamble** crashed the game on every round since the source regeneration. R128 fixes the broken item-table lookup; this section proves it in the field.
+
+- [ ] **1.** Talk to Gheed in town → click **Gamble** → the gamble window opens with a mixed item list and **no crash** (pre-R128 this died with an AV READ ~1 s after the click).
+- [ ] **2.** `d2boot.log` must show the fix chain: `gamble: gen start npc=0x.... level=<your level> cache=<count> total=<count>` → ~14 × `gamble: roll level=.. bound=.. pick=..` with **sane bounds** (`bound` is a small count, 2..total — never a huge pointer-looking value) → `gamble: gen done items=14`. A garbage-looking `bound=` means the running exe predates the fix (check item 0).
+- [ ] **3.** Buy one gamble item — gold deducts, item lands in inventory (the purchase path was unreachable while the open crash stood; first field exercise here).
+- [ ] **4.** Re-open the gamble screen a second time in the same session — fresh item list, still no crash.
 
 ---
 

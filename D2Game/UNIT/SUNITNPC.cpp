@@ -89,6 +89,7 @@
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillAss.h"
 #include "Fog/Src/Safesock.h"
+#include "support/d2_boot.h" // [d2boot] gamble diagnostics [R128] (issue #32)
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -2107,6 +2108,13 @@ void __fastcall GAMBLE_GenerateGambleInventory(::SGAMEDATA * pGame, D2UnitStrc *
     nPlayerLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayerUnit, UNITSTAT_level, 0);
     D2SeedStrc* pSeed;
     pSeed = sunitproxy::SUNITPROXY_GetNpcControl(pGame);
+    // VP-BEGIN [gamble-cache-fix R128]: field-verify mark (issue #32) — cache= must read a sane
+    // count (2..gamble-row total), not a pointer/garbage dword; total= is the gamble.txt row count.
+    D2BOOT_MarkFmt("gamble: gen start npc=0x%04x level=%d cache=%d total=%d",
+                   (unsigned)pUnit->nClassId, nPlayerLevel,
+                   D2Common::DATATBLS::ItemTbls::GetGambleLevelCache(nPlayerLevel),
+                   pGambleTable->nSize);
+    // VP-END [gamble-cache-fix R128]
     nNpcGameData = 0;
     do {
       nSeedState = D2_SEED_NEXT(*pSeed);
@@ -2121,7 +2129,14 @@ void __fastcall GAMBLE_GenerateGambleInventory(::SGAMEDATA * pGame, D2UnitStrc *
         pPlayerUnit = (D2UnitStrc*)0x5;
       }
 
-      nItemTableIdx = (&pGambleTable[1].nSize)[(int)pPlayerUnit];
+      // VP-BEGIN [gamble-cache-fix R128]: was the vanilla data-adjacency read one struct
+      // width past pGambleTable, level-indexed (= nTxtGambleSize+8+4*level) — valid only
+      // where the 100-int cache sat adjacent in the original .data; the regen's separate
+      // statics turned it into an OOB read of unrelated globals (pointer read as a roll
+      // bound → seed%ptr → pTable+idx*4 AV READ — issue #32, every rev since the regen).
+      // The level is the pPlayerUnit slot reused as the clamped 5..99 roll level above.
+      nItemTableIdx = (uint32_t)D2Common::DATATBLS::ItemTbls::GetGambleLevelCache((int)pPlayerUnit);
+      // VP-END [gamble-cache-fix R128]
       if ((int)nItemTableIdx <= 0) {
         nItemTableIdx = 0;
       } else if (nItemTableIdx & nItemTableIdx - 1) {
@@ -2137,6 +2152,11 @@ void __fastcall GAMBLE_GenerateGambleInventory(::SGAMEDATA * pGame, D2UnitStrc *
       }
 
       uRandLow = *(uint32_t*)((int)pGambleTable->pTable + nItemTableIdx * 4);
+      // VP-BEGIN [gamble-cache-fix R128]: field-verify mark (issue #32) — bound= is the
+      // per-level cache value (must be a sane count, 2..total), pick= the rolled item class id.
+      D2BOOT_MarkFmt("gamble: roll level=%d bound=%u pick=%u",
+                     (int)pPlayerUnit, (unsigned)nItemTableIdx, (unsigned)uRandLow);
+      // VP-END [gamble-cache-fix R128]
       if (!pGame->bExpansion) {
         pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(uRandLow);
         if (!pItemsTxt) {
@@ -2200,6 +2220,9 @@ void __fastcall GAMBLE_GenerateGambleInventory(::SGAMEDATA * pGame, D2UnitStrc *
         }
       }
       if (nNpcGameData >= 0xe) {
+        // VP-BEGIN [gamble-cache-fix R128]: field-verify mark (issue #32)
+        D2BOOT_MarkFmt("gamble: gen done items=%d", nNpcGameData);
+        // VP-END [gamble-cache-fix R128]
         return;
       }
     } while (true);

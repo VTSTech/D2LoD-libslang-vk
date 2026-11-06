@@ -1055,7 +1055,34 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # R127: string bumped 0.0.8-R126 -> 0.0.8-R127 (the vpdiag retirement: the
 # R120 wide-view probes out whole, zero behavior change; owner field-green
 # on R126: "Great job, works. Let's retire the vpdiag probes")
-gate "res: self-id 0.0.8-R127"              Game/Main.cpp                    'Vanilla\+0\.0\.8-R127' 1
+# R128: string bumped 0.0.8-R127 -> 0.0.8-R128 (the gamble-cache fix, issue #32:
+# click Gamble at Gheed = own-code AV READ on every rev since the regen. The
+# vanilla consumer read the per-level gamble cache via data adjacency -
+# (&pGambleTable[1].nSize)[level] = nTxtGambleSize+8+4*level, valid only where
+# the 100-int cache sat adjacent in the original .data; the regen's separate
+# statics made it an OOB read of unrelated globals (pointer read as roll bound
+# -> seed%ptr -> pTable+idx*4 fault). Cache moved to file scope + accessor.)
+gate "res: self-id 0.0.8-R128"              Game/Main.cpp                    'Vanilla\+0\.0\.8-R128' 1
+gate "res: self-id R127 gone"               Game/Main.cpp                    'Vanilla\+0\.0\.8-R127' 0
+# ---- [vanilla-plus issue #32] rev 136: track T - the gamble-cache fix. Root
+# cause: D2Game/UNIT/SUNITNPC.cpp GAMBLE_GenerateGambleInventory read the
+# per-level upper-bound cache through vanilla .data adjacency
+# ((&pGambleTable[1].nSize)[level] = nTxtGambleSize+8+4*level); the regen
+# split the cache into a function-local static, so the read hit unrelated
+# .bss neighbors (nTxtItemRatioSize / pTxtItemRatio heap pointer / the
+# quality+books table structs) - garbage bound -> wild pGambleTable->pTable
+# index -> the 0x31A37000 AV READ. Fix: cache to file scope next to
+# nTxtGambleSize (ItemTbls.cpp), bounds-checked accessor GetGambleLevelCache
+# (ItemTbls.h/.cpp), consumer reads the accessor (SUNITNPC.cpp); gamble:
+# field marks added (gen start / roll / gen done).
+gate "gamble: cache at file scope (R128)"   D2Common/DATATBLS/ItemTbls.cpp   'static int gnItemTblsCacheSize\[100\]' 1
+gate "gamble: cache accessor def (R128)"    D2Common/DATATBLS/ItemTbls.cpp   'int __stdcall GetGambleLevelCache\(int32_t nLevel\)' 1
+gate "gamble: cache accessor decl (R128)"   D2Common/DATATBLS/ItemTbls.h     'int __stdcall GetGambleLevelCache\(int32_t nLevel\);' 1
+gate "gamble: consumer uses accessor (R128)" D2Game/UNIT/SUNITNPC.cpp        'GetGambleLevelCache\(\(int\)pPlayerUnit\)' 1
+gate "gamble: adjacency artifact gone (R128)" D2Game/UNIT/SUNITNPC.cpp      'pGambleTable\[1\]\.nSize' 0
+gate "gamble: gen start mark (R128)"        D2Game/UNIT/SUNITNPC.cpp         'gamble: gen start npc=' 1
+gate "gamble: roll mark (R128)"             D2Game/UNIT/SUNITNPC.cpp         'gamble: roll level=' 1
+gate "gamble: gen done mark (R128)"         D2Game/UNIT/SUNITNPC.cpp         'gamble: gen done items=' 1
 # R115: string bumped R113 -> R115 (the 1080p sixth-stop round; owner:
 # "Great job. works. Published Glide3xVK 0.4.7. Now lets do 1080p")
 # R116: string bumped R115 -> R116 (the GDI windowed 1366x768 shear fix;
