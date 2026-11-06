@@ -737,6 +737,11 @@ void __fastcall DRAW_UI(D2GameViewStrc * pGameView) {
     Panel::PANEL_DrawHostileIndicator();
     Text::TEXT_DrawMessageLogAndOverhead(pGameView);
     D2Win::Src::D2WinFont::Draw_UnitNameUnderCursor();
+    // VP: [shift-compare] the equipped-item compare box draws right after the
+    // primary tooltip (and before the stored tooltip), so the D2R side-by-side
+    // pair reads as one unit. No-op unless the compare capture filled the
+    // channel this frame (gate off / Shift up = nothing); self-clears on draw.
+    D2Win::Src::D2WinFont::DRAW_CompareTooltipUnderCursor();
     ui::DRAW_MonsterUnderCursorImmunites();
     ui::UI_DrawStoredTooltip();
     ui::DRAW_UnitUModsUnderCursor();

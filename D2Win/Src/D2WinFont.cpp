@@ -1495,6 +1495,187 @@ void StaticInit_gnFontTableCharWidthCache() {
     gnFontTableCharWidthCache[1] = 0;
 }
 
+// VP-BEGIN [shift-compare]: the hold-Shift equipped-item compare tooltip's
+// second one-shot channel (R125, FEATURES.md row 0b; spec in
+// SHIFT-COMPARE-PLAN.md). Lives in this TU so it reuses the file-local
+// metric statics (TEXT_CalculateTextWidth/Height), D2WINFONT_DrawWideString,
+// gaFontCache, gnFontIdBody and SetAndReturnLastFont - the exact primitives
+// Draw_UnitNameUnderCursor uses, of which this draw is a VP-marked clone.
+// Frame order: the capture (VanillaPlusCore.cpp SHIFTCOMPARE_CompareForHover,
+// invoked from Inv.cpp right after the LoadItemDesc publish) fills the
+// channel mid-frame; Draw.cpp calls DRAW_CompareTooltipUnderCursor right
+// after Draw_UnitNameUnderCursor (and before UI_DrawStoredTooltip), and the
+// draw SELF-CLEARS, so nothing can outlive the frame and a gate flip or a
+// closed panel can never show a stale box. Gate off = the channel is never
+// filled = a no-op draw.
+//
+// The channel carries the compare string, the compare's own published
+// color, and the PRIMARY tooltip's published rect as a capture-time
+// snapshot. The draw recomputes the primary's box from the still-populated
+// DisplayedTooltip when it can (the normal case) and falls back to the
+// snapshot anchor when the Alt-labels path wiped the primary between
+// capture and draw (ShowItems.cpp TEXT_TooltipSetAttributes(nullptr,...)
+// runs in DRAW_AltItems, after the panel draws, before Draw.cpp:739) - so
+// the side-by-side placement survives the Alt-latched-labels coexistence
+// case. No nLoadProgress field: the progress-bar branch of the primary
+// draw is structurally unreachable here.
+struct VPSHIFTCOMPARE_TooltipStrc {
+    uint16_t wszString[1024];
+    int nPrimaryX;           // capture-time snapshot of DisplayedTooltip.nX
+    int nPrimaryY;           // ... .nY
+    int nPrimaryColor;       // ... .nColor (carried for completeness)
+    int nPrimaryCenterFlag;  // ... .nCenterFlag
+    int nColor;              // the compare text's own published color
+    int nPopulated;          // 0 = channel empty (draw is a no-op)
+};
+static VPSHIFTCOMPARE_TooltipStrc gVpCompareTooltip = {};
+
+void __fastcall TEXT_CompareTooltipSetAttributes(uint16_t * wszBuffer, int32_t nPrimaryX, int32_t nPrimaryY, int32_t nPrimaryColor, int32_t nPrimaryCenterFlag, int32_t nCompareColor) {
+    int32_t nStrLen;
+    if (!wszBuffer) {
+        gVpCompareTooltip.wszString[0] = L'\0';
+        return;
+    }
+
+    nStrLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszBuffer);
+    if (nStrLen < 0x400) {
+        // Same shape as the primary publish (TEXT_TooltipSetAttributes):
+        // the length check guards the copy, the metadata rides along.
+        D2Lang::Unicode::UNISYS::STRING_CopyWideString(gVpCompareTooltip.wszString, wszBuffer);
+        gVpCompareTooltip.nPrimaryX = nPrimaryX;
+        gVpCompareTooltip.nPrimaryY = nPrimaryY;
+        gVpCompareTooltip.nPrimaryColor = nPrimaryColor;
+        gVpCompareTooltip.nPrimaryCenterFlag = nPrimaryCenterFlag;
+        gVpCompareTooltip.nColor = nCompareColor;
+        gVpCompareTooltip.nPopulated = 1;
+        return;
+    }
+
+    gVpCompareTooltip.wszString[0] = L'\0';   // over-long: never render (retail clears too)
+}
+
+void __stdcall DRAW_CompareTooltipUnderCursor() {
+    int nCmpWidth;
+    int nCmpHeight;
+    int nScreenWidth;
+    int nScreenHeight;
+    int nPrimaryWidth;
+    int nPrimaryHeight;
+    int nPrimaryBottom;
+    int nPrimaryX;
+    int nXStart;
+    int nYEnd;
+    int32_t pSavedFont;
+    int nPrevFont;
+
+    if (!gVpCompareTooltip.nPopulated || !gVpCompareTooltip.wszString[0]) {
+        return;
+    }
+
+    pSavedFont = gnLastUsedFontId;
+    nPrevFont = gnLastUsedFontId;
+    // The primary draw's font-downsize loop, cloned: measure, and while the
+    // text cannot fit the screen height, step the font down the same way
+    // (font 1 -> 0; other fonts -> 6, then stop) - re-measuring per step.
+    while (true) {
+        nCmpWidth = TEXT_CalculateTextWidth(gVpCompareTooltip.wszString);
+        nCmpWidth += 8;
+        nCmpHeight = TEXT_CalculateTextHeight(gVpCompareTooltip.wszString);
+        D2gfx::D2GFX::D2GFX_GetScreenSize(&nScreenWidth, &nScreenHeight);
+        if (nCmpHeight <= nScreenHeight - 10) {
+            break;
+        }
+        if (nPrevFont == 1) {
+            SetAndReturnLastFont(0);
+            nPrevFont = 0;
+        } else {
+            if (gnLastUsedFontId) {
+                break;
+            }
+            SetAndReturnLastFont(6);
+            nPrevFont = 6;
+        }
+    }
+
+    // The primary tooltip's own box, recomputed the way
+    // Draw_UnitNameUnderCursor computes it (it ran one call earlier and
+    // restored the starting font, so the measurement font matches). When
+    // the Alt-labels path wiped the primary this frame, its string is
+    // empty and no primary box draws - fall back to the capture-time
+    // snapshot anchor so the compare box still lands by the cursor.
+    nPrimaryWidth = 0;
+    nPrimaryHeight = 0;
+    if (DisplayedTooltip.wszString[0]) {
+        nPrimaryWidth = TEXT_CalculateTextWidth(DisplayedTooltip.wszString);
+        nPrimaryWidth += 8;
+        nPrimaryHeight = TEXT_CalculateTextHeight(DisplayedTooltip.wszString);
+        nPrimaryX = DisplayedTooltip.nCenterFlag == 1
+            ? DisplayedTooltip.nX - (nPrimaryWidth >> 1)
+            : DisplayedTooltip.nX;
+        if (nPrimaryX <= 0) {
+            nPrimaryX = 0;
+        }
+        if (nPrimaryX > nScreenWidth - nPrimaryWidth) {
+            nPrimaryX = nScreenWidth - nPrimaryWidth;   // the draw's own right clamp
+        }
+    } else {
+        nPrimaryX = gVpCompareTooltip.nPrimaryCenterFlag == 1
+            ? gVpCompareTooltip.nPrimaryX - (nCmpWidth >> 1)
+            : gVpCompareTooltip.nPrimaryX;
+        if (nPrimaryX <= 0) {
+            nPrimaryX = 0;
+        }
+    }
+
+    // The primary's bottom edge, via the same clamp chain the primary draw
+    // applies (nY + 2, at least height - 5, at most screenHeight - 5).
+    nPrimaryBottom = gVpCompareTooltip.nPrimaryY + 2;
+    if (nPrimaryBottom <= nPrimaryHeight - 5) {
+        nPrimaryBottom = nPrimaryHeight - 5;
+    }
+    if (nPrimaryBottom > nScreenHeight - 5) {
+        nPrimaryBottom = nScreenHeight - 5;
+    }
+
+    // Side-by-side placement (owner decision 2026-11-06): LEFT of the
+    // primary with a 4 px gap - wide enough that two adjacent
+    // translucent boxes never visually merge; when that would leave the
+    // screen, fall back RIGHT of the primary; then the same X/bottom
+    // clamps. Bottoms stay aligned, the D2R pair look.
+    nXStart = nPrimaryX - nCmpWidth - 4;
+    if (nXStart < 0) {
+        nXStart = nPrimaryX + nPrimaryWidth + 4;
+    }
+    if (nXStart > nScreenWidth - nCmpWidth) {
+        nXStart = nScreenWidth - nCmpWidth;
+    }
+    if (nXStart < 0) {
+        nXStart = 0;
+    }
+    nYEnd = nPrimaryBottom;
+    if (nYEnd - nCmpHeight < 0) {
+        // A compare taller than the primary's bottom: keep the box fully
+        // on-screen instead of poking past the top edge.
+        nYEnd = nCmpHeight;
+        if (nYEnd > nScreenHeight - 5) {
+            nYEnd = nScreenHeight - 5;
+        }
+    }
+
+    // The primary draw's background + text, minus the progress-bar branch
+    // (no nLoadProgress field in this channel - it is unreachable).
+    D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nXStart, nYEnd - nCmpHeight, nXStart + nCmpWidth, nYEnd, 0, DRAW_LESSTRANSPARENT);
+    D2WINFONT_DrawWideString(gVpCompareTooltip.wszString, nXStart, nYEnd - (int)((uint32_t)gaFontCache[gnLastUsedFontId].pFontTableHeader->nLineHeight * gnFontIdBody) / 10, nCmpWidth, gVpCompareTooltip.nColor, 1);
+
+    // Self-clear: the channel is per-frame by contract (see the block
+    // comment), so a later frame can never draw a stale compare box.
+    gVpCompareTooltip.wszString[0] = L'\0';
+    if (nPrevFont != pSavedFont) {
+        SetAndReturnLastFont(pSavedFont);
+    }
+}
+// VP-END [shift-compare]
+
 // VP-BEGIN [labels]: the font cache + char-width function pointer went
 // TU-private in upstream's 962f88d5 per-TU restructure; see the Vanilla+
 // label metrics walk in VanillaPlusCore.cpp / VanillaPlusOptions.cpp.

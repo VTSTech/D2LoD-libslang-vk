@@ -68,6 +68,7 @@
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DATATBLS/LvlTbls.h"
 #include "D2Common/DATATBLS/OverlayTbls.h"
+#include "D2Common/INVENTORY/Inventory.h" // [shift-compare] INVENTORY_GetItemByGridOffset / GetWeaponHandedness
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
@@ -248,7 +249,17 @@ static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
         ";   1 = a Mana Burn melee hit drains the intended amount instead\r\n"
         ";       (66-100% of the monster's level damage; Nightmare and Hell\r\n"
         ";       still drain more, exactly like D2R after its 2.4 fix)\r\n"
-        "mana_burn_fix=0\r\n";
+        "mana_burn_fix=0\r\n"
+        "\r\n"
+        "; Shift item compare (D2R hover-compare parity):\r\n"
+        ";   0 = off: item tooltips exactly as retail         (vanilla behavior)\r\n"
+        ";   1 = hold Shift (or whatever the Click/Hold Move key is bound\r\n"
+        ";       to) while hovering an item in a panel to draw a second\r\n"
+        ";       tooltip beside it: the item you have equipped for that\r\n" 
+        ";       slot. Works in the inventory, stash, cube, trade and at\r\n"
+        ";       the vendor (your items and the shop stock). Side-by-side\r\n"
+        ";       viewing only, like D2R's compare - no stat-delta lines.\r\n"
+        "shift_compare=0\r\n";
     HANDLE hFile = CreateFileA(pszPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW,
                                FILE_ATTRIBUTE_NORMAL, nullptr);
     if (hFile == INVALID_HANDLE_VALUE) {
@@ -554,6 +565,219 @@ void __stdcall ITEMILVL_AppendNameSuffix(D2UnitStrc * pItem, uint16_t * wszName)
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszName, wszSuffix);
 }
 
+// ===== [vanilla-plus shift-compare] hold-Shift equipped-item compare ========
+// D2R hover-compare parity (FEATURES.md row 0b; the full behavior spec is
+// SHIFT-COMPARE-PLAN.md + VanillaPlusCore.h). One code round (R125), owner
+// decisions 2026-11-06: side-by-side second box, hold-Shift trigger, row
+// label "Shift Item Compare", SHOP STOCK INCLUDED (hovering vendor stock
+// compares too - the plan's draft v1 skipped it).
+//
+// Mechanism: Inv.cpp's DRAW_UI_Inventory publishes the hovered item's
+// tooltip through exactly one LoadItemDesc call site (both the full builder
+// and the shop-narrow name+price branch publish through
+// TEXT_TooltipSetAttributes inside it). The VP block right after that call
+// invokes SHIFTCOMPARE_CompareForHover(), which:
+//   1. bails unless the gate is on, the cmd-0x24 key (default VK_SHIFT, a
+//      keybind remap is honored - the exact per-frame read retail's
+//      UpdateMouseModifierKeyState performs, Game.cpp:1193-1221) is down,
+//      the hover is NOT a paperdoll body slot (gbInvBodySlotUnderCursorExists
+//      - those items are already equipped), and pItemToDescribe names the
+//      item LoadItemDesc just described this frame;
+//   2. resolves the hovered item's ItemTypes bl1/bl2 to the equipped item
+//      to compare against (rings first-occupied of {6,7}; weapons first
+//      occupied of {bl1,bl2} with the 2H paired-cell convention - handedness
+//      2 describes from slot 4; everything else straight bl1; both empty =
+//      no box, which also covers potions/charms/jewels);
+//   3. composes the equipped item's tooltip by the save/swap/capture/
+//      restore round trip below - zero footprint on the upstream builder
+//      (the item_ilvl lesson: hook, don't refactor). The swap set is
+//      exactly { pItemToDescribe, g_nCurrentInventoryPage }: the :8514
+//      hover gate reads gpInvItemUnderCursor (a hover FLAG, still set - the
+//      hover is real) and pItemToDescribe; the :8532 shop-narrow selector
+//      additionally reads gnItemDescTitleMaxWidth (TU-private) + shop mode
+//      + g_nCurrentInventoryPage - forcing the page to 0 makes the
+//      "page - 1U > 8" term TRUE, which takes the FULL builder and also
+//      suppresses the vendor price line the full path appends on shop
+//      pages (:8783-8787), so the compare box is the plain equipped-item
+//      tooltip everywhere, shop included. pUnit=pPlayer with bUsePlayer=1
+//      (owner = the player: requirement colors check against the player).
+//      Equipped set items ride LoadItemDesc's own quality-5 route into
+//      ITEM_BuildSetItemTooltip, so the set-bonus lines come through.
+//   4. publishes the composed text into the second channel
+//      (D2WinFont.cpp gVpCompareTooltip via TEXT_CompareTooltipSetAttributes)
+//      together with the primary's published rect snapshot, then restores
+//      the globals AND the primary's DisplayedTooltip so the hovered
+//      item's tooltip draws unchanged this frame. The snapshot makes the
+//      side-by-side placement immune to the Alt-labels path wiping the
+//      primary channel between capture and draw (ShowItems.cpp wipes run
+//      in DRAW_AltItems, after the panel draws and before Draw.cpp:739).
+// The channel self-clears on draw, so no state can outlive the frame.
+static int gbShiftCompareMode = 0;
+static DWORD dwShiftCompareLastCheck = 0;   // 2 s ini re-read gate (row-28 pattern)
+
+BOOL __stdcall SHIFTCOMPARE_Active() {
+    DWORD dwNow = GetTickCount();
+    if (!dwShiftCompareLastCheck || dwNow - dwShiftCompareLastCheck >= 2000) {
+        dwShiftCompareLastCheck = dwNow;
+        gbShiftCompareMode = D2VP_GetFeatureToggle("shift_compare");
+    }
+    return gbShiftCompareMode;
+}
+
+// The trigger read, retail's own idiom (UpdateMouseModifierKeyState,
+// Game.cpp:1193-1221): the key bound to cmd 0x24 in either binding slot,
+// GetAsyncKeyState(vk) < 0 = down. No CmdTbl entry, no latch, no keyup
+// hook - a per-frame poll, deliberately NOT the alt_toggle latch shape.
+static int SHIFTCOMPARE_ClickModifierDown() {
+    uint16_t wVirtualKey;
+    if (D2Client::UI::CmdTbl::CMD_IsCommandBound(0x24, 1)) {
+        wVirtualKey = D2Client::UI::CmdTbl::CMD_GetKeyForCommand(0x24, 1);
+        if (wVirtualKey != 0xffff && GetAsyncKeyState((uint32_t)wVirtualKey) < 0) {
+            return 1;
+        }
+    }
+    if (D2Client::UI::CmdTbl::CMD_IsCommandBound(0x24, 0)) {
+        wVirtualKey = D2Client::UI::CmdTbl::CMD_GetKeyForCommand(0x24, 0);
+        if (wVirtualKey != 0xffff && GetAsyncKeyState((uint32_t)wVirtualKey) < 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// Hovered item -> equipped item to compare against. The hovered item's
+// intended slot comes from its ItemTypes row (bl1/bl2), NEVER from the item
+// instance (GetBodyLocation is only set once equipped). Slot map per
+// SHIFT-COMPARE-PLAN.md 2: rings first-occupied of {6,7} (deterministic,
+// retail's first-fit auto-equip order); weapons first occupied of {bl1,bl2}
+// and 2H-aware (a 2H occupying both arms describes from slot 4 - the same
+// "2H describes from the paired cell" convention the equipped-slot hover
+// path uses, INV_UpdateBodySlotUnderCursor); shields/ammo 5, armor 3,
+// helm 1, boots 9, gloves 10, belts 8, amulet 2 are straight bl1 lookups;
+// both bodylocs empty (potion, charm, jewel, ...) = no compare box.
+// Returns the equipped unit, or null when there is nothing to compare.
+static D2UnitStrc * SHIFTCOMPARE_ResolveSlot(D2UnitStrc * pPlayer, D2UnitStrc * pItem) {
+    eD2BodyLoc nBodyLoc1 = BODYLOC_NONE;
+    eD2BodyLoc nBodyLoc2 = BODYLOC_NONE;
+    D2InventoryStrc* pInventory;
+    D2UnitStrc* pEquipped;
+
+    D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_BodyLoc1andBodyLoc2(pItem, &nBodyLoc1, &nBodyLoc2);
+    pInventory = pPlayer->pInventory;
+    if (!pInventory) {
+        return nullptr;
+    }
+
+    if (nBodyLoc1 == BODYLOC_NONE && nBodyLoc2 == BODYLOC_NONE) {
+        return nullptr;   // not equippable: no compare box
+    }
+
+    if (nBodyLoc1 == BODYLOC_R_RING) {
+        // Rings (bl1=6, bl2=7): compare against the first occupied of {6, 7}.
+        pEquipped = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, BODYLOC_R_RING);
+        if (!pEquipped) {
+            pEquipped = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, BODYLOC_L_RING);
+        }
+        return pEquipped;
+    }
+
+    if (nBodyLoc1 == BODYLOC_R_ARM || nBodyLoc1 == BODYLOC_L_ARM) {
+        // Weapons (bl1/bl2 in {4,5}): first occupied of {bl1, bl2}.
+        int nTarget = nBodyLoc1 == BODYLOC_R_ARM ? (int)BODYLOC_R_ARM : (int)BODYLOC_L_ARM;
+        pEquipped = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, nTarget);
+        if (!pEquipped && (nBodyLoc2 == BODYLOC_R_ARM || nBodyLoc2 == BODYLOC_L_ARM)) {
+            int nOther = nBodyLoc2 == BODYLOC_R_ARM ? (int)BODYLOC_R_ARM : (int)BODYLOC_L_ARM;
+            pEquipped = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, nOther);
+            if (pEquipped) {
+                nTarget = nOther;
+            }
+        }
+        if (!pEquipped) {
+            return nullptr;
+        }
+        if (D2Common::INVENTORY::Inventory::INVENTORY_GetWeaponHandedness(pPlayer, pInventory) == 2) {
+            // A 2H occupies both arms: describe slot 4's item - the same
+            // paired-cell convention INV_UpdateBodySlotUnderCursor uses.
+            pEquipped = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, BODYLOC_R_ARM);
+            if (!pEquipped) {
+                pEquipped = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, BODYLOC_L_ARM);
+            }
+            if (!pEquipped) {
+                return nullptr;
+            }
+        }
+        return pEquipped;
+    }
+
+    // Everything else: straight bl1; if that bodyloc is empty, bl2 (both
+    // empty already returned above - one occupied bodyloc is guaranteed).
+    pEquipped = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, nBodyLoc1);
+    if (!pEquipped) {
+        pEquipped = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, nBodyLoc2);
+    }
+    return pEquipped;
+}
+
+// Per-frame trigger, called from the VP block in Inv.cpp's DRAW_UI_Inventory
+// immediately after the LoadItemDesc call site - the one point where the
+// primary tooltip (hovered item) is freshly published and the frame's
+// context globals are live. Gate off / Shift up / paperdoll hover / no item
+// under cursor / nothing to compare = returns with zero side effects:
+// exactly today's single tooltip.
+void __stdcall SHIFTCOMPARE_CompareForHover() {
+    D2TooltipTextStrc sPrimary;
+    D2UnitStrc* pHovered;
+    D2UnitStrc* pPlayer;
+    D2UnitStrc* pEquipped;
+    D2UnitStrc* pSavedDescribe;
+    int nSavedPage;
+
+    if (!SHIFTCOMPARE_Active()) {
+        return;
+    }
+    if (gbInvBodySlotUnderCursorExists) {
+        return;   // paperdoll hover: the item is already equipped, no compare
+    }
+    pHovered = pItemToDescribe;
+    if (!pHovered) {
+        return;   // nothing hovered this frame (also covers cursor-held items)
+    }
+    if (!SHIFTCOMPARE_ClickModifierDown()) {
+        return;   // Shift up: exactly today's single tooltip
+    }
+    pPlayer = D2Client::UNIT::Player::GetPlayerUnit_UI();
+    if (!pPlayer || !pPlayer->pInventory) {
+        return;
+    }
+    pEquipped = SHIFTCOMPARE_ResolveSlot(pPlayer, pHovered);
+    if (!pEquipped || pEquipped == pHovered) {
+        return;   // empty target slot, or the hover IS the equipped item
+    }
+
+    // The compose round trip. The primary tooltip is saved wholesale: it is
+    // restored below so the hovered item's box draws unchanged this frame,
+    // and its published rect rides into the compare channel for the
+    // side-by-side placement (snapshot - immune to the Alt-labels wipes).
+    memcpy(&sPrimary, &DisplayedTooltip, sizeof(sPrimary));
+    pSavedDescribe = pItemToDescribe;
+    nSavedPage = g_nCurrentInventoryPage;
+
+    pItemToDescribe = pEquipped;
+    g_nCurrentInventoryPage = 0;   // forces the FULL builder (:8532) and no price line (:8783)
+    D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(nullptr, 0, 0, 0, 0); // clear: a compose early-out must be detectable
+    D2Client::UI::Inv::LoadItemDesc(pPlayer, 1);   // bUsePlayer=1: owner = the player
+    if (DisplayedTooltip.wszString[0]) {
+        D2Win::Src::D2WinFont::TEXT_CompareTooltipSetAttributes(
+            DisplayedTooltip.wszString,
+            sPrimary.nX, sPrimary.nY, sPrimary.nColor, sPrimary.nCenterFlag,
+            DisplayedTooltip.nColor);
+    }
+
+    pItemToDescribe = pSavedDescribe;
+    g_nCurrentInventoryPage = nSavedPage;
+    memcpy(&DisplayedTooltip, &sPrimary, sizeof(sPrimary));   // primary draws unchanged
+}
+
 // ===== [vanilla-plus no-panel-shift] ========================================
 // (issue #26 / R95) Retail slides the whole game world a quarter screen
 // sideways when exactly one panel is open (Path.cpp TypeOfUiOverlayOverWorld:
@@ -655,6 +879,7 @@ void __stdcall D2VP_ConfigReloaded() {
     dwGlobeTextPersistentLastCheck = 0; // next VANILLAPLUS_GlobeTextPersistent() re-reads globe_persistent
     dwItemIlvlLastCheck = 0;      // next ITEMILVL_Active() re-reads item_ilvl
     dwNoPanelShiftLastCheck = 0;  // next PANELSHIFT_NoShiftWorld() re-reads no_panel_shift
+    dwShiftCompareLastCheck = 0;  // next SHIFTCOMPARE_Active() re-reads shift_compare
     VPSHAREDUI_FlushGateCache();  // next VPSHAREDUI_FeatureActive() re-reads shared_stash
     Fog::Source::SFile::PORTABLESAVE_FlushConfig(); // next save-path poll re-reads portable_save
 }

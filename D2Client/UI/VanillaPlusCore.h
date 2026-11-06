@@ -186,6 +186,43 @@ BOOL __stdcall ITEMILVL_Active(); // config: item_ilvl on?
 // glues string-table entries and some (magic affix words, unique names) end
 // with their own space, which read as a double gap before (N).
 void __stdcall ITEMILVL_AppendNameSuffix(struct D2UnitStrc * pItem, uint16_t * wszName);
+// [vanilla-plus shift-compare] Hold-Shift equipped-item compare tooltip
+// (FEATURES.md row 0b, R125). D2R hover-compare parity: with
+// [features] shift_compare=1, holding the key bound to retail cmd 0x24
+// (CMD_SetClickModifier, default VK_SHIFT - a keybind remap is honored)
+// while an equippable item is hovered in a panel draws a SECOND tooltip
+// beside the hovered item's: the equipped item for the matching body slot.
+// Side-by-side viewing only - no stat-delta lines, that is D2R's own
+// compare scope (diablo2.io launch-era statement, SHIFT-COMPARE-PLAN.md
+// Sources). Placement: left of the primary with a 4 px gap, falling back
+// to the right when that leaves the screen; the same X/bottom clamp
+// idioms Draw_UnitNameUnderCursor applies.
+//
+// Coverage (owner decision 2026-11-06, "shop stock included"): every
+// context that publishes through Inv.cpp's single LoadItemDesc call site
+// - player inventory, stash, cube, vendor shop (BOTH your own items and
+// the vendor's stock: the stock hover takes the shop-narrow name+price
+// builder branch, and the compare capture runs right after either branch
+// publishes), trade screen. Hovering the paperdoll never compares (those
+// items are already equipped); hovering a non-equippable (potion, charm,
+// jewel) resolves no body slot and draws no box; rings compare against
+// the first occupied of {6,7} (retail's first-fit order); weapons are
+// 2H-aware (a 2H occupying both arms describes from slot 4, the same
+// paired-cell convention INV_UpdateBodySlotUnderCursor uses). Equipped
+// set items compose through LoadItemDesc's own quality-5 route into
+// ITEM_BuildSetItemTooltip, so the compare box carries the set-bonus
+// lines. The compare is one composed tooltip per frame: the capture
+// saves pItemToDescribe + g_nCurrentInventoryPage (+ the primary's
+// published DisplayedTooltip), swaps in the equipped item, calls
+// LoadItemDesc(pPlayer, 1), copies the result into the second channel
+// (D2WinFont.cpp gVpCompareTooltip, drawn by DRAW_CompareTooltipUnderCursor
+// right after the primary draw call), then restores everything - zero
+// footprint on the upstream builders themselves. Default/missing/garbage
+// ini = 0 = retail byte-for-byte (charter rule 1); 2 s hot-read like
+// every gate; while a panel is open held-Shift is inert in world space,
+// and the click-modifier semantics of Shift are untouched.
+BOOL __stdcall SHIFTCOMPARE_Active();      // config: shift_compare on?
+void __stdcall SHIFTCOMPARE_CompareForHover(); // per-frame trigger, Inv.cpp after the LoadItemDesc publish
 // [vanilla-plus options page] d2vp.ini feature-toggle bridge (row 10). The
 // page reads/flips the same [features] keys the gates consume; writes use
 // WritePrivateProfileStringA and flush every gate's 2 s hot-read cache.

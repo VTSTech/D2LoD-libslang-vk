@@ -44,23 +44,19 @@ each can be fixed, replaced and released independently.
 ## Status (2026-11-06)
 
 - **Up to date with upstream.** Eight numbered syncs of `jaenster/redivivus:main`
-  (first `R87`, latest the eighth: upstream `7df6ad0e..b8e3087f`, Ghidra DB
-  → **1948**, 16 commits / 786 files, merged as `18a368ce` — 693 unreferenced
-  functions defined, module-local symbols refiled into their using modules,
-  **Duriel's death no longer crashes**) — vanilla-plus is
+  (first `R87`, latest the eighth: R123, upstream `7df6ad0e..b8e3087f`, Ghidra DB
+  → **1948** — 693 unreferenced functions defined, module-local symbols refiled,
+  **Duriel's death no longer crashes**; digests: CHANGELOG [R123] + H43) — vanilla-plus is
   ahead of upstream and never behind. At DB 1948 the upstream byte-match stands
   at 7,648 of 14,626 functions (52.3%) / 23.99% of bytes (`asm_matching/msvc8`).
 - **The closed defect tracks stay closed** (HISTORY H1/H26): the glide crash
   series (fixes 1–13), sound (15–16; upstreamed as jaenster/redivivus PR #10 —
   drops work again and the Act 5 snow hang is gone, both upstream fixes) and
-  the fullscreen-D3D recovery (17–27) are all field-verified. The 720p-era D3D perspective-toggle
-  crash was root-fixed at `R98` (the flat-wall builder's `uint8_t` subtile
-  iterator wraps after 12 subtiles — latent since the original decompilation).
+  the fullscreen-D3D recovery (17–27) are all field-verified; the 720p-era D3D
+  perspective-toggle crash was root-fixed at `R98` (H40).
 - **The full smoke belt has passed twice on the 0.0.7 line**: on the R83 build
   ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24), 2026-11-02) and again
-  on R104 ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04 —
-  "R104 fully smoke tested. passed.", clearing the standing §L asks: the
-  unit-lock re-checks, perspective-off, both-panels, the D3D toggle re-check).
+  on R104 ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04).
   Boot → intro → title → character select → in game, Direct3D and Glide
   (incl. the native 1280x720 widescreen mode), sound end to end and the
   `-nointro` boot switch (R86) are all field-green; the build is field-played daily.
@@ -71,12 +67,10 @@ each can be fixed, replaced and released independently.
   stretch to fill the host with the cursor mapped back into the logical frame,
   windowed `-w` clean at every stop (the R116 GDI-pitch shear fix), and the
   wide-view rendering campaign closed the black-edge/void family at ≥720p
-  (R117–R122: edge-void band fill, the room walk extended to hop 4, `vpdiag`
-  instrumentation in `d2boot.log`, the retail cull-rect re-fit) — the campaign
-  closed on vpdiag evidence (fill firing at full stretch, zero silent drops).
-  Glide pairing: wrapper **0.4.8** for the 1080p stop (0.4.7 adds 1366x768,
-  0.4.6 knows 1344x700). The eighth-sync build re-verified in the field after
-  the R124 D3D fullscreen fix (2026-11-06: "d3d fullscreen works again").
+  (R117–R122, closed on vpdiag evidence — HISTORY H42). Glide pairing: wrapper
+  **0.4.8** for the 1080p stop (0.4.7 adds 1366x768, 0.4.6 knows 1344x700). The
+  eighth-sync build re-verified in the field after the R124 D3D fullscreen fix
+  (2026-11-06: "d3d fullscreen works again").
 - **The Vanilla+ surface is eight features deep** — all opt-in, default OFF,
   all manageable in-game from the Vanilla+ Options page (`Esc → Options`;
   the page shipped with 0.0.6 on 2026-10-30 and grew to eight rows — Shared
@@ -176,9 +170,8 @@ The wider candidate slate (D2R backports + owner suggestions) is scoped in
 - **Item Level Tooltips** (D2R 2.5 display-item-level parity) — with the gate
   on, every item tooltip's name line reads `Long Sword (12)`: the ilvl is
   appended to the item name in all three tooltip builders (identified,
-  unidentified and set items), rendered in the name's own color. Bare digits —
-  players know what `(N)` means (the label word shipped first and was dropped
-  per owner preference, R55→R59). **Default OFF**: set `[features] item_ilvl=1`.
+  unidentified and set items), rendered in the name's own color — bare digits,
+  players know what `(N)` means. **Default OFF**: set `[features] item_ilvl=1`.
 - **Shared Stash** — an outlined "Shared" tab on the stash panel over **ten**
   retail-shaped stash pages that every character on the PC shares: items and
   gold deposited there survive the character. `‹` / `›` arrows beside the label
@@ -226,16 +219,10 @@ unaffected. Works with the [Glide3xVK](https://github.com/VTSTech/Glide3xVK)
 overlay: drop that overlay's `glide3x.dll` in the same folder as usual
 (`-3dfx` for the wrapper route).
 
-On Windows the same build runs natively — `tools/build-local-win11.ps1` sets
-up MSYS2's i686 toolchain (first run: winget + pacman, one-time), then
-configures, builds, runs the CI gates (32-bit PE, map) and strips a
-`d2s-<id>.exe`:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File tools\build-local-win11.ps1 -Clean -DeployTo "C:\Games\Diablo II"
-```
-
-More per platform: [docs/building.md](docs/building.md).
+On Windows the same build runs natively — `tools/build-local-win11.ps1` sets up MSYS2's
+i686 toolchain (first run: winget + pacman, one-time), then configures, builds, runs the
+CI gates and strips a `d2s-<id>.exe`. Full Windows/cross-compile instructions:
+[docs/building.md](docs/building.md).
 
 ## Crash triage protocol
 
@@ -268,11 +255,11 @@ cannot be attributed.
 
 ## Roadmap
 
-1. **Stable base** — **done.** The glide crash class is burned down (fixes
-   1–13), sound (15–16) and drops (14) are fixed, the fullscreen-D3D recovery
-   (17–27) is closed, and the 720p render family (issue #26, R92–R98) is
-   root-fixed and field-proven; the full smoke belt has passed twice on this
-   base (R83 #24, R104 #28). The crash protocol above handles whatever fires next.
+1. **Stable base** — **done.** Fixes 1–27 closed and field-verified (the glide
+   crash class, sound — upstreamed as PR #10 — drops, the fullscreen-D3D recovery)
+   and the 720p render family root-fixed (H1/H26/H40); the full smoke belt has
+   passed twice on this base (R83 #24, R104 #28). The crash protocol above handles
+   whatever fires next.
 2. **Compatibility pass** — **done.** The wrapper's whole feature set (window
    presets, shader chain, controller, base_res) is verified against the rebuilt
    exe by daily field play plus the two full smoke belts; deltas that surfaced
@@ -299,10 +286,8 @@ cannot be attributed.
   (499 checks at R124); the build self-ID string (first `d2boot.log` line)
   bumps every code round so any shipped exe pins to its source round.
 - Transfer: the agent sandbox has no push credentials — regular rounds travel
-  as **overlay zips of changed files**, upstream merges as **git bundles**;
-  user side: `git fetch <file>.bundle main && git merge --ff-only FETCH_HEAD`,
-  then push. Overlay zips remain the fallback for file-level application to a
-  non-git tree.
+  as **overlay zips of changed files**, upstream merges as **git bundles**; the
+  operational detail: handoff.md §8 + [docs/merge-upstream.md](docs/merge-upstream.md).
 - Local recon (llvm-mingw / clang 23): CMake configure is clean with
   `cmake/mingw-i686.cmake` as-is. Compiling trips on two **clang-specific**
   quirks gcc does not have, so CI is unaffected: (1) `_EXCEPTION_DISPOSITION`
@@ -314,11 +299,7 @@ cannot be attributed.
 - exe size: the default d2.exe is ~300 MB **on purpose**. Upstream builds
   -O0 with full DWARF (`-g`) so the in-process fault handler
   (support/d2_crash.cpp + vendored libbacktrace) can write the SYMBOLIZED
-  `d2crash-*.txt` at crash time, and explicitly warns that optimizing
-  decompiled code which may lean on undefined behaviour is "an experiment,
-  not a release". Linking is fully static (`-static -static-libgcc
-  -static-libstdc++`), so no mingw runtime DLLs are needed beside it. The
-  original 1.14d Game.exe is ~6 MB; -O0 code bloat plus DWARF for tens of
-  thousands of functions is the rest. Keep the fat exe as the crash-triage
-  instrument; `strip` removes only the DWARF (the CI job uploads both),
-  it does not shrink the -O0 code itself.
+  `d2crash-*.txt` at crash time, and optimizing decompiled code which may lean
+  on undefined behaviour is "an experiment, not a release". Linking is fully
+  static (`-static -static-libgcc -static-libstdc++`), so no mingw runtime DLLs
+  are needed beside it; `strip` removes only the DWARF (the CI job uploads both).

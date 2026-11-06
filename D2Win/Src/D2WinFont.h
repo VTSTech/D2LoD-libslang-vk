@@ -106,4 +106,18 @@ const D2FontCacheEntryStrc * VP_GetFontCacheEntry(int nFontId);
 pfnFontGetGlyphEntry VP_GetFontCharWidthFn();
 // VP-END [labels]
 
+// VP-BEGIN [shift-compare]: the hold-Shift equipped-item compare tooltip's
+// second one-shot channel (R125, FEATURES.md row 0b). Capture:
+// VanillaPlusCore.cpp SHIFTCOMPARE_CompareForHover publishes the composed
+// equipped-item tooltip right after Inv.cpp's LoadItemDesc publish, carrying
+// the primary's published rect for the side-by-side placement; draw:
+// Draw.cpp invokes the compare draw right after the primary tooltip draw
+// (before the stored tooltip). The draw is a VP-marked clone of
+// Draw_UnitNameUnderCursor (downsize loop, clamps, LESSTRANSPARENT
+// background, wide-string draw - no progress-bar branch), self-clears, and
+// is a no-op when the channel is empty (gate off).
+void __fastcall TEXT_CompareTooltipSetAttributes(uint16_t * wszBuffer, int32_t nPrimaryX, int32_t nPrimaryY, int32_t nPrimaryColor, int32_t nPrimaryCenterFlag, int32_t nCompareColor);
+void __stdcall DRAW_CompareTooltipUnderCursor();
+// VP-END [shift-compare]
+
 } // namespace D2Win::Src::D2WinFont

@@ -1057,7 +1057,11 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # across upstream's refiled static and the fork's retail-relative form - the
 # rebuilt exe then indexed the texture cache through two different regions;
 # all four sites back on the relative form, refile-aliasing audit added)
-gate "res: self-id 0.0.7-R124"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R124' 1
+# R125: string bumped R124 -> R125 (the shift-compare round, FEATURES.md 0b:
+# hold-Shift equipped-item compare tooltip, D2R hover-compare parity; owner
+# decisions 2026-11-06: side-by-side second box, hold trigger, row label
+# "Shift Item Compare", shop stock included)
+gate "res: self-id 0.0.7-R125"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R125' 1
 # R115: string bumped R113 -> R115 (the 1080p sixth-stop round; owner:
 # "Great job. works. Published Glide3xVK 0.4.7. Now lets do 1080p")
 # R116: string bumped R115 -> R116 (the GDI windowed 1366x768 shear fix;
@@ -1278,11 +1282,12 @@ gate "noshift: unit overlays (R100)"        D2Client/UI/ui.cpp              'PAN
 # so the very next PANELSHIFT_NoShiftWorld poll re-reads the key). Seventh row
 # forced the Previous Menu row down one pitch (0x124 -> 0x144); R108's eighth
 # row (mana_burn_fix) ran the same move again (0x144 -> 0x164, box 0x171 ->
-# 0x191) - the layout check comment in VanillaPlusOptions.cpp carries the
-# arithmetic, and the two shape pins below are CURRENT (re-pinned R108).
+# 0x191), and R125's ninth row (shift_compare) once more (0x164 -> 0x184, box
+# 0x191 -> 0x1b1) - the layout check comment in VanillaPlusOptions.cpp
+# carries the arithmetic; the two R108 shape pins retired with R125 (the
+# shiftcmp: cluster below owns the CURRENT shape: VPP_ROW_COUNT = 9 /
+# VPPAGE_BACK_ROW_Y = 0x184 / VPPAGE_BOX_HEIGHT = 0x1b1).
 gate "options page: noshift row present (R101)"  D2Client/UI/VanillaPlusOptions.cpp '"no_panel_shift"' 1
-gate "options page: eight rows (R108)"           D2Client/UI/VanillaPlusOptions.cpp 'VPP_ROW_COUNT = 8' 1
-gate "options page: back row below 8th (R108)"   D2Client/UI/VanillaPlusOptions.cpp 'VPPAGE_BACK_ROW_Y = 0x164' 1
 
 # ---- [issue #26 / R96] D3D perspective-toggle death triage probes -------------
 # Owner field report (R95): toggling perspective in D3D kills the process;
@@ -1366,6 +1371,45 @@ gate "manaburn: ini template entry"          D2Client/UI/VanillaPlusCore.cpp   '
 # Menu row down one pitch (0x144 -> 0x164) and grew the box (0x171 -> 0x191);
 # the layout check comment in VanillaPlusOptions.cpp carries the arithmetic
 gate "options page: manaburn row present (R108)" D2Client/UI/VanillaPlusOptions.cpp '"mana_burn_fix"' 1
+
+# ---- [shift-compare / R125] hold-Shift equipped-item compare tooltip --------
+# FEATURES.md row 0b, the code round of SHIFT-COMPARE-PLAN.md. D2R
+# hover-compare parity: with [features] shift_compare=1, holding the key
+# bound to retail cmd 0x24 (default VK_SHIFT, remap honored - retail's own
+# per-frame UpdateMouseModifierKeyState poll idiom, Game.cpp:1193-1221)
+# while an equippable item is hovered in a panel draws a SECOND tooltip -
+# the equipped item for the matching body slot - left of the primary with a
+# 4 px gap (fallback right). Owner decisions 2026-11-06: side-by-side second
+# box, hold trigger, row label "Shift Item Compare", SHOP STOCK INCLUDED
+# (the capture fires after the single LoadItemDesc publish, so the
+# shop-narrow name+price branch is covered too). The compose is the
+# save/swap/capture/restore round trip in VanillaPlusCore.cpp - the swap set
+# is exactly { pItemToDescribe, g_nCurrentInventoryPage } (page 0 forces the
+# full builder at Inv.cpp:8532 and suppresses the vendor price line at
+# :8783-8787); equipped set items ride LoadItemDesc's own quality-5 route
+# into ITEM_BuildSetItemTooltip (:8540-8546), so set-bonus lines come
+# through. The second channel (gVpCompareTooltip) lives in D2WinFont.cpp
+# beside the file-local metric statics and self-clears on draw; the trigger
+# adds no CmdTbl entry, no latch, no keyup hook.
+gate "shiftcmp: gate fn defined"              D2Client/UI/VanillaPlusCore.cpp   '__stdcall SHIFTCOMPARE_Active' 1
+gate "shiftcmp: ini key read by the gate"     D2Client/UI/VanillaPlusCore.cpp   '"shift_compare"' 1
+gate "shiftcmp: ini template key"             D2Client/UI/VanillaPlusCore.cpp   'shift_compare=0' 1
+gate "shiftcmp: decl + cache busted on write" D2Client/UI/VanillaPlusCore.cpp   'dwShiftCompareLastCheck = 0' 2
+gate "shiftcmp: trigger poll (cmd 0x24)"      D2Client/UI/VanillaPlusCore.cpp   'CMD_GetKeyForCommand\(0x24' 2
+gate "shiftcmp: slot resolver defined"        D2Client/UI/VanillaPlusCore.cpp   'SHIFTCOMPARE_ResolveSlot' 2
+gate "shiftcmp: hook fn defined"              D2Client/UI/VanillaPlusCore.cpp   '__stdcall SHIFTCOMPARE_CompareForHover' 1
+gate "shiftcmp: page-0 compose guard"         D2Client/UI/VanillaPlusCore.cpp   'g_nCurrentInventoryPage = 0;' 1
+gate "shiftcmp: Inv.cpp call site"            D2Client/UI/Inv.cpp               'SHIFTCOMPARE_CompareForHover' 1
+gate "shiftcmp: second channel capture"       D2Win/Src/D2WinFont.cpp           'TEXT_CompareTooltipSetAttributes' 1
+gate "shiftcmp: second channel draw"          D2Win/Src/D2WinFont.cpp           'void __stdcall DRAW_CompareTooltipUnderCursor' 1
+gate "shiftcmp: channel struct"               D2Win/Src/D2WinFont.cpp           'VPSHIFTCOMPARE_TooltipStrc' 2
+gate "shiftcmp: font decls (set + draw)"      D2Win/Src/D2WinFont.h             'TEXT_CompareTooltipSetAttributes|DRAW_CompareTooltipUnderCursor' 2
+gate "shiftcmp: draw call in the pipeline"    D2Client/UI/Draw.cpp              'DRAW_CompareTooltipUnderCursor' 1
+gate "shiftcmp: paperdoll exclusion"          D2Client/UI/VanillaPlusCore.cpp   'gbInvBodySlotUnderCursorExists' 2
+gate "shiftcmp: options row present (R125)"   D2Client/UI/VanillaPlusOptions.cpp '"shift_compare"' 1
+gate "shiftcmp: row count pin (R125)"         D2Client/UI/VanillaPlusOptions.cpp 'VPP_ROW_COUNT = 9' 1
+gate "shiftcmp: back-row Y re-pin (R125)"     D2Client/UI/VanillaPlusOptions.cpp 'VPPAGE_BACK_ROW_Y = 0x184' 1
+gate "shiftcmp: box height re-pin (R125)"     D2Client/UI/VanillaPlusOptions.cpp 'VPPAGE_BOX_HEIGHT = 0x1b1' 1
 
 echo
 if [ "$FAIL" -eq 0 ]; then

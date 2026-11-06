@@ -9420,6 +9420,16 @@ void __stdcall DRAW_UI_Inventory() {
     }
 
     LoadItemDesc(pSlotItem, nDrawTextWidth);
+    // VP: [shift-compare] (R125, FEATURES.md 0b) D2R hover-compare parity:
+    // with [features] shift_compare=1, holding the cmd-0x24 key (default
+    // VK_SHIFT) while an equippable item is hovered draws the equipped
+    // item's tooltip beside the primary. Fires immediately after the
+    // publish so it covers BOTH builder shapes that share this call site
+    // (the full builder :8532 and the shop-narrow name+price branch :8828)
+    // - owner decision 2026-11-06: vendor stock hovers compare too. All
+    // gating and the compose round trip live in the core hook; gate off /
+    // Shift up / paperdoll hover = zero side effects, retail byte-for-byte.
+    SHIFTCOMPARE_CompareForHover();
 }
 
 BOOL __stdcall ClickItemLeft(D2UnitStrc * pUnit, D2InventoryStrc * pInventory, DWORD x, DWORD y, D2UnitStrc * targetItem, D2InventoryLayout * pInvLayout, uint32_t nPage) {

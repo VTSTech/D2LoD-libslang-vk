@@ -66,78 +66,32 @@ per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
 [`handoff.md`](handoff.md) (live) and [`HISTORY.md`](HISTORY.md) (verbatim archive).
 
 - **Shipped: [`R124`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R124)
-  ("Vanilla+0.0.7-R124")** — the **D3D fullscreen boot-crash fix**: the
-  eighth-sync merge split `RENDERER_DIRECT3D_UploadTextureToCache`'s four
-  texture-cache node-base sites across upstream's refiled static spelling and
-  the fork's build-relative form — the rebuilt exe indexed the texture cache
-  through two different regions and the first texture re-upload dereferenced
-  a near-null base (`AV READ at 0x10`, D3D fullscreen only; `-w` and Glide
-  untouched). All four sites back on the relative form, plus the new
-  `scripts/refile_aliasing_audit.py` instrument (all 220 refile-marked TUs
-  swept — repo-wide CLEAN) — field-verified 2026-11-06 ("d3d fullscreen works
-  again"). The build also carries
-  [`R123`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R123) — the
-  **eighth upstream sync** (Ghidra DB 1908 → 1948, 16 commits / 786 files:
-  693 unreferenced functions defined, module-local symbols refiled into their
-  using modules, initialised data byte-matched against 1.14d, **Duriel's
-  death no longer crashes**) — and the **R109–R122 wide-resolution arc**: the
-  **1344x700 / 1366x768 / 1920x1080** video-options stops (R109/R112/R115),
-  probe-first hosted-stretch fullscreen presentation (R110/R111), the esc-menu
-  stride hotfix (R113), the windowed 1366x768 shear fix (R116) and the
-  wide-view rendering campaign — the edge-void band fill, the room walk
-  extended to hop 4, `vpdiag` instrumentation and the retail cull-rect re-fit
-  (R117–R122). Earlier 0.0.7-line releases:
-  [`R108`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R108) — the
-  **Mana Burn Fix** joins the Vanilla+ Options panel as its eighth row
-  (`Esc → Options → "Vanilla+ Options"`), so the R106 toggle is no longer
-  ini-only; the build also carries the owner-corrected drain shim (R107);
-  [`R106`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R106) —
-  `mana_burn_fix`: Mana Burn unique monsters drained 256x the intended mana with
-  melee hits (512x in Hell — one blow emptied the pool); the opt-in fix drains the
-  designed 66–100% of the monster's level damage instead (33–50% for Nightmare/Hell
-  minions), matching D2R's own post-2.4 behavior — the build also carried the
-  seventh upstream sync (Ghidra DB → 1908; the byte-match table below has since
-  moved with the eighth sync and is current at 7,648/14,626 fns);
-  [`R105`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R105) — the sixth
-  upstream sync (Ghidra DB → 1894, 124 files);
-  [`R104`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R104) — the per-TU
-  restructure fallout sweep; the build also carries the fourth and fifth upstream
-  syncs (R99/R102 — Ghidra DB 1864 → 1892), the unit-sprite pan fix the new retail
-  bodies re-armed under `no_panel_shift=1` (R100; owner: "no_panel_shift is working
-  as intended now"), the **No Panel World Shift** Options row (R101) and the
-  diag-probe retirement (R103) — and it carried the full SMOKE belt green
-  ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04);
-  [`R98`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R98) — issue #26
-  round 7: the D3D perspective-toggle crash rooted to the flat-wall builder's
-  `uint8_t` subtile iterator (wraps after 12 subtiles and reads +4-shifted
-  pseudo-records — latent since the original decompilation), iterator widened to
-  `int`. Earlier 0.0.7-line tags:
-  [`R91`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R91) — docs +
-  field-verify round: the third upstream sync field-run green and the necro-minion
-  skeleton fix confirmed in the field ("Skeletons are finally white again");
-  [`R88`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R88) — the second
-  upstream sync (Ghidra DB 1839 → 1851; gossip-table and SFX float supersessions);
-  [`R87`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R87) — the first
-  upstream sync of the line (1806 → 1839, field-run green);
-  [`R86`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R86) — the
-  `-nointro` boot switch ("R86 verified, -nointro works");
-  [`R85`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R85) — the A1Q2
-  Bloodraven turn-in fix ([#22](https://github.com/VTSTech/D2VP-QoL/issues/22),
-  closed by the owner 2026-11-02).
+  ("Vanilla+0.0.7-R124")** — the **D3D fullscreen boot-crash fix**: the eighth-sync
+  merge split `RENDERER_DIRECT3D_UploadTextureToCache`'s four texture-cache node-base
+  sites across upstream's refiled static spelling and the fork's build-relative form —
+  the rebuilt exe indexed the texture cache through two different regions and the first
+  texture re-upload dereferenced a near-null base (`AV READ at 0x10`, D3D fullscreen
+  only; `-w` and Glide untouched). All four sites back on the relative form, plus the
+  new `scripts/refile_aliasing_audit.py` instrument (all 220 refile-marked TUs swept —
+  repo-wide CLEAN) — field-verified 2026-11-06 ("d3d fullscreen works again"). The
+  build also carries [`R123`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R123) —
+  the **eighth upstream sync** (Ghidra DB → 1948: 693 unreferenced functions defined,
+  module-local symbols refiled into their using modules, **Duriel's death no longer
+  crashes**) — and the **R109–R122 wide-resolution arc**: the 1344x700 / 1366x768 /
+  1920x1080 video-options stops, probe-first hosted-stretch fullscreen presentation,
+  and the wide-view rendering campaign. Earlier 0.0.7-line releases R85–R122 (the sync
+  chain, `mana_burn_fix` + its Options row, `no_panel_shift`, the shared-stash growth,
+  the `-nointro` switch, the issue-#26 arc): per-release digests in
+  [CHANGELOG.md](CHANGELOG.md) — the release-by-release roll this bullet carried moved
+  to [HISTORY.md](HISTORY.md) H46 (trim #22).
 - **Field-verified**: boot → intro → title → character select → in game; Direct3D and
-  Glide (`-3dfx`) rendering, incl. the native 1280x720 widescreen mode; sound end to
-  end; the full SMOKE belt passed on the R83 build
-  ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24)) and again fully on the R104
-  build ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04 — incl. the
-  D3D perspective-toggle re-check and the `no_panel_shift` §L matrix); the `-nointro`
-  boot switch (R86) verified in-game 2026-11-02 — "R86 verified, -nointro works"; the
-  `no_panel_shift` feature (R95 Glide pass: "All blackness appears fixed in Glide as
-  well"; R100 unit lock: "working as intended now"); the six-stop resolution ladder —
-  1344x700 Glide green (R109), D3D held (R113: "ok, working good in D3D now"),
-  1920x1080 (R115: "Great job. works"); the hosted-stretch fullscreen presentation
-  (R111 letterbox "ok, i see the black bars" → stretched R112+); windowed `-w` clean;
-  and the eighth-sync build re-verified after the R124 D3D fullscreen fix
-  (2026-11-06: "d3d fullscreen works again").
+  Glide (`-3dfx`) rendering, incl. the native 1280x720 widescreen mode; sound end to end;
+  the full SMOKE belt twice ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24),
+  [#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04); the `-nointro` boot
+  switch; `no_panel_shift` end to end; the six-stop resolution ladder; windowed `-w`
+  clean; and the eighth-sync build re-verified after the R124 D3D fullscreen fix
+  (2026-11-06: "d3d fullscreen works again"). The per-round field quotes this bullet
+  carried: [HISTORY.md](HISTORY.md) H46.
 - **Open issues (1)**, triaged in [handoff.md](handoff.md) §9: the Refilling Shrine
   XP buff ([#25](https://github.com/VTSTech/D2VP-QoL/issues/25)) — suspected
   wrong-shrine-effect application (the XP buff belongs to a different shrine type);
@@ -211,7 +165,7 @@ Two checks stand behind every release:
 
 - **The Vanilla+ gate suite** — [`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh)
   pins the whole Vanilla+ surface (feature gates, 720p anchors, sound constants, boot
-  telemetry) with **387 checks**, green at the current tip.
+  telemetry) with **499 checks**, green at the current tip.
 - **[`asm_matching/`](asm_matching/README.md)** (upstream) compiles the tree with Visual
   C++ 2005 SP1 and byte-compares each function against the 1.14d binary — a check on the
   decompilation itself: where the code comes out identical, the decompiled function was

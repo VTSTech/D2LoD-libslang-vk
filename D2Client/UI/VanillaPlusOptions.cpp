@@ -131,11 +131,11 @@ static const uint16_t VPPAGE_FONT_ID = 0xd;        // FontInGameChat - ControlCo
 
 // Page layout (mirrors the ControlConfig panel box for a familiar look).
 static const int VPPAGE_BOX_WIDTH = 0x26c;
-static const int VPPAGE_BOX_HEIGHT = 0x191;        // R108: was 0x171 - grew one pitch for the eighth row (see the layout check)
+static const int VPPAGE_BOX_HEIGHT = 0x1b1;        // R125: was 0x191 - grew one pitch for the ninth row (see the layout check)
 static const int VPPAGE_ROW_PITCH = 0x20;
 static const int VPPAGE_ROW_HEIGHT = 0x1a;
 static const int VPPAGE_FIRST_ROW_Y = 0x50;        // from box top
-static const int VPPAGE_BACK_ROW_Y = 0x164;        // from box top (R108: was 0x144 - moved below the eighth row, see the layout check)
+static const int VPPAGE_BACK_ROW_Y = 0x184;        // from box top (R125: was 0x164 - moved below the ninth row, see the layout check)
 static const int VPPAGE_TEXT_BASELINE_INSET = 4;   // baseline above row bottom
 
 // [features] keys rendered by the page. Adding a slate feature = +1 entry
@@ -147,7 +147,7 @@ struct VPPFeatureRow {
     const char* szKey;        // d2vp.ini [features] key
     const wchar_t* wszLabel;  // row label
 };
-static const VPPFeatureRow gaVanillaPlusRows[8] = {
+static const VPPFeatureRow gaVanillaPlusRows[9] = {
     { "alt_toggle", L"Show Items Toggle" },
     { "auto_gold", L"Auto Gold Pickup" },
     { "portable_save", L"Portable Saves" },
@@ -169,19 +169,33 @@ static const VPPFeatureRow gaVanillaPlusRows[8] = {
     // latency as an external ini edit, while the panel draw below re-reads
     // the key fresh every frame and shows the flip immediately.
     { "mana_burn_fix", L"Mana Burn Fix" },
+    // VP: [shift-compare / R125] shift_compare - the toggle rides the same
+    // D2VP_* bridge as the other eight (label = the owner's wording, 2026-11-06).
+    // The ini template block ships in the same round, so both a fresh
+    // d2vp.ini and an existing one carry the key. The gate SHIFTCOMPARE_Active
+    // (VanillaPlusCore.cpp) polls at tooltip-draw time per frame, and the
+    // write bridge busts dwShiftCompareLastCheck (D2VP_ConfigReloaded), so a
+    // flip here shows on the very next hover frame; the compare capture also
+    // re-reads the key fresh every frame it fires, so the round trip is
+    // immediate in both directions.
+    { "shift_compare", L"Shift Item Compare" },
 };
-static const int VPP_ROW_COUNT = 8;
-static const int VPP_ROW_BACK = 8; // hit-test index of the Previous Menu row
-// Layout check (R101, re-run for R108): the seventh feature row spans
+static const int VPP_ROW_COUNT = 9;
+static const int VPP_ROW_BACK = 9; // hit-test index of the Previous Menu row
+// Layout check (R101, re-run for R108 and R125): the seventh feature row spans
 // boxTop+0x110..0x12a, so R101 moved the Previous Menu row down from
 // boxTop+0x124 (which would overlap it by 6 px) to boxTop+0x144 - the same
 // one-row 0x1a gap the R67 layout kept above it (row 6 ends 0x12a, back row
 // starts 0x12a+0x1a). R108: the eighth row (mana_burn_fix) spans
-// boxTop+0x130..0x14a, so the back row moves down one pitch again, to
-// boxTop+0x164 (0x14a+0x1a); its bottom 0x17e grows the box from 0x171 to
-// 0x191 (same 0x13 bottom margin as R101). Still fits every renderer height:
-// at 640x480 the box top is (480-0x191)/2 = 39, bottom 440 < 480; the box is
-// a runtime-sized solid rect, so no asset constrains the height.
+// boxTop+0x130..0x14a, so the back row moved down one pitch, to
+// boxTop+0x164 (0x14a+0x1a); its bottom 0x17e grew the box from 0x171 to
+// 0x191 (same 0x13 bottom margin as R101). R125: the ninth row
+// (shift_compare) spans boxTop+0x150..0x16a, so the back row moves down one
+// pitch again, to boxTop+0x184 (0x16a+0x1a); its bottom 0x19e grows the box
+// from 0x191 to 0x1b1 (same 0x13 bottom margin as R101/R108). Still fits
+// every renderer height: at 640x480 the box top is (480-0x1b1)/2 = 23,
+// bottom 456 < 480; the box is a runtime-sized solid rect, so no asset
+// constrains the height.
 
 // Input handlers (definitions below; the batch array references them).
 // Deliberately NO WM_MOUSEMOVE (0x200) entry - see the header comment block:

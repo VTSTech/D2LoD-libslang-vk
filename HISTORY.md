@@ -1375,3 +1375,587 @@ self-IDs `Vanilla+0.0.7-R83` (the pending R84 build self-IDs `Vanilla+0.0.7-R84`
 | R95 — issue #26 round 4 + the **`no_panel_shift`** feature (opt-in d2vp.ini `[features] no_panel_shift=1`: a single open panel takes the border-0 world pipeline verbatim on the wide stops — Path.cpp camera gate + the PANELSHIFT_BorderForWorld neutralizer at 11 world-draw origins, zero renderer edits; retail dims byte-identical; 9 files) | **IN TREE — self-ID `R95`, gates 351/351; field verify PENDING** (720p with no_panel_shift=1: the world static on single panels in both perspective modes, the right-panel perspective margin clean, no_panel_shift=0 regression guard; SMOKE §L); overlay `d2vp-R95-overlay.zip` to the owner |
 
 - **Trim #16 (rev 129)**: the line-1 chain compressed to one-liners (the records above moved here verbatim), §2 collapsed to the current-state rows, §6/§7/§8/§9 refreshed to the R101 state — to hold the standing 16 kb handoff budget (owner: "Lets trim the handoff.md to 16kb if possible. offload to HISTORY.md"); docs line current through Rev 129.
+
+## H41. The R109–R116 resolution-stop arc — 1344x700 dormant mode 3, the hosted-stretch fullscreen family, the esc-menu stride hotfix, the GDI windowed shear fix + trim #17
+
+- **What moved**: FEATURES.md's §14 round chronicle (the R109 as-built + five field rounds) and the v3→v6 version-preamble narrative, plus the handoff §2 R112–R116 row. The as-built summary + links stay in FEATURES §14; the engineering record stays canonical in 1344x700-PLAN.md §8–§11.
+- **Trim #17 (2026-11-06, the docs dedup sweep — owner: "sweep the .md's for any duplication and organize it properly, offloading old things to HISTORY.md")**: FEATURES 808 → ~530 lines; the sweep appends H41–H46.
+
+*Verbatim — FEATURES.md — the version-history intro ¶ (v3→v6), verbatim:*
+
+*v6, 2026-11-05. Rows 14–15 added on owner ask — **planned, not implemented**: resolution
+modes. Row 14 activates retail's own **dormant 1344x700** (mode 3 — wired in the binaries,
+never a UI stop); row 15 adds **1920x1080**. Video-options slider stops, not `[features]`
+keys. Tree-verified same-day against the pushed tree (1344x700-PLAN.md §8): a third gap
+joined row 14 — the mini-panel's own position→mode re-apply (`SetupMiniPanel`) — and the
+dims-pair count corrected to seven. **Row 14 then IMPLEMENTED the same day (R109)**: the
+three-gap code round — then the field round (owner QA): **Glide GREEN** (owner screenshot,
+stop live in the menu), **D3D crash caught and fixed in-round** — Vista+ display-mode lists
+omit 1344x700, so the exclusive DD7 `SetDisplayMode` rejected it and D2Win's fatal-resize
+path exited the process; fix = a D3D host-mode letterbox ladder (1366x768 → 1360x768) plus
+a client-side mode-list probe that refuses the stop cleanly when nothing fits (§14).
+Gates 401/401; llvm-mingw build gate pending (owner; D3D re-test owed). **Field round 2
+(owner QA, R110 → R111)**: the D3D crash fix held ("doesn't crash"), but the stop came up
+as a **borderless window instead of fullscreen** — the Win10/11 DDraw fullscreen
+emulation can also ACCEPT a mode it cannot actually set (fake success, no error to
+react to), so R110's retry ladder never fired and the emulation's fallback (borderless
+window at the logical size on the unchanged desktop) showed. R111 probes the mode list
+BEFORE the mode-set — an unlisted stop goes straight to a listed host mode (a real mode
+set) — and sizes the window to the HOST so the emulated-fullscreen window covers the
+screen; frame stays 1344x700 with black letterbox bands (§14). Gates 405/405; llvm-mingw
+build gate + D3D re-test pending (owner). **Field round 3 (owner QA, R111 → R112)**: the
+fullscreen look held ("ok, i see the black bars") — the bands ARE the R111 letterbox on
+the 1366x768 host mode, so R112 does two things the owner asked for in the same breath:
+(1) **hosted stops stretch** — the logical frame is stretched over the whole host mode at
+present (a stretched Blt instead of the Flip) and the cursor capture maps host pixels
+back into the logical frame, so clicks land where the stretched pixels are (§14); (2)
+**1366x768 becomes the slider's fifth stop** — resolution mode 5 (`0x556 x 0x300`), the
+panel-standard 16:9 timing most laptop panels list natively, so D3D usually enters it
+TRUE-exclusive (no hosting, retail Flip) and only exotic drivers fall back to the stretch
+ladder (§14). Gates 432/432 (27 net-new `res5:`/`stretch:` rows); llvm-mingw build gate +
+D3D re-test pending (owner). Earlier: v5, 2026-11-05. Rows 12–13 (`stack_gems`, `stack_runes`) added from an owner suggestion —
+**planned, not implemented**: no D2R parity (Blizzard never shipped rune/gem stacking — a live
+player request through 2.7), PD2 ships it. Earlier: v4, 2026-11-05. Status sweep: shipped rows
+marked Shipped with their first release (1, 3, 6, 9, 10, 11); row 9's SMOKE debts cleared (§H items 25/27 in the R83 full-belt pass [#24], the ten-page items in the R104 pass [#28]); §1/§6/§9/§10 as-built notes refreshed, §9's pre-ship draft marked superseded by the shipped in-panel tab. Earlier: v3, 2026-10-29 — row 9 (`shared_stash`) added from an owner suggestion — side-file design, `.d2s`/`.d2x` untouched; row 4 (`transparent_hud`) added from an owner suggestion — no D2R parity, engine-native draw modes. Scoped by research: D2R official QoL behavior + prior art from the
+classic-D2 modding scene (PD2, BH/slashdiablo maphack, Sting's hackmap, d2dx). Ranked
+**low-risk first** per owner call. **Code-only** per charter Principle 4: no MPQ/data
+edits, no new assets — every feature is pure code + a `d2vp.ini` gate. Hook sites below
+are **candidate regions** taken from the known feature-era map (handoff.md rows 28–31);
+each feature gets a Task-C-style tree-verify pass (exact anchors, grep gates) before any
+implementation round. Live tasks: handoff.md §9. Charter: VANILLA-PLUS.md (as-built
+feature docs); this file is the slate + per-row engineering record.*
+
+*Verbatim — FEATURES.md §14 — the R109–R114 as-built + field-round chronicle, verbatim (incl. the pre-sweep heading):*
+
+### 14. 1344x700 resolution — activate retail's dormant mode 3 (IMPLEMENTED R109 — code in tree; llvm-mingw gate + field QA pending)
+
+- **As-built (R109, the three-gap round)**: **Gap A** — `CLIENT_SetScreenResolution`
+  case 3 sets ScreenSize 1344x700 + `nScreenMode = 1`, riding the same retail downstream
+  flow (WindowSize, border type, automap recenter, `D2GFX_SetVideoMode(3)`) as the 720p
+  case. **Gap B** — the video-options slider's fourth stop: a second Route-B blank
+  attaches into `pDC6SubImages[3]` at init (count 4; the slot was pre-reserved in
+  EscMenu.h), both position→mode mappings add `3 → mode 3` ahead of the `>= 2` arm, and
+  `UI_SLIDER_DrawResolutionValue` picks from a per-stop label table (`L"1280x720"` /
+  `L"1344x700"`) — the issue-#23 right-align geometry proved label-agnostic. **Gap C**
+  (the tree-verify catch) — `SetupMiniPanel`, the game-enter/cutscene-exit re-apply,
+  clamp `> 2` → `> 3` plus a `== 3 → mode 3` arm ahead of the `>= 2` arm. Failed stop-3
+  attach degrades gracefully: the count stays 3 and the load clamp folds position 3 to
+  720p. Drive-by: the stale GDI decompiler comment "1360x700" corrected to 1344x700
+  (`0x540`). Gates: 7 new `res3:` rows, `init attach` re-counted (3), minipanel clamp
+  gate re-pinned (`> 3`), self-ID `Vanilla+0.0.7-R109` → 394/394.
+- **Field round (owner QA, same day)**: **Glide GREEN** — the stop works end to end under
+  glide3xvk 0.4.6 (owner screenshot: video menu at 1344x700, world rendering, wide-UI
+  offsets correct). **D3D crashed on switching** — root cause is NOT the mode-3 code (the
+  D3D size case, wide-set and dims guards all carried 1344x700 already): on Vista+ the
+  exclusive DDraw `SetDisplayMode` only accepts timings from the driver's display-mode
+  list; 1344x700 is a non-standard timing retail never shipped, so no driver lists it
+  (1280x720 is CEA-standard and enters everywhere). The rejected mode-set failed
+  `RENDERER_D3D_InitializeDevice`, and D2Win's `D2GFX_SetVideoMode` treats a failed
+  resize as fatal (`"Failed to resize window... this is fatal!"` → `exit`). Glide was
+  immune — the wrapper sizes its own Vulkan swapchain and never touches the display
+  mode. **Fix (two layers, same candidate set)**: (1) `RENDERER_D3D_InitializeDevice`
+  retries a rejected mode with the smallest standard host modes that fully contain the
+  logical frame — 1366x768, then 1360x768 — while every render coordinate and the
+  viewport stay 1344x700, so the larger flip chain shows as inert black letterbox bands
+  (`RENDERER_D3D_ClearBackbuffer` now clears the LOCKED surface's row count, byte-identical
+  for exact-fit modes); (2) `CLIENT_SetScreenResolution` probes the driver's mode list
+  (32 bpp, `EnumDisplaySettingsA`) before committing stops 3/4 on DDraw/D3D and refuses
+  cleanly — screen keeps the running mode and the saved slider position snaps back so
+  registry, slider and screen agree — when neither the exact mode nor a host mode is
+  listed, so no path can reach the fatal resize. Boot is covered by layer 1 (the game
+  boots at 640x480 and only re-applies the saved stop through the probed choke point).
+  Gates: 7 new `res3:` D3D/probe rows → **401/401**; D3D re-test owed (owner).
+- **Field round 2 (owner QA, R110 → R111)**: R110 (the crash fix, delivered as a hotfix
+  overlay — mark bumped only at R111) held: "doesn't crash". But fullscreen D3D + the
+  1344x700 stop came up as a **borderless window on the unchanged desktop**. Second
+  emulation behavior pinned: the Win10/11 DDraw fullscreen emulation can ACCEPT a
+  `SetDisplayMode` it cannot actually set (fake success) and fall back to a borderless
+  window at the requested size — R110's ladder only fired on a REJECTED call, so there
+  was nothing to retry on. Two code shapes fixed in R111: (1) **probe-first** —
+  `RENDERER_D3D_InitializeDevice` asks the driver's mode list (new
+  `VPRES3D_IsDisplayModeListed`, twin of the client helper) BEFORE the mode-set; an
+  unlisted stop goes straight to a listed host mode (1366x768 → 1360x768, same candidate
+  set, now a real mode-set every time) and the doomed call is never made; (2) **the
+  window covers the HOST** — R110 `MoveWindow`'d the game window to the logical
+  1344x700 inside the 1366x768 host mode, which under the emulated fullscreen left the
+  desktop peeking past the window's right/bottom edges (the other half of the reported
+  look); hosted stops now move to the host size, true exclusive paths stay retail
+  byte-identical. Same commit: the client probe gained a depth-aware base
+  (`VPRES_IsDisplayModeListedAtDepth`) and a **DirectDraw exact-only branch** — the
+  8-bit palettized DDRAW renderer has no letterbox mechanism, so it enters stops 3/4
+  only when the driver genuinely lists the mode at 8 bpp (extinct on modern drivers →
+  graceful refusal there too, closing the same crash class DDRAW was still carrying).
+  Presentation ladder log line renamed (`[vanilla-plus vpres] stop WxH is not in the
+  display mode list: hosting fullscreen at WxH`). Gates: retry-log pin replaced,
+  counts re-pinned, 4 new rows (`d3d probe-first log`, `d3d probe helper`, `d3d window
+  covers host`, `probe depth-aware helper`, `ddraw exact-8bpp arm` minus the retired
+  retry log = +4) → **405/405**; syntax-check error digests identical pre/post on the
+  three touched TUs (the pre-existing D2Hell.h host-shim noise only). D3D re-test owed
+  (owner; expected: display switches to 1366x768, game frame top-left 1344x700 with
+  black bands right/bottom, no desktop visible, mouse confined to the logical frame).
+- **Field round 3 (owner QA, R111 → R112)**: the R111 fullscreen look held — "ok, i see
+  the black bars" — and those bands ARE the R111 letterbox: the field box hosts 1344x700
+  on its native 1366x768 panel, the frame renders top-left, the extra host rows/cols stay
+  black. Owner asked for two things in one breath: "can we center and stretch it to
+  1366x768 when 1344x700 is not valid. Might as well add 1366x768 as a resolution option
+  as well." **(1) Hosted stops stretch**: the scene still renders into the top-left
+  logical rect (viewport untouched, R111), but the PRESENT is now a stretched Blt of that
+  rect onto the primary — new `D2Direct3D::Renderer::VPRES3D_PresentHostedFrame`, wired
+  into `EndScene2` (the per-frame present), `CreateWindow`, `ResizeWindow` and
+  `PlayCutScene` (cutscenes stretch too — Bink rides the normal frame pump); FALSE falls
+  through to the retail Flip, byte-identical on every true-exclusive stop, and a Blt
+  refusal on an exotic backend degrades to the R111 letterbox instead of a lost frame.
+  The cursor follows: the renderer arms a D2gfx stretch channel
+  (`D2GFX_SetPresentationStretch`) with the host size and `MOUSE_CaptureMousePosition`
+  maps raw host pixels back into the logical frame (`x * logical / host`) BEFORE the
+  retail clamp — clicks land where the stretched pixels are, the bottom 68 px stay
+  reachable, the drawn cursor sits under the physical one. Trade-off, documented: hosted
+  presents have no vblank sync (DDBLT_WAIT only); true-exclusive keeps Flip. **(2)
+  1366x768 = mode 5, the slider's FIFTH stop**: `D2GFX` case 5 (`0x556 x 0x300`) + the
+  D3D mirror, `CLIENT_SetScreenResolution` case 5, probe stop-5 dims (exact-or-host, the
+  same candidate set), slider position 4 → mode 5 in both mappings (ahead of the `>= 2`
+  arm), label table `L"1366x768"`, mini-panel `== 4 → mode 5` + clamp `> 4`, renderer
+  branches (D3D perspective-class gate, DDraw `[6]` display tables + horizontal bound,
+  GDI DIB + scale width, Glide `grSstWinOpen` enum **18** + perspective path), wide class
+  (`VPRES_IsWideLayoutMode` + all seven dims pairs), and the esc-menu slot array grown
+  `pDC6SubImages[4]` → `[5]` (the one retail-struct change: the fifth stop's blank
+  attaches at runtime; the loader walk still caps at the four real path fields, count-5
+  rows are legal, the draw-site clamp covers slot 4). Unlike dormant mode 3, 1366x768 is
+  a CEA-standard timing most panels list natively — D3D usually enters it TRUE-exclusive
+  (retail Flip, 1:1 cursor); the stretch ladder only fires on drivers that omit it.
+  Glide note: the paired [Glide3xVK](https://github.com/VTSTech/Glide3xVK) wrapper needs
+  `g3x_resolution_size` entry 18 = `{0x556, 0x300}` — wrappers older than 0.4.7 fail soft
+  (640x480 surface + "unknown resolution" log line), same contract as entries 16/17; the
+  entry shipped in wrapper 0.4.7 (the R114 round, below). Gates: 21
+  `res5:` + 6 `stretch:` rows, `init attach` re-counted (4), minipanel gate re-pinned
+  (`> 4` + mode-5 arm), self-ID `Vanilla+0.0.7-R112` → **432/432**; syntax-check: zero
+  errors in the twelve touched TU bodies (the pre-existing `__time32_t`/D2Hell.h
+  host-shim header noise only). llvm-mingw build gate + D3D re-test owed (owner;
+  expected at 1344x700: full-screen stretched frame, edge-to-edge, no bands; at 1366x768:
+  true-exclusive native mode, retail presentation).
+- **R113 field round 4 (regression hotfix, no behavior change)**: R112's struct growth
+  (`D2EscMenuItemStrc.pDC6SubImages [4] → [5]`, items 0x550 → 0x554 bytes) left three
+  retail-shaped consumers of the old stride/count live in `EscMenu.cpp` — the mouse-Y
+  row walk (`pItemYPosition += 0x154`) read rows ≥ 1 four bytes per-item early, so the
+  mouse could not hit-test any menu row at ANY stop (keyboard nav kept working — it
+  walks by array indexing; owner: "The mouse can no longer navigate or select options
+  in the menu ... It no longer says 'Resolution' but '640x480' instead of the word
+  Resolution"); the loader's sub-image slot-write counter (`nSubImageOffset += 0x154`)
+  spilled every item's value-DC6 writes 4·N bytes into the previous item (the
+  "640x480" value image parked in the background row's slot 4, drawn over the baked
+  "Resolution" caption; later items scribbled pointer bytes into `szSubImage4Path`
+  tails — the visible corruption); and `ESCMENU_FreeLoadedImages` kept the retail
+  `nSubImageCount > 4 → HALT` that R112's legal count-5 row trips on every menu
+  teardown. Fix: both raw walks re-pointed to `0x155` ints (the R112 0x554-byte
+  stride), the free path accepts count ≤ 5. Stops/mappings/labels/stretch untouched —
+  640x480/800x600 stay byte-identical retail, the wide stops behave exactly as R112
+  shipped. Gates: `res5: escmenu count 5 legal` re-counted 2 → 3 (loader + free), +2
+  `r113:` stride pins, self-ID `Vanilla+0.0.7-R113` → **434/434**; syntax-check error
+  digest identical pre/post on the two touched TUs (pre-existing D2Hell.h host-shim
+  noise only). llvm-mingw build gate + menu re-test owed (owner).
+- **R114 field round 5 (Glide 1366x768 — wrapper-side, no game change)**: owner field
+  matrix on the R113 build — D3D held ("ok, working good in D3D now"), but in Glide
+  "when the Resolution lands on 1366x768 it only displays the top left 1/4 of the screen
+  and its very zoomed in". Root cause sat in the WRAPPER, exactly the dependency R112
+  flagged: the game's fifth stop sends `grSstWinOpen` enum 18, but Glide3xVK 0.4.6's
+  `g3x_resolution_size` only knew 0-17 — the stop took the documented soft-fail (640x480
+  surface + `unknown resolution 18` in glide3x.log) while the game laid out for
+  1366x768, and the wrapper presented that surface — holding only the top-left 640x480
+  of the 1366x768 layout — stretched over the full host: top-left quarter, ~2x zoom.
+  D3D unaffected (mode table lives in d2vp.exe), Glide stops 3/4 fine (wrapper entries
+  17/16 shipped in 0.4.6). Fix — [Glide3xVK 0.4.7](https://github.com/VTSTech/Glide3xVK)
+  (patch [`patch/glide3xvk-0.4.7-entry18.patch`](patch/glide3xvk-0.4.7-entry18.patch)):
+  `g3x_resolution_size` entry 18 = `{0x556, 0x300}` + unknown-resolution guard
+  `> 17` → `> 18`; no other wrapper code is resolution-sensitive. Host check
+  (`Glide3xVK/scripts/test_res18.cpp`): enums 7/8/16/17/18 map exact, 19/255 keep the
+  soft-fail. d2vp.exe UNCHANGED — the R113 build stays current (self-ID
+  `Vanilla+0.0.7-R113`, gates 434/434 untouched). Field re-test owed (owner,
+  glide3x.dll 0.4.7): Glide 1366x768 = native fullscreen, full frame; then the R112
+  field matrix.
+
+*Verbatim — handoff.md §2 — the R112–R116 field-status row, verbatim:*
+
+| R112–R116 — the resolution-stop block (fifth stop 1366x768 + hosted stretch, R113 esc-menu hotfix, R114 wrapper entry 18 / 0.4.7, R115 sixth stop 1080p + wrapper entry 19 / 0.4.8, R116 the GDI windowed 1366x768 shear fix) | **IN TREE** — R112–R115 field-proven (owner passes: "Great job. works. Published Glide3xVK 0.4.7. Now lets do 1080p"; the owner's R117+ sessions run at the 1080p stop); R116 windowed `-w` boots clean on the later field builds (the explicit 1366x768-windowed eyeball still owed) |
+
+
+## H42. The R117–R122 wide-view rendering campaign — the edge-void band fill, the BFS room walk, vpdiag, the rcExtendedView re-fit + trim #18
+
+- **What moved**: FEATURES.md's §15 R116–R122 campaign chronicle + the handoff §2 R117–R124 row. §15 keeps the compressed campaign summary; the vpdiag evidence trail stays in CHANGELOG [R120]–[R122].
+- **Trim #18 (2026-11-06, the docs dedup sweep)**: same round as trim #17; FEATURES §15 chronicle + the handoff §2 row land here.
+
+*Verbatim — FEATURES.md §15 — the R116–R122 wide-view campaign chronicle, verbatim:*
+
+- **R116 field catch (windowed 1366x768 shear, fixed in-round)**: owner on the R114-era
+  build — "in D3D windowed mode 1366x768 everything is distorted and slanted". `-w` never
+  reaches the D3D renderer (`Game/Main.cpp` maps `bWINDOW → RENDERER_Windowed` ahead of
+  any `bD3D` check), so windowed has always been the GDI DIB path — and that renderer had
+  been riding the logical width as scanline pitch since retail: GDI DWORD-aligns every
+  8bpp row, so the real stride is `(width + 3) & ~3` — 1368 at the 1366-wide stop, ==
+  width at every other stop, which is why the defect hid through R112–R115 (windowed was
+  only field-tested fullscreen). The width-as-pitch slip drifted the Y-buffer row table,
+  the D2CMP `nDstPitch` slots and every raw address 2px/row (bottom row 1,534px off).
+  Fix: `RENDERER_WINDOWED_nDIBPitch` (one global, computed at DIB alloc, used at all 24
+  raw-buffer sites in `D2Gdi/Renderer/Windowed.cpp`) — byte-identical at every %4 stop.
+  The DirectDraw windowed renderer already passed its real `lPitch`; this catches the GDI
+  path up to the same contract. Gates +4 `r116:` pins → **458/458**.
+- **R117 field catch (edge-void fill, fixed in-round)**: owner at the new 1920x1080 stop
+  (PERSPECTIVE on) — "there's some blackness at the very edge. Is there any way to fix
+  that?". Pixel-measured the field screenshot first: **0px solid-black band on every
+  screen edge** — not a present/letterbox artifact. It is the D2 **level-boundary void**:
+  `DrawFloorByViewAndFloor` (D2Client/GAME/Draw.cpp) draws only the current room +
+  adjacent rooms, and retail's void skirt (`DrawSubTile` → `DRAW_DrawEdgeFloorTile`
+  stamping the act edge tile `&pDrlgAct->sTileCache` past the drawn bounds) is ONE
+  3-tile strip per open side on the player row, behind 30/33 + 25/23 subtile triggers —
+  sized for 800x600 (~25-subtile reach) while a 1080p view reaches
+  (1920/16 + 1080/8)/2 ≈ **127 subtiles** into the void. (Decompile trap worth the
+  record: the `bIsPerspective` term in the skirt's enable gate is the **PANEL border
+  type** — the var is reassigned to `PANELSHIFT_BorderForWorld` at line 728 — so the
+  skirt already ran in perspective; it was simply far too small.) R117 replaces the
+  strip with a **band fill scaled from the live backbuffer**: reach =
+  `W/32 + H/16 + 10` subtiles (screen half-reach in world coords + parity margin),
+  depth = `reach/5 + 1` tiles stamped beyond the open bound, span = `reach*2/5 + 1`
+  tiles each way along it; four open-side bands (left/right ride anchorY, top/bottom
+  ride anchorX); bounds/anchors captured to locals BEFORE the first stamp
+  (`DrawFloorTile` → `DRAW_UpdateTileVisibilityBounds` grows the bounds mid-loop with
+  the fill's own tiles); off-screen stamps cost one `CoordsMapToScreen` + the
+  `rcExtendedView` cull and nothing else, so per-frame cost is bounded by the visible
+  fill area (worst host-measured case: 12,432 stamps at 1080p on a all-sides-open
+  sliver, zero visible-tile waste). Gates unchanged: `DrawEdges` levels only, VPRES
+  wide stops only (800x600 keeps retail byte-identical), border-0 world view, ortho +
+  perspective. Host geometric proof (`scripts/test_r117_fill.cpp`, g++ -Wall -Wextra
+  clean): **100% of the on-screen void diamond covered at every wide stop at any
+  camera parity; interior frames stamp 0**. Gates +4 `r117:` pins + self-id roll →
+  **462/462**, self-ID `Vanilla+0.0.7-R116` → `-R117`.
+- **R118 field catch (the every-mode black rim + the R117 harness boot break, fixed in-round)**: owner after deleting the R117 harness and rebuilding — "runs now. The blackness at the edges is still there. and is present in all video modes 720p and up. 1080p sees way beyond 720p's border and yet when i switch to 720p it has a blackness at the edges. This seems like some kind of render of view limit, can we extend it?"; on the boot break: "ok that hypothesis was correct the test .cpp in /scripts/ broke the entire build." **The boot break**: the root CMakeLists globs `*.cpp` tree-wide, so R117's host harness (`scripts/test_r117_fill.cpp`, own `main()` + stub globals) compiled INTO d2.exe (GUI subsystem → the stray `main` links clean) and the build died after `static-init ok`, before `WinMain`, in every renderer. Fenced: `vanilla-plus/cmake/sources.cmake` now literal-prefix-excludes `scripts/` — nothing parked there can reach the game link again. **The blackness (owner was right — a render-of-view limit)**: ruled out the light grid first (`LIGHTMAP_InitFromPlayerAndRooms` pre-fills the whole 48×48 ambient grid with the player room's ambient — cells past the rooms are lit, not black) and R117's fill (stamps `DrawEdges` boundaries only). The real limit: **both render walks stop one hop out** — the floor pass loops exactly `DRLGROOM_GetAdjacentRoomsList` (3×3 room block) and `WALL2_BuildSceneDrawList` walks the same set via `CallRoomCallback` (a literal `for` over `pRoom->ppRoomList`) — floors, walls, roofs, units, shadows all stop at the block; past it the cleared backbuffer is the black rim. 800x600's ~25-subtile reach always fit inside the block (±60–100 subtiles), which is why retail never needed more; the wide stops reach 85 (720p) to ~127 (1080p) subtiles — rim at 720p, half the screen void at 1080p. The rooms exist: `InitNearRooms` materializes the RoomEx graph three hops out (hop-2 rooms get `DRLGROOMEX_ActivateRoomEx`). Fix: new `WALL2_CollectRoomsBeyondAdjacency` (Wall2.cpp/.h, shared) — BFS depth 3, hop ≤ 1 skipped, world-square culled at `W/32+H/16+90` subtiles, 96-room cap; floors draw the hop-2/3 rooms through `DRAW_DrawWideViewRoomFloors` (the retail two-pass shape verbatim); walls/roofs/units/shadows ride the existing `WALL2_CollectRoomTilesAndUnits` (its `rcCull`/grid/entry-cap culls bound the cost). Extra visible tiles also grow R117's visibility bounds, so its fill now keys on real level boundaries instead of the block edge. Wide stops only — 640x480/800x600 byte-identical. Gates +6 `r118:` pins + self-id `Vanilla+0.0.7-R117` → `-R118`. Field matrix owed (owner): no black rim at any wide stop in normal play; edge fill only at true map boundaries; FPS watch at 1080p in dense areas; a far-corner void at 1080p would be the DRLG's 3-hop materialization depth — the next knob.
+- **R119 field catch (the R118 half-fix — reach in the wrong coordinate space)**: owner — "ok that half fixed it, i don't see any blackness on the bottom or sides, but there is still blackness on the top edge and top corners" (perspective) and "without perspective mode it's the opposite issue, rolling black triangle at bottom" (ortho). ONE bug, two faces: DRLG room coords / draw bounds / `UNIT_CenterXCoordsDiv5 * 5` are game coords (5 per subtile — retail compares the identical expression against `dwXStart`), but R118's reach (`ScreenSizeX/32 + ScreenSizeY/16 + 10 + 80`) was subtile-scaled: the walk's prune square covered 43 of the 127+ subtiles a 1080p view reaches, so hop-2/3 rooms only patched a ~700px band past the retail 3x3 block (bottom/sides = the block's own big-room coverage — "half fixed"; perspective's warp-loaded top edge/corners black), and R117's four fill open-bound triggers compared coord-space deltas against the same subtile reach — under-fired with bounds 43–127 subtiles out (the rolling ortho bottom triangle over small rooms). Reach now in game coords at both call sites (`W*5/32 + H*5/16 + 450` = 1087 coords at 1080p), fill triggers vs `nFillReachCoords = nFillReach * 5` (stamp depth/span stay subtile-derived — dividing by 5 was always correct), BFS queue 128→512, both out caps 96→256, collector params renamed to the coord space (`nCenterX/Y`, `nReach`). Gates +6 `r119:` pins + self-id roll → **475/475**.
+- **R120 (wide-view diagnostics — vpdiag -> d2boot.log, zero behavior change)**: owner after R119 — "same behavior, blackness on top with perspective, blackness on bottom without" and "Is there anything we could add to d2boot.log to help diagnose the issue?". Four candidate mechanisms, two field modes, one visible symptom — so instrument all four and print numbers: every 32nd floor frame (~2x/second) plus a forced dump on every perspective flip, the floor pass writes three `vpdiag` lines carrying (1) mode/perspective/backbuffer/the retail `rcExtendedView` cull rect/lightmap origin, (2) the fill-trigger bounds + the R118/R119 BFS walk's real coverage (emitted/hop mix/room-union AABB/both silent-drop counters) for floor and scene passes, (3) tile seen/drawn/culled counts, culled-anchor screen extremes, the drawn-floor px AABB vs the backbuffer as per-edge gaps, fill stamps/fired bits/anchor, and the ambient-lightmap 48x48 clamp rate. Read map: gaps>0 + short drawn AABB = world absent on that edge; rc large + culled extremes past rcv = retail cull rect eating drawn world; qf/of>0 = collector drops; fire=0000 with gaps>0 = fill never fired; lm misses high = drawn-but-dark clamp class. Counters shared via Draw.h (`VPDIAG_WalkStats`), collectors increment-only (Wall2.cpp, View.cpp), Draw.cpp owns reset+dump. Gates +14 `r120:` pins, self-ID `-R119` → `-R120` → **489/489**; owner d2boot.log capture owed (both modes + one perspective toggle), fix round = R121.
+- **R121 (the R120 log verdicts — fill un-gated, hop-4 walk, snapshot triggers)**: the owner's R120 vpdiag capture read four verdicts. (1) `edge=0` in both modes with `persp=1` — `pLevelTxt->DrawEdges==0` on A1 outdoor and the retail flag gated the whole R117 fill+bounds block (all dumps phase 0, `fire=0000`, `st=0`, `wb` sentinels): the band fill was dead code in the exact test area, and the R118 "half fix" was the wide walk alone. Fix: at wide stops the bounds grow and the fill runs keyed on `VPRES_IsWideLayoutMode` alone; the flag and retail modes stay byte-identical. (2) `gaps=0/52..86/0/0` — the ortho bottom void measured, every frame. (3) The depth-3 walk union stopped 30-70 coords short of the 1080p bottom screen corner — the corner room is the hop-4 diagonal; both call sites now walk depth 4 (unmaterialized hop-4 yields nothing). (4) The 74% lightmap misses are benign — the grid pre-fills with the player room's ambient, so out-of-window samples equal retail. Bonus: the four fill triggers now read bounds snapshotted before the first stamp (a band's own stamps grow the live members mid-fill — earlier-band y-growth could push a later trigger past the reach and skip it). Gates +6 `r121:`, re-pins to depth 4 and the widened classifier counts, self-ID `-R121` → **495/495**; field: phase-1 vpdiag lines with real `wb`/`fire`/`st` and the bottom gap at/near 0.
+- **R122 (the R121-WIP field verdict — `rcExtendedView` re-fit to the backbuffer)**: the owner's R121-build capture (1080p, both modes, one flip) proved every R121 fix in the field — `vpdiag[1]` with `edge=0` (un-gate live), `fire=1248`/`st=12432` (all four bands firing, ~12k stamps/frame), `f:n=22-29 qf=0 of=0` (hop-4 rooms emitting, no drops) — and still `gaps=0/51..82/0/0`. The discriminator: the drawn-floor px AABB hugs the cull rect on every edge (persp `px=[-119 2024 -109 1024]` inside `rcv=[-125 -110 2030 1033]`; ortho `px=[-64 1981 -80 1000]` inside `rcv=[-80 -80 2000 1033]`) while culled-anchor extremes run to `cx=[-6784 8656]` — the rect, not the walk, is the binding cull. Root: `SetViewRectangleSize` builds the rect as `H - 0x2f` at the bottom — 47px ABOVE the backbuffer, the 800x600 panel-era wedge — so `DrawFloorTile` and the wall2 scene cull kill every tile anchored past it, fill stamps included. Fix: one wide-classifier block in `SetViewRectangleSize` re-fits the rect to `±0xc0` around the live backbuffer (covers retail's widest margin, persp left −0x7d, with warp slack; the scene pass shares the rect so bottom walls un-cull too). Retail modes byte-identical. Gates +4 `r122:` pins + summit-clouds classifier count 2→3, self-ID `-R122` → **499/499**; field: next log's `rcv=` should read `[-192 -192 2112 1272]` at 1080p in both modes and `gaps=` should collapse to `0/0/0/0`.
+
+*Verbatim — handoff.md §2 — the R117–R124 field-status row, verbatim:*
+
+| R117–R124 — the wide-view rendering campaign (R117 edge-void band fill, R118 hop-3 walk + the scripts/ glob fence, R119 reach-unit fix, R120 vpdiag, R121 the verdicts round: fill un-gated + hop-4 + snapshot triggers, R122 the cull-rect re-fit) + the eighth upstream sync (R123, → Ghidra 1948) + the R124 D3D fullscreen fix | **IN TREE** — vpdiag-verified through R122 (the R121-build capture: fill firing at full stretch `fire=1248`/`st=12432`, zero silent drops, the last bottom band rooted to retail's own −0x2f rect margin and re-fit); R123 merge-only round; the R124 D3D fullscreen boot crash (AV READ 0x10 — the UploadTextureToCache refile-aliasing) fixed same-round — **FIELD-VERIFIED 2026-11-06** ("d3d fullscreen works again") |
+
+
+## H43. The eighth upstream sync (R123, Ghidra DB → 1948) + the R124 D3D fullscreen refile-aliasing fix (field-verified 2026-11-06) + trim #19
+
+- **What moved**: the handoff line-1 NEWEST→PREVIOUS chain (kept the two newest rounds in handoff, compressed; this record holds the pre-sweep chain verbatim, incl. the R120–R122 entries). The merge war story stays canonical in docs/merge-upstream.md.
+- **Trim #19 (2026-11-06, the docs dedup sweep)**: the handoff line-1 chain keeps its two newest rounds; R120–R122 verbatim below.
+
+*Verbatim — handoff.md line 1 — the NEWEST→PREVIOUS round chain (R124 → R123 → R122 → R121 → R120), verbatim:*
+
+# main branch — handoff (0.0.7 line current: tags `R67` (first 0.0.7) and `R77` @ `866883e` (the 0.0.7 block ship), `R78`–`R98` = fix/sync rounds; summaries in **CHANGELOG.md** and under the tagged GitHub releases (paste-ready notes files retired R103); NEWEST = **`Vanilla+0.0.7-R124`** (the **D3D fullscreen boot-crash fix round**: owner field report on the R123 build — "D3D fullscreen does not boot. boots in -w, crashes on 1080p. Glide still works in all modes/resolutions" — d2boot.log: init fully green (provider init -> 1, InitPerspective -> 1, CreateWindowWithChecks -> 1, setup ok -> entering mode loop) -> ~1s -> VEH 0xC0000005 own-code fault AV READ at 00000010. Root cause NOT the old war-story classes (fix 24 black-ground, R109 mode-set ladder, R95 perspective toggle all verified intact post-merge): the eighth-sync merge split `RENDERER_DIRECT3D_UploadTextureToCache`'s four texture-cache node-base sites across upstream's refiled static spelling ((&INT_00970ec4)[iMipLevel * 7] — retail-address aliasing only, garbage in a rebuilt exe) and the fork's build-relative form — three sites took upstream's, the palette-identity check kept the fork's, so the allocator and the per-frame palette check + SetTexture indexed DIFFERENT regions; the first texture re-upload dereferenced a near-null base. Fix: all four sites on the fork's relative form, upstream's dead statics dropped, dated VP note; NEW instrument `scripts/refile_aliasing_audit.py` sweeps all 220 refile-marked TUs for the three defect shapes — repo-wide CLEAN. Gates unchanged **499/499**. FIELD-VERIFIED 2026-11-06: "great job, d3d fullscreen works again"); PREVIOUS = **`Vanilla+0.0.7-R123`** (the **eighth upstream sync** — upstream `7df6ad0e..b8e3087f`, Ghidra 1908 -> 1948, 16 commits / 786 files: 693 unreferenced functions + recorded VC8 forms (1608ccb3), Ghidra 1934-36 control-flow forms + wrapping signed arithmetic, module-local symbols refiled into their using modules (7d30a7d8 — the D2Client wrapper block moves to D2Direct3D/Renderer/Direct3D.cpp, MCP.{cpp,h} fold), initialised data byte-matched against 1.14d, f0f24ecb InitPerspective + NPC trade roll, 810e339a **Duriel's death no longer crashes**. Prep: one CRLF -> LF normalization commit (217 fork-touched files) cut the trial surface 48 files / 78 hunks -> 26 sites / 57 hunks (22 raw conflicts were pure line-ending noise). Resolutions: EndScene2 hook refiled WITH its function (the count gate caught the hook missing on the first pass), RENDERER_D3D_InitializeDevice fork body whole (wide-stop ladder), party tooltips whole, everywhere else upstream's inlined shapes win with the wide-offset terms re-planted; include-path audit clean, syntax sweep caught the ui.cpp tooltip-var class. Merge-only round, **499/499**); PREVIOUS = **`Vanilla+0.0.7-R122`** (rev 149 — the **cull-rect re-fit round: `rcExtendedView` re-fits to the live backbuffer at the wide stops**. The owner's R121-build vpdiag capture (1080p, both modes, one perspective flip) proved every R121 fix in the field — all dumps `vpdiag[1]` with `edge=0` (the DrawEdges=0 un-gate live), `fire=1248` = all four fired bits L|R|T|B with `st=12432` stamps/frame (the bands at their full 4x28x111 worst case), `f:n=22-29` with `qf=0 of=0` (hop-4 rooms emitting, zero silent drops), `wb` real in both modes, `anch=` at the player — and STILL `gaps=0/51..82/0/0`: the bottom band survived intact. Discriminator: the drawn-floor px AABB hugs the rect on every edge (persp `px=[-119 2024 -109 1024]` inside `rcv=[-125 -110 2030 1033]`; ortho `px=[-64 1981 -80 1000]` inside `rcv=[-80 -80 2000 1033]`) while the culled-anchor screen extremes run to `cx=[-6784 8656]` — world is offered far past the screen and the retail rect refuses it: the rect, not the walk, is the binding cull. Root: `SetViewRectangleSize` (View.cpp) builds the rect as `SetRect(-0x50, -0x50, W+0x50, H-0x2f)` plus persp deltas — the bottom margin is −47px, the rect stops ABOVE the backbuffer (the 800x600 panel-era wedge; both modes logged bottom 1033 < 1080), and `DrawFloorTile` + the wall2 scene rect tests kill every tile anchored past it — including R117's own fill stamps, which is why fire=1248 could not close the gap. Fix: one block in `SetViewRectangleSize` — at the wide classifier the rect re-fits to `left=top=-0xc0, right=W+0xc0, bottom=H+0xc0` (covers retail's widest per-edge margin, persp left −0x7d, with slack for the perspective warp; the wall2 scene pass reads the same rect so bottom walls un-cull with the floors; 640x480/800x600 keep the retail rect byte-identical). Gates: +4 `r122:` pins, site-5 summit-clouds classifier count 2->3 (the new arm in View.cpp), self-id `Vanilla+0.0.7-R121` -> `-R122` -> **499/499**. Field expectations for the next log: `rcv=[-192 -192 2112 1272]` in BOTH modes at 1080p, `gaps=` collapsed to `0/0/0/0` (bare parity noise at most), the drawn AABB no longer hugging the rect at the bottom; if the perspective top corners still void with gaps=0 there, it is wall-shaped past the emitted room set — the R123 lever); PREVIOUS = **`Vanilla+0.0.7-R121`** (rev 148 — the **R120-log verdicts round: fill un-gated from DrawEdges at wide stops + hop-4 walk + snapshot trigger bounds**, owner's R120 vpdiag capture at 1080p read four verdicts: (1) `edge=0` in BOTH modes with `persp=1` — A1 outdoor's `pLevelTxt->DrawEdges==0`, and that retail flag gates the whole fill+bounds block (exit at the `!bPerspectiveHasEffectOnSprite` return): all dumps phase 0, `fire=0000`, `st=0`, `anch=(0,0)`, `wb` sentinels — the R117 band fill was DEAD CODE in the exact area the owner tests, so the R118 'half fix' was the wide walk alone; (2) `gaps=0/52..86/0/0` every frame — the ortho bottom void is real and 52-86 px; (3) the walk union `a=[5520 5400 5800 5680]` stopped 30-70 coords short of the 1080p bottom screen corner (~5828,5748 by iso math) — the corner room is the hop-4 diagonal, past the depth-3 collector; (4) `lm=9740/13104` 74% misses are BENIGN — `LIGHTMAP_InitFromPlayerAndRooms` pre-fills the 48x48 grid with the player room's ambient (FEATURES R118 note), so out-of-window samples get ambient, not black — same for retail. Fixes: `DRAW_UpdateTileVisibilityBounds` grows the bounds + the fill runs keyed on `VPRES_IsWideLayoutMode` alone when `edge=0` (retail modes keep the retail exit byte-identical; the flag itself untouched so no other retail consumer moves); all four trigger conditions read `nTrigMin/MaxX/Y` snapshotted BEFORE the first stamp (each band's span walks BOTH axes — live reads let an earlier band's y-growth push a later bound past the reach and silently skip it); both walk call sites depth 3->4 (unmaterialized hop-4 rooms simply yield nothing). Gates: +6 `r121:` pins, re-pins `r118:` both walk sites to `, 4,` + the two `VPRES_IsWideLayoutMode` count gates 2->4 (the new bounds/exit arms), self-id `Vanilla+0.0.7-R120` -> `-R121` -> **495/495**)); PREVIOUS = **`Vanilla+0.0.7-R120`** (rev 147 — the **wide-view diagnostics round (vpdiag -> d2boot.log)**, owner after R119: "same behavior, blackness on top with perspective, blackness on bottom without" + "Is there anything we could add to d2boot.log to help diagnose the issue?". DIAGNOSTICS-ONLY, zero behavior change: the floor pass dumps three `vpdiag` lines ~2x/second (every 32nd floor frame) plus one FORCED dump on every perspective flip, so a short field session captures steady state and the toggle. Line 1 = mode/perspective-effect/backbuffer/the retail fixed-pixel `rcExtendedView` cull rect/lightmap grid origin. Line 2 = the floor tile bounds the R117 fill triggers compare + the walk anchor + the R118/R119 BFS walk's real coverage (emitted rooms, hop-2/3 mix, room-union AABB in game coords, BOTH silent-drop counters) for the floor pass, drops for the scene pass. Line 3 = tile seen/drawn/rect-culled/flag-skipped counts, the culled anchors' screen extremes, the drawn-floor px AABB with per-edge gaps vs the backbuffer, edge stamps, fill fired bits, fill anchor, and the ambient-lightmap clamp rate (samples outside the 48x48 grid). Read map: gaps>0 on an edge + short drawn AABB = world not drawn there; `rc` large + culled extremes past `rcv` = the retail cull rect eating drawn world; `qf`/`of` >0 = collector silently dropped rooms; `fire=0000` with gaps>0 = fill never fired; `lm` misses/samples high = drawn-but-dark lightmap-clamp class. Shared counters live in Draw.h (`VPDIAG_WalkStats`, `g_VPDIAG_WalkLast/Floor/Scene`, light-clamp ints), the collector (Wall2.cpp) and the lightmap sampler (View.cpp `DRAW_CoordIsInCoord`) only increment, the floor pass owns reset+dump. One int ++ / min-max compare on already-walking paths; 3 log lines 2x/sec. Gates +14 `r120:` pins (drop-counter pins match the INCREMENT via `\+\+` after the reset-vs-increment double-count lesson; clamp gate pins both sampler increments), self-ID `Vanilla+0.0.7-R119` -> `-R120` -> **489/489**))
+
+
+## H44. The shared-stash growth arc — R63 → R82: side file → tab → pager → ten pages + trim #20
+
+- **What moved**: the shared-stash round chronicles (SHARED-STASH-PLAN status ¶, FEATURES row-9 cell, SMOKE §H walk-through + item 21's history tail). Current shape stays in SHARED-STASH-PLAN.md + FEATURES row 9/§9.
+- **Trim #20 (2026-11-06, the docs dedup sweep)**: the stash chronicles land here; SHARED-STASH-PLAN keeps a 4-line status.
+
+*Verbatim — SHARED-STASH-PLAN.md — the R63→R82 status ¶, verbatim:*
+
+Status: **ROUND 1 FIELD-PROVEN — code round R63 (Rev 82), build-fix R64 (Rev 83: mingw32 `uint32_t*` → `LPDWORD` in the `.sss` read out-param; no format or behavior change), tab-anchor fixes R65 (Rev 84: right edge `0x1f8` → `0x180`) and R66 (Rev 85: `0x180` → `0x130` — the word was drawn then overpainted by the right-panel art, whose rectangle starts at panel-relative `+0x140` (`ScreenSizeX - gnPanelOffsetX - 0x140`) and is blitted ~30 lines after the tab site; anchor now 16 px left of that rect), field status: **FIELD-PROVEN end to end** — the MECHANISM on the R65 build (owner toggled the page blind, deposited gold + an item, switched characters, both came back) and the VISIBLE TAB on the R66 build (owner: "Great job. I see it. It works." — SMOKE §H item 21 confirmed). First shipped in release **0.0.7** (self-ID `Vanilla+0.0.7-R66`; round journal in [HISTORY.md](HISTORY.md)). Still owed: SMOKE §H item 25 (the `.d2s` loads in unmodified retail — the I1 proof) and item 27 (the checksum degrade drill) on a 0.0.7 build; the 720p tab check confirmed on the R74 build (owner, 2026-11-02: "Went in game at 720p, Stash tab is visible and working.").** The owner's go message ("Give us 1 page of retail-shaped shared stash to start. Accessible from Stash Panel. No hotkey. Gold and Items can be deposited. If that works we'll do 10 pages. Then 100.") resolved all four §9 calls and merged the R63+R64 plan rounds into one increment: **1 page, retail grid; stash-panel tab, NO hotkey (the optional hotkey of §4 is vetoed); shared gold IN v1 (§1 non-goal superseded); file `_d2vp_shared.sss`.** The shipped architecture improves on §4 in one place worth recording: instead of a fork-owned runtime container behind the packet pipe, the shared page **materializes into the retail page-4 stash inventory** (personal set waits in a fork-owned `'JM'` snapshot), so every retail stash flow and the retail gold buttons work verbatim — zero new packets, zero server container code; the plan's §6 degrade matrix, `.bak` + atomic write and checksum are all implemented as designed. Multi-page (10/100) is a version-2 header extension as §5 planned. The hardening round (failure drills + the I1 retail round-trip proof, plan §7 R65) is the next field round. R67 (post-0.0.7): the gate is no longer ini-only — the Vanilla+ Options page gained a **Shared Stash** row (the sixth row, same D2VP_* bridge as the other five; D2VP_ConfigReloaded busts the client gate cache so the tab follows the toggle same-frame; the server half rides its own 2 s poll per the module boundary). R68 (field-polish, owner: "Can we make the 'Shared' text a bit bigger"): the tab label draws in **Font24** (was the panel's Font16) at the same right-anchored spot — `d2vp.ini [ui] stash_tab_font` hot-tunes it (1 = Font16, 2 = Font30, 3 = Font42, on the same 2 s gate tick), and the click band hugs the word as measured each draw instead of the hard R66 band (the Font16 case reproduces that band exactly); the right anchor `0x130` and the R66 art-seam story are untouched. R69 (field-polish, owner: "Can we move the Stash label to where my cursor is? Up and to the left. Above the gold amount deposited display" — the R68 bump had the word overlapping the retail "Gold Max: %ld" text drawn on the same row at `+0x4e`): the tab now **floats above the stash panel** — right edge `+0xdc` (abs 300 at 800x600, centered over the gold amount box) and the baseline 55 px above the gold amount box's own text row (`DRAW_UI_INVENTORY_Gold`'s stash row, `-0x1b8` expansion / `-0xf4` classic) — ending the shared row (and the overlap) entirely; the word rides the panel by the rigid-unit rule at every 800-class mode, while 640x480 keeps the R66 in-panel row (no headroom for the floating spot). Because the band now sits on the playfield above the panel, the mouse-DOWN in it is swallowed in `INPUT_StashLeftClick` (new `VPSHAREDUI_TabHitTest`, gate + band, no side effects) so the down can't walk the character out from under the stash — the mouse-UP toggle (INV_HandleStashLeftClick's VP site) is unchanged. R70 (field-fix, owner verdict on the R69 build: "The Stash label is in the right place, clicking around switches the tab. But it is invisible again."): position + click confirmed, the word itself washed out — the float rides the LIVE WORLD strip above the panel (the late frame queue was swept end to end: nothing paints there after the tab site — this is contrast, not R85's draw-order overpaint), and un-outlined white glyphs vanish on bright terrain (the R69 handoff's flagged tradeoff). Fix = the retail text-backdrop recipe: `VPSHAREDUI_DrawTab` draws a black `DRAW_VERYTRANSPARENT` rect under the word on float rows — the same pattern retail's own `UI_DrawPartyRoster` uses under its roster text — so the glyphs read on any terrain; the 640x480 legacy row keeps its field-proven bare look; anchor, hit band and down-swallow are unchanged. R71 (compile-fix): the first R70 overlay did not compile on the Win11 box — the pill call used the short `Engine::Gfx::` form, which only resolves from TUs inside `namespace D2Client` (`VanillaPlusOptions.cpp` is one, `VanillaPlusCore.cpp` is a global-scope TU, a rule the file's own `GetPlayerUnit_UI` note documents); R71 fully qualifies the call, the suite pins the qualified form + a must-NOT-match tripwire on the bare form, and `tools/syntax-check.sh` now compiles all four fork TUs on the sandbox host with the build's flags (298 gates + 4/4 TUs clean) — pill design/geometry unchanged from R70. **R67-R71 ROLLED BACK (owner commit `59ff645`, 2026-11-01)**: the Options-row hook survived, but the tab polish (Font24, the floating row, the pill) was reverted to the R66 in-panel tab — the field-proven state the owner then took through the 1792 merge ("Went in game at 720p, Stash tab is visible and working", 2026-11-02). R75 (code round, Rev 97, owner: "Can we give the current stash tab label an outline? Also can we add a 2nd page and buttons/arrows to navigate pages") builds on that R66 state: **(1) the outline** — the label draws with a 1-px black halo on all four sides (the D2Comp shadow recipe extended to a full outline, palette 6 under the color pass, word + arrows alike); **(2) the second page + pager** — two shared pages stored as two 'JM' blocks, the tab composite reads `Shared >` / `< Shared 1 >` / `< Shared 2`, the arrows step ONE page (personal → 1 → 2 → back) and the word toggles personal↔shared-1, the 0x4F/0x7D param word carries the ABSOLUTE desired page (0/1/2 — retail ClickButton rejects it all the same when the server isn't ours), page↔page switches swap the materialized set with NO goldbank re-borrow (one gold pool across both pages) and NO file write (the next restore-to-personal or save flush writes both pages); **(3) the file** — `.sss` **v2**: magic `VPS2`, per-page size/checksum pairs, both blocks after the 28-byte header; **v1 field files read back as page 1** (page 2 starts empty; the next save rewrites v2 — no converter, no data touch). The 10/100-page extension is now literally a header widening + pager math. Gates 285 → **297**, 4/4 fork TUs host-compile clean, self-ID **`Vanilla+0.0.7-R75`**; field ask = SMOKE §H items 33-34. R76 (field nudge, owner: "the page arrows are displaying on top of the gold amount slightly. can we move the stash label to the right a bit"): the composite is right-anchored and grew LEFTWARD from the R66 spot — the `<` tip landed on the tail of the retail gold amount text drawn on this same row at `+0x4e` (`Inv.cpp`'s stash-gold site); the anchor moved `+0x130` → `+0x13c` (12 px right, the `>` halo tip at `+0x13d`, 3 px inside the `+0x140` art-seam rule), draw and click bands both follow the shared layout; self-ID **`Vanilla+0.0.7-R76`**. R77 (field lift, owner: "Looks good horizontally, but still drawing on top of the last gold character a bit with the arrow. can we move the stash label up, closer to the top right corner ?"): horizontal was approved but the `<` halo still kissed the gold text's last glyph on the shared row — the ROW moved up 0x2d (45 px), `VPSHAREDUI_TabBaselineY` `-0x19f`/`-0xdb` → `-0x1cc`/`-0x108`, the empty band between the panel's top edge and the retail gold display row (`DRAW_UI_INVENTORY_Gold`'s stash row `-0x1b8`/`-0xf4`); the R76 right edge `+0x13c` untouched; the band's right side is empty retail space (the coin rect and the gold-area button rect both live at X `+0x49..+0x96`), the halo top stays inside the field-bounded panel edge, and the click band never probes the playfield; self-ID **`Vanilla+0.0.7-R77`**, gates 297 → **299**. R82 (capacity round, owner: "increase the shared stash pages to 10" — the "If that works we'll do 10 pages. Then 100." roadmap kept at ten): the multi-page extension §5 planned ships — **ten shared pages**, same `.sss` v2 magic + version, `pageCount` 10 (header 28 → 92 bytes), the reader accepts any pageCount the build can hold so pre-R82 two-page and pre-R75 one-page files read back with the missing pages empty (the next save rewrites ten), the pager labels read `Shared 1`…`Shared 10` from a literal table, arrows still step ONE page, one shared gold pool across all ten; I1 untouched (the flush parks all ten pages before any `.d2s` is built); gates 299 → **306**, self-ID **`Vanilla+0.0.7-R82`** (Rev 105); field ask = SMOKE §H item 35. The "Then 100" leg remains a pure widening of the same two constants + the pager bounds.
+
+*Verbatim — FEATURES.md slate row 9 cell — the shared-stash round history, verbatim:*
+
+| 9 | Shared side-file stash | Stash | None — owner suggestion (PlugY-style side file) | L | Med–High | **Round 1 FIELD-PROVEN (R63, Rev 82; build-fix R64, Rev 83; tab-anchor fixes R65+R66, Revs 84-85; owner on R66: "Great job. I see it. It works.")** — 1 retail-shaped page via a stash-panel "Shared" tab (no hotkey), items + gold, own `_d2vp_shared.sss` file, `.d2s` retail-pure (save-flush design); SP-only v1; mechanism field-proven on the R65 build blind (page swap + cross-char item/gold round trip), tab visibility confirmed on R66. First shipped in release **0.0.7** (cut at R66); in-game **Shared Stash** row on the Vanilla+ Options page added R67 (no longer ini-only). **R75 (Rev 97): a SECOND shared page + pager** (owner: "give the current stash tab label an outline" + "add a 2nd page and buttons/arrows to navigate pages") — the label draws with a 1-px black halo on all four sides, `<`/`>` arrows beside the word step personal → Shared 1 → Shared 2, the word itself toggles back to personal, `_d2vp_shared.sss` v2 stores both pages (v1 files load as page 1), the 0x4F/0x7D param word carries the absolute desired page. (The R68–R71 tab polish — Font24, floating row, backdrop pill — was rolled back by owner decision at `59ff645`; R75 builds on the R66 in-panel tab.) **R82 (Rev 105): TEN shared pages** (owner: "increase the shared stash pages to 10") — the planned v2-header widening: same magic + version, `pageCount` 10 (header 28 → 92 bytes), pre-R82 two-page files read back with pages 3-10 empty (next save rewrites ten), labels `Shared 1`…`Shared 10`, arrows still step one page, one gold pool across all ten. SMOKE debts cleared: §H items 25 (`.d2s` in retail) + 27 (degrade drill) confirmed in the R83 full-belt pass ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24), 2026-11-02), the ten-page items 33-35 rode the R104 full pass ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04); the "Then 100" leg widens the same two constants. Plan: SHARED-STASH-PLAN.md |
+
+*Verbatim — SMOKE-CHECKLIST.md §H — the R63→R82 field walk-through, verbatim:*
+
+Field status on the R66 build (2026-11-01): the tab is VISIBLE and the page works — owner: **"Great job. I see it. It works."** (item 21 confirmed). Earlier, on the R65 build (same day), the MECHANISM was field-proven end to end blind — the owner clicked the tab's rect while the word was still painted over, the shared page swapped, gold + an item deposited, character switched, **both came back** (covers 23/24's core flows). The last owed 0.0.7 field work closed in the R83 full smoke pass (2026-11-02, issue #24) — item 25 (`.d2s` loads in unmodified retail) and item 27 (the checksum degrade drill) are field-proven on the ten-page shape; the 720p tab check confirmed earlier on the R74 build (owner, 2026-11-02: "Went in game at 720p, Stash tab is visible and working."). R68 (owner ask "make the 'Shared' text a bit bigger"): the label draws one size class up — **Font24**, was the stash panel's Font16. R69 (owner ask after the bump): the label MOVED — it now **floats above the stash panel, over the gold amount display** (up and to the left), which also ends the overlap with the retail "Gold Max" text it used to share a row with. R70 (owner field verdict on the R69 build): position + click CONFIRMED ("The Stash label is in the right place, clicking around switches the tab"), word INVISIBLE — not draw-order (late frame queue swept; everything after the tab site is bottom/right/hover-anchored) but CONTRAST: the float rides the live world strip above the panel and un-outlined white washed out on bright terrain. R70 adds a black `DRAW_VERYTRANSPARENT` backing pill under the word on float rows (the retail UI_DrawPartyRoster text-backdrop recipe) — re-eyeball item 21 (word must now read on ANY terrain) on the next pass. The floating anchor rides the panel by the rigid-unit rule, so 720p gets the same spot relative to the panel; 640x480 keeps the old in-panel row (no headroom, no pill). R71 (compile-fix): the first R70 overlay **did not compile** on the Win11 box (`Engine::Gfx::` — the short namespace form only resolves inside `namespace D2Client`, and VanillaPlusCore.cpp is a global-scope TU); R71 qualifies the call, bumps nothing else, and the sandbox gate suite now also **syntax-checks the fork TUs** (`tools/syntax-check.sh`, 4/4 clean) so a compile break can't ship again. The pill design/geometry is exactly what R70 specified. **Correction (R75 round):** the owner ROLLED R67–R71 back (`59ff645`, 2026-11-01) — the shipped tab reverted to the R66 in-panel gold-label row at Font16 (the float row, Font24 and the pill above are history, kept for the record), and the 2026-11-02 720p confirm ran on exactly that state. R75 builds on it (owner: "Can we give the current stash tab label an outline? Also can we add a 2nd page and buttons/arrows to navigate pages"): a 1-px black outline on every glyph + a second shared page with `<`/`>` pager arrows — items 21/23 below re-written for that shape, new items 33-34 are its field ask. **R76 (field nudge, owner: "the page arrows are displaying on top of the gold amount slightly"):** the R75 composite is wider than the R66 word and grew LEFTWARD from the same anchor — the `<` tip landed on the tail of the retail gold amount text drawn on this same row at `+0x4e`; the anchor moved `+0x130` → `+0x13c` (12 px right; the `>` halo tip ends at `+0x13d`, 3 px inside the `+0x140` art-seam rule), draw and click bands both follow the shared layout. **R77 (owner verdict on R76 — "Looks good horizontally, but still drawing on top of the last gold character a bit with the arrow. can we move the stash label up, closer to the top right corner"):** the ROW moved — up 45 px (`VPSHAREDUI_TabBaselineY` `-0x19f`/`-0xdb` → `-0x1cc`/`-0x108`) into the empty band between the panel's top edge and the retail gold display row; the R76 right edge is untouched. Vertical separation ends the `<`-vs-gold-text kiss for good. Re-eyeball item 21's seat on the next pass. **R82 (capacity, owner: "increase the shared stash pages to 10"):** the pager now steps **ten** shared pages (the format's planned widening — same `.sss` v2 magic + version, `pageCount` 10, header 92 bytes; pre-R82 two-page and pre-R75 one-page files read back with the missing pages empty), the labels read `Shared 1`…`Shared 10`, and one gold pool serves all ten. Item 35 is its field ask.
+
+*Verbatim — SMOKE-CHECKLIST.md §H item 21 — the pre-sweep check with its tab-spot history, verbatim:*
+
+- [x] **21. Tab appears (gate on):** with the key on, open any stash in town — the tab composite sits in the stash panel's **top-right corner** (**R77**: the empty band between the panel's top edge and the retail gold display row — 45 px up from the R66-R76 gold-max row): the outlined **"Shared"** word with a `>` arrow beside it (white = personal page; green `‹ Shared N ›` = a shared page, N = 1..10). The **1-px black halo (R75)** makes the glyphs read on any background; the composite's right edge anchors left of the right-panel art seam (the R66 rule — `+0x130` through R75, **R76** `+0x13c`). The grid below is the untouched retail stash grid. No hotkey exists — the tab is the only affordance; clicking the WORD toggles personal↔shared-1, the ARROWS step one page each way (a click on an absent arrow — `>` on page 10, `<` on personal — falls through to retail). History: R64/R65 spots got overpainted by the right-panel art; R66 field-proven (owner: "Great job. I see it. It works."); R67–R71 moved/sized/pilled the tab and were ROLLED BACK by owner decision (`59ff645`) before the 1792 merge; the R74 build confirmed the R66 tab at 720p (owner, 2026-11-02: "Went in game at 720p, Stash tab is visible and working."). **R75 re-eyeball:** the halo reads on the panel art, arrows click without walking the character. **R77 re-eyeball:** the composite rides the empty band above the gold display row — the `<` must touch NEITHER the coin + amount display below-left NOR the "Gold Max" text a full row under it; the band stays inside the panel (no playfield sliver, no walk-through clicks). Items 25/27 confirmed in the R83 full pass (2026-11-02, issue #24).
+
+
+## H45. SMOKE-CHECKLIST history trims — the R74→R124 build-stamp narrative, the field-pass log, the resolved asks, the R96/R97 triage prose + trim #21
+
+- **What moved**: SMOKE-CHECKLIST's build-stamp narrative (R74→R124), the field-pass log, the two resolved asks, the R100 unit-lock narrative and the R96/R97 triage prose (items 46/47 compressed to standing stubs; the read-out matrix and item 48 stay).
+- **Trim #21 (2026-11-06, the docs dedup sweep)**: SMOKE-CHECKLIST 52.1 KB → ~37 KB; the generator's section-H `<details>` transform retires with the giant paragraph.
+
+*Verbatim — SMOKE-CHECKLIST.md — the R74→R124 build-stamp narrative, verbatim:*
+
+Build: **Vanilla+0.0.7-R124** (confirm via line 1 of `d2boot.log` before starting) — release line 0.0.7; R74 was the first post-1792 build (R73 never booted; §I carries the merge-pass items), R75 the first content round on top (stash tab outline + 2nd shared page + pager — §H items 33-34 its field ask), R76 a 12 px tab nudge right off the gold amount text, R77 the tab row lifted 45 px into the panel's top-right corner (§H item 21 seat re-check), R78 the upstream 1793/1794 sync (merge round, zero feature changes), R79 the upstream 1795-1801 retyping sync (merge round, zero feature changes), R80 the upstream 1802-1806 regen sync (merge round, zero feature changes — §I merge-pass items if you want the full belt; touched surfaces this round: the quest-log draw-position return on the retyped ternary (`QUESTLOG_GetDrawPosition`, site-5), the waypoint-button draw call's wide-Y term, the D3D texture-cache upload's DC6-block retype (`nParam` → typed `pDC6Block`, the fix-22 halt-dump + fix-27 LUT stamp re-planted), R81 the waypoint row-icon fix (#21 — the two `waygateicons` row draws predate the site-6 retrofit and never carried the wide-Y term, so at 720p all nine icons rendered ~120 px above their buttons; two one-term replants, 800x600 byte-identical — field ask: open the waypoint panel at 720p, every row's icon art must sit on its button aligned with its text), R82 the shared-stash capacity round (ten shared pages — §H item 35 its field ask; the pager, `.sss` and marks walk-through in §H), R83 the video-options label alignment fix (#23 — the visible 1280x720 stop's text label left-anchored at the value-column X (a full label width past where the retail value images end) and floated ~4 px above their ink line; right-aligned via the rendered advance width + draw y = row bottom + 2 (glyph-cell descent comp), resolution-independent so 800x600 rides the same corrected geometry — field ask: item 36, the §A eyeball), R84 the item-tooltip zero fix (#16 — see §J), R85 the A1Q2 Bloodraven turn-in fix (#22, owner-closed 2026-11-02), R86 the `-nointro` boot switch ("R86 verified, -nointro works" — §K), R87 the first upstream sync of the line (1806 → 1839, field-run green), R88 the second sync (Ghidra → 1851; gossip-table + SFX float supersessions), R89 the owner-applied component-model hardening (field-verified riding the R90b run), R90/R90b the third sync (→ 1855; FIELD-RUN GREEN — the necro skeletons "finally white again" = #8 FIELD-VERIFIED R91), R91 the docs + field-verify round, R92–R94 the issue-#26 720p panel-margin rounds (both-panels green R94), R95 `no_panel_shift` born (Glide pass fully green — §L), R96 the D3D perspective-toggle triage probes (item 46), R97 the D3D texture-cache promote guards (item 47), R98 the D3D flat-wall iterator wrap ROOT-FIXED (tag `R98`; item 48's fix), R99 the fourth upstream sync (→ 1886, 209 files), R100 the unit-sprite pan lock (14 unit-anchored consumers through the border neutralizer — items 41a/41b), R101 the **No Panel World Shift** Options row (issue #26 round 9), R102 the fifth upstream sync (`94ec239d..cc23648d`, 459 files, → 1892 — merge round, zero feature changes; the §I belt if you want it), R103 the diag retirement (`d2light-diag` + `d2drop-diag` + hooks out, zero behavior change), R104 the per-TU restructure fallout sweep (SCmd roster mark + the TU-private VP accessors re-homed; zero behavior change; **the full belt passed on this build 2026-11-04, [issue #28](https://github.com/VTSTech/D2VP-QoL/issues/28)**), R105 the sixth upstream sync (→ 1894, merge round), R106 the `mana_burn_fix` combat fix (Mana Burn uniques drained 256x intended — the opt-in fix drains the designed 66-100%), R107 the owner-corrected drain shim, R108 the **Mana Burn Fix** Options row (eighth row), R109 the **1344x700 fourth stop** (retail's dormant mode 3; Glide field-green, the D3D mode-set crash caught + fixed in-round), R110/R111 the D3D 1344x700 hosted presentation (probe-first, host-sized — no doomed mode-sets), R112 the **hosted stretch** (edge-to-edge at hosted stops, cursor mapped back) + the **1366x768 fifth stop**, R113 the esc-menu stride hotfix (R112's struct growth broke mouse hit-test/label writes/menu teardown), R114 the Glide wrapper 0.4.7 entry-18 round (no game change), R115 the **1920x1080 sixth stop** (+ wrapper 0.4.8 entry 19; the R113 stride lesson applied in-commit), R116 the GDI windowed 1366x768 shear fix (DIB pitch, 24 sites), R117 the edge-void band fill, R118 the wide-view room walk (BFS past the 3x3 block) + the `scripts/` glob fence (R117's harness compiled into d2.exe and killed boot), R119 the reach-unit fix (subtiles → coords, the 5x prune square), R120 the vpdiag instrumentation (zero behavior change), R121 the R120-log verdicts (fill un-gated at edge=0, hop-4 walk, snapshot triggers), R122 the cull-rect re-fit (retail's −0x2f bottom margin), R123 the eighth upstream sync (→ 1948, merge round — 693 functions defined, Duriel's death fixed upstream-side), R124 the **D3D fullscreen texture-cache fix** (the eighth-sync merge split `UploadTextureToCache`'s node-base spelling across the refiled static and the fork's relative form — AV READ 0x10 on the first title-screen texture re-upload; field-verified 2026-11-06 "d3d fullscreen works again"). **The full belt's last full pass remains the R104 build (2026-11-04, [issue #28](https://github.com/VTSTech/D2VP-QoL/issues/28))** — every §A–§L check green; the R105–R124 chain carries per-round field passes on the touched surfaces (resolution stops, wide-view, D3D fullscreen).
+
+*Verbatim — SMOKE-CHECKLIST.md — the field-pass history (R62 → R104), verbatim:*
+
+**Last field pass — 2026-11-01 (first post-1783-sync build, self-ID R62):** owner verdict **"Good job. Builds. Runs. No obvious regressions."** — the Ghidra 1776-1783 regen absorption plus both sync fixes (Rev 76 `d2_boot.h` include restore, Rev 77 `DrawSolidRectEx` signature realignment) is field-proven end to end. **Follow-up, same day: the FULL checklist (items 0–20) ran green on the R62 build.** **Latest field pass — 2026-11-04, the R104 build ([issue #28](https://github.com/VTSTech/D2VP-QoL/issues/28)):** the FULL checklist ran green — owner: **"R104 fully smoke tested. passed."** — the second full-belt pass on a 0.0.7 build and the first since R83: the §L standing asks are field-proven (the R100 unit-lock re-checks 41a/41b, perspective-off 43, the explicit both-panels pass 45, and item 48 — the D3D perspective-toggle re-check on R98+, both directions clean, the D3D #26 matrix closed out), and the R84–R104 chain (the §I/§J merge belt plus the feature and sync rounds, through the fifth sync at Ghidra 1892) is full-smoke-proven. **Earlier field pass — 2026-11-02, the R83 build (first run of the issue-template workflow, [issue #24](https://github.com/VTSTech/D2VP-QoL/issues/24)):** the FULL checklist ran green — owner: **"R83 smoke tested fully. passed."** — the first full-belt pass on a 0.0.7 build: §H items 25 (`.d2s`-in-retail, invariant I1) and 27 (the checksum degrade drill) are field-proven on the ten-page shape, item 36 (the #23 video-options label ask) confirmed at 720p and 800x600, item 15 (same-game Den turn-in) completes §F alongside item 16, and the §I merge belt rode along — the R78–R83 upstream-sync chain (Ghidra 1793→1806) is now full-smoke-proven. **Earlier field pass — 2026-11-01, the R66 build:** the Shared tab is visible and the shared page works (owner: **"Great job. I see it. It works."**) — §H item 21 confirmed. Every unchecked item below stays a standing regression check; the roster-heal corruptor watch stays ARMED — `roster heal:` marks in the log = send the log.
+
+*Verbatim — SMOKE-CHECKLIST.md — the resolved 720p-margin ask (cleared by the R104 full pass), verbatim:*
+
+**Also wanted this pass — 720p panel margins + bottom band (issue #26, R92/R93 partial in field → round 3 = R94):** at 1280x720 test — **(a) both panels open:** BOTH outer strips (left of the UI and right of the UI) must render the world — no black band, no jagged black triangles — units/monsters standing there must be clickable, rain should reach the margins on a rain level (the R92/R93 rounds fixed the single-panel margins and the scene list; R94 finally runs the border-3 world-draw pass itself, which was never executed with both panels open); **(b) the screen bottom** — with perspective mode OFF, no thin black strip along the bottom edge (the R94 fix opens the non-perspective builders' `h-0xf` anchor cut), and with perspective ON the bottom corners render world (the perspective cull no longer reserves the bottom 47 px for the retail full-width HUD); **(c) single panels in perspective mode** — left AND right panels, both margins clean (the perspective-ON right-margin triangles were the remaining R93 field residual). Retail 640x480/800x600 must be unchanged (panels still flush to the screen edges, world culled under them as always).
+
+*Verbatim — SMOKE-CHECKLIST.md — the resolved Den-of-Evil ask, verbatim:*
+
+**Also wanted this pass — Den of Evil turn-in (issue #13, ROOT-CAUSED + FIXED R54):** section F below. The R53 marks caught the failing site (client never echoed c2s 0x31) and R54 both fixed the cause (the Den reward gossip line didn't exist in the data) and instrumented the whole gossip chain (`quest: gossip add` / 0x27 / `npc menu:` marks). The rejoin-repro run alone verifies the fix.
+
+*Verbatim — SMOKE-CHECKLIST.md §L — the R100 unit-lock narrative, verbatim:*
+
+### R100 regression + fix (2026-11-04, owner: "when set to 1, player, npc, campfire get pushed into wrong locations")
+
+The R99 upstream merge (Ghidra 1864-1877 library rounds) landed the retail
+bodies for the unit-sprite draw path — sprites, shadows, selection rings,
+hover text — and those bodies hand-pan sprites ±quarter off the REAL border
+in the perspective branch. The R95 neutralizer only covered the terrain
+passes, so with `no_panel_shift=1` the world stayed put while units (and
+their anchored overlays) panned one quarter sideways. R100 routes all 14
+unit-anchored world-render consumers through `PANELSHIFT_BorderForWorld`
+(CHANGELOG [R100] has the decode; the R95 field pass never saw this because
+the pre-1864 unit bodies had no border handling at all).
+
+*Verbatim — SMOKE-CHECKLIST.md §L — the R96 triage header + probe intro, verbatim:*
+
+### D3D perspective-toggle death — R96 triage probes (R95 field report, [issue #26](https://github.com/VTSTech/D2VP-QoL/issues/26))
+
+R95 field report: "toggling perspective mode in D3D crashes the game. not good. Glide can toggle." — with `no_panel_shift=0` the R95 code is inert at the toggle moment (options menu = border 0/3, every gate call site retail), so the feature itself is not the demonstrated trigger. R96 ships five **one-shot** `d2boot.log` probes (zero behavior change) and asks for ONE repro on the R96 build, in D3D, at 1280x720:
+
+*Verbatim — SMOKE-CHECKLIST.md §L item 46 — the pre-sweep answered repro item, verbatim:*
+
+- [x] **46. Toggle repro with artifacts:** in D3D, open VIDEO OPTIONS (this writes `videoopt: perspective load reg=<v> capable=<c>`), toggle Perspective once. After the death, send (a) the newest `d2crash-*.txt` next to the exe — or state plainly that **none** was written, (b) the last ~30 lines of `d2boot.log`, (c) whether the death is instant at the slider release or only after closing the menu, (d) whether both directions die (OFF→ON and ON→OFF). — **ANSWERED 2026-11-03 (R96 field pass, D3D 800x600):** `videoopt: perspective load reg=1 capable=1 [R96]` at load, ~6.5 s of perspective-ON play (all one-shot marks fired cleanly), then `videoopt: perspective apply renderer=6 active=1 -> 0 [R96]` and `halt report: line=200 addr=00F0C70C` **in the same 15 ms tick** — Redivivus: `HALT line=200 at d2vp.exe+0x21C70C`, Fog unrecoverable-error halt, no access violation. Line=200 = the D3D floor/subtile texture-cache **promote range checks** (`D3DFLOOR_PromoteNodeToMRU` / `D3DSUBTILE_PromoteNodeToMRU`, `nIndex > nMaxNodes`); the death is on the first world frame with perspective OFF, the frame that first runs the perspective-OFF wall/shadow builders. Root-cause audit in CHANGELOG [R97]; R97 ships the guards below.
+
+*Verbatim — SMOKE-CHECKLIST.md §L — the R97 guards header + intro, verbatim:*
+
+### D3D perspective-toggle death — R97 promote guards + re-armed probes (after the R96 field answer)
+
+The R96 field answer pinned the death to halt line=200 — the texture-cache promote range check — on the first post-flip frame, with every static link in the cache chain audited retail-clean (see CHANGELOG [R97]). R97 turns the death into a logged, self-healing degradation and re-arms the probes (the R96 one-shots only bracket the FIRST perspective event of a session — the owner's death was the second, in the blind spot). Field ask for the R97 build, D3D 800x600 (and 720p when convenient):
+
+*Verbatim — SMOKE-CHECKLIST.md §L item 47 — the pre-sweep R97 item, verbatim:*
+
+- [ ] **47. Toggle both directions, survive, then finish the D3D #26 matrix:** on R97 in D3D — toggle Perspective ON→OFF and OFF→ON at the video options (each flip now writes `world: perspective now <d>, view frame [R97]` + `d3d: perspective now <d>, floor tile pass ... [R97]`). Expected: **no death either direction**. Then send the bootlog tail regardless: (a) any `... promote out-of-range ... healed to uncached [R97]` or `... texture cache dead ... skipped [R97]` lines are the **root-cause data** (they carry idx/max/used/bufNull/tile) even if the game runs fine; (b) with the toggle surviving, finish the #26 D3D matrix — perspective OFF: single panels static (41), right margin clean (42), no bottom strip (43); perspective ON: same; both panels (45); and note any one-frame glitch (a missing floor quad or wrong-textured subtile right after a flip = the heal doing its job, transient by design). — **UPDATE R98:** the R97 field pass returned outcome (b) exactly — `subtile promote out-of-range idx=4097` → heal → `AV READ at FF600060` in the same tick — and R98 root-fixes it: the D3D flat wall builder's byte-offset iterator was a wrapping `uint8_t` (see CHANGELOG [R98]). See item 48 for the current ask.
+
+
+## H46. README release-roll + per-feature round narratives (the CHANGELOG-covered histories) + trim #22
+
+- **What moved**: the README release-by-release shipped roll (R124→R85) + field-quote bullet, and the per-feature round narratives whose digests already live in CHANGELOG (ilvl evolution, options-page field rounds, the R108 row, the slate cells) plus the VANILLA-PLUS status/roadmap/build-notes round narration.
+- **Trim #22 (2026-11-06, the docs dedup sweep)**: the README roll (the second release-table retirement — the first was trim #1/H32) + the per-feature narratives.
+
+*Verbatim — FEATURES.md §3 — the ilvl presentation-evolution heading + clause, verbatim:*
+
+### 3. Item ilvl on tooltips — `[features] item_ilvl` (SHIPPED R55, name-suffix presentation R56, bare digits R57, single-space trim R59)
+
+*Verbatim — FEATURES.md §3 — the R55–R57 evolution sentences, verbatim:*
+
+  `ITEM_BuildSetItemTooltip`), rendering in the name's own color. R55 shipped a
+  standalone `Item Level: <ilvl>` line below Required Level; R56 moved it into
+  the name per owner preference; R57 dropped the `ilvl` label word — players
+  know what the bare `(N)` means. R59 trims the name's trailing spaces
+
+*Verbatim — FEATURES.md §10 — the options-page field-round narrative, verbatim:*
+
+- **Implemented (2026-10-29, draft v2 §7–§8; field-QA rev C §9)**: label route
+  Route B + page + `UI_VANILLAPLUS = 38` extension landed across 11 retail files +
+  2 new TUs (`D2Client/UI/VanillaPlusOptions.{h,cpp}`). V1–V5 pins resolved
+  (DC6Block = frame header, bottom-anchored draw, same allocator pair,
+  dismiss-table growth zero-fills). Sandbox harness (verbatim extraction,
+  `g++ -fsyntax-only`) + 12 grep gates green. **Field round 1** (rev 2 overlay):
+  builds + runs; label invisible (Route A fallback) + cursor lock (0x200
+  chain-break) → rev 3 = Route B label + 3-entry input batch + baseline-anchored
+  page text. **Shipped in 0.0.6** (2026-10-30, ledger row 34); field-proven since
+  via the R83 and R104 full smoke belts ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24),
+  [#28](https://github.com/VTSTech/D2VP-QoL/issues/28)); the page carries eight rows
+  as of R108 (slate row 10 above).
+
+*Verbatim — FEATURES.md §11 — the R108 options-row bullet, verbatim:*
+
+- **Options-page row (R108, owner ask: "the mana_burn_fix toggle is not in
+  the Vanilla+ Options panel ... For R108 let's add it to the Options
+  Panel")**: the toggle is no longer ini-only — an eighth row **Mana Burn
+  Fix** on the Vanilla+ Options page rides the shared `D2VP_*` bridge (one
+  `gaVanillaPlusRows` entry; the ini template block shipped with R106, so
+  nothing else). The server gate keeps its 2 s poll (the stash-server
+  shape — D2Game cannot import D2Client helpers), so a panel flip lands on
+  the next drain roll within 2 s, the same latency as an external ini edit;
+  the panel draw re-reads the key fresh every frame and shows the flip
+  immediately. The eighth row moved the Previous Menu row down one pitch
+  (0x144 → 0x164) and grew the box (0x171 → 0x191, same 0x13 bottom
+  margin; fits 640x480).
+
+*Verbatim — FEATURES.md slate row 10 cell — the options-page growth history, verbatim:*
+
+| 10 | Vanilla+ Options menu page | UI | None — owner suggestion 2026-10-29; in-game settings surface for the gated features | M | Med→Low | **Shipped** (landed 2026-10-30, ledger row 34; first release **0.0.6**); **eight rows as of R108** — the slate's five shipped keys + Shared Stash (R67: the row busts the client stash gate cache too, so the tab follows the toggle the same frame) + No Panel World Shift (R101, issue #26 round 9: the write bridge already busts the PANELSHIFT cache, so the flip applies same-frame; the seventh row moved the Previous Menu row down one pitch, 0x124→0x144) + Mana Burn Fix (R108: the R106 combat gate joins the panel — the eighth row moved the Previous Menu row down one pitch again, 0x144→0x164, and grew the box 0x171→0x191; the server gate keeps its 2 s poll by design, so a flip lands on the next drain roll within 2 s while the panel shows it same-frame) |
+
+*Verbatim — FEATURES.md slate row 14 cell — the resolution field story, verbatim:*
+
+| 14 | 1344x700 resolution (retail's dormant mode 3) + 1366x768 fifth stop | Video / renderers | Retail-dormant engine mode — the binaries carry the tables, no UI stop ever shipped; D2MultiRes-era community prior art; 1366x768 is the panel-standard the field box letterboxes onto | S–M | Low–Med | **Implemented** (R109 — Gap A `case 3` + Gap B slider stop 3 + Gap C mini-panel mapping; field: Glide GREEN, D3D switch crash fixed in-round via mode-list probe + host-mode letterbox ladder; field round 2 (R111): D3D borderless-window look fixed — probe-first presentation + host-sized window; field round 3 (R112): hosted stops STRETCH the frame over the host mode + **1366x768 joins as the slider's fifth stop (mode 5)**, gates 432/432; llvm-mingw gate + D3D re-test pending (owner); plan: 1344x700-PLAN.md §10) |
+
+*Verbatim — FEATURES.md slate row 15 cell — verbatim:*
+
+| 15 | 1920x1080 resolution | Video / renderers | None — owner suggestion 2026-11-05; SGD2FreeRes/D2DX-class arbitrary-res prior art | M | Med | video-options slider stop 6 / mode 6 (not `[features]`-gated; slot bookkeeping after R112 — see §15) |
+
+*Verbatim — README.md — the release-by-release shipped roll (R124 → R85), verbatim:*
+
+- **Shipped: [`R124`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R124)
+  ("Vanilla+0.0.7-R124")** — the **D3D fullscreen boot-crash fix**: the
+  eighth-sync merge split `RENDERER_DIRECT3D_UploadTextureToCache`'s four
+  texture-cache node-base sites across upstream's refiled static spelling and
+  the fork's build-relative form — the rebuilt exe indexed the texture cache
+  through two different regions and the first texture re-upload dereferenced
+  a near-null base (`AV READ at 0x10`, D3D fullscreen only; `-w` and Glide
+  untouched). All four sites back on the relative form, plus the new
+  `scripts/refile_aliasing_audit.py` instrument (all 220 refile-marked TUs
+  swept — repo-wide CLEAN) — field-verified 2026-11-06 ("d3d fullscreen works
+  again"). The build also carries
+  [`R123`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R123) — the
+  **eighth upstream sync** (Ghidra DB 1908 → 1948, 16 commits / 786 files:
+  693 unreferenced functions defined, module-local symbols refiled into their
+  using modules, initialised data byte-matched against 1.14d, **Duriel's
+  death no longer crashes**) — and the **R109–R122 wide-resolution arc**: the
+  **1344x700 / 1366x768 / 1920x1080** video-options stops (R109/R112/R115),
+  probe-first hosted-stretch fullscreen presentation (R110/R111), the esc-menu
+  stride hotfix (R113), the windowed 1366x768 shear fix (R116) and the
+  wide-view rendering campaign — the edge-void band fill, the room walk
+  extended to hop 4, `vpdiag` instrumentation and the retail cull-rect re-fit
+  (R117–R122). Earlier 0.0.7-line releases:
+  [`R108`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R108) — the
+  **Mana Burn Fix** joins the Vanilla+ Options panel as its eighth row
+  (`Esc → Options → "Vanilla+ Options"`), so the R106 toggle is no longer
+  ini-only; the build also carries the owner-corrected drain shim (R107);
+  [`R106`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R106) —
+  `mana_burn_fix`: Mana Burn unique monsters drained 256x the intended mana with
+  melee hits (512x in Hell — one blow emptied the pool); the opt-in fix drains the
+  designed 66–100% of the monster's level damage instead (33–50% for Nightmare/Hell
+  minions), matching D2R's own post-2.4 behavior — the build also carried the
+  seventh upstream sync (Ghidra DB → 1908; the byte-match table below has since
+  moved with the eighth sync and is current at 7,648/14,626 fns);
+  [`R105`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R105) — the sixth
+  upstream sync (Ghidra DB → 1894, 124 files);
+  [`R104`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R104) — the per-TU
+  restructure fallout sweep; the build also carries the fourth and fifth upstream
+  syncs (R99/R102 — Ghidra DB 1864 → 1892), the unit-sprite pan fix the new retail
+  bodies re-armed under `no_panel_shift=1` (R100; owner: "no_panel_shift is working
+  as intended now"), the **No Panel World Shift** Options row (R101) and the
+  diag-probe retirement (R103) — and it carried the full SMOKE belt green
+  ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04);
+  [`R98`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R98) — issue #26
+  round 7: the D3D perspective-toggle crash rooted to the flat-wall builder's
+  `uint8_t` subtile iterator (wraps after 12 subtiles and reads +4-shifted
+  pseudo-records — latent since the original decompilation), iterator widened to
+  `int`. Earlier 0.0.7-line tags:
+  [`R91`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R91) — docs +
+  field-verify round: the third upstream sync field-run green and the necro-minion
+  skeleton fix confirmed in the field ("Skeletons are finally white again");
+  [`R88`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R88) — the second
+  upstream sync (Ghidra DB 1839 → 1851; gossip-table and SFX float supersessions);
+  [`R87`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R87) — the first
+  upstream sync of the line (1806 → 1839, field-run green);
+  [`R86`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R86) — the
+  `-nointro` boot switch ("R86 verified, -nointro works");
+  [`R85`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R85) — the A1Q2
+  Bloodraven turn-in fix ([#22](https://github.com/VTSTech/D2VP-QoL/issues/22),
+  closed by the owner 2026-11-02).
+
+*Verbatim — README.md — the field-verified bullet with per-round quotes, verbatim:*
+
+- **Field-verified**: boot → intro → title → character select → in game; Direct3D and
+  Glide (`-3dfx`) rendering, incl. the native 1280x720 widescreen mode; sound end to
+  end; the full SMOKE belt passed on the R83 build
+  ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24)) and again fully on the R104
+  build ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04 — incl. the
+  D3D perspective-toggle re-check and the `no_panel_shift` §L matrix); the `-nointro`
+  boot switch (R86) verified in-game 2026-11-02 — "R86 verified, -nointro works"; the
+  `no_panel_shift` feature (R95 Glide pass: "All blackness appears fixed in Glide as
+  well"; R100 unit lock: "working as intended now"); the six-stop resolution ladder —
+  1344x700 Glide green (R109), D3D held (R113: "ok, working good in D3D now"),
+  1920x1080 (R115: "Great job. works"); the hosted-stretch fullscreen presentation
+  (R111 letterbox "ok, i see the black bars" → stretched R112+); windowed `-w` clean;
+  and the eighth-sync build re-verified after the R124 D3D fullscreen fix
+  (2026-11-06: "d3d fullscreen works again").
+
+*Verbatim — VANILLA-PLUS.md — the upstream-sync status bullet, verbatim:*
+
+- **Up to date with upstream.** Eight numbered syncs of `jaenster/redivivus:main`
+  (first `R87`, latest the eighth: upstream `7df6ad0e..b8e3087f`, Ghidra DB
+  → **1948**, 16 commits / 786 files, merged as `18a368ce` — 693 unreferenced
+  functions defined, module-local symbols refiled into their using modules,
+  **Duriel's death no longer crashes**) — vanilla-plus is
+  ahead of upstream and never behind. At DB 1948 the upstream byte-match stands
+  at 7,648 of 14,626 functions (52.3%) / 23.99% of bytes (`asm_matching/msvc8`).
+
+*Verbatim — VANILLA-PLUS.md — the closed-tracks status bullet, verbatim:*
+
+- **The closed defect tracks stay closed** (HISTORY H1/H26): the glide crash
+  series (fixes 1–13), sound (15–16; upstreamed as jaenster/redivivus PR #10 —
+  drops work again and the Act 5 snow hang is gone, both upstream fixes) and
+  the fullscreen-D3D recovery (17–27) are all field-verified. The 720p-era D3D perspective-toggle
+  crash was root-fixed at `R98` (the flat-wall builder's `uint8_t` subtile
+  iterator wraps after 12 subtiles — latent since the original decompilation).
+
+*Verbatim — VANILLA-PLUS.md — the smoke-belt status bullet, verbatim:*
+
+- **The full smoke belt has passed twice on the 0.0.7 line**: on the R83 build
+  ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24), 2026-11-02) and again
+  on R104 ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04 —
+  "R104 fully smoke tested. passed.", clearing the standing §L asks: the
+  unit-lock re-checks, perspective-off, both-panels, the D3D toggle re-check).
+  Boot → intro → title → character select → in game, Direct3D and Glide
+  (incl. the native 1280x720 widescreen mode), sound end to end and the
+  `-nointro` boot switch (R86) are all field-green; the build is field-played daily.
+
+*Verbatim — VANILLA-PLUS.md — the slider status bullet, verbatim:*
+
+- **The video-options slider is six stops deep** — 640x480 / 800x600 / 1280x720
+  retail, plus **1344x700** (R109 — retail's dormant mode 3, first exposure),
+  **1366x768** (R112) and **1920x1080** (R115): probe-first fullscreen entry
+  (the driver's mode list is consulted before any mode-set), hosted stops
+  stretch to fill the host with the cursor mapped back into the logical frame,
+  windowed `-w` clean at every stop (the R116 GDI-pitch shear fix), and the
+  wide-view rendering campaign closed the black-edge/void family at ≥720p
+  (R117–R122: edge-void band fill, the room walk extended to hop 4, `vpdiag`
+  instrumentation in `d2boot.log`, the retail cull-rect re-fit) — the campaign
+  closed on vpdiag evidence (fill firing at full stretch, zero silent drops).
+  Glide pairing: wrapper **0.4.8** for the 1080p stop (0.4.7 adds 1366x768,
+  0.4.6 knows 1344x700). The eighth-sync build re-verified in the field after
+  the R124 D3D fullscreen fix (2026-11-06: "d3d fullscreen works again").
+
+*Verbatim — VANILLA-PLUS.md — the ilvl feature bullet, verbatim:*
+
+- **Item Level Tooltips** (D2R 2.5 display-item-level parity) — with the gate
+  on, every item tooltip's name line reads `Long Sword (12)`: the ilvl is
+  appended to the item name in all three tooltip builders (identified,
+  unidentified and set items), rendered in the name's own color. Bare digits —
+  players know what `(N)` means (the label word shipped first and was dropped
+  per owner preference, R55→R59). **Default OFF**: set `[features] item_ilvl=1`.
+
+*Verbatim — VANILLA-PLUS.md — the Windows build block, verbatim:*
+
+On Windows the same build runs natively — `tools/build-local-win11.ps1` sets
+up MSYS2's i686 toolchain (first run: winget + pacman, one-time), then
+configures, builds, runs the CI gates (32-bit PE, map) and strips a
+`d2s-<id>.exe`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\build-local-win11.ps1 -Clean -DeployTo "C:\Games\Diablo II"
+```
+
+More per platform: [docs/building.md](docs/building.md).
+
+*Verbatim — VANILLA-PLUS.md — roadmap item 1 (stable base), verbatim:*
+
+1. **Stable base** — **done.** The glide crash class is burned down (fixes
+   1–13), sound (15–16) and drops (14) are fixed, the fullscreen-D3D recovery
+   (17–27) is closed, and the 720p render family (issue #26, R92–R98) is
+   root-fixed and field-proven; the full smoke belt has passed twice on this
+   base (R83 #24, R104 #28). The crash protocol above handles whatever fires next.
+
+*Verbatim — VANILLA-PLUS.md — the transfer workflow note, verbatim:*
+
+- Transfer: the agent sandbox has no push credentials — regular rounds travel
+  as **overlay zips of changed files**, upstream merges as **git bundles**;
+  user side: `git fetch <file>.bundle main && git merge --ff-only FETCH_HEAD`,
+  then push. Overlay zips remain the fallback for file-level application to a
+  non-git tree.
+
+*Verbatim — VANILLA-PLUS.md — the exe-size build note, verbatim:*
+
+- exe size: the default d2.exe is ~300 MB **on purpose**. Upstream builds
+  -O0 with full DWARF (`-g`) so the in-process fault handler
+  (support/d2_crash.cpp + vendored libbacktrace) can write the SYMBOLIZED
+  `d2crash-*.txt` at crash time, and explicitly warns that optimizing
+  decompiled code which may lean on undefined behaviour is "an experiment,
+  not a release". Linking is fully static (`-static -static-libgcc
+  -static-libstdc++`), so no mingw runtime DLLs are needed beside it. The
+  original 1.14d Game.exe is ~6 MB; -O0 code bloat plus DWARF for tens of
+  thousands of functions is the rest. Keep the fat exe as the crash-triage
+  instrument; `strip` removes only the DWARF (the CI job uploads both),
+  it does not shrink the -O0 code itself.
