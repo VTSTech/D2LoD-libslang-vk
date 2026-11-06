@@ -982,7 +982,7 @@ void __stdcall UI_HandlePartyButtonTooltips() {
 
                       ShowToolTipOnPartyButtons(0x1019, 0, 0x6e, 0);
                       iVar1 = UI_CalculateCenteredTextXPosition(0x1019, 0x6e);
-                      nTmpX = 0x37 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                      nTmpX = 0x37 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6];
                       nTmp3 = 1;
                       nTmp = Inv::gnPanelOffsetX + iVar1;
                       nLocaleId = 0x1019;
@@ -990,12 +990,12 @@ void __stdcall UI_HandlePartyButtonTooltips() {
                       ShowToolTipOnPartyButtons(0x101a, 0x101b, 0xa0, 1);
                       iVar1 = UI_CalculateCenteredTextXPosition(0x101a, 0xa0);
                       bResult = 0;
-                      nTmpX = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                      nTmpX = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6];
                       nTmp3 = 0;
                       nTmp = Inv::gnPanelOffsetX + iVar1;
                       D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(0x101a), nTmp, nTmpX, nTmp3, bResult);
                       iVar1 = UI_CalculateCenteredTextXPosition(0x101b, 0xa0);
-                      nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                      nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6];
                       nTmp3 = 0;
                       nTmp = Inv::gnPanelOffsetX + iVar1;
                       nLocaleId = 0x101b;
@@ -1010,7 +1010,7 @@ void __stdcall UI_HandlePartyButtonTooltips() {
                     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszText, pText);
                     iVar1 = D2Win::Src::D2WinFont::DRAW_text0(wszText);
                     bResult = 0;
-                    nTmp = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                    nTmp = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6];
                     nTmp3 = 0;
                     nTmpX = Inv::gnPanelOffsetX - iVar1 / 2;
                     D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(0x101a), nTmpX + 0xa0, nTmp, nTmp3, bResult);
@@ -1021,31 +1021,17 @@ void __stdcall UI_HandlePartyButtonTooltips() {
                     pText = D2Lang::StrTable::strtable::GetLocaleString(0x101b);
                     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszText, pText);
                     iVar1 = D2Win::Src::D2WinFont::DRAW_text0(wszText);
-                    nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                    nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6];
                     nTmp3 = 0;
                     nTmp = Inv::gnPanelOffsetX - iVar1 / 2 + 0xa0;
                     nLocaleId = 0x101b;
                   }
 
-                  ShowToolTipOnPartyButtons(0x1019, 0, 0x6e, 0);
-                  iVar1 = UI_CalculateCenteredTextXPosition(0x1019, 0x6e);
-                  nTmpX = 0x37 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
-                  nTmp3 = 1;
-                  nTmp = Inv::gnPanelOffsetX + iVar1;
-                  nLocaleId = 0x1019;
-                } else {
-                  ShowToolTipOnPartyButtons(0x101a, 0x101b, 0xa0, 1);
-                  iVar1 = UI_CalculateCenteredTextXPosition(0x101a, 0xa0);
+                  draw_last_text_line:
                   bResult = 0;
-                  nTmpX = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
-                  nTmp3 = 0;
-                  nTmp = Inv::gnPanelOffsetX + iVar1;
-                  D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(0x101a), nTmp, nTmpX, nTmp3, bResult);
-                  iVar1 = UI_CalculateCenteredTextXPosition(0x101b, 0xa0);
-                  nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
-                  nTmp3 = 0;
-                  nTmp = Inv::gnPanelOffsetX + iVar1;
-                  nLocaleId = 0x101b;
+                  pText = D2Lang::StrTable::strtable::GetLocaleString(nLocaleId);
+                  D2Win::Src::D2WinFont::DRAW_text(pText, nTmp, nTmpX, nTmp3, bResult);
+                  return;
                 }
               default:
                 {
@@ -1056,14 +1042,14 @@ void __stdcall UI_HandlePartyButtonTooltips() {
                         if (nFlag) {
                           ShowToolTipOnPartyButtons(0x1017, 0, 0x128, 0);
                           iVar1 = UI_CalculateCenteredTextXPosition(0x1017, 0x128);
-                          nTmpX = 0x37 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                          nTmpX = 0x37 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6];
                           nTmp3 = 0;
                           nTmp = Inv::gnPanelOffsetX + iVar1;
                           nLocaleId = 0x1017;
                         } else {
                           ShowToolTipOnPartyButtons(0x1016, 0, 0x128, 0);
                           iVar1 = UI_CalculateCenteredTextXPosition(0x1016, 0x128);
-                          nTmpX = 0x37 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                          nTmpX = 0x37 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6];
                           nTmp3 = 0;
                           nTmp = iVar1 + Inv::gnPanelOffsetX;
                           nLocaleId = 0x1016;
@@ -1078,12 +1064,12 @@ void __stdcall UI_HandlePartyButtonTooltips() {
                           ShowToolTipOnPartyButtons(0x1012, 0x1013, 0x114, 1);
                           iVar1 = UI_CalculateCenteredTextXPosition(0x1012, 0x114);
                           bResult = 0;
-                          nTmpX = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                          nTmpX = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6];
                           nTmp3 = 0;
                           nTmp = Inv::gnPanelOffsetX + iVar1;
                           D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(0x1012), nTmp, nTmpX, nTmp3, bResult);
                           iVar1 = UI_CalculateCenteredTextXPosition(0x1013, 0x114);
-                          nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                          nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6];
                           nTmp3 = 0;
                           nTmp = Inv::gnPanelOffsetX + iVar1;
                           nLocaleId = 0x1013;
@@ -1091,12 +1077,12 @@ void __stdcall UI_HandlePartyButtonTooltips() {
                           ShowToolTipOnPartyButtons(0x1014, 0x1015, 0x114, 1);
                           iVar1 = UI_CalculateCenteredTextXPosition(0x1014, 0x114);
                           bResult = 0;
-                          nTmpX = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                          nTmpX = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6];
                           nTmp3 = 0;
                           nTmp = Inv::gnPanelOffsetX + iVar1;
                           D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(0x1014), nTmp, nTmpX, nTmp3, bResult);
                           iVar1 = UI_CalculateCenteredTextXPosition(0x1015, 0x114);
-                          nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                          nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6];
                           nTmp3 = 0;
                           nTmp = Inv::gnPanelOffsetX + iVar1;
                           nLocaleId = 0x1015;
@@ -1117,12 +1103,12 @@ void __stdcall UI_HandlePartyButtonTooltips() {
                       ShowToolTipOnPartyButtons(0x1010, 0x1011, 0xff, 1);
                       iVar1 = UI_CalculateCenteredTextXPosition(0x1010, 0xff);
                       bResult = 0;
-                      nTmpX = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                      nTmpX = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6];
                       nTmp3 = 0;
                       nTmp = Inv::gnPanelOffsetX + iVar1;
                       D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(0x1010), nTmp, nTmpX, nTmp3, bResult);
                       iVar1 = UI_CalculateCenteredTextXPosition(0x1011, 0xff);
-                      nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                      nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6];
                       nTmp3 = 0;
                       nTmp = Inv::gnPanelOffsetX + iVar1;
                       nLocaleId = 0x1011;
@@ -1130,131 +1116,22 @@ void __stdcall UI_HandlePartyButtonTooltips() {
                       ShowToolTipOnPartyButtons(0x100e, 0x100f, 0xff, 1);
                       iVar1 = UI_CalculateCenteredTextXPosition(0x100e, 0xff);
                       bResult = 0;
-                      nTmpX = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                      nTmpX = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6];
                       nTmp3 = 0;
                       nTmp = Inv::gnPanelOffsetX + iVar1;
                       D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(0x100e), nTmp, nTmpX, nTmp3, bResult);
                       iVar1 = UI_CalculateCenteredTextXPosition(0x100f, 0xff);
-                      nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                      nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6];
                       nTmp3 = 0;
                       nTmp = Inv::gnPanelOffsetX + iVar1;
                       nLocaleId = 0x100f;
                     }
 
-                pText = D2Lang::StrTable::strtable::GetLocaleString(0x101a);
-                D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszText, pText);
-                iVar1 = D2Win::Src::D2WinFont::DRAW_text0(wszText);
-                bResult = 0;
-                nTmp = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY();
-                nTmp3 = 0;
-                nTmpX = Inv::gnPanelOffsetX - iVar1 / 2;
-                D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(0x101a), nTmpX + 0xa0, nTmp, nTmp3, bResult);
-                for (nTmp = 0; nTmp < 0x64; nTmp++) {
-                  wszText[nTmp] = L'\0';
+                    goto draw_last_text_line;
+                  }
+
+                  break;
                 }
-
-                pText = D2Lang::StrTable::strtable::GetLocaleString(0x101b);
-                D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszText, pText);
-                iVar1 = D2Win::Src::D2WinFont::DRAW_text0(wszText);
-                nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY();
-                nTmp3 = 0;
-                nTmp = Inv::gnPanelOffsetX - iVar1 / 2 + 0xa0;
-                nLocaleId = 0x101b;
-              }
-
-              draw_last_text_line:
-              bResult = 0;
-              pText = D2Lang::StrTable::strtable::GetLocaleString(nLocaleId);
-              D2Win::Src::D2WinFont::DRAW_text(pText, nTmp, nTmpX, nTmp3, bResult);
-              return;
-            }
-            if (nTmp == 2) {
-              nFlag = ClientModeInGame::CLIENTMODE_GetIngameUIFlags();
-              if (nFlag) {
-                nFlag = GAME::Roster::ROSTER_GetLootFlag(pRosterIter);
-                if (nFlag) {
-                  ShowToolTipOnPartyButtons(0x1010, 0x1011, 0xff, 1);
-                  iVar1 = UI_CalculateCenteredTextXPosition(0x1010, 0xff);
-                  bResult = 0;
-                  nTmpX = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY();
-                  nTmp3 = 0;
-                  nTmp = Inv::gnPanelOffsetX + iVar1;
-                  D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(0x1010), nTmp, nTmpX, nTmp3, bResult);
-                  iVar1 = UI_CalculateCenteredTextXPosition(0x1011, 0xff);
-                  nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
-                  nTmp3 = 0;
-                  nTmp = Inv::gnPanelOffsetX + iVar1;
-                  nLocaleId = 0x1011;
-                } else {
-                  ShowToolTipOnPartyButtons(0x100e, 0x100f, 0xff, 1);
-                  iVar1 = UI_CalculateCenteredTextXPosition(0x100e, 0xff);
-                  bResult = 0;
-                  nTmpX = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY();
-                  nTmp3 = 0;
-                  nTmp = Inv::gnPanelOffsetX + iVar1;
-                  D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(0x100e), nTmp, nTmpX, nTmp3, bResult);
-                  iVar1 = UI_CalculateCenteredTextXPosition(0x100f, 0xff);
-                  nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
-                  nTmp3 = 0;
-                  nTmp = Inv::gnPanelOffsetX + iVar1;
-                  nLocaleId = 0x100f;
-                }
-
-                goto draw_last_text_line;
-              }
-            } else {
-              if (nTmp == 3) {
-                nFlag = GAME::Roster::ROSTER_GetListenFlag(pRosterIter);
-                if (nFlag) {
-                  ShowToolTipOnPartyButtons(0x1012, 0x1013, 0x114, 1);
-                  iVar1 = UI_CalculateCenteredTextXPosition(0x1012, 0x114);
-                  bResult = 0;
-                  nTmpX = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY();
-                  nTmp3 = 0;
-                  nTmp = Inv::gnPanelOffsetX + iVar1;
-                  D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(0x1012), nTmp, nTmpX, nTmp3, bResult);
-                  iVar1 = UI_CalculateCenteredTextXPosition(0x1013, 0x114);
-                  nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
-                  nTmp3 = 0;
-                  nTmp = Inv::gnPanelOffsetX + iVar1;
-                  nLocaleId = 0x1013;
-                } else {
-                  ShowToolTipOnPartyButtons(0x1014, 0x1015, 0x114, 1);
-                  iVar1 = UI_CalculateCenteredTextXPosition(0x1014, 0x114);
-                  bResult = 0;
-                  nTmpX = 0x32 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY();
-                  nTmp3 = 0;
-                  nTmp = Inv::gnPanelOffsetX + iVar1;
-                  D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(0x1014), nTmp, nTmpX, nTmp3, bResult);
-                  iVar1 = UI_CalculateCenteredTextXPosition(0x1015, 0x114);
-                  nTmpX = 0x41 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
-                  nTmp3 = 0;
-                  nTmp = Inv::gnPanelOffsetX + iVar1;
-                  nLocaleId = 0x1015;
-                }
-
-                goto draw_last_text_line;
-              }
-              if (nTmp == 4) {
-                nFlag = GAME::Roster::ROSTER_GetMuteFlag(pRosterIter);
-                if (nFlag) {
-                  ShowToolTipOnPartyButtons(0x1017, 0, 0x128, 0);
-                  iVar1 = UI_CalculateCenteredTextXPosition(0x1017, 0x128);
-                  nTmpX = 0x37 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
-                  nTmp3 = 0;
-                  nTmp = Inv::gnPanelOffsetX + iVar1;
-                  nLocaleId = 0x1017;
-                } else {
-                  ShowToolTipOnPartyButtons(0x1016, 0, 0x128, 0);
-                  iVar1 = UI_CalculateCenteredTextXPosition(0x1016, 0x128);
-                  nTmpX = 0x37 - Inv::gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
-                  nTmp3 = 0;
-                  nTmp = iVar1 + Inv::gnPanelOffsetX;
-                  nLocaleId = 0x1016;
-                }
-
-                goto draw_last_text_line;
-              }
             }
           }
 
