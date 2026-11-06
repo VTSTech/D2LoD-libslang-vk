@@ -9,8 +9,8 @@
        width="88" height="31" alt="Made Openly: Mostly AI">
 </a>
 
-[![Release](https://img.shields.io/badge/release-0.0.7--R124-8f2b2b)](https://github.com/VTSTech/D2VP-QoL/releases/latest)
-[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-499%2F499-2ea043)](tools/check-vanilla-plus.sh)
+[![Release](https://img.shields.io/badge/release-0.0.8--R127-8f2b2b)](https://github.com/VTSTech/D2VP-QoL/releases/latest)
+[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-510%2F510-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 [![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/xQXpH5Nj5)
 
@@ -18,8 +18,7 @@ Diablo II: Lord of Destruction 1.14d, reverse-engineered into C++ that builds an
 with **Vanilla+** on top: a fix-and-QoL layer maintained by VTSTech directly in the
 recovered source, plus a `glide3x.dll` that renders the game through Vulkan with a
 libSlang shader chain. The wrapper is its own project and repository:
-[Glide3xVK](https://github.com/VTSTech/Glide3xVK) (formerly a branch of this repo,
-which was itself formerly `D2LoD-libslang-vk`).
+[Glide3xVK](https://github.com/VTSTech/Glide3xVK).
 
 The recovered game source comes from
 [Redivivus](https://github.com/jaenster/redivivus) (`Game.exe` recovered
@@ -28,7 +27,7 @@ network what [D2MOO](https://github.com/ThePhrozenKeep/D2MOO) does for the game
 mechanics). This fork keeps that tree current with upstream and adds the Vanilla+
 surface: crash fixes, widescreen UI support, opt-in quality-of-life features and a
 settings page — nothing silently changes gameplay. Upstream builds `d2.exe`; this fork
-modifies that source and ships the client as **`d2vp.exe`**.
+ships the client as **`d2vp.exe`**.
 
 ## Scope
 
@@ -38,73 +37,49 @@ game data — MPQs and CD keys come from your own 1.14d install.
 
 ## Features (opt-in, default OFF)
 
-With no `d2vp.ini` next to `d2vp.exe`, the game behaves like retail 1.14d byte-for-byte.
-Missing ini/section/key/garbage value = vanilla at every touched site; keys are hot-re-read
-at most every 2 s, and a missing `d2vp.ini` is auto-created with a documented all-defaults
-template. Everything below can also be toggled in-game: **Esc → Options → "Vanilla+
-Options"**.
+With no `d2vp.ini` next to `d2vp.exe`, the game behaves like retail 1.14d byte-for-byte
+(missing ini/section/key = vanilla; keys hot-re-read every ~2 s; a missing ini is
+auto-created with a documented all-defaults template). Everything below also toggles
+in-game: **Esc → Options → "Vanilla+ Options"**.
 
 | Feature | `d2vp.ini` key | What it does |
 | --- | --- | --- |
-| Show Items Toggle | `[features] alt_toggle` | Each Alt press flips ground-item labels on/off (D2R "Show Items: Toggle" parity). Latched labels survive clicks; clicking an item's label or sprite picks it up. |
-| Portable saves | `[features] portable_save` | Saves read/write `<game folder>\save` instead of the registry-resolved path. Registry untouched; move your `.d2s`/`.d2x`/`.key`/`.map` files over once. |
-| Auto Gold Pickup | `[features] auto_gold` | Gold piles inside pickup range are collected when you walk over them, via the game's own server-side pickup path. Gold only, never moves your character, never fires mid-attack. |
-| Persistent Globe Text | `[features] globe_persistent` | Retail's above-orb Life/Mana readout stays visible without hovering. Pure display; retail's own HP/MP-text options keep working. |
-| Item Level Tooltips | `[features] item_ilvl` | Appends ` (N)` to the item name on every item tooltip — e.g. `Long Sword (12)` — so an item's level reads at a glance. |
-| Shared Stash | `[features] shared_stash` | An **outlined "Shared" tab** on the stash panel over **ten** retail-shaped pages that every character on the PC shares: items and gold deposited there survive the character. `‹` / `›` arrows beside the label step one page at a time (Shared 1 … Shared 10); clicking the word returns to the personal page; one gold pool across all ten. Stored in its own `_d2vp_shared.sss` beside the saves; older shared-stash files load with the missing pages empty — character `.d2s` files stay retail-compatible, with or without the key. |
-| No Panel World Shift | `[features] no_panel_shift` | With one panel open at the wide layouts (1280x720 / 1344x700) the world — terrain, units, effects — stays exactly where it was: the panel floats over an unmoved camera instead of the vanilla quarter-screen slide. The vanilla slide is kept at 640x480 / 800x600, where it still re-centers the action. |
-| Mana Burn Fix | `[features] mana_burn_fix` | Retail 1.14d bug: Mana Burn unique monsters drained 256x the intended mana with melee hits (512x in Hell) — one blow could empty the pool. With the fix on, a Mana Burn melee hit drains the designed 66–100% of the monster's level damage instead (33–50% for Nightmare/Hell minions — the x1.4/x2 difficulty resist stays, matching D2R's own post-2.4 behavior). Server-side; a flip applies on the next hit, within 2 s. |
-| Shift Item Compare | `[features] shift_compare` | Hold **Shift** while hovering an equippable item in a panel and a second tooltip draws beside the hovered item's: the item you have equipped for that body slot (D2R hover-compare parity — side-by-side viewing, no stat-delta lines). Works in the inventory, stash, cube, trade screen and the vendor (your items **and** the shop stock); 2H-aware weapon pairing, deterministic first-occupied ring pick, shields and quivers compare the off-hand while weapons compare the primary (same-kind pick when both hands are filled), full set-bonus lines on equipped set items. The compare box sits left of the hovered item's tooltip (right when that would leave the screen), bottoms aligned. |
+| Show Items Toggle | `[features] alt_toggle` | Each Alt press flips ground-item labels on/off (D2R parity); latched labels survive clicks, and clicking a label or sprite picks the item up. |
+| Portable saves | `[features] portable_save` | Saves read/write `<game folder>\save` instead of the registry-resolved path; registry untouched. |
+| Auto Gold Pickup | `[features] auto_gold` | Gold piles in pickup range are collected when you walk over them, via the game's own server-side pickup path. Gold only; never moves your character. |
+| Persistent Globe Text | `[features] globe_persistent` | Retail's above-orb Life/Mana readout stays visible without hovering. Pure display. |
+| Item Level Tooltips | `[features] item_ilvl` | Appends ` (N)` to the item name on every item tooltip. |
+| Shared Stash | `[features] shared_stash` | An outlined "Shared" tab over **ten** retail-shaped stash pages every character on the PC shares (items + one gold pool survive the character), with `‹`/`›` pager arrows; stored in its own `_d2vp_shared.sss` — character `.d2s` files stay retail-compatible. |
+| No Panel World Shift | `[features] no_panel_shift` | With one panel open at the wide layouts the world stays exactly where it was — the panel floats over an unmoved camera instead of the vanilla quarter-screen slide. |
+| Mana Burn Fix | `[features] mana_burn_fix` | Repairs retail's Mana Burn bug (256x the intended mana drain, 512x in Hell) to the designed 66–100% of monster-level damage, matching D2R post-2.4. |
+| Shift Item Compare | `[features] shift_compare` | Hold **Shift** over an equippable item and a second tooltip draws beside it: the item you have equipped for that body slot (D2R hover-compare parity) — inventory, stash, cube, trade, vendor; shield/quiver hovers compare the off-hand, weapons the primary. |
 
 No balance changes, no save-format changes: `.d2s`/`.d2x` layouts stay untouched, and
-every feature ships OFF. The wider candidate slate (D2R backports and owner suggestions)
-is scoped in [FEATURES.md](FEATURES.md); nothing lands without a config gate.
+every feature ships OFF. The wider candidate slate is scoped in
+[FEATURES.md](FEATURES.md); nothing lands without a config gate.
 
 ## Status
 
-The short form — per-area records: [`handoff.md`](handoff.md) §2 (field-status table);
-per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
-[`handoff.md`](handoff.md) (live) and [`HISTORY.md`](HISTORY.md) (verbatim archive).
+Current: **`Vanilla+0.0.8-R127`** (line 1 of `d2boot.log` pins any build).
 
-- **Shipped: [`R124`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R124)
-  ("Vanilla+0.0.7-R124")** — the **D3D fullscreen boot-crash fix**: the eighth-sync
-  merge split `RENDERER_DIRECT3D_UploadTextureToCache`'s four texture-cache node-base
-  sites across upstream's refiled static spelling and the fork's build-relative form —
-  the rebuilt exe indexed the texture cache through two different regions and the first
-  texture re-upload dereferenced a near-null base (`AV READ at 0x10`, D3D fullscreen
-  only; `-w` and Glide untouched). All four sites back on the relative form, plus the
-  new `scripts/refile_aliasing_audit.py` instrument (all 220 refile-marked TUs swept —
-  repo-wide CLEAN) — field-verified 2026-11-06 ("d3d fullscreen works again"). The
-  build also carries [`R123`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R123) —
-  the **eighth upstream sync** (Ghidra DB → 1948: 693 unreferenced functions defined,
-  module-local symbols refiled into their using modules, **Duriel's death no longer
-  crashes**) — and the **R109–R122 wide-resolution arc**: the 1344x700 / 1366x768 /
-  1920x1080 video-options stops, probe-first hosted-stretch fullscreen presentation,
-  and the wide-view rendering campaign. Earlier 0.0.7-line releases R85–R122 (the sync
-  chain, `mana_burn_fix` + its Options row, `no_panel_shift`, the shared-stash growth,
-  the `-nointro` switch, the issue-#26 arc): per-release digests in
-  [CHANGELOG.md](CHANGELOG.md) — the release-by-release roll this bullet carried moved
-  to [HISTORY.md](HISTORY.md) H46 (trim #22).
+- **Shipped** (short form — per-release detail: [CHANGELOG.md](CHANGELOG.md)): the
+  **Shift Item Compare** feature with its shield-slot fix (R125/R126, field-verified),
+  the **D3D fullscreen boot-crash fix** (R124, field-verified), the **eighth upstream
+  sync** (R123, Ghidra DB 1948 — includes upstream's "Duriel's death no longer
+  crashes"), the **R109–R122 wide-resolution arc** — the 1344x700 / 1366x768 /
+  1920x1080 video-options stops with hosted-stretch fullscreen and the wide-view
+  rendering campaign — and the **Mana Burn Fix** (R106–R108). Earlier tags on the
+  [releases page](https://github.com/VTSTech/D2VP-QoL/releases).
 - **Field-verified**: boot → intro → title → character select → in game; Direct3D and
-  Glide (`-3dfx`) rendering, incl. the native 1280x720 widescreen mode; sound end to end;
-  the full SMOKE belt twice ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24),
-  [#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04); the `-nointro` boot
-  switch; `no_panel_shift` end to end; the six-stop resolution ladder; windowed `-w`
-  clean; and the eighth-sync build re-verified after the R124 D3D fullscreen fix
-  (2026-11-06: "d3d fullscreen works again"). The per-round field quotes this bullet
-  carried: [HISTORY.md](HISTORY.md) H46.
-- **Open issues (1)**, triaged in [handoff.md](handoff.md) §9: the Refilling Shrine
-  XP buff ([#25](https://github.com/VTSTech/D2VP-QoL/issues/25)) — suspected
-  wrong-shrine-effect application (the XP buff belongs to a different shrine type);
-  triage pending. Closed on GitHub: necro minion skeleton colors
-  ([#8](https://github.com/VTSTech/D2VP-QoL/issues/8) — fixed R51, field-verified
-  R91, "Skeletons are finally white again"); the intermittent attribute-point
-  crash ([#18](https://github.com/VTSTech/D2VP-QoL/issues/18)); 720p panel margins
-  ([#26](https://github.com/VTSTech/D2VP-QoL/issues/26) — the render fixes and
-  `no_panel_shift` field-proven R92–R101, the remaining asks green on the R104
-  full smoke belt, [#28](https://github.com/VTSTech/D2VP-QoL/issues/28)); A1Q2
-  Bloodraven turn-in ([#22](https://github.com/VTSTech/D2VP-QoL/issues/22) —
-  the R85 fix field-proven, closed 2026-11-02).
+  Glide (`-3dfx`) rendering; sound end to end; the six-stop resolution ladder; the full
+  smoke belt passed on the R83 and R104 builds
+  ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24),
+  [#28](https://github.com/VTSTech/D2VP-QoL/issues/28)); `d2vp.exe` is field-played
+  daily.
+- **Open issues (1)**: the Refilling Shrine XP buff
+  ([#25](https://github.com/VTSTech/D2VP-QoL/issues/25), triage pending). Recently
+  closed: #26 (720p panel margins + `no_panel_shift`), #22 (Bloodraven turn-in), #18
+  (attribute-point crash), #8 (necro skeleton tint).
 - A crash writes a symbolised report (`d2crash-<date>-<time>.txt`) next to the
   executable; a 12 s hangwatch dumps one if the main loop ever stops beating. See
   [Crash reports](#crash-reports).
@@ -116,9 +91,8 @@ per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
    into your Diablo II: LoD 1.14d folder (next to `Game.exe`).
 2. Run `d2vp.exe -w`. That's the Vanilla+ client; `glide3x.dll` sits beside it for the
    wrapper route (`-3dfx`), launcher/debug scripts included.
-3. Optional: `d2vp.exe -nointro` skips the two intro videos (the Blizzard / Blizzard
-   North logo clips) and the auto-played title cinematics — boot goes straight to the
-   title screen. In-game cutscenes are unaffected.
+3. Optional: `d2vp.exe -nointro` skips the two intro videos and the auto-played title
+   cinematic — boot goes straight to the title screen. In-game cutscenes are unaffected.
 
 Upgrading: extract over the previous install — saves, realm logins and `d2vp.ini` carry
 over.
@@ -146,19 +120,14 @@ play/distribute) plus `d2-map-<sha>.map` (linker map, load-bearing for crash
 symbolisation). More per platform: [docs/building.md](docs/building.md).
 
 Naming: source and CI keep upstream's `d2.exe` / `d2s-<sha>.exe` names; each release
-ships the client renamed **`d2vp.exe`** — the Vanilla+ build is distinct from upstream's
-`d2.exe` at a glance.
-
-The default `d2.exe` is ~300 MB **on purpose**: -O0 with full DWARF so the in-process
-fault handler can write the *symbolised* `d2crash-*.txt` at crash time. `strip` removes
-only the DWARF. Linking is fully static — no runtime DLLs needed beside it.
+ships the client renamed **`d2vp.exe`**. The default `d2.exe` is ~300 MB **on purpose**:
+-O0 with full DWARF so the in-process fault handler can write the *symbolised*
+`d2crash-*.txt` at crash time; `strip` removes only the DWARF. Linking is fully static.
 
 ## Releases
 
 Every shipped release with its change list: [`CHANGELOG.md`](CHANGELOG.md). Tag
-downloads: the
-[releases page](https://github.com/VTSTech/D2VP-QoL/releases). Round journals:
-[`handoff.md`](handoff.md) (live) and [`HISTORY.md`](HISTORY.md) (verbatim archive).
+downloads: the [releases page](https://github.com/VTSTech/D2VP-QoL/releases).
 
 ## Verification
 
@@ -166,7 +135,7 @@ Two checks stand behind every release:
 
 - **The Vanilla+ gate suite** — [`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh)
   pins the whole Vanilla+ surface (feature gates, 720p anchors, sound constants, boot
-  telemetry) with **499 checks**, green at the current tip.
+  telemetry, doc budgets) with **510 checks**, green at the current tip.
 - **[`asm_matching/`](asm_matching/README.md)** (upstream) compiles the tree with Visual
   C++ 2005 SP1 and byte-compares each function against the 1.14d binary — a check on the
   decompilation itself: where the code comes out identical, the decompiled function was
@@ -182,25 +151,18 @@ At this commit, generated from version 1948 of the Ghidra database:
 |Instructions|1,814,591 of 2,598,518 bytes (69.8%), counting identical instructions in functions that still differ|
 
 Of the 7,648 identical functions, 567 are recovered unreferenced functions: code in
-1.14d that nothing calls by a direct reference and that Ghidra never defined as a function. They
-are in the tree as placeholders named `Unreferenced_<address>`, or `<twin>_Unref_<address>` where
-the bytes repeat a named function. They count among the original functions either way, so the
-second row leaves them out of the identical count only.
-
-These leave out the C runtime that Visual C++ 2005 linked in statically (libcmt): the
-rebuild links a runtime instead of reconstructing it. Code the compiler generates for C++
-exceptions is left out as well, and so is the PKWARE compression library, linked into the
-original as a prebuilt 1997 library that no Visual C++ 2005 compile produced. Over the whole binary, runtime
-included: 8,208 of 15,711 functions (52.2%), 722,355 of
-2,748,975 bytes (26.28%).
+1.14d that nothing calls by a direct reference (placeholders named
+`Unreferenced_<address>`). These counts leave out the statically linked C runtime, C++
+exception code and the PKWARE library. Over the whole binary, runtime included:
+8,208 of 15,711 functions (52.2%), 722,355 of 2,748,975 bytes (26.28%).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="asm_matching/msvc8/evidence/byte-match-dark.svg">
   <img alt="The original's code split by how closely the rebuild matches it" src="asm_matching/msvc8/evidence/byte-match-light.svg">
 </picture>
 
-[BYTE-MATCHING.md](BYTE-MATCHING.md) explains what is compared, the kinds of match, and why
-whole matching functions are a strict measure next to identical instructions.
+[BYTE-MATCHING.md](BYTE-MATCHING.md) explains what is compared and why whole matching
+functions are a strict measure.
 
 ## Crash reports
 
@@ -214,12 +176,9 @@ hasn't hit yet. To attribute a crash correctly, collect **both** artifacts from 
 
 Rule of thumb: faulting frame in `glide3xvk`/`vk_backend`/slang → wrapper issue (the
 [Glide3xVK repo](https://github.com/VTSTech/Glide3xVK)); faulting frame in `D2*`/`Storm`/`Fog` with a d2crash report →
-game-source issue, report upstream if it's a reconstruction bug. No d2crash file and a
-silent death → suspect the boundary (exports, calling conventions, the driver swap).
-Attach both files to an issue — a crash without both artifacts cannot be attributed.
-
-[CONTRIBUTING.md](CONTRIBUTING.md) has the detail: which paths are generated and which are
-hand-written, and which door a given finding goes through so that it survives.
+game-source issue, report upstream if it's a reconstruction bug. Attach both files to an
+issue — a crash without both artifacts cannot be attributed.
+[CONTRIBUTING.md](CONTRIBUTING.md) has the detail.
 
 With an AI agent you can read the Ghidra databases behind the tree (1.14d Windows and Mac)
 through a read-only MCP server, and report such fixes with the evidence. In Claude Code:
@@ -229,20 +188,18 @@ claude plugin marketplace add jaenster/redivivus
 claude plugin install redivivus@redivivus
 ```
 
-The plugin brings the MCP server and the house rules; sign in with GitHub from `/mcp`. Other
-agents: see https://redivivus.app/agent-setup/prompt.md. Corrections go in as proposals that are
-checked against the databases, reviewed, and applied with you as the git author; see
-[how proposals work](https://redivivus.app/about#contributing).
+Other agents: see https://redivivus.app/agent-setup/prompt.md.
 
 ## Project documents
 
-- [CHANGELOG.md](CHANGELOG.md) — the per-release change digest.
-- [VANILLA-PLUS.md](VANILLA-PLUS.md) — the charter: layering, principles, shipped features, crash-triage protocol.
-- [FEATURES.md](FEATURES.md) — the D2R-backport feature slate, ranked, with the house feature contract.
-- [handoff.md](handoff.md) — the live work log: current revision, field status, open defect tracks.
-- [HISTORY.md](HISTORY.md) — the archive of closed fix series and investigations.
-- [PLAN.md](PLAN.md) — the wrapper/d2.exe integration plan (PLAN.md's "d2.exe" is the source line's own name; releases ship `d2vp.exe`).
-- [docs/merge-upstream.md](docs/merge-upstream.md) — how upstream regenerations are merged through with the Vanilla+ surface intact.
+**For humans:** [CHANGELOG.md](CHANGELOG.md) (per-release changes, short) ·
+[VANILLA-PLUS.md](VANILLA-PLUS.md) (the charter: layering, principles, crash-triage
+protocol) · [SMOKE-CHECKLIST.md](SMOKE-CHECKLIST.md) (the in-game test pass).
+**For agents (verbose by design):** [FEATURES.md](FEATURES.md) (the feature slate + house
+feature contract) · [handoff.md](handoff.md) (live work log, 16 KB budget) ·
+[HISTORY.md](HISTORY.md) (the unbounded verbatim archive) · [plans/](plans/) (all
+feature/integration plans) · [docs/merge-upstream.md](docs/merge-upstream.md) (how
+upstream regenerations are merged through) · [docs/building.md](docs/building.md).
 
 ## Credits
 

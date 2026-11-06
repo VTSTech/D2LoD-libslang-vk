@@ -33,13 +33,13 @@ FRONT_MATTER = """\
 ---
 name: Vanilla+ Smoke Test
 about: Run the manual smoke checklist against one build — the checkboxes are live once the issue is open
-title: "Smoke Test — Vanilla+0.0.7-RXX"
+title: "Smoke Test — Vanilla+0.0.8-RXX"
 ---
 
 """
 
 INTRO = """\
-**Build under test:** `Vanilla+0.0.7-RXX` — fill in the round (title too); line 1 of `d2boot.log` must say it (item 0). Tick the boxes as you run — they are live in this issue; paste logs and screenshots as comments. A crash gets its own comments with the artifacts from the table at the bottom.
+**Build under test:** `Vanilla+0.0.8-RXX` — fill in the round (title too); line 1 of `d2boot.log` must say it (item 0). Tick the boxes as you run — they are live in this issue; paste logs and screenshots as comments. A crash gets its own comments with the artifacts from the table at the bottom.
 
 Core path takes ~15 min. Run top to bottom — the fast checks come first. The repo copy ([SMOKE-CHECKLIST.md]({repo}/blob/main/SMOKE-CHECKLIST.md)) is the canonical reference: the per-round build stamp and field history live there, and any round that adds or changes a check re-runs `tools/gen-smoke-issue-template.py` and commits both.
 
@@ -55,7 +55,7 @@ def transform(line: str) -> list[str]:
     if line.startswith("- [ ] **0.** Confirm the right exe:"):
         return [
             "- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say the round"
-            " under test — `Vanilla+0.0.7-RXX` (fill it in above and in the title). Anything"
+            " under test — `Vanilla+0.0.8-RXX` (fill it in above and in the title). Anything"
             " older, or a `0.0.6` prefix, is the wrong exe — don't test further.\n"
         ]
     if line.startswith("Field status on the R66 build"):

@@ -295,7 +295,7 @@ gate "resolution: label descender comp (#23)" D2Client/UI/EscMenu.cpp    'RESLAB
 # The third stop activates retail's own dormant mode 3: D2GFX case 3 = 0x540 x
 # 700 and the renderer-side mode-3 branches were always in the binaries (GDI
 # DIB + scale, DDraw table slot, Glide wrapper enum 17) - only the UI stop and
-# the two client-side mappings were missing. Plan: 1344x700-PLAN.md (Gap A =
+# the two client-side mappings were missing. Plan: plans/1344x700-PLAN.md (Gap A =
 # the mode-set case, Gap B = the slider stop + label, Gap C = the mini-panel
 # re-apply that runs at every game-enter and cutscene-exit).
 gate "res3: mode-set case 3"              D2Client/ClientModeInGame.cpp  "Vanilla Plus: retail's dormant 1344x700" 1
@@ -1179,7 +1179,7 @@ gate "stash: layout shared by draw+click"     D2Client/UI/VanillaPlusCore.cpp   
 
 # ---- [vanilla-plus shared-stash] R82: ten shared pages ---------------------
 # Owner ask: "increase the shared stash pages to 10" - the widening the v2
-# header reserved room for (SHARED-STASH-PLAN.md: "10 pages. Then 100.").
+# header reserved room for (plans/SHARED-STASH-PLAN.md: "10 pages. Then 100.").
 # Same VPS2 magic + version, pageCount 2 -> 10 (header 28 -> 92 bytes), the
 # two fixed ingest calls became a per-page loop, and the reader accepts any
 # pageCount this build can hold so pre-R82 two-page files read back with
@@ -1367,7 +1367,7 @@ gate "manaburn: ini template entry"          D2Client/UI/VanillaPlusCore.cpp   '
 gate "options page: manaburn row present (R108)" D2Client/UI/VanillaPlusOptions.cpp '"mana_burn_fix"' 1
 
 # ---- [shift-compare / R125] hold-Shift equipped-item compare tooltip --------
-# FEATURES.md row 0b, the code round of SHIFT-COMPARE-PLAN.md. D2R
+# FEATURES.md row 0b, the code round of plans/SHIFT-COMPARE-PLAN.md. D2R
 # hover-compare parity: with [features] shift_compare=1, holding the key
 # bound to retail cmd 0x24 (default VK_SHIFT, remap honored - retail's own
 # per-frame UpdateMouseModifierKeyState poll idiom, Game.cpp:1193-1221)
@@ -1405,6 +1405,24 @@ gate "shiftcmp: row count pin (R125)"         D2Client/UI/VanillaPlusOptions.cpp
 gate "shiftcmp: back-row Y re-pin (R125)"     D2Client/UI/VanillaPlusOptions.cpp 'VPPAGE_BACK_ROW_Y = 0x184' 1
 gate "shiftcmp: box height re-pin (R125)"     D2Client/UI/VanillaPlusOptions.cpp 'VPPAGE_BOX_HEIGHT = 0x1b1' 1
 gate "shiftcmp: shield-kind slot pick (R126)"  D2Client/UI/VanillaPlusCore.cpp   'ITEMTYPE_AnyShield' 1
+
+# ---- docs budgets (owner, 2026-11-06: "The handoff.md should maintain a limit of 16kb") ----
+# Two doc lanes: human (README/CHANGELOG/SMOKE - concise) and agent (handoff/HISTORY/plans -
+# verbose OK). handoff.md is the working-state doc and grows back fast, so its 16 KB cap is
+# gate-enforced (the standing trim-#16/#17 budget); when this fails, offload the
+# oldest-again material verbatim into the next HISTORY.md H-record (handoff §8) and re-run.
+# The other sizes are advisory only (printed in the summary) - HISTORY.md is unbounded by design.
+HANDOFF_BYTES=$(wc -c < handoff.md)
+if [ "$HANDOFF_BYTES" -le 16384 ]; then
+    printf 'ok   %-46s handoff.md %s/16384 B\n' "docs: handoff.md 16 KB budget" "$HANDOFF_BYTES"
+    PASS=$((PASS + 1))
+else
+    printf 'FAIL %-46s handoff.md %s B > 16384 - offload to HISTORY.md (trim pattern, handoff §8)\n' "docs: handoff.md 16 KB budget" "$HANDOFF_BYTES"
+    FAIL=$((FAIL + 1))
+fi
+
+echo
+echo "doc sizes (advisory): README $(wc -c < README.md) B, CHANGELOG $(wc -c < CHANGELOG.md) B, SMOKE $(wc -c < SMOKE-CHECKLIST.md) B, handoff ${HANDOFF_BYTES} B, HISTORY $(wc -c < HISTORY.md) B"
 
 echo
 if [ "$FAIL" -eq 0 ]; then

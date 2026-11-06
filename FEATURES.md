@@ -1,9 +1,13 @@
 # FEATURES.md — D2R backport slate (vanilla-plus)
 
+> **Agent lane.** This file is the feature slate for the agent (verbose by design:
+> per-row scoping, implementation notes, round records). Humans: the feature table and
+> status live in [README.md](README.md), per-release changes in [CHANGELOG.md](CHANGELOG.md).
+
 *v6, 2026-11-05. Rows 14–15 added on owner ask — **planned, not implemented**: resolution
 modes. Row 14 activates retail's own **dormant 1344x700** (mode 3 — wired in the binaries,
 never a UI stop); row 15 adds **1920x1080**. Video-options slider stops, not `[features]`
-keys. Tree-verified same-day against the pushed tree (1344x700-PLAN.md §8): a third gap
+keys. Tree-verified same-day against the pushed tree (plans/1344x700-PLAN.md §8): a third gap
 joined row 14 — the mini-panel's own position→mode re-apply (`SetupMiniPanel`) — and the
 dims-pair count corrected to seven. **Row 14 then IMPLEMENTED the same day (R109)**: the
 three-gap code round — then the field round (owner QA): **Glide GREEN** (owner screenshot,
@@ -74,12 +78,12 @@ Every slate row must satisfy all of these before it ships:
 | 6 | Auto gold pickup | Loot | D2R "Gold Pickup" gameplay option | M | Med | **Shipped 0.0.4** (2026-10-29: ledger row 33; field-verified — "Auto-Gold Pickup works!" — coexists with alt_toggle) |
 | 7 | Automap scale + position | HUD | D2R larger overlay map | M | Med | `automap_scale` |
 | 8 | Quick-cast keys | Controls | D2R-adjacent (PD2 quick cast) | M–L | Med–High | `quick_cast` |
-| 9 | Shared side-file stash | Stash | None — owner suggestion (PlugY-style side file) | L | Med–High | **Round 1 FIELD-PROVEN (R63, Rev 82; build-fix R64, Rev 83; tab-anchor fixes R65+R66, Revs 84-85; owner on R66: "Great job. I see it. It works.")** — 1 retail-shaped page via a stash-panel "Shared" tab (no hotkey), items + gold, own `_d2vp_shared.sss` file, `.d2s` retail-pure (save-flush design); SP-only v1; mechanism field-proven on the R65 build blind (page swap + cross-char item/gold round trip), tab visibility confirmed on R66. First shipped in release **0.0.7** (cut at R66); in-game **Shared Stash** row on the Vanilla+ Options page added R67 (no longer ini-only). **R75 (Rev 97): a SECOND shared page + pager** (owner: "give the current stash tab label an outline" + "add a 2nd page and buttons/arrows to navigate pages") — the label draws with a 1-px black halo on all four sides, `<`/`>` arrows beside the word step personal → Shared 1 → Shared 2, the word itself toggles back to personal, `_d2vp_shared.sss` v2 stores both pages (v1 files load as page 1), the 0x4F/0x7D param word carries the absolute desired page. (The R68–R71 tab polish — Font24, floating row, backdrop pill — was rolled back by owner decision at `59ff645`; R75 builds on the R66 in-panel tab.) **R82 (Rev 105): TEN shared pages** (owner: "increase the shared stash pages to 10") — the planned v2-header widening: same magic + version, `pageCount` 10 (header 28 → 92 bytes), pre-R82 two-page files read back with pages 3-10 empty (next save rewrites ten), labels `Shared 1`…`Shared 10`, arrows still step one page, one gold pool across all ten. SMOKE debts cleared: §H items 25 (`.d2s` in retail) + 27 (degrade drill) confirmed in the R83 full-belt pass ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24), 2026-11-02), the ten-page items 33-35 rode the R104 full pass ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04); the "Then 100" leg widens the same two constants. Plan: SHARED-STASH-PLAN.md |
+| 9 | Shared side-file stash | Stash | None — owner suggestion (PlugY-style side file) | L | Med–High | **Round 1 FIELD-PROVEN (R63, Rev 82; build-fix R64, Rev 83; tab-anchor fixes R65+R66, Revs 84-85; owner on R66: "Great job. I see it. It works.")** — 1 retail-shaped page via a stash-panel "Shared" tab (no hotkey), items + gold, own `_d2vp_shared.sss` file, `.d2s` retail-pure (save-flush design); SP-only v1; mechanism field-proven on the R65 build blind (page swap + cross-char item/gold round trip), tab visibility confirmed on R66. First shipped in release **0.0.7** (cut at R66); in-game **Shared Stash** row on the Vanilla+ Options page added R67 (no longer ini-only). **R75 (Rev 97): a SECOND shared page + pager** (owner: "give the current stash tab label an outline" + "add a 2nd page and buttons/arrows to navigate pages") — the label draws with a 1-px black halo on all four sides, `<`/`>` arrows beside the word step personal → Shared 1 → Shared 2, the word itself toggles back to personal, `_d2vp_shared.sss` v2 stores both pages (v1 files load as page 1), the 0x4F/0x7D param word carries the absolute desired page. (The R68–R71 tab polish — Font24, floating row, backdrop pill — was rolled back by owner decision at `59ff645`; R75 builds on the R66 in-panel tab.) **R82 (Rev 105): TEN shared pages** (owner: "increase the shared stash pages to 10") — the planned v2-header widening: same magic + version, `pageCount` 10 (header 28 → 92 bytes), pre-R82 two-page files read back with pages 3-10 empty (next save rewrites ten), labels `Shared 1`…`Shared 10`, arrows still step one page, one gold pool across all ten. SMOKE debts cleared: §H items 25 (`.d2s` in retail) + 27 (degrade drill) confirmed in the R83 full-belt pass ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24), 2026-11-02), the ten-page items 33-35 rode the R104 full pass ([#28](https://github.com/VTSTech/D2VP-QoL/issues/28), 2026-11-04); the "Then 100" leg widens the same two constants. Plan: plans/SHARED-STASH-PLAN.md |
 | 10 | Vanilla+ Options menu page | UI | None — owner suggestion 2026-10-29; in-game settings surface for the gated features | M | Med→Low | **Shipped** (landed 2026-10-30, ledger row 34; first release **0.0.6**); **eight rows as of R108** — the slate's five shipped keys + Shared Stash (R67: the row busts the client stash gate cache too, so the tab follows the toggle the same frame) + No Panel World Shift (R101, issue #26 round 9: the write bridge already busts the PANELSHIFT cache, so the flip applies same-frame; the seventh row moved the Previous Menu row down one pitch, 0x124→0x144) + Mana Burn Fix (R108: the R106 combat gate joins the panel — the eighth row moved the Previous Menu row down one pitch again, 0x144→0x164, and grew the box 0x171→0x191; the server gate keeps its 2 s poll by design, so a flip lands on the next drain roll within 2 s while the panel shows it same-frame) |
 | 11 | Mana Burn fix (melee drain 256x bug) | Combat (D2Game) | D2R 2.4 patch notes ("fixed melee hits draining 256 times too much") + Basin wiki Mana Burn | S | Low | **Implemented** (R106 — `mana_burn_fix`; ini-only at ship, in-game **Mana Burn Fix** row on the Vanilla+ Options page since R108; server-side gate TU + VP-marked drain-roll shim in SUnitDmg.cpp; field QA + llvm-mingw gate pending) |
 | 12 | Stackable gems | Inventory | None — owner suggestion 2026-11-05; PD2 stacks gems in its currency tab | M | Med | `stack_gems` |
 | 13 | Stackable runes | Inventory | None — owner suggestion 2026-11-05; PD2 stacks runes in its currency tab | M | Med | `stack_runes` |
-| 14 | 1344x700 resolution (retail's dormant mode 3) + 1366x768 fifth stop | Video / renderers | Retail-dormant engine mode — the binaries carry the tables, no UI stop ever shipped; D2MultiRes-era community prior art; 1366x768 is the panel-standard the field box letterboxes onto | S–M | Low–Med | **Implemented** (R109 — Gap A `case 3` + Gap B slider stop 3 + Gap C mini-panel mapping; field: Glide GREEN, D3D switch crash fixed in-round via mode-list probe + host-mode letterbox ladder; field round 2 (R111): D3D borderless-window look fixed — probe-first presentation + host-sized window; field round 3 (R112): hosted stops STRETCH the frame over the host mode + **1366x768 joins as the slider's fifth stop (mode 5)**, gates 432/432; llvm-mingw gate + D3D re-test pending (owner); plan: 1344x700-PLAN.md §10) |
+| 14 | 1344x700 resolution (retail's dormant mode 3) + 1366x768 fifth stop | Video / renderers | Retail-dormant engine mode — the binaries carry the tables, no UI stop ever shipped; D2MultiRes-era community prior art; 1366x768 is the panel-standard the field box letterboxes onto | S–M | Low–Med | **Implemented** (R109 — Gap A `case 3` + Gap B slider stop 3 + Gap C mini-panel mapping; field: Glide GREEN, D3D switch crash fixed in-round via mode-list probe + host-mode letterbox ladder; field round 2 (R111): D3D borderless-window look fixed — probe-first presentation + host-sized window; field round 3 (R112): hosted stops STRETCH the frame over the host mode + **1366x768 joins as the slider's fifth stop (mode 5)**, gates 432/432; llvm-mingw gate + D3D re-test pending (owner); plan: plans/1344x700-PLAN.md §10) |
 | 15 | 1920x1080 resolution | Video / renderers | None — owner suggestion 2026-11-05; SGD2FreeRes/D2DX-class arbitrary-res prior art | M | Med | video-options slider stop 6 / mode 6 (not `[features]`-gated; slot bookkeeping after R112 — see §15) |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
@@ -88,16 +92,16 @@ Rows 12–13 are **planned scope** (owner suggestion 2026-11-05, not yet impleme
 mechanism — letting a class of items merge into stacks the way arrows/tomes already do —
 behind two separate gates, drafted together in §12/§13. Rows 14–15 are planned scope too
 (owner ask 2026-11-05): 1344x700 activates a retail-dormant engine mode — the whole
-site-1..6 pipeline already routes it, three gaps close it (§14, [1344x700-PLAN.md](1344x700-PLAN.md)) —
+site-1..6 pipeline already routes it, three gaps close it (§14, [plans/1344x700-PLAN.md](plans/1344x700-PLAN.md)) —
 and 1920x1080 is one full site-1..6 round on the 720p playbook (§15).
 **Shipped as of R108**: rows 1, 3, 6, 9, 10 and 11 — plus, outside this slate, the
 pre-slate pair `alt_toggle`/`portable_save` (handoff ledger rows 28–31, releases
 0.0.2/0.0.3) and `no_panel_shift` (born from issue #26, R95–R101). As-built docs for
-everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
+everything shipped: [README.md](README.md) (feature table) + the sections here.
 
 ---
 
-### 0b. Shift equipment-compare — `[features] shift_compare` (IMPLEMENTED R125; R126 shield-slot fix in tree — llvm-mingw gate + field QA pending)
+### 0b. Shift equipment-compare — `[features] shift_compare` (IMPLEMENTED R125; R126 shield-slot fix FIELD-VERIFIED 2026-11-06 — "Great job, works")
 
 **What.** With the gate on, holding **Shift** (the key bound to retail cmd 0x24 —
 `CMD_SetClickModifier`, default VK_SHIFT, a keybind remap is honored, read per frame with
@@ -115,7 +119,7 @@ shop-narrow name+price builder branch and the compare capture runs right after e
 branch publishes), trade screen. Hovering the paperdoll never compares; non-equippables
 (potion, charm, jewel) resolve no body slot and draw no box.
 
-**Slot rules** (SHIFT-COMPARE-PLAN.md §2, tree-verified before coding): the hovered item's
+**Slot rules** (plans/SHIFT-COMPARE-PLAN.md §2, tree-verified before coding): the hovered item's
 intended slot comes from its ItemTypes row (`ITEM_GetTxtItemTypes_BodyLoc1andBodyLoc2`,
 bl1/bl2), never from the item instance; rings (bl1=6/bl2=7) compare against the first
 occupied of {6,7} (retail's first-fit order); **arm items (R126)** — vanilla
@@ -171,7 +175,9 @@ draft's "first occupied of {bl1,bl2}" assumed shields were bl1=5 — the data sa
 same as weapons, so shield hovers hit the weapon box first; fixed with the same-kind
 slot preference (Slot rules above), +1 `shiftcmp:` gate (shield-kind slot pick) →
 **517/517**; release line rolls 0.0.7 → **0.0.8**, self-ID `-R125` →
-`Vanilla+0.0.8-R126`. Owed: llvm-mingw build gate + the §8 field matrix (owner).
+`Vanilla+0.0.8-R126` (509/509 after the R127 vpdiag retirement, 510/510 with the
+docs-budget gate). **FIELD-VERIFIED 2026-11-06** ("Great job, works" — the shield
+slot legs ran on the owner builds). Nothing owed.
 
 ### 1. Persistent globe text (was: HP/MP globe hover values) — `[features] globe_persistent`
 
@@ -371,7 +377,7 @@ slot preference (Slot rules above), +1 `shiftcmp:` gate (shield-kind slot pick) 
   grown to **ten** shared pages (R82); the as-built record — the outlined in-panel
   tab, the `‹`/`›` pager, the `_d2vp_shared.sss` v2 header and the ten-page widening,
   plus the SMOKE confirmations — lives in slate row 9 above and in
-  [SHARED-STASH-PLAN.md](SHARED-STASH-PLAN.md). The design text below is the
+  [plans/SHARED-STASH-PLAN.md](plans/SHARED-STASH-PLAN.md). The design text below is the
   pre-implementation draft: its hotkey idea was superseded by the in-panel tab, and
   the rule-5 contract note was owner-signed off by shipping (`.d2s` stays
   retail-pure; one server-side move path; deleting the side file deletes its items,
@@ -736,7 +742,7 @@ slot preference (Slot rules above), +1 `shiftcmp:` gate (shield-kind slot pick) 
   dims guard already lists (1344,700). Three gaps close it: the missing `case 3` in
   `CLIENT_SetScreenResolution`, the slider's missing fourth stop, and the mini-panel's own
   position→mode re-apply (`SetupMiniPanel` — runs at every game-enter and cutscene-exit).
-  Plan: [1344x700-PLAN.md](1344x700-PLAN.md).
+  Plan: [plans/1344x700-PLAN.md](plans/1344x700-PLAN.md).
 - **Proposed**: append a fourth slider stop mapping to mode 3. Existing registry positions
   0–2 keep their meaning (720p users unaffected); not `[features]`-gated — opt-in by
   picking the stop, same as 720p.
@@ -880,4 +886,4 @@ slot preference (Slot rules above), +1 `shiftcmp:` gate (shield-kind slot pick) 
   (github mir-diablo-ii-tools — arbitrary-resolution backport project).
 - In-tree grounding: handoff.md rows 28–31 (the feature-era map), fix-14 Drop.cpp map;
   FEATURES row-4 scan of `D2Client/UI/Panel.cpp` (2026-10-29); resolution site-1..6 record
-  (docs/resolution-widelayout-audit.md) + the mode-3 recon in 1344x700-PLAN.md §3.
+  (docs/resolution-widelayout-audit.md) + the mode-3 recon in plans/1344x700-PLAN.md §3.
