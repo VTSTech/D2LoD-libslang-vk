@@ -8949,8 +8949,15 @@ static void __fastcall DRAW_UI_StatWindow_III(int32_t nX, int32_t nY, int32_t nV
     nErrorLine = nValue;
     uint16_t* pwszClear = D2Lang::StrTable::strtable::GetLocaleString(pMonStatsTxt->NameStr);
     if (nBlockRateOrDescStrId) {
-      pwszClear = D2Lang::StrTable::strtable::GetLocaleString(0x2779);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x80, wszMessage, pwszClear, nBlockRateOrDescStrId, nValue);
+      // VP-BEGIN [issue-18 fmt-args]: charmontohit2X (0x2779) is
+      // "Chance to Block: %d%%}Average chance %s will hit you: %d%%" and consumes
+      // %d %s %d. The regeneration dropped the monster-name vararg here (ghidra
+      // slot-reuse hid it behind the format pointer), so the %s walked past the
+      // argument list into stale stack and faulted when that slot held a small
+      // integer (issue #18: read of 0x186 hovering the Defense row with block
+      // chance). Pass the name between block chance and the value, as vanilla did.
+      wszFmt = D2Lang::StrTable::strtable::GetLocaleString(0x2779);
+      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x80, wszMessage, wszFmt, nBlockRateOrDescStrId, pwszClear, nValue);
     } else {
       wszFmt = D2Lang::StrTable::strtable::GetLocaleString(0x2778);
       D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x80, wszMessage, wszFmt, pwszClear, nErrorLine);

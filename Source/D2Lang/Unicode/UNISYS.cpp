@@ -445,6 +445,7 @@ void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszDst, uint16_t * w
     uint16_t wszNumBuf[16];
     uint16_t wChar;
     uint16_t wFmtChar;
+    int bArgConsumed;
     if (wszFmt) {
       *wszDst = L'\0';
       pArgSave = *(uint16_t**)__va;
@@ -486,6 +487,16 @@ void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszDst, uint16_t * w
             exit(-1);
           }
 
+          // VP-BEGIN [issue-18 fmt-args]: vanilla D2Lang steps the vararg pointer
+          // only for specifiers that consume one (%d/%u/%s). The regeneration
+          // hoisted the step to the loop tail, so a mid-format %% also stepped it
+          // and every later %s/%d read one slot past the caller's arguments.
+          // Cross-checked against D2MOO's D2Lang reconstruction (va_arg only in
+          // the consuming cases). Combined with the dropped name argument at the
+          // charmontohit2X call site this read stale stack as a string pointer
+          // (issue #18: ACCESS_VIOLATION read of 0x186 while hovering the
+          // Defense row with block chance available).
+          bArgConsumed = 0;
           switch (wszFmtBuf[2]) {
             case L'd':
 
@@ -522,9 +533,16 @@ void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszDst, uint16_t * w
 
             nCharCount += nDstOffset;
             wszDst += nDstOffset;
+            bArgConsumed = 1;
             break;
             case L's':
-              if (!pArgSave || (pArgCur = pArgSave , nDstOffset = 0 , !*pArgSave)) {
+              // A sub-0x10000 slot is a misread integer from an under-supplied
+              // vararg list, not a string pointer; terminate instead of deref.
+              if (!pArgSave || (uintptr_t)pArgSave < 0x10000) {
+                *wszDst = L'\0';
+                return;
+              }
+              if ((pArgCur = pArgSave , nDstOffset = 0 , !*pArgSave)) {
                 UNICODE_AppendWideStringN((uint16_t*)wszDst, pArgSave, nMaxChars - nCharCount - 1);
                 return;
               }
@@ -548,6 +566,7 @@ void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszDst, uint16_t * w
 
             wszDst += nDstOffset;
             nCharCount += nDstOffset;
+            bArgConsumed = 1;
             break;
             case L'%':
               nCharCount++;
@@ -576,9 +595,12 @@ void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszDst, uint16_t * w
           }
 
           wszFmt += 2;
-          ppArgCur++;
-          pArgSave = *ppArgCur;
+          if (bArgConsumed) {
+            ppArgCur++;
+            pArgSave = *ppArgCur;
+          }
         } while (*wszFmt != L'\0');
+        // VP-END [issue-18 fmt-args]
       }
     }
 }
