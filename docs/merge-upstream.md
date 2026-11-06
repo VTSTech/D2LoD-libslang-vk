@@ -434,3 +434,32 @@ PR) so acceptance is frictionless.
   build-independent, prefer them; and when a field crash survives every
   grep-based audit, suspect the two-spellings-in-one-function class and run
   the aliasing audit before blaming the old war-story classes.
+- **The 1969->1970 module-directory restructure (`a022ea27`, tenth sync):**
+  upstream moved every module into its own directory (`Source/<module>/`,
+  Storm -> `3rdparty/Storm/`, the shared headers -> `Source/D2Headers/`,
+  `support/` -> `Redivivus/`; renames only) and switched to one static library
+  per module with per-module include gates (`#if !defined(D2_MODULE_LIBRARIES)
+  || defined(D2_MODULE_<m>)`). Rename detection carried the fork's dir-local
+  files along for free (the cheap restructure), but three new classes fell
+  out, each caught by an instrument that already existed: (1) fork-authored
+  accessors parked in upstream headers landed INSIDE module-private blocks —
+  `PORTABLESAVE_FlushConfig` (SFile.h) and `GetGambleLevelCache` (ItemTbls.h)
+  went invisible to their one cross-module caller the moment
+  `D2_MODULE_LIBRARIES` got defined; the fix re-homes the DECLARATION outside
+  the gate with a dated note (the definition stays beside the state it
+  touches) — never weaken the gate; (2) a private upstream symbol a fork
+  feature truly needs gets a fork-owned bridge TU inside the owning module
+  (`Source/D2Sound/VanillaPlusSound.cpp`, claimed by the D2Sound module where
+  the private is visible), never a gate edit; (3) an include-block conflict
+  resolver that re-paths fork includes must treat `// VP-BEGIN/END` wrapper
+  comments as MARKS — stripping them as "stray comments" cost ui.cpp its
+  quest-gossip boot-log mark, and only the gate's 8-mark count noticed (the
+  compile sweep is blind to comment losses by construction). Also: after any
+  layout round, re-path the INSTRUMENTS first, then the sources — the gate
+  suite's custom blocks, the d2boot audit's declaration path and
+  syntax-check's shadow `d2_platform.h` all still named the old tree, and the
+  merge-site sweep drowned in host noise until the shadow mirrored the rooted
+  post-restructure header path. Cross-check of record after a layout round:
+  a whole-tree `-fsyntax-only` compile of every TU with the real cross
+  toolchain (grep audits and host-shim sweeps all stayed green on a tree
+  where five TUs did not compile).
