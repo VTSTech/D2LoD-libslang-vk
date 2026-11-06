@@ -34,7 +34,7 @@ Every slate row must satisfy all of these before it ships:
 | # | Feature | Area | D2R parity source | Effort | Risk | Gate key |
 |---|---|---|---|---|---|---|
 | 0a | Z-key camera zoom | Controls | D2R launch feature (Z / wheel) | M | Med | `camera_zoom` |
-| 0b | Shift equipment-compare | Controls | D2R hover-compare | M | Med | `shift_compare` — plan drafted 2026-11-06, awaiting owner review: [SHIFT-COMPARE-PLAN.md](SHIFT-COMPARE-PLAN.md) |
+| 0b | Shift equipment-compare | Controls | D2R hover-compare | M | Med | **Implemented** (R125 — hold-Shift second tooltip, D2R side-by-side parity; shop stock included per owner; R126 field catch — shields compared the primary weapon, fixed with the same-kind slot pick — see §0b; `shift_compare`; llvm-mingw gate + field QA pending) |
 | 1 | Persistent globe text (was: hover values) | HUD | D2R globe hover shows current/max | S | Low | **Shipped 0.0.5** — repurposed 2026-10-30 pre-ship: the orb-face readout duplicated retail's own above-orb hover text, so `globe_persistent` just pins that text on (ledger row 40; options page row 4; see §1) |
 | 2 | Clock / game-timer overlay | HUD | D2R Tab-screen game timer; BH wall-clock | S | Low | `clock_overlay` |
 | 3 | Item ilvl on tooltips | Loot | D2R 2.5 display-item-level toggle | S–M | Low | **Shipped** (R55 standalone line → R56 name-suffix → R57 bare digits → R59 single-space trim — `item_ilvl`, see §3; first shipped in release 0.0.7) |
@@ -52,23 +52,95 @@ Every slate row must satisfy all of these before it ships:
 | 15 | 1920x1080 resolution | Video / renderers | None — owner suggestion 2026-11-05; SGD2FreeRes/D2DX-class arbitrary-res prior art | M | Med | **Implemented** (R115 — slider stop 6 / mode 6, not `[features]`-gated; slot bookkeeping §15; arc records HISTORY H41/H42) |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
-the slate's head, not new scope. Row 0b's implementation plan is drafted:
-  [SHIFT-COMPARE-PLAN.md](SHIFT-COMPARE-PLAN.md) (awaiting owner review); row 0a
-  (Z-key camera zoom) stays scoped-but-unplanned. Rows 1–9 were the new candidates;
-  row 6 shipped for 0.0.4, and row 1 shipped as the orb-face readout and was
-  repurposed post-release (see §1).
+the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipped for 0.0.4, and row 1 shipped as the orb-face readout and was repurposed post-release (see §1).
 Rows 12–13 are **planned scope** (owner suggestion 2026-11-05, not yet implemented): one
 mechanism — letting a class of items merge into stacks the way arrows/tomes already do —
 behind two separate gates, drafted together in §12/§13. Rows 14–15 are planned scope too
 (owner ask 2026-11-05): 1344x700 activates a retail-dormant engine mode — the whole
 site-1..6 pipeline already routes it, three gaps close it (§14, [1344x700-PLAN.md](1344x700-PLAN.md)) —
 and 1920x1080 is one full site-1..6 round on the 720p playbook (§15).
-**Shipped as of R124**: rows 1, 3, 6, 9, 10 and 11 — plus, outside this slate, the
+**Shipped as of R108**: rows 1, 3, 6, 9, 10 and 11 — plus, outside this slate, the
 pre-slate pair `alt_toggle`/`portable_save` (handoff ledger rows 28–31, releases
 0.0.2/0.0.3) and `no_panel_shift` (born from issue #26, R95–R101). As-built docs for
 everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
 
 ---
+
+### 0b. Shift equipment-compare — `[features] shift_compare` (IMPLEMENTED R125; R126 shield-slot fix in tree — llvm-mingw gate + field QA pending)
+
+**What.** With the gate on, holding **Shift** (the key bound to retail cmd 0x24 —
+`CMD_SetClickModifier`, default VK_SHIFT, a keybind remap is honored, read per frame with
+retail's own `UpdateMouseModifierKeyState` idiom) while hovering an equippable item in any
+panel draws a **second tooltip** — the equipped item for the matching body slot — alongside
+the hovered item's tooltip. D2R hover-compare parity: side-by-side viewing only, no
+stat-delta lines (that is D2R's own compare scope — diablo2.io launch-era statement in
+Sources). Opt-in via `[features] shift_compare=1` + an in-game row (row 9, "Shift Item
+Compare") on the Vanilla+ Options page.
+
+**Coverage** (owner decision 2026-11-06, "shop stock included"): every context that
+publishes through Inv.cpp's single `LoadItemDesc` call site — player inventory, stash,
+cube, vendor shop (BOTH your own items and the vendor's stock: the stock hover takes the
+shop-narrow name+price builder branch and the compare capture runs right after either
+branch publishes), trade screen. Hovering the paperdoll never compares; non-equippables
+(potion, charm, jewel) resolve no body slot and draw no box.
+
+**Slot rules** (SHIFT-COMPARE-PLAN.md §2, tree-verified before coding): the hovered item's
+intended slot comes from its ItemTypes row (`ITEM_GetTxtItemTypes_BodyLoc1andBodyLoc2`,
+bl1/bl2), never from the item instance; rings (bl1=6/bl2=7) compare against the first
+occupied of {6,7} (retail's first-fit order); **arm items (R126)** — vanilla
+ItemTypes.txt gives every weapon class AND the Shield row the same body pair
+(body1=rarm=4, body2=larm=5), so bl order alone cannot tell the primary weapon box from
+the off-hand box: when BOTH arm cells are occupied the same-kind slot wins — a
+shield/quiver hover compares the off-hand (bodyloc 5), a weapon hover the primary
+(bodyloc 4), the same resolution retail's own auto-equip applies to the identical
+ambiguity (`ItemMode.cpp` choose_body_loc's type-conflict check; the shield detector is
+`ITEMS_IsA(item, ITEMTYPE_AnyShield)`, the same one retail's Panel.cpp uses); with one
+arm occupied that item compares regardless of kind (the only possible comparison);
+weapons stay 2H-aware — when `INVENTORY_GetWeaponHandedness` reports 2 (a 2H occupying
+both arms) the compare describes slot 4's item, the same paired-cell convention the
+equipped-slot hover path uses; everything else (armor 3, helm 1, boots 9, gloves 10,
+belts 8, amulet 2) is a straight bl1 lookup falling back to bl2. Empty target slot = no
+box.
+
+**Mechanics** (the item_ilvl lesson: hook, don't refactor): a VP block right after Inv.cpp
+:9422's `LoadItemDesc(pSlotItem, nDrawTextWidth)` calls the core hook
+`SHIFTCOMPARE_CompareForHover()` (VanillaPlusCore.cpp). The hook saves the minimal global
+set (`pItemToDescribe` + `g_nCurrentInventoryPage` + the primary's published
+`DisplayedTooltip`), forces the page to 0 (which takes the FULL builder at :8532 and
+suppresses the vendor price line the full path appends on shop pages :8783-8787), swaps
+`pItemToDescribe` to the equipped item, calls `LoadItemDesc(pPlayer, 1)` (owner = the
+player), captures the result into the second channel, then restores everything — the
+primary draws unchanged. Equipped set items ride LoadItemDesc's own quality-5 route into
+`ITEM_BuildSetItemTooltip` (:8540-8546), so the compare box carries the set-bonus lines.
+The second channel (`gVpCompareTooltip` + `TEXT_CompareTooltipSetAttributes` +
+`DRAW_CompareTooltipUnderCursor`) lives in D2WinFont.cpp beside the file-local metric
+statics: the draw is a VP-marked clone of `Draw_UnitNameUnderCursor` (font-downsize loop,
+X/bottom clamps, translucent-black `DRAW_LESSTRANSPARENT` background, embedded 0xFF color
+code handling), placed LEFT of the primary with a 4 px gap (wide enough that two adjacent
+translucent boxes never visually merge), falling back RIGHT of the primary when that
+leaves the screen, bottoms aligned — and it self-clears, so nothing outlives the frame.
+The placement uses a capture-time snapshot of the primary's rect, so the Alt-labels path
+wiping the primary between capture and draw (ShowItems.cpp, DRAW_AltItems) cannot distort
+it — Alt-latched labels + Shift compare coexist.
+
+**Files**: VanillaPlusCore.{h,cpp} (gate + resolver + compose + ini template + bust),
+Inv.cpp (one VP block after the publish), D2WinFont.{h,cpp} (second channel), Draw.cpp
+(one draw call), VanillaPlusOptions.cpp (row 9 + 0x184/0x1b1 layout move). No new TUs, no
+input-path changes (held-Shift is inert in world space while a panel is open; click
+semantics untouched).
+
+**Status**: tree-verify pass done (every §3 anchor re-pinned at source level; the swap
+set pinned to exactly { pItemToDescribe, g_nCurrentInventoryPage }; set-item question
+resolved BETTER than drafted — LoadItemDesc routes equipped set items through the set
+builder itself, no gap). Gates +19 `shiftcmp:` pins, 2 R108-era options shape pins
+retired (superseded by the R125 pins) → 516/516; self-ID `Vanilla+0.0.7-R124` →
+`-R125`. **R126 field catch** (owner, first field pass on the R125 build: "if i try to
+compare a shield, it compares to my primary hand weapon, not my offhand shield"): the §2
+draft's "first occupied of {bl1,bl2}" assumed shields were bl1=5 — the data says bl1=4,
+same as weapons, so shield hovers hit the weapon box first; fixed with the same-kind
+slot preference (Slot rules above), +1 `shiftcmp:` gate (shield-kind slot pick) →
+**517/517**; release line rolls 0.0.7 → **0.0.8**, self-ID `-R125` →
+`Vanilla+0.0.8-R126`. Owed: llvm-mingw build gate + the §8 field matrix (owner).
 
 ### 1. Persistent globe text (was: HP/MP globe hover values) — `[features] globe_persistent`
 
@@ -116,15 +188,16 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
 - **Risk**: none beyond draw-order; zero interaction surface.
 - **Exit**: clock visible in-game only, no input eaten, `0` = vanilla.
 
-### 3. Item ilvl on tooltips — `[features] item_ilvl` (SHIPPED — first in release 0.0.7)
+### 3. Item ilvl on tooltips — `[features] item_ilvl` (SHIPPED R55, name-suffix presentation R56, bare digits R57, single-space trim R59)
 
 - **D2R behavior**: 2.5 shipped a toggleable display-item-level (advanced item stats).
 - **Shipped (R55 + R56 + R57 + R59)**: with `item_ilvl=1`, the tooltip's **name line** reads
   `Long Sword (12)` — the ilvl is appended to the item name in all three
   tooltip builders (`LoadItemDesc` identified + unidentified paths,
-  `ITEM_BuildSetItemTooltip`), rendering in the name's own color (the presentation
-  evolved R55→R57 — standalone line → name suffix → bare digits, per owner
-  preference; CHANGELOG [0.0.7]). R59 trims the name's trailing spaces
+  `ITEM_BuildSetItemTooltip`), rendering in the name's own color. R55 shipped a
+  standalone `Item Level: <ilvl>` line below Required Level; R56 moved it into
+  the name per owner preference; R57 dropped the `ilvl` label word — players
+  know what the bare `(N)` means. R59 trims the name's trailing spaces
   before appending: `GetItemName` glues string-table entries (magic affix
   words, unique/set names, separators) and some of those entries end with
   their own space, which used to render a double gap (`Name  (12)`); the
@@ -266,9 +339,8 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
 - **SHIPPED — field-proven end to end**: first in release **0.0.7** (cut at R66),
   grown to **ten** shared pages (R82); the as-built record — the outlined in-panel
   tab, the `‹`/`›` pager, the `_d2vp_shared.sss` v2 header and the ten-page widening,
-  plus the SMOKE confirmations — lives in slate row 9 above (status),
-  [SHARED-STASH-PLAN.md](SHARED-STASH-PLAN.md) (as-built) and [HISTORY.md](HISTORY.md)
-  H44 (round chronicle). The design text below is the
+  plus the SMOKE confirmations — lives in slate row 9 above and in
+  [SHARED-STASH-PLAN.md](SHARED-STASH-PLAN.md). The design text below is the
   pre-implementation draft: its hotkey idea was superseded by the in-panel tab, and
   the rule-5 contract note was owner-signed off by shipping (`.d2s` stays
   retail-pure; one server-side move path; deleting the side file deletes its items,
@@ -336,14 +408,18 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
   bound, dismiss table).
 - **Draft**: `DRAFT_vanilla_plus_options.md` (v1→v2, 2026-10-29) — 12 anchors,
   grep gates, V1–V6; owner decisions recorded: Route A + above-Previous placement.
-- **Implemented (2026-10-29)**: Route B label + page + the `UI_VANILLAPLUS = 38` 4-site
-  extension across 11 retail files + 2 new TUs (`D2Client/UI/VanillaPlusOptions.{h,cpp}`).
-  **Shipped in 0.0.6** (ledger row 34); field-proven since via the R83 and R104 full smoke
-  belts ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24),
-  [#28](https://github.com/VTSTech/D2VP-QoL/issues/28)); the page carries eight rows as of
-  R108 (slate row 10 above). The field round (the Route A fallback + cursor lock → Route B
-  + 3-entry input batch) and the V1–V5 pin resolutions: draft v2 §7–§9 — the narrative
-  moved to [HISTORY.md](HISTORY.md) H46 (trim #22); digests: CHANGELOG [0.0.6].
+- **Implemented (2026-10-29, draft v2 §7–§8; field-QA rev C §9)**: label route
+  Route B + page + `UI_VANILLAPLUS = 38` extension landed across 11 retail files +
+  2 new TUs (`D2Client/UI/VanillaPlusOptions.{h,cpp}`). V1–V5 pins resolved
+  (DC6Block = frame header, bottom-anchored draw, same allocator pair,
+  dismiss-table growth zero-fills). Sandbox harness (verbatim extraction,
+  `g++ -fsyntax-only`) + 12 grep gates green. **Field round 1** (rev 2 overlay):
+  builds + runs; label invisible (Route A fallback) + cursor lock (0x200
+  chain-break) → rev 3 = Route B label + 3-entry input batch + baseline-anchored
+  page text. **Shipped in 0.0.6** (2026-10-30, ledger row 34); field-proven since
+  via the R83 and R104 full smoke belts ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24),
+  [#28](https://github.com/VTSTech/D2VP-QoL/issues/28)); the page carries eight rows
+  as of R108 (slate row 10 above).
 - **Risk**: Med→Low. Novel Route A synthesis retired; everything now mirrors
   proven in-tree patterns (ControlConfig text/rows, esc-menu row callbacks, blank
   placeholder = the byte shape field-proven in round 1). Zero D2Game/D2Common
@@ -385,14 +461,18 @@ everything shipped: [VANILLA-PLUS.md](VANILLA-PLUS.md) Features section.
   difficulty x1.4/x2 resist penalty is left alone ON PURPOSE (owner call,
   2026-11-05): with the gate on, Hell Mana Burn drains up to 200% of the
   monster's MonLvl DM per hit — exactly D2R's post-2.4 behavior.
-- **Options-page row (R108)**: the toggle is no longer ini-only — the eighth row **Mana
-  Burn Fix** on the Vanilla+ Options page rides the shared `D2VP_*` bridge (one
-  `gaVanillaPlusRows` entry; the ini template block shipped with R106, so nothing else).
-  The server gate keeps its 2 s poll (the stash-server shape — D2Game cannot import
-  D2Client helpers), so a panel flip lands on the next drain roll within 2 s, the same
-  latency as an external ini edit; the panel draw re-reads the key fresh every frame and
-  shows the flip immediately. (The eighth row's one-pitch layout move, 0x144 → 0x164 and
-  box 0x171 → 0x191: CHANGELOG [R108].)
+- **Options-page row (R108, owner ask: "the mana_burn_fix toggle is not in
+  the Vanilla+ Options panel ... For R108 let's add it to the Options
+  Panel")**: the toggle is no longer ini-only — an eighth row **Mana Burn
+  Fix** on the Vanilla+ Options page rides the shared `D2VP_*` bridge (one
+  `gaVanillaPlusRows` entry; the ini template block shipped with R106, so
+  nothing else). The server gate keeps its 2 s poll (the stash-server
+  shape — D2Game cannot import D2Client helpers), so a panel flip lands on
+  the next drain roll within 2 s, the same latency as an external ini edit;
+  the panel draw re-reads the key fresh every frame and shows the flip
+  immediately. The eighth row moved the Previous Menu row down one pitch
+  (0x144 → 0x164) and grew the box (0x171 → 0x191, same 0x13 bottom
+  margin; fits 640x480).
 - **Prior art**: D2R 2.4 fix; Basin wiki Mana Burn page.
 - **Risk**: Low. One roll-site branch, no state, no save surface; off =
   retail byte-for-byte (charter rule 1).

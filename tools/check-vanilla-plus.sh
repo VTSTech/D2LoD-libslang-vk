@@ -1061,7 +1061,10 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # hold-Shift equipped-item compare tooltip, D2R hover-compare parity; owner
 # decisions 2026-11-06: side-by-side second box, hold trigger, row label
 # "Shift Item Compare", shop stock included)
-gate "res: self-id 0.0.7-R125"              Game/Main.cpp                    'Vanilla\+0\.0\.7-R125' 1
+# R126: string bumped 0.0.7-R125 -> 0.0.8-R126 (the shield-compare slot fix:
+# shield/quiver hovers pick the off-hand when both arm cells are occupied -
+# same-kind slot preference, retail's own choose_body_loc convention)
+gate "res: self-id 0.0.8-R126"              Game/Main.cpp                    'Vanilla\+0\.0\.8-R126' 1
 # R115: string bumped R113 -> R115 (the 1080p sixth-stop round; owner:
 # "Great job. works. Published Glide3xVK 0.4.7. Now lets do 1080p")
 # R116: string bumped R115 -> R116 (the GDI windowed 1366x768 shear fix;
@@ -1410,6 +1413,7 @@ gate "shiftcmp: options row present (R125)"   D2Client/UI/VanillaPlusOptions.cpp
 gate "shiftcmp: row count pin (R125)"         D2Client/UI/VanillaPlusOptions.cpp 'VPP_ROW_COUNT = 9' 1
 gate "shiftcmp: back-row Y re-pin (R125)"     D2Client/UI/VanillaPlusOptions.cpp 'VPPAGE_BACK_ROW_Y = 0x184' 1
 gate "shiftcmp: box height re-pin (R125)"     D2Client/UI/VanillaPlusOptions.cpp 'VPPAGE_BOX_HEIGHT = 0x1b1' 1
+gate "shiftcmp: shield-kind slot pick (R126)"  D2Client/UI/VanillaPlusCore.cpp   'ITEMTYPE_AnyShield' 1
 
 echo
 if [ "$FAIL" -eq 0 ]; then

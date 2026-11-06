@@ -206,9 +206,13 @@ void __stdcall ITEMILVL_AppendNameSuffix(struct D2UnitStrc * pItem, uint16_t * w
 // publishes), trade screen. Hovering the paperdoll never compares (those
 // items are already equipped); hovering a non-equippable (potion, charm,
 // jewel) resolves no body slot and draws no box; rings compare against
-// the first occupied of {6,7} (retail's first-fit order); weapons are
-// 2H-aware (a 2H occupying both arms describes from slot 4, the same
-// paired-cell convention INV_UpdateBodySlotUnderCursor uses). Equipped
+// the first occupied of {6,7} (retail's first-fit order); with both arm
+// cells occupied the same-kind slot wins (R126: a shield/quiver hover
+// compares the off-hand bodyloc 5, a weapon hover the primary bodyloc 4 -
+// weapons and shields share the ItemTypes body pair rarm/larm, so kind
+// not bl order picks the box, retail's own auto-equip convention);
+// weapons are 2H-aware (a 2H occupying both arms describes from slot 4, the
+// same paired-cell convention INV_UpdateBodySlotUnderCursor uses). Equipped
 // set items compose through LoadItemDesc's own quality-5 route into
 // ITEM_BuildSetItemTooltip, so the compare box carries the set-bonus
 // lines. The compare is one composed tooltip per frame: the capture

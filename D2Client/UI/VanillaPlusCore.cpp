@@ -584,10 +584,12 @@ void __stdcall ITEMILVL_AppendNameSuffix(D2UnitStrc * pItem, uint16_t * wszName)
 //      - those items are already equipped), and pItemToDescribe names the
 //      item LoadItemDesc just described this frame;
 //   2. resolves the hovered item's ItemTypes bl1/bl2 to the equipped item
-//      to compare against (rings first-occupied of {6,7}; weapons first
-//      occupied of {bl1,bl2} with the 2H paired-cell convention - handedness
-//      2 describes from slot 4; everything else straight bl1; both empty =
-//      no box, which also covers potions/charms/jewels);
+//      to compare against (rings first-occupied of {6,7}; arm items pick the
+//      same-kind slot when both arms are occupied - R126: shields/quivers the
+//      off-hand bodyloc 5, weapons the primary bodyloc 4, retail's own
+//      choose_body_loc convention - with the 2H paired-cell convention,
+//      handedness 2 describes from slot 4; everything else straight bl1;
+//      both empty = no box, which also covers potions/charms/jewels);
 //   3. composes the equipped item's tooltip by the save/swap/capture/
 //      restore round trip below - zero footprint on the upstream builder
 //      (the item_ilvl lesson: hook, don't refactor). The swap set is
@@ -649,10 +651,14 @@ static int SHIFTCOMPARE_ClickModifierDown() {
 // intended slot comes from its ItemTypes row (bl1/bl2), NEVER from the item
 // instance (GetBodyLocation is only set once equipped). Slot map per
 // SHIFT-COMPARE-PLAN.md 2: rings first-occupied of {6,7} (deterministic,
-// retail's first-fit auto-equip order); weapons first occupied of {bl1,bl2}
-// and 2H-aware (a 2H occupying both arms describes from slot 4 - the same
-// "2H describes from the paired cell" convention the equipped-slot hover
-// path uses, INV_UpdateBodySlotUnderCursor); shields/ammo 5, armor 3,
+// retail's first-fit auto-equip order); arm items (weapons AND shields -
+// vanilla ItemTypes.txt gives both classes body1=rarm/body2=larm) pick the
+// same-kind slot when both arms are occupied (R126: shield/quiver hovers
+// compare the off-hand bodyloc 5, weapon hovers the primary bodyloc 4 -
+// retail's own auto-equip resolves the same ambiguity by kind, ItemMode.cpp
+// choose_body_loc) and stay 2H-aware (a 2H occupying both arms describes
+// from slot 4 - the same "2H describes from the paired cell" convention the
+// equipped-slot hover path uses, INV_UpdateBodySlotUnderCursor); armor 3,
 // helm 1, boots 9, gloves 10, belts 8, amulet 2 are straight bl1 lookups;
 // both bodylocs empty (potion, charm, jewel, ...) = no compare box.
 // Returns the equipped unit, or null when there is nothing to compare.
@@ -682,15 +688,28 @@ static D2UnitStrc * SHIFTCOMPARE_ResolveSlot(D2UnitStrc * pPlayer, D2UnitStrc * 
     }
 
     if (nBodyLoc1 == BODYLOC_R_ARM || nBodyLoc1 == BODYLOC_L_ARM) {
-        // Weapons (bl1/bl2 in {4,5}): first occupied of {bl1, bl2}.
-        int nTarget = nBodyLoc1 == BODYLOC_R_ARM ? (int)BODYLOC_R_ARM : (int)BODYLOC_L_ARM;
-        pEquipped = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, nTarget);
-        if (!pEquipped && (nBodyLoc2 == BODYLOC_R_ARM || nBodyLoc2 == BODYLOC_L_ARM)) {
-            int nOther = nBodyLoc2 == BODYLOC_R_ARM ? (int)BODYLOC_R_ARM : (int)BODYLOC_L_ARM;
-            pEquipped = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, nOther);
-            if (pEquipped) {
-                nTarget = nOther;
-            }
+        // Arm items - weapons AND shields share the SAME ItemTypes body pair
+        // (vanilla ItemTypes.txt: every weapon class and the Shield row read
+        // body1=rarm/body2=larm), so the bl order cannot tell the primary
+        // weapon box (bodyloc 4, screen-left) from the off-hand box (5,
+        // screen-right). R125 tried bl1 first, so a shield hover compared the
+        // primary weapon (owner field report on the R125 build). Retail hits
+        // the same ambiguity in its own auto-equip and resolves it by item
+        // kind (ItemMode.cpp choose_body_loc's type-conflict check): when
+        // both arm cells are occupied the same-kind slot wins - shield/quiver
+        // hovers compare the off-hand, weapon hovers the primary. One arm
+        // occupied = that item (the only possible comparison); both empty =
+        // no box (returned above).
+        int nFirst = (int)BODYLOC_R_ARM;    // primary weapon box (screen-left)
+        int nSecond = (int)BODYLOC_L_ARM;   // off-hand box (shields/quivers)
+        if (D2Common::ITEMS::Items::ITEMS_IsA(pItem, ITEMTYPE_AnyShield)
+            || D2Common::ITEMS::Items::ITEMTYPE_IsQuiver((int)D2Common::ITEMS::Items::ITEM_GetItemData_wType(pItem))) {
+            nFirst = (int)BODYLOC_L_ARM;
+            nSecond = (int)BODYLOC_R_ARM;
+        }
+        pEquipped = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, nFirst);
+        if (!pEquipped) {
+            pEquipped = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, nSecond);
         }
         if (!pEquipped) {
             return nullptr;
