@@ -754,10 +754,10 @@ void __stdcall SHIFTCOMPARE_CompareForHover() {
     if (!SHIFTCOMPARE_Active()) {
         return;
     }
-    if (gbInvBodySlotUnderCursorExists) {
+    if (D2Client::UI::Inv::gbInvBodySlotUnderCursorExists) {
         return;   // paperdoll hover: the item is already equipped, no compare
     }
-    pHovered = pItemToDescribe;
+    pHovered = D2Client::UI::Inv::pItemToDescribe;
     if (!pHovered) {
         return;   // nothing hovered this frame (also covers cursor-held items)
     }
@@ -777,24 +777,24 @@ void __stdcall SHIFTCOMPARE_CompareForHover() {
     // restored below so the hovered item's box draws unchanged this frame,
     // and its published rect rides into the compare channel for the
     // side-by-side placement (snapshot - immune to the Alt-labels wipes).
-    memcpy(&sPrimary, &DisplayedTooltip, sizeof(sPrimary));
-    pSavedDescribe = pItemToDescribe;
-    nSavedPage = g_nCurrentInventoryPage;
+    memcpy(&sPrimary, &D2Win::Src::D2WinFont::DisplayedTooltip, sizeof(sPrimary));
+    pSavedDescribe = D2Client::UI::Inv::pItemToDescribe;
+    nSavedPage = D2Client::UI::Inv::g_nCurrentInventoryPage;
 
-    pItemToDescribe = pEquipped;
-    g_nCurrentInventoryPage = 0;   // forces the FULL builder (:8532) and no price line (:8783)
+    D2Client::UI::Inv::pItemToDescribe = pEquipped;
+    D2Client::UI::Inv::g_nCurrentInventoryPage = 0;   // forces the FULL builder (:8532) and no price line (:8783)
     D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(nullptr, 0, 0, 0, 0); // clear: a compose early-out must be detectable
     D2Client::UI::Inv::LoadItemDesc(pPlayer, 1);   // bUsePlayer=1: owner = the player
-    if (DisplayedTooltip.wszString[0]) {
+    if (D2Win::Src::D2WinFont::DisplayedTooltip.wszString[0]) {
         D2Win::Src::D2WinFont::TEXT_CompareTooltipSetAttributes(
-            DisplayedTooltip.wszString,
+            D2Win::Src::D2WinFont::DisplayedTooltip.wszString,
             sPrimary.nX, sPrimary.nY, sPrimary.nColor, sPrimary.nCenterFlag,
-            DisplayedTooltip.nColor);
+            D2Win::Src::D2WinFont::DisplayedTooltip.nColor);
     }
 
-    pItemToDescribe = pSavedDescribe;
-    g_nCurrentInventoryPage = nSavedPage;
-    memcpy(&DisplayedTooltip, &sPrimary, sizeof(sPrimary));   // primary draws unchanged
+    D2Client::UI::Inv::pItemToDescribe = pSavedDescribe;
+    D2Client::UI::Inv::g_nCurrentInventoryPage = nSavedPage;
+    memcpy(&D2Win::Src::D2WinFont::DisplayedTooltip, &sPrimary, sizeof(sPrimary));   // primary draws unchanged
 }
 
 // ===== [vanilla-plus no-panel-shift] ========================================
@@ -841,10 +841,10 @@ BOOL __stdcall PANELSHIFT_NoShiftWorld() {
     // R92-R94 renderer guards (no D2Client imports across that boundary;
     // here the globals are direct).
     return gbNoPanelShiftMode
-        && ((ScreenSizeX == 1280 && ScreenSizeY == 720)
-            || (ScreenSizeX == 1344 && ScreenSizeY == 700)
-            || (ScreenSizeX == 1366 && ScreenSizeY == 768) // VP [R112]: 1366x768 joins the wide class
-            || (ScreenSizeX == 1920 && ScreenSizeY == 1080)); // VP [R115]: 1920x1080 joins the wide class
+        && ((D2Client::UI::ui::ScreenSizeX == 1280 && D2Client::UI::Inv::ScreenSizeY == 720)
+            || (D2Client::UI::ui::ScreenSizeX == 1344 && D2Client::UI::Inv::ScreenSizeY == 700)
+            || (D2Client::UI::ui::ScreenSizeX == 1366 && D2Client::UI::Inv::ScreenSizeY == 768) // VP [R112]: 1366x768 joins the wide class
+            || (D2Client::UI::ui::ScreenSizeX == 1920 && D2Client::UI::Inv::ScreenSizeY == 1080)); // VP [R115]: 1920x1080 joins the wide class
 }
 
 uint32_t __stdcall PANELSHIFT_BorderForWorld(uint32_t eBorderType) {
@@ -1217,7 +1217,7 @@ BOOL __stdcall VPRES_IsWideLayoutMode(DWORD eResolutionMode) {
 }
 
 int __stdcall VPRES_GetWideUiOffsetX() {
-    int nOffsetX = (ScreenSizeX - 800) / 2;
+    int nOffsetX = (D2Client::UI::ui::ScreenSizeX - 800) / 2;
     return 0 < nOffsetX ? nOffsetX : 0;
 }
 
@@ -1232,7 +1232,7 @@ int __stdcall VPRES_GetWideUiOffsetX() {
 // bottom-anchored expressions already contain ScreenSizeY and would
 // double-shift.
 int __stdcall VPRES_GetWideUiOffsetY() {
-    int nOffsetY = ScreenSizeY - 600;
+    int nOffsetY = D2Client::UI::Inv::ScreenSizeY - 600;
     return 0 < nOffsetY ? nOffsetY : 0;
 }
 
@@ -1400,7 +1400,7 @@ constexpr int VPSHAREDUI_TAB_GAP = 5;     // word <-> arrow gap
 // good (the gold-max text is now a full 0x2d below the baseline).
 static int VPSHAREDUI_TabBaselineY() {
     BOOL bIsExpansion = D2Client::GAME::Game::CLIENT_CheckExpansion();
-    return gnPanelOffsetY - (bIsExpansion ? 0x1cc : 0x108) + ScreenSizeY;
+    return D2Client::UI::Inv::gnPanelOffsetY - (bIsExpansion ? 0x1cc : 0x108) + D2Client::UI::Inv::ScreenSizeY;
 }
 
 // The word for the current client page (0 personal, 1..10 shared). A
@@ -1433,7 +1433,7 @@ static void VPSHAREDUI_TabLayout(int * pnWordX, int * pnWordW,
                                  int * pnRightX, int * pbHasRight, int * pnArrowW) {
     int nWordW = D2Win::Src::D2WinFont::DRAW_text0((uint16_t *)VPSHAREDUI_PageWord());
     int nArrowW = D2Win::Src::D2WinFont::DRAW_text0((uint16_t *)L">");
-    int nRightEdge = gnPanelOffsetX + VPSHAREDUI_TAB_RIGHT_EDGE;
+    int nRightEdge = D2Client::UI::Inv::gnPanelOffsetX + VPSHAREDUI_TAB_RIGHT_EDGE;
     *pbHasRight = gnVpSharedPage < VPSHAREDUI_PAGE_COUNT; // '>' on personal + page 1
     *pbHasLeft = gnVpSharedPage > 0;                      // '<' on shared pages
     int nWordR = nRightEdge - (*pbHasRight ? nArrowW + VPSHAREDUI_TAB_GAP : 0);

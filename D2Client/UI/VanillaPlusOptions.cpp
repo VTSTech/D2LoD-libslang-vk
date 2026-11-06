@@ -216,8 +216,8 @@ static D2UIFlagInitStrc gaVanillaPlusInit[3] = {
 // ===== page geometry helpers (kept in one place for draw and hit tests) =====
 
 static void VPPAGE_GetBoxOrigin(int* pnX, int* pnY) {
-    *pnX = (ScreenSizeX - VPPAGE_BOX_WIDTH) / 2;
-    *pnY = (WindowSizeY - VPPAGE_BOX_HEIGHT) / 2;
+    *pnX = (D2Client::UI::ui::ScreenSizeX - VPPAGE_BOX_WIDTH) / 2;
+    *pnY = (D2Client::UI::ui::WindowSizeY - VPPAGE_BOX_HEIGHT) / 2;
 }
 
 static int VPPAGE_RowTopY(int nRowIndex) {
@@ -494,7 +494,7 @@ void __fastcall VANILLAPLUS_DrawRowLabel(D2EscMenuItemStrc * pItem, D2UIMouseMsg
         return; // foreign row: never ours, draw nothing
     }
 
-    const int nMenuCenterY = ScreenSizeY - 0x50;
+    const int nMenuCenterY = D2Client::UI::Inv::ScreenSizeY - 0x50;
     const int nRowTop = pVpHeader->nVerticalSpacing * nVisibleBefore
         + (nMenuCenterY / 2 - pVpHeader->nVerticalSpacing * pVpHeader->nItemCount / 2);
     const int nBaselineY = nRowTop + pVpHeader->nRowHeight - VPLABEL_BASELINE_INSET;
@@ -502,7 +502,7 @@ void __fastcall VANILLAPLUS_DrawRowLabel(D2EscMenuItemStrc * pItem, D2UIMouseMsg
     static const wchar_t gwszLabel[] = L"Vanilla+ Options";
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(gnVpLabelFontId);
     int nTextWidth = D2Win::Src::D2WinFont::DRAW_text0((uint16_t*)gwszLabel);
-    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gwszLabel, ScreenSizeX / 2 - nTextWidth / 2, nBaselineY, 0, 0);
+    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gwszLabel, D2Client::UI::ui::ScreenSizeX / 2 - nTextWidth / 2, nBaselineY, 0, 0);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -599,7 +599,7 @@ void __stdcall VANILLAPLUS_OnToggleUI(int32_t nParam) {
 
 static void VPPAGE_DrawCenteredText(const wchar_t* wszText, int nBaselineY, int nColor) {
     int nWidth = D2Win::Src::D2WinFont::DRAW_text0((uint16_t*)wszText);
-    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)wszText, ScreenSizeX / 2 - nWidth / 2, nBaselineY, nColor, 0);
+    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)wszText, D2Client::UI::ui::ScreenSizeX / 2 - nWidth / 2, nBaselineY, nColor, 0);
 }
 
 static void VPPAGE_DrawValueText(int nBoxX, int nValue, int nBaselineY) {
