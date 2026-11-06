@@ -319,6 +319,40 @@ static void * gapGlideStripVertexPtrsB[10] = {
     (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[13].fX,
     (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[14].fX
 }; D2_STATIC_GUARD(gapGlideStripVertexPtrsB, "gapGlideStripVertexPtrsB");
+// VP-BEGIN [glide-perf f3]: one strip instead of two per wall/shadow subtile.
+// gapGlideStripVertexPtrsA and ...B are two 10-vertex TRIANGLE_STRIP groups
+// (pointer-array mode 4) over the same gaGlidePerspectiveVertices pool -
+// A = v0,1,3,4,6,7,9,10,12,13 and B = v1,2,4,5,7,8,10,11,13,14 - drawn back to
+// back with the same texture and state. Joined sequence: A's 10 pointers, then
+// a 2-vertex degenerate bridge (dup of A's last v13, then dup of B's first v1;
+// a single dup would weld a spurious (v13,v1,v2) triangle across the seam),
+// then B's 10. 0x16 pointers, 16 real + 4 zero-area triangles, same vertex
+// order and winding as the two separate calls.
+static void * gapGlideStripVertexPtrsMerged[0x16] = {
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[1].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[3].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[4].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[6].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[7].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[9].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[10].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[12].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[13].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[13].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[1].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[1].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[2].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[4].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[5].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[7].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[8].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[10].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[11].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[13].fX,
+    (void*)&D2Glide::Renderer::Glide::gaGlidePerspectiveVertices[14].fX
+}; D2_STATIC_GUARD(gapGlideStripVertexPtrsMerged, "gapGlideStripVertexPtrsMerged");
+// VP-END [glide-perf f3]
 static D2GlideWallCornerStrc gaGlideWallCornerTable[60] = {
     {},
     {},
@@ -3624,6 +3658,25 @@ BOOL __fastcall RENDERER_GLIDE_DrawShadowTileSimple(D2TileLibraryEntryStrc * pTi
     return _bDrawn;
 }
 
+// VP-BEGIN [glide-perf f3 draw]: submit the merged wall/shadow strip.
+// Wrapper constraint (Glide3xVK src/glide_exports.cpp, read after the
+// contiguous-strip build dropped the whole world to black):
+// grDrawVertexArrayContiguous rasterizes ONLY the mode-5 fan - "P2.1:
+// TRIANGLE_FAN quads rasterize; other primitives still counted". A mode-4
+// contiguous strip is counted, logged and never drawn. The rasterized export
+// for exactly these strips is the pointer-array grDrawVertexArray retail
+// already uses (g3x_frame_draw_pointers: count-generic TRIANGLE_STRIP with
+// per-triangle winding normalization, hard vertex cap 64, any NULL pointer
+// drops the draw). 0x16 pointers <= 64 and every entry is a static pool
+// address, so the merged table submits as ONE pointer-array strip - zero
+// copies, the wrapper dereferences the pool exactly as it does for the two
+// retail 10-pointer calls this merge replaces. Same vertices, same order,
+// same winding; the four zero-area bridge triangles rasterize nothing.
+static void RENDERER_GLIDE_DrawMergedPerspectiveStrip() {
+    (*GLIDEDLL_grDrawVertexArray_12)(4, 0x16, gapGlideStripVertexPtrsMerged);
+}
+// VP-END [glide-perf f3 draw]
+
 // Renders shadow tile with perspective projection in GLIDE renderer. Takes screen coordinates and alpha, applies perspective transform and blending.
 BOOL __fastcall RENDERER_GLIDE_DrawShadowTilePerspective(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, uint8_t nAlpha, int32_t nScreenPanels) {
     int nSubtileRow;
@@ -3690,8 +3743,7 @@ BOOL __fastcall RENDERER_GLIDE_DrawShadowTilePerspective(D2TileLibraryEntryStrc 
             bAnyDrawn += 0x8000;
           } while ((int)pfVertexSlot < (intptr_t)((char*)&gaGlidePerspectiveVertices + sizeof(gaGlidePerspectiveVertices)));
 
-          (*GLIDEDLL_grDrawVertexArray_12)(4, 10, gapGlideStripVertexPtrsA);
-          (*GLIDEDLL_grDrawVertexArray_12)(4, 10, gapGlideStripVertexPtrsB);
+          RENDERER_GLIDE_DrawMergedPerspectiveStrip(); // [glide-perf f3] merged A+B strips, pointer-array
           bAnyDrawn = 1;
         }
 
@@ -3902,8 +3954,7 @@ static int32_t __stdcall RENDERER_GLIDE_DrawWallTilePerspective(int32_t nScreenP
               pfVertexSlot += 3;
             } while ((int)pfVertexSlot < (intptr_t)((char*)&gGlidePerspectiveVertexBuffer + 52));
 
-            (*GLIDEDLL_grDrawVertexArray_12)(4, 10, gapGlideStripVertexPtrsA);
-            (*GLIDEDLL_grDrawVertexArray_12)(4, 10, gapGlideStripVertexPtrsB);
+            RENDERER_GLIDE_DrawMergedPerspectiveStrip(); // [glide-perf f3] merged A+B strips, pointer-array
             nZMid = 1;
           }
 
@@ -4127,11 +4178,53 @@ BOOL __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
       pfVertexSlot += 9;
     } while (_nAlpha);
 
-    void** ppVertexPtrs = gapGlideGroundStripVertexPtrs;
-    do {
-      bResult = (*GLIDEDLL_grDrawVertexArray_12)(4, 0xc, ppVertexPtrs);
-      ppVertexPtrs += 0xc;
-    } while ((int)ppVertexPtrs < (intptr_t)((char*)&gapGlideGroundStripVertexPtrs + sizeof(gapGlideGroundStripVertexPtrs)));
+    // VP-BEGIN [glide-perf f1]: one merged strip table instead of five calls
+    // per floor tile. gapGlideGroundStripVertexPtrs[60] is five 12-vertex
+    // TRIANGLE_STRIP groups (pointer-array mode 4) over
+    // gaGlideGroundTileVertices, drawn through one texture bind and state set.
+    // The groups are separate strips (group g+1 restarts at group g's second
+    // vertex), so each seam gets a 2-vertex degenerate bridge: dup of the
+    // previous group's last pointer, then dup of the next group's first
+    // pointer - a single dup would weld a spurious cross-seam triangle.
+    // 60 + 4*2 = 0x44 pointers, the same 50 real triangles in the same order;
+    // zero-area joins never rasterize. Built lazily on the first draw, after
+    // the init walk has filled the 60-pointer table (values are static offsets
+    // into gaGlideGroundTileVertices, identical on any re-fill).
+    static void * gapGlideGroundStripVertexPtrsMerged[0x44] = {}; D2_STATIC_GUARD(gapGlideGroundStripVertexPtrsMerged, "D2Glide::Renderer::Glide::DrawGroundTile::gapGlideGroundStripVertexPtrsMerged");
+    static int bGroundStripsMergedBuilt = 0; D2_STATIC_GUARD(bGroundStripsMergedBuilt, "D2Glide::Renderer::Glide::DrawGroundTile::bGroundStripsMergedBuilt");
+    if (!bGroundStripsMergedBuilt) {
+      int nMergedIdx = 0;
+      int nGroupBase = 0;
+      do {
+        int nSlot = 0;
+        do {
+          gapGlideGroundStripVertexPtrsMerged[nMergedIdx] = gapGlideGroundStripVertexPtrs[nGroupBase + nSlot];
+          nMergedIdx++;
+          nSlot++;
+        } while (nSlot < 0xc);
+        if (nGroupBase < 0x30) {
+          gapGlideGroundStripVertexPtrsMerged[nMergedIdx] = gapGlideGroundStripVertexPtrs[nGroupBase + 0xb];
+          nMergedIdx++;
+          gapGlideGroundStripVertexPtrsMerged[nMergedIdx] = gapGlideGroundStripVertexPtrs[nGroupBase + 0xc];
+          nMergedIdx++;
+        }
+        nGroupBase += 0xc;
+      } while (nGroupBase <= 0x30);
+      bGroundStripsMergedBuilt = 1;
+    }
+
+    // Wrapper constraint (Glide3xVK g3x_frame_draw_pointers): the pointer-array
+    // strip rasterizer clamps count at 64 ("if (count > 64) count = 64"), so
+    // the 0x44-pointer table submits as two legs, 0x28 + 0x1c pointers, both
+    // <= 64: leg 1 = groups 0-2 with their two bridges (ends on group 2's last
+    // pointer), leg 2 = the group 2->3 bridge plus groups 3-4 with their
+    // bridge (its two leading bridge dups only form zero-area triangles). Same
+    // pointer-array strip export and 12-pointer family retail sends, two calls
+    // per tile instead of five, no staging copies - the wrapper dereferences
+    // the pool directly, exactly as it does for the five retail calls.
+    bResult = (*GLIDEDLL_grDrawVertexArray_12)(4, 0x28, gapGlideGroundStripVertexPtrsMerged);
+    (*GLIDEDLL_grDrawVertexArray_12)(4, 0x1c, gapGlideGroundStripVertexPtrsMerged + 0x28);
+    // VP-END [glide-perf f1]
 
     return bResult;
 }
