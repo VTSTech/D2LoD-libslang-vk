@@ -1,6 +1,6 @@
-# Building and running Redivivus
+# Building and running D2VP
 
-This is the build that delivers a runnable `d2.exe` today, with a modern compiler. To compile
+This is the build that delivers a runnable D2VP client today, with a modern compiler. To compile
 with the compilers that built the original, Visual C++ 2005 SP1 and Apple LLVM 4.2, with their
 flags, see [original-compilers.md](original-compilers.md).
 
@@ -32,7 +32,10 @@ cmake --build build
 ```
 
 That produces `build/d2.exe`, a 32-bit Windows executable. `tools/check-build.sh` does
-the same from a clean clone and checks the result; CI runs it on every push.
+the same from a clean clone and checks the result; CI runs it on every push. On Windows,
+`tools/build-local-win11.cmd` runs the same configure and build natively plus the gates:
+it checks the PE, writes `build/d2exe.map` (crash addresses resolve against it) and
+strips a play-sized `build/d2s-<sha>.exe`.
 
 ## Run
 
@@ -43,5 +46,6 @@ start it from there:
 d2.exe -w
 ```
 
-`-w` runs it in a window. Releases ship this exe renamed to `d2vp.exe` — same
-binary, a name that says Vanilla+; a locally built `d2.exe` behaves identically.
+`-w` runs it in a window. The stripped `d2s-<sha>.exe` copy is what releases ship:
+upon release it is renamed to `d2vp.exe` — same binary, a name that says Vanilla+.
+A locally built `d2.exe` behaves identically.
