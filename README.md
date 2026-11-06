@@ -180,7 +180,7 @@ upstream regenerations are merged through) · [docs/building.md](docs/building.m
 MIT, see [LICENSE](LICENSE). Code under `thirdparty/` keeps its own license.
 
 The `.cpp.map` files map every function and line back to its address in 1.14d `Game.exe`. They
-are part of this work under the same license: if you use them, credit Redivivus and link here.
+are part of this work under the same license: if you use them, credit Redivivus and link [there](https://github.com/jaenster/redivivus).
 
 Diablo and Blizzard Entertainment are trademarks of Blizzard Entertainment, Inc. This
 project is not affiliated with or endorsed by Blizzard.
