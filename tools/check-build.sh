@@ -48,7 +48,11 @@ echo "compiler: $(i686-w64-mingw32-g++ --version | head -1)"
 CASE_BAD=$(cd "$WORK/src" && {
   git ls-files | sed 's/^/F\t/'
   git ls-files '*.c' '*.cpp' '*.h' '*.hpp' '*.inl' | while IFS= read -r f; do
-    grep -E '^[[:space:]]*#[[:space:]]*include[[:space:]]*"' "$f" | sed -E 's/.*"([^"]+)".*/\1/' |
+    # grep exits 1 on a file with no quoted include. That is "no match", not an
+    # error, but under set -o pipefail it kills this scan -- and check-build
+    # with it, silently, before cmake runs. Mask it.
+    { grep -E '^[[:space:]]*#[[:space:]]*include[[:space:]]*"' "$f" || true; } |
+      sed -E 's/.*"([^"]+)".*/\1/' |
       while IFS= read -r inc; do printf 'I\t%s\t%s\n' "$f" "$inc"; done
   done
 } | awk -F'\t' '
@@ -88,12 +92,17 @@ cmake --build "$WORK/build" -j "$JOBS" -- $KEEP_GOING >"$WORK/build.log" 2>&1
 RC=$?
 set -e
 
-TUS=$(grep -c '"file":' "$WORK/build/compile_commands.json")
+# grep -c exits 1 when the count is 0; keep the count and let the d2.exe check
+# below decide whether that is fatal.
+TUS=$(grep -c '"file":' "$WORK/build/compile_commands.json" || true)
 ERRORS=$(grep -c ' error: ' "$WORK/build.log" || true)
 UNDEF=$({ grep -o "undefined reference to \`[^']*'" "$WORK/build.log" || true; } | sort -u | wc -l | tr -d ' ')
 echo "translation units: $TUS, compile errors: $ERRORS"
 echo "undefined symbols at link: $UNDEF"
-[ -n "${LAUNCHER[*]:-}" ] && ccache -s | grep -iE 'hits|misses' | head -3
+# grep here can miss (older ccache stats formats say "cache hit", not "Hits"),
+# and a miss must not kill the script -- worst case it would exit 1 before the
+# FAIL diagnostics below ever print.
+if [ -n "${LAUNCHER[*]:-}" ]; then ccache -s | grep -iE 'hits|misses' | head -3 || true; fi
 
 if [ "$RC" -ne 0 ] || [ ! -f "$WORK/build/d2.exe" ]; then
   { grep -E ' error: |undefined reference' "$WORK/build.log" || tail -40 "$WORK/build.log"; } | head -40 >&2
