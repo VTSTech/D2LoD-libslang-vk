@@ -9,8 +9,8 @@
        width="88" height="31" alt="Made Openly: Mostly AI">
 </a>
 
-[![Release](https://img.shields.io/badge/release-0.0.8--R127-8f2b2b)](https://github.com/VTSTech/D2VP-QoL/releases/latest)
-[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-510%2F510-2ea043)](tools/check-vanilla-plus.sh)
+[![Release](https://img.shields.io/badge/release-0.0.8--R128-8f2b2b)](https://github.com/VTSTech/D2VP-QoL/releases/latest)
+[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-519%2F519-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 [![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/xQXpH5Nj5)
 
@@ -60,12 +60,17 @@ every feature ships OFF. The wider candidate slate is scoped in
 
 ## Status
 
-Current: **`Vanilla+0.0.8-R127`** (line 1 of `d2boot.log` pins any build).
+Current: **`Vanilla+0.0.8-R128`** — shipped as tag
+**[`R128`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R128)**, 2026-11-06 (line 1
+of `d2boot.log` pins any build).
 
 - **Shipped** (short form — per-release detail: [CHANGELOG.md](CHANGELOG.md)): the
-  **Shift Item Compare** feature with its shield-slot fix (R125/R126, field-verified),
-  the **D3D fullscreen boot-crash fix** (R124, field-verified), the **eighth upstream
-  sync** (R123, Ghidra DB 1948 — includes upstream's "Duriel's death no longer
+  **Gheed gamble crash fix** (R128,
+  [#32](https://github.com/VTSTech/D2VP-QoL/issues/32), field-verified), the **vpdiag
+  probe retirement** (R127, zero behavior change), the **Shift Item Compare** feature
+  with its shield-slot fix (R125/R126, field-verified), the **D3D fullscreen
+  boot-crash fix** (R124, field-verified), the **eighth upstream sync**
+  (R123, Ghidra DB 1948 — includes upstream's "Duriel's death no longer
   crashes"), the **R109–R122 wide-resolution arc** — the 1344x700 / 1366x768 /
   1920x1080 video-options stops with hosted-stretch fullscreen and the wide-view
   rendering campaign — and the **Mana Burn Fix** (R106–R108). Earlier tags on the
@@ -76,10 +81,14 @@ Current: **`Vanilla+0.0.8-R127`** (line 1 of `d2boot.log` pins any build).
   ([#24](https://github.com/VTSTech/D2VP-QoL/issues/24),
   [#28](https://github.com/VTSTech/D2VP-QoL/issues/28)); `d2vp.exe` is field-played
   daily.
-- **Open issues (1)**: the Refilling Shrine XP buff
-  ([#25](https://github.com/VTSTech/D2VP-QoL/issues/25), triage pending). Recently
-  closed: #26 (720p panel margins + `no_panel_shift`), #22 (Bloodraven turn-in), #18
-  (attribute-point crash), #8 (necro skeleton tint).
+- **Open issues (4)**: the 1080p D3D-windowed crash
+  ([#31](https://github.com/VTSTech/D2VP-QoL/issues/31), filed 2026-11-06 — fullscreen
+  is fine), the post-Countess crash ([#29](https://github.com/VTSTech/D2VP-QoL/issues/29),
+  filed 2026-11-06), the Refilling Shrine XP buff
+  ([#25](https://github.com/VTSTech/D2VP-QoL/issues/25)) and the intermittent
+  attribute-point crash ([#18](https://github.com/VTSTech/D2VP-QoL/issues/18)) — triage
+  pending. Recently closed: #32 (Gheed gamble crash, fixed R128), #26 (720p panel
+  margins + `no_panel_shift`), #22 (Bloodraven turn-in), #8 (necro skeleton tint).
 - A crash writes a symbolised report (`d2crash-<date>-<time>.txt`) next to the
   executable; a 12 s hangwatch dumps one if the main loop ever stops beating. See
   [Crash reports](#crash-reports).
@@ -135,7 +144,7 @@ Two checks stand behind every release:
 
 - **The Vanilla+ gate suite** — [`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh)
   pins the whole Vanilla+ surface (feature gates, 720p anchors, sound constants, boot
-  telemetry, doc budgets) with **510 checks**, green at the current tip.
+  telemetry, doc budgets) with **519 checks**, green at the current tip.
 - **[`asm_matching/`](asm_matching/README.md)** (upstream) compiles the tree with Visual
   C++ 2005 SP1 and byte-compares each function against the 1.14d binary — a check on the
   decompilation itself: where the code comes out identical, the decompiled function was

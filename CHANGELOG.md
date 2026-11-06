@@ -9,7 +9,7 @@ build self-IDs `Vanilla+0.0.x-Ryy`; the first `d2boot.log` line pins any shipped
 its source round. Per-tag notes: the
 [releases page](https://github.com/VTSTech/D2VP-QoL/releases).
 
-## [Unreleased] — the 0.0.8-line rounds
+## [0.0.8] — 2026-11-06 ([`R128`](https://github.com/VTSTech/D2VP-QoL/releases/tag/R128))
 
 - **R128 — Gheed gamble crash fix** ([issue #32](https://github.com/VTSTech/D2VP-QoL/issues/32),
   owner-closed 2026-11-06). Clicking **Gamble** crashed the game on every round since the
@@ -23,6 +23,9 @@ its source round. Per-tag notes: the
   arm slots occupied, a shield/quiver hover now compares the off-hand item and a weapon
   hover the primary — the same-kind slot pick retail's own auto-equip applies.
   Field-verified 2026-11-06 ("Great job, works").
+
+## [R106–R125] — the 0.0.7 line's later rounds (shipped as per-round tags)
+
 - **R125 — Shift Item Compare** (slate row 0b): hold **Shift** over an equippable item
   to draw the equipped item's tooltip beside it — inventory, stash, cube, trade screen
   and the vendor (shop stock included). Options-page row 9.
