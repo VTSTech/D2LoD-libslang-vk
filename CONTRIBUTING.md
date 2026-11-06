@@ -38,15 +38,6 @@ function on the Mac build, typed field accesses, referenced strings — inferenc
 how the read-only Ghidra MCP server lets an AI agent read the databases and file
 corrections addressed **by address**.
 
-Two boundary notes so nothing gets double-filed:
-
-- A **crash you can reproduce while playing** is a Vanilla+ fix here first (below) — and
-  if the root cause turns out to be a reconstruction bug (a wrong type, a lost value), it
-  belongs upstream too. File both and cross-link them.
-- A change that makes the build **match retail more closely without changing what players
-  feel** (names, comments, byte-match figures) is upstream-only — byte-matching is not
-  work this repo hosts.
-
 Fixes landed upstream arrive here at the next sync — this fork tracks ahead of upstream,
 never behind, and [docs/merge-upstream.md](docs/merge-upstream.md) documents the merge
 protocol (eight numbered syncs so far).
