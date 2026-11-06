@@ -543,36 +543,24 @@ gate "r119: walk queue widened"            D2Client/GAME/Wall2.cpp          'apQ
 gate "r119: scene out cap 256"             D2Client/GAME/Wall2.cpp          'apWideRooms\[256\]' 1
 gate "r119: floor out cap 256"             D2Client/GAME/Draw.cpp           'apWideRooms\[256\]' 1
 
-# ---- r120: wide-view diagnostics (vpdiag -> d2boot.log) ---------------------
-# Owner after R119: "same behavior, blackness on top with perspective,
-# blackness on bottom without. Is there anything we could add to d2boot.log
-# to help diagnose the issue?" R120 is diagnostics-only, zero behavior
-# change: the floor pass dumps three vpdiag lines ~2x/second (plus one
-# forced dump per perspective flip) covering (1) mode/backbuffer/the retail
-# fixed-pixel rcExtendedView cull rect/lightmap origin, (2) the floor
-# bounds the fill triggers compare + the BFS walk's real coverage (emitted
-# rooms, hop mix, union AABB, both silent-drop counters) for the floor and
-# scene passes, (3) tile seen/drawn/rect-culled counts with the culled
-# anchors' screen extremes, the drawn-floor px AABB vs the backbuffer
-# (per-edge gaps), fill stamps/fired sides/fill anchor, and the ambient-
-# lightmap clamp rate (samples that fell outside the 48x48 grid). Pins:
-# the shared stats struct + externs, the collector's drop counters, both
-# snapshot copies, the dump definition + both exit-path call sites, the
-# clamp counters in the lightmap sampler, and the boot-log include.
-gate "r120: diag struct + externs"         D2Client/GAME/Draw.h             'g_VPDIAG_WalkLast' 1
-gate "r120: diag externs defined"          D2Client/GAME/Draw.cpp           'VPDIAG_WalkStats g_VPDIAG_WalkLast;' 1
-gate "r120: walk drop counter (queue)"     D2Client/GAME/Wall2.cpp          'sWalk\.nQueueFull\+\+' 1
-gate "r120: walk drop counter (out cap)"   D2Client/GAME/Wall2.cpp          'sWalk\.nOutFull\+\+' 1
-gate "r120: floor walk snapshot"           D2Client/GAME/Draw.cpp           'g_VPDIAG_WalkFloor = g_VPDIAG_WalkLast' 1
-gate "r120: scene walk snapshot"           D2Client/GAME/Wall2.cpp          'g_VPDIAG_WalkScene = D2Client::GAME::Draw::g_VPDIAG_WalkLast' 1
-gate "r120: vpdiag dump defined"           D2Client/GAME/Draw.cpp           'static void VPDIAG_DumpFloorFrame' 1
-gate "r120: vpdiag dump call sites"        D2Client/GAME/Draw.cpp           'VPDIAG_DumpFloorFrame\(pDrawFloor, [01]\)' 2
-gate "r120: vpdiag line-1 format"          D2Client/GAME/Draw.cpp           'vpdiag\[%d\]: persp=%d edge=%d scr=%dx%d rcv=' 1
-gate "r120: vpdiag line-3 format"          D2Client/GAME/Draw.cpp           'gaps=%d/%d/%d/%d \[R120\]' 1
-gate "r120: frame scratch reset"           D2Client/GAME/Draw.cpp           'VPDIAG_ResetFrame\(\); // \[R120\]' 1
-gate "r120: lightmap clamp counters"       D2Client/GAME/View.cpp           'g_VPDIAG_LightClamp(Misses|Samples)\+\+' 2
-gate "r120: boot diag include (GAME Draw)" D2Client/GAME/Draw.cpp           'include "support/d2_boot\.h"' 1
-gate "r120: wall2 includes diag header"    D2Client/GAME/Wall2.cpp          'include "D2Client/GAME/Draw\.h"' 1
+# ---- r127: the vpdiag retirement (R120 wide-view probes out) ----------------
+# Owner, field-green on R126: "Great job, works. Let's retire the vpdiag
+# probes". Same class as the R103 diag retirement (d2light-diag +
+# d2drop-diag + hooks out): the R120 instrumentation leaves whole - the
+# shared stats struct + externs (Draw.h), the per-frame scratch + reset +
+# throttled dump (GAME Draw.cpp), the collector's per-call stats and the
+# scene snapshot (Wall2.cpp), the lightmap clamp counters (View.cpp), the
+# boot-log include, and Wall2's diag-only Draw.h include. Zero behavior
+# change: every removed line was a counter increment, a dump call or a
+# declaration - the wide-view fixes the probes shipped with (R117 fill,
+# R118 walk, R121 un-gate + snapshot triggers, R122 cull re-fit) stay.
+# Tombstones pin the absence.
+gate "r127: vpdiag retired (Draw.h)"        D2Client/GAME/Draw.h             'VPDIAG' 0
+gate "r127: vpdiag retired (GAME Draw)"     D2Client/GAME/Draw.cpp           'vpdiag|VPDIAG' 0
+gate "r127: vpdiag retired (Wall2)"         D2Client/GAME/Wall2.cpp          'vpdiag|VPDIAG|sWalk' 0
+gate "r127: vpdiag retired (View)"          D2Client/GAME/View.cpp           'vpdiag|VPDIAG' 0
+gate "r127: vpdiag boot sink include gone"  D2Client/GAME/Draw.cpp           'support/d2_boot\.h' 0
+gate "r127: wall2 diag include gone"        D2Client/GAME/Wall2.cpp          'include "D2Client/GAME/Draw\.h"' 0
 
 # ---- r122: the R121-WIP field log verdict -> cull rect re-fit ---------------
 # Owner's R121-build vpdiag capture (1080p, both modes, one flip) proved the
@@ -1064,7 +1052,10 @@ gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           
 # R126: string bumped 0.0.7-R125 -> 0.0.8-R126 (the shield-compare slot fix:
 # shield/quiver hovers pick the off-hand when both arm cells are occupied -
 # same-kind slot preference, retail's own choose_body_loc convention)
-gate "res: self-id 0.0.8-R126"              Game/Main.cpp                    'Vanilla\+0\.0\.8-R126' 1
+# R127: string bumped 0.0.8-R126 -> 0.0.8-R127 (the vpdiag retirement: the
+# R120 wide-view probes out whole, zero behavior change; owner field-green
+# on R126: "Great job, works. Let's retire the vpdiag probes")
+gate "res: self-id 0.0.8-R127"              Game/Main.cpp                    'Vanilla\+0\.0\.8-R127' 1
 # R115: string bumped R113 -> R115 (the 1080p sixth-stop round; owner:
 # "Great job. works. Published Glide3xVK 0.4.7. Now lets do 1080p")
 # R116: string bumped R115 -> R116 (the GDI windowed 1366x768 shear fix;

@@ -15,7 +15,6 @@
 #include "D2Client/Sound/SoundHdr.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/VanillaPlusCore.h" // [R118] wide-layout classifier decl
-#include "D2Client/GAME/Draw.h" // [R120] walk-stats diag externs
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
@@ -1289,20 +1288,6 @@ int __stdcall WALL2_CollectRoomsBeyondAdjacency(D2RoomStrc * pCenterRoom, int nD
       return 0;
     }
 
-    // VP-BEGIN [R120]: per-call walk statistics for the vpdiag boot-log dump
-    // (coverage AABB, hop mix, and both silent-drop classes).
-    D2Client::GAME::Draw::VPDIAG_WalkStats& sWalk = D2Client::GAME::Draw::g_VPDIAG_WalkLast;
-    sWalk.nEmitted = 0;
-    sWalk.nHop2 = 0;
-    sWalk.nHop3 = 0;
-    sWalk.nQueueFull = 0;
-    sWalk.nOutFull = 0;
-    sWalk.nMinX = 0x7fffffff;
-    sWalk.nMinY = 0x7fffffff;
-    sWalk.nMaxX = -0x80000000;
-    sWalk.nMaxY = -0x80000000;
-    // VP-END [R120]
-
     apQueue[0] = pCenterRoom;
     anHopQueue[0] = 0;
     nTail = 1;
@@ -1335,8 +1320,6 @@ int __stdcall WALL2_CollectRoomsBeyondAdjacency(D2RoomStrc * pCenterRoom, int nD
           apQueue[nTail] = pNearRoom;
           anHopQueue[nTail] = (uint8_t)nNextHop;
           nTail++;
-        } else {
-          sWalk.nQueueFull++; // [R120] silent drop: queue saturated
         }
         if (nNextHop <= 1) {
           continue; // hop<=1 = retail's set, walked only for its own neighbors
@@ -1351,29 +1334,6 @@ int __stdcall WALL2_CollectRoomsBeyondAdjacency(D2RoomStrc * pCenterRoom, int nD
         if (nOut < nMaxOut) {
           apOut[nOut] = pNearRoom;
           nOut++;
-          // VP-BEGIN [R120]: emit bookkeeping (count, hop mix, union AABB).
-          sWalk.nEmitted++;
-          if (nNextHop == 2) {
-            sWalk.nHop2++;
-          }
-          if (nNextHop == 3) {
-            sWalk.nHop3++;
-          }
-          if ((int)sNearCoords.dwXStart < sWalk.nMinX) {
-            sWalk.nMinX = (int)sNearCoords.dwXStart;
-          }
-          if (nRoomXEnd > sWalk.nMaxX) {
-            sWalk.nMaxX = nRoomXEnd;
-          }
-          if ((int)sNearCoords.dwYStart < sWalk.nMinY) {
-            sWalk.nMinY = (int)sNearCoords.dwYStart;
-          }
-          if (nRoomYEnd > sWalk.nMaxY) {
-            sWalk.nMaxY = nRoomYEnd;
-          }
-          // VP-END [R120]
-        } else {
-          sWalk.nOutFull++; // [R120] silent drop: out cap saturated
         }
       }
     }
@@ -1518,7 +1478,6 @@ void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nT
           WALL2_CollectRoomTilesAndUnits(apWideRooms[nWideIdx], &pGameViewLocal);
           nWideIdx++;
         }
-        D2Client::GAME::Draw::g_VPDIAG_WalkScene = D2Client::GAME::Draw::g_VPDIAG_WalkLast; // [R120] snapshot this frame's scene walk
       }
       // VP-END [R118]
       return;

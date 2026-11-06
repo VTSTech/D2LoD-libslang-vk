@@ -46,7 +46,6 @@
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "support/d2_boot.h" // [R120] vpdiag dump sink
 #include "D2Common/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
 
@@ -312,115 +311,6 @@ static int32_t aIntensityTable_Mode1[120] = {
 
 namespace D2Client::GAME::Draw {
 
-// VP-BEGIN [R120]: wide-view diagnostics - definitions. The vpdiag dump is
-// throttled to every 32nd floor frame (about two line-triples per second)
-// plus one forced dump on a perspective flip, so a short field session
-// captures both steady state and the toggle. Per-frame scratch resets at
-// floor-pass entry (sentinels) and after every dump.
-VPDIAG_WalkStats g_VPDIAG_WalkLast;
-VPDIAG_WalkStats g_VPDIAG_WalkFloor;
-VPDIAG_WalkStats g_VPDIAG_WalkScene;
-int g_VPDIAG_LightClampSamples = 0;
-int g_VPDIAG_LightClampMisses = 0;
-static int s_nTilesSeen = 0;
-static int s_nTilesFlagSkip = 0;
-static int s_nTilesRectCull = 0;
-static int s_nTilesDrawn = 0;
-static int s_nEdgeStamps = 0;
-static int s_nCullMinX = 0x7fffffff;
-static int s_nCullMinY = 0x7fffffff;
-static int s_nCullMaxX = -0x80000000;
-static int s_nCullMaxY = -0x80000000;
-static int s_nDrawMinX = 0x7fffffff;
-static int s_nDrawMinY = 0x7fffffff;
-static int s_nDrawMaxX = -0x80000000;
-static int s_nDrawMaxY = -0x80000000;
-static int s_nFillFired = 0;
-static int s_nWalkAnchorX = 0;
-static int s_nWalkAnchorY = 0;
-static int s_nFillAnchorX = 0;
-static int s_nFillAnchorY = 0;
-
-static void VPDIAG_ResetFrame() {
-    s_nTilesSeen = 0;
-    s_nTilesFlagSkip = 0;
-    s_nTilesRectCull = 0;
-    s_nTilesDrawn = 0;
-    s_nEdgeStamps = 0;
-    s_nCullMinX = 0x7fffffff;
-    s_nCullMinY = 0x7fffffff;
-    s_nCullMaxX = -0x80000000;
-    s_nCullMaxY = -0x80000000;
-    s_nDrawMinX = 0x7fffffff;
-    s_nDrawMinY = 0x7fffffff;
-    s_nDrawMaxX = -0x80000000;
-    s_nDrawMaxY = -0x80000000;
-    s_nFillFired = 0;
-    g_VPDIAG_LightClampSamples = 0;
-    g_VPDIAG_LightClampMisses = 0;
-}
-
-// Three d2boot.log lines per dump:
-//   1 mode/backbuffer/cull-rect/lightmap-origin
-//   2 floor bounds + BFS walk coverage (f= floor pass with AABB/hops/drops,
-//     s= scene pass drops)
-//   3 tile counters, culled-anchor extremes, drawn-px AABB, fill stamps and
-//     fired sides, fill anchor, lightmap clamp rate, per-edge px gaps
-static void VPDIAG_DumpFloorFrame(D2DrawFloorStrc * pDrawFloor, int nPhase) {
-    static int s_nFrame = 0;
-    static int s_nLastPersp = -1;
-    int bPersp = (int)D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
-    s_nFrame++;
-    if ((s_nFrame & 0x1f) != 0 && bPersp == s_nLastPersp) {
-      return;
-    }
-    s_nLastPersp = bPersp;
-    D2BOOT_MarkFmt("vpdiag[%d]: persp=%d edge=%d scr=%dx%d rcv=[%d %d %d %d] lm=(%d,%d) [R120]",
-        nPhase, bPersp, pDrawFloor->bPerspectiveHasEffectOnSprite,
-        (int)ScreenSizeX, (int)ScreenSizeY,
-        (int)pDrawFloor->pGameView->rcExtendedView.left, (int)pDrawFloor->pGameView->rcExtendedView.top,
-        (int)pDrawFloor->pGameView->rcExtendedView.right, (int)pDrawFloor->pGameView->rcExtendedView.bottom,
-        (int)gnLightmapWorldRefreshFlag, (int)gnLightmapBufferState);
-    D2BOOT_MarkFmt("vpdiag: wb=[%d %d %d %d] wanch=(%d,%d) f:n=%d a=[%d %d %d %d] h2=%d h3=%d qf=%d of=%d s:n=%d qf=%d of=%d [R120]",
-        pDrawFloor->nMinTileX, pDrawFloor->nMaxTileX, pDrawFloor->nMinTileY, pDrawFloor->nMaxTileY,
-        s_nWalkAnchorX, s_nWalkAnchorY,
-        g_VPDIAG_WalkFloor.nEmitted,
-        g_VPDIAG_WalkFloor.nMinX, g_VPDIAG_WalkFloor.nMinY, g_VPDIAG_WalkFloor.nMaxX, g_VPDIAG_WalkFloor.nMaxY,
-        g_VPDIAG_WalkFloor.nHop2, g_VPDIAG_WalkFloor.nHop3, g_VPDIAG_WalkFloor.nQueueFull, g_VPDIAG_WalkFloor.nOutFull,
-        g_VPDIAG_WalkScene.nEmitted, g_VPDIAG_WalkScene.nQueueFull, g_VPDIAG_WalkScene.nOutFull);
-    int nGapL = -1;
-    int nGapT = -1;
-    int nGapR = -1;
-    int nGapB = -1;
-    if (s_nTilesDrawn > 0) {
-      nGapL = s_nDrawMinX;
-      if (nGapL < 0) {
-        nGapL = 0;
-      }
-      nGapT = s_nDrawMinY;
-      if (nGapT < 0) {
-        nGapT = 0;
-      }
-      nGapR = (int)ScreenSizeX - 1 - s_nDrawMaxX;
-      if (nGapR < 0) {
-        nGapR = 0;
-      }
-      nGapB = (int)ScreenSizeY - 1 - s_nDrawMaxY;
-      if (nGapB < 0) {
-        nGapB = 0;
-      }
-    }
-    D2BOOT_MarkFmt("vpdiag: seen=%d drw=%d rc=%d flg=%d cx=[%d %d] cy=[%d %d] px=[%d %d %d %d] st=%d fire=%d%d%d%d anch=(%d,%d) lm=%d/%d gaps=%d/%d/%d/%d [R120]",
-        s_nTilesSeen, s_nTilesDrawn, s_nTilesRectCull, s_nTilesFlagSkip,
-        s_nCullMinX, s_nCullMaxX, s_nCullMinY, s_nCullMaxY,
-        s_nDrawMinX, s_nDrawMaxX, s_nDrawMinY, s_nDrawMaxY,
-        s_nEdgeStamps,
-        s_nFillFired & 1, s_nFillFired & 2, s_nFillFired & 4, s_nFillFired & 8,
-        s_nFillAnchorX, s_nFillAnchorY,
-        g_VPDIAG_LightClampMisses, g_VPDIAG_LightClampSamples,
-        nGapT, nGapB, nGapL, nGapR);
-}
-// VP-END [R120]
 
 void __thiscall DRAW_UpdateTileVisibilityBounds(D2DrawFloorStrc * pDrawFloor, D2DrlgTileDataStrc * pActSub18, int32_t nWorldX, int32_t nWorldY) {
     pActSub18->nFlags |= 0x20000;
@@ -716,9 +606,7 @@ void __thiscall DrawFloorTile(D2DrawFloorStrc * pFloor, D2DrlgTileDataStrc * pTi
     D2GfxLightExStrc aFloorLightGrid6x6[36];
     int32_t nErrorLine;
     D2TileLibraryEntryStrc* pTileFirst;
-    s_nTilesSeen++; // [R120]
     if (pTileData->nFlags & 0x408U) {
-      s_nTilesFlagSkip++; // [R120]
       return;
     }
 
@@ -728,22 +616,6 @@ void __thiscall DrawFloorTile(D2DrawFloorStrc * pFloor, D2DrlgTileDataStrc * pTi
       exit(-1);
     }
     if (!(nScreenX >= pGameView->rcExtendedView.left && nScreenX < pGameView->rcExtendedView.right && nScreenY >= pGameView->rcExtendedView.top && nScreenY < pGameView->rcExtendedView.bottom)) {
-      // VP-BEGIN [R120]: cull bookkeeping - the culled anchors' screen
-      // extremes name the edge(s) the fixed-pixel rect is eating.
-      s_nTilesRectCull++;
-      if (nScreenX < s_nCullMinX) {
-        s_nCullMinX = nScreenX;
-      }
-      if (nScreenX > s_nCullMaxX) {
-        s_nCullMaxX = nScreenX;
-      }
-      if (nScreenY < s_nCullMinY) {
-        s_nCullMinY = nScreenY;
-      }
-      if (nScreenY > s_nCullMaxY) {
-        s_nCullMaxY = nScreenY;
-      }
-      // VP-END [R120]
       return;
     }
 
@@ -800,21 +672,6 @@ void __thiscall DrawFloorTile(D2DrawFloorStrc * pFloor, D2DrlgTileDataStrc * pTi
     }
 
     D2gfx::D2GFX::D2GFX_DrawGroundTile(pTileFirst, pLightEx, nScreenX, nScreenY, nWorldX, nWorldY, 0xff, nScreenPanels, pParam);
-    // VP-BEGIN [R120]: drawn-floor screen coverage (absolute px anchors).
-    s_nTilesDrawn++;
-    if (nScreenX < s_nDrawMinX) {
-      s_nDrawMinX = nScreenX;
-    }
-    if (nScreenX > s_nDrawMaxX) {
-      s_nDrawMaxX = nScreenX;
-    }
-    if (nScreenY < s_nDrawMinY) {
-      s_nDrawMinY = nScreenY;
-    }
-    if (nScreenY > s_nDrawMaxY) {
-      s_nDrawMaxY = nScreenY;
-    }
-    // VP-END [R120]
     if (pTileOther->nFlags & 2) {
       nErrorLine = Seed::RollBetweenMinAndMax(pFloor->nRollSeed, 0, 1000);
       if (pFloor->bWeatherSplashEnabled && nErrorLine < pFloor->uWeatherRelated) {
@@ -829,7 +686,6 @@ void __thiscall DrawFloorTile(D2DrawFloorStrc * pFloor, D2DrlgTileDataStrc * pTi
 }
 
 void __thiscall DRAW_DrawEdgeFloorTile(D2DrawFloorStrc * pDrawFloor, int32_t nWorldX, int32_t nParam) {
-    s_nEdgeStamps++; // [R120]
     D2DrlgTileDataStrc* pTileData;
     int32_t nWorldY_00 = nParam;
     int32_t nWorldY = nWorldX;
@@ -943,7 +799,6 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
     pDrawFloor->nMinTileY = 0x7fffffff;
     pDrawFloor->nX = 0x50 - pDrawFloor->pGameView->nCenterX;
     pDrawFloor->nY = -0x50 - pDrawFloor->pGameView->nCenterY;
-    VPDIAG_ResetFrame(); // [R120] frame scratch back to sentinels
     if (nFrameIdx > pDrawFloor->nLastSplashFrame + 3) {
       pDrawFloor->nLastSplashFrame = nFrameIdx;
       if (pDrawFloor->uWeatherRelated) {
@@ -1029,8 +884,6 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &sWideCenterCoords);
       int nWideCenterX = (int)(sWideCenterCoords.dwXStart + sWideCenterCoords.dwXSize / 2);
       int nWideCenterY = (int)(sWideCenterCoords.dwYStart + sWideCenterCoords.dwYSize / 2);
-      s_nWalkAnchorX = nWideCenterX; // [R120]
-      s_nWalkAnchorY = nWideCenterY;
       int nWideRooms = Wall2::WALL2_CollectRoomsBeyondAdjacency(pRoom, 4, // [R121] 3->4: the hop-4 diagonal room
           nWideCenterX, nWideCenterY,
           ScreenSizeX * 5 / 32 + ScreenSizeY * 5 / 16 + 450, // [R119] game coords - was 5x-short subtile scaling
@@ -1040,7 +893,6 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
         DRAW_DrawWideViewRoomFloors(pDrawFloor, apWideRooms[nWideIdx], bNoFilter);
         nWideIdx++;
       }
-      g_VPDIAG_WalkFloor = g_VPDIAG_WalkLast; // [R120] snapshot this frame's floor walk
     }
     // VP-END [R118]
 
@@ -1053,7 +905,6 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
       // so the R117 band fill was dead code in the exact area the owner
       // tests. Retail modes (and panel-open frames) keep the retail exit.
       if (!VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
-        VPDIAG_DumpFloorFrame(pDrawFloor, 0);
         return;
       }
       // VP-END [R121]
@@ -1130,8 +981,6 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
     // VP-END [R121]
     int nAnchorXRaw = (int)pGameView;
     int nAnchorYRaw = nPlayerY;
-    s_nFillAnchorX = nAnchorXRaw; // [R120]
-    s_nFillAnchorY = nAnchorYRaw;
     int nAnchorX = nAnchorXRaw / 5 * 5;
     int nAnchorY = nAnchorYRaw / 5 * 5;
     int nBoundMinX = pDrawFloor->nMinTileX / 5 * 5;
@@ -1143,7 +992,6 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
 
     // open LEFT bound: [minX - depth*5, minX) x (anchorY +- span)
     if (nAnchorXRaw - nTrigMinX < nFillReachCoords) { // [R121] snapshot
-      s_nFillFired |= 1; // [R120]
       for (nFillI = 1; nFillI <= nFillDepth; nFillI++) {
         for (nFillJ = -nFillSpan; nFillJ <= nFillSpan; nFillJ++) {
           DRAW_DrawEdgeFloorTile(pDrawFloor, nBoundMinX - nFillI * 5, nAnchorY + nFillJ * 5);
@@ -1153,7 +1001,6 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
 
     // open RIGHT bound: (maxX, maxX + depth*5] x (anchorY +- span)
     if (nTrigMaxX - nAnchorXRaw < nFillReachCoords) { // [R121] snapshot
-      s_nFillFired |= 2; // [R120]
       for (nFillI = 1; nFillI <= nFillDepth; nFillI++) {
         for (nFillJ = -nFillSpan; nFillJ <= nFillSpan; nFillJ++) {
           DRAW_DrawEdgeFloorTile(pDrawFloor, nBoundMaxX + nFillI * 5, nAnchorY + nFillJ * 5);
@@ -1163,7 +1010,6 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
 
     // open TOP bound: (anchorX +- span) x [minY - depth*5, minY)
     if (nAnchorYRaw - nTrigMinY < nFillReachCoords) { // [R121] snapshot
-      s_nFillFired |= 4; // [R120]
       for (nFillJ = 1; nFillJ <= nFillDepth; nFillJ++) {
         for (nFillI = -nFillSpan; nFillI <= nFillSpan; nFillI++) {
           DRAW_DrawEdgeFloorTile(pDrawFloor, nAnchorX + nFillI * 5, nBoundMinY - nFillJ * 5);
@@ -1173,7 +1019,6 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
 
     // open BOTTOM bound: (anchorX +- span) x (maxY, maxY + depth*5]
     if (nTrigMaxY - nAnchorYRaw < nFillReachCoords) { // [R121] snapshot
-      s_nFillFired |= 8; // [R120]
       for (nFillJ = 1; nFillJ <= nFillDepth; nFillJ++) {
         for (nFillI = -nFillSpan; nFillI <= nFillSpan; nFillI++) {
           DRAW_DrawEdgeFloorTile(pDrawFloor, nAnchorX + nFillI * 5, nBoundMaxY + nFillJ * 5);
@@ -1181,10 +1026,6 @@ void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameView
       }
     }
 
-    // VP-BEGIN [R120]: frame summary after the fill bands so the fired bits
-    // and stamp count cover this frame.
-    VPDIAG_DumpFloorFrame(pDrawFloor, 1);
-    // VP-END [R120]
 }
 
 // Renders roof tiles for current game view with lighting intensity flags and alpha blending

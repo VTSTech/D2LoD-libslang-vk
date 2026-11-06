@@ -72,7 +72,8 @@ each can be fixed, replaced and released independently.
   windowed `-w` clean at every stop (the R116 GDI-pitch shear fix), and the
   wide-view rendering campaign closed the black-edge/void family at ≥720p
   (R117–R122: edge-void band fill, the room walk extended to hop 4, `vpdiag`
-  instrumentation in `d2boot.log`, the retail cull-rect re-fit) — the campaign
+  instrumentation in `d2boot.log` — since retired R127, the retail cull-rect
+  re-fit) — the campaign
   closed on vpdiag evidence (fill firing at full stretch, zero silent drops).
   Glide pairing: wrapper **0.4.8** for the 1080p stop (0.4.7 adds 1366x768,
   0.4.6 knows 1344x700). The eighth-sync build re-verified in the field after
